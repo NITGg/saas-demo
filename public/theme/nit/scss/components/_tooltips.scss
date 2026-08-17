@@ -1,0 +1,22 @@
+// -----------------------------------------------------------------------------
+// Tooltips (Bootstrap 5.3) — shown when hovering a collapsed sidebar icon, nav
+// buttons, etc. Core drives them from `--bs-tooltip-bg` (near-black
+// `--bs-emphasis-color`) and `--bs-tooltip-color` (body background), which is
+// off-brand on the dark theme. Both the bubble (`.tooltip-inner`) and the arrow
+// read `--bs-tooltip-bg`, so re-pointing these two custom properties rebrands
+// the whole tooltip in one place — direction-agnostic, so RTL/LTR both follow.
+//
+// Tooltip background -> Surface, text -> Text primary. Surface sits only a hair
+// above the page/drawer Background, so a floating tooltip would nearly vanish;
+// a brand border plus a neutral drop shadow (a shadow is not a brand colour)
+// give it the lift it needs on any dark ground.
+// -----------------------------------------------------------------------------
+.tooltip {
+    --bs-tooltip-bg: var(--nit-brand-surface);
+    --bs-tooltip-color: var(--nit-brand-textprimary);
+}
+
+.tooltip-inner {
+    border: 1px solid var(--nit-brand-borderprimary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}

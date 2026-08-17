@@ -1,0 +1,37 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// =============================================================================
+// NIT activity header — the info panel at the top of every activity view page
+// (mod/*/view.php: dates, completion conditions, description).
+//
+// Boost's modules.scss paints `.path-mod .activity-details:not(:empty)` with
+// $gray-100 (#f8f9fa) and the dates (`.activity-dates .date-item`) with $gray-700
+// (a dark grey). On the dark brand that panel is a near-white slab carrying the
+// page's white text (invisible), and once the panel is darkened the dark date
+// text would disappear too. Route the panel to the brand Surface and the dates
+// to the brand secondary text (≈ 4.9:1 on Surface).
+// =============================================================================
+
+.path-mod {
+
+    .activity-details:not(:empty) {
+        background-color: var(--nit-brand-surface);
+    }
+
+    .activity-dates .date-item {
+        color: var(--nit-brand-textsecondary);
+    }
+}

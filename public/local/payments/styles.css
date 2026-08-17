@@ -1,0 +1,492 @@
+/* local_payments — pricing card & buy/subscribe UI
+   ------------------------------------------------------------------
+   Design tokens: keep the palette in one place so the light (course
+   page) and dark (frontpage slider footer) contexts stay consistent. */
+
+.local-payments-card-price,
+.local-payments-course-price {
+    --lp-indigo: #4f46e5;
+    --lp-indigo-2: #6366f1;
+    --lp-green: #16a34a;
+    --lp-green-2: #22c55e;
+    --lp-rose: #e0234e;
+    --lp-rose-2: #f43f5e;
+    --lp-ink: #1a1a2e;
+    --lp-muted: #9aa0ad;
+    --lp-line: #e7e9ee;
+    --lp-surface: #f8f9fb;
+    --lp-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+    font-family: inherit;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ------------------------------------------------------------------ */
+/* Card price row (catalog / slider cards)                            */
+/* ------------------------------------------------------------------ */
+
+.lp-card-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    padding: 0.6rem 0.85rem;
+    background: var(--lp-surface);
+    border: 1px solid var(--lp-line);
+    border-radius: 12px;
+    transition: border-color 0.25s var(--lp-ease), box-shadow 0.25s var(--lp-ease);
+}
+
+.lp-card-row:hover {
+    border-color: #d8dbe4;
+    box-shadow: 0 6px 18px rgba(20, 20, 43, 0.08);
+}
+
+.lp-price-block {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.lp-price-pair {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+
+.lp-price {
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.01em;
+}
+
+.lp-price--current {
+    font-size: 1.1rem;
+    color: var(--lp-ink);
+}
+
+.lp-price--original {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--lp-muted);
+    text-decoration: line-through;
+    text-decoration-color: rgba(224, 35, 78, 0.5);
+}
+
+.lp-price--sale {
+    font-size: 1.15rem;
+    color: var(--lp-rose);
+}
+
+.lp-price--lg {
+    font-size: 1.15rem;
+}
+
+.lp-price--xl {
+    font-size: 1.9rem;
+}
+
+/* ------------------------------------------------------------------ */
+/* Badges                                                             */
+/* ------------------------------------------------------------------ */
+
+.lp-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.22rem 0.62rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    line-height: 1;
+}
+
+.lp-badge--lg {
+    font-size: 0.85rem;
+    padding: 0.34rem 0.95rem;
+    margin-bottom: 0.75rem;
+}
+
+.lp-badge--free {
+    background: #e6f7ee;
+    color: var(--lp-green);
+    border: 1px solid rgba(22, 163, 74, 0.18);
+}
+
+.lp-badge--sale {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, var(--lp-rose-2), var(--lp-rose));
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(224, 35, 78, 0.35);
+}
+
+/* Subtle shine sweep across the sale badge. */
+.lp-badge--sale::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -120%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(
+        100deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.5) 50%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    transform: skewX(-18deg);
+    animation: lp-shine 3.2s var(--lp-ease) infinite;
+}
+
+@keyframes lp-shine {
+    0%, 60% { left: -120%; }
+    100% { left: 140%; }
+}
+
+/* ------------------------------------------------------------------ */
+/* Buttons                                                            */
+/* ------------------------------------------------------------------ */
+
+.lp-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1.05rem;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-decoration: none !important;
+    border: none;
+    cursor: pointer;
+    overflow: hidden;
+    isolation: isolate;
+    white-space: nowrap;
+    color: #fff;
+    transition: transform 0.28s var(--lp-ease), box-shadow 0.28s var(--lp-ease),
+        filter 0.28s var(--lp-ease);
+    will-change: transform;
+}
+
+/* Gradient shine sweep on hover. */
+.lp-btn::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(
+        110deg,
+        rgba(255, 255, 255, 0) 30%,
+        rgba(255, 255, 255, 0.28) 50%,
+        rgba(255, 255, 255, 0) 70%
+    );
+    transform: translateX(-130%);
+    transition: transform 0.6s var(--lp-ease);
+}
+
+.lp-btn:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.05);
+    color: #fff;
+}
+
+.lp-btn:hover::before {
+    transform: translateX(130%);
+}
+
+.lp-btn:active {
+    transform: translateY(0);
+    transition-duration: 0.08s;
+}
+
+.lp-btn:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+
+.lp-btn--subscribe {
+    background: linear-gradient(135deg, var(--lp-indigo), var(--lp-indigo-2));
+    box-shadow: 0 4px 14px rgba(79, 70, 229, 0.32);
+}
+
+.lp-btn--subscribe:hover {
+    box-shadow: 0 8px 22px rgba(79, 70, 229, 0.42);
+}
+
+.lp-btn--join {
+    background: linear-gradient(135deg, var(--lp-green), var(--lp-green-2));
+    box-shadow: 0 4px 14px rgba(22, 163, 74, 0.3);
+}
+
+.lp-btn--join:hover {
+    box-shadow: 0 8px 22px rgba(22, 163, 74, 0.4);
+}
+
+.lp-btn--block {
+    display: flex;
+    width: 100%;
+}
+
+.lp-btn--lg {
+    padding: 0.8rem 1.3rem;
+    font-size: 1rem;
+    border-radius: 12px;
+}
+
+.lp-btn .fa {
+    transition: transform 0.28s var(--lp-ease);
+}
+
+.lp-btn:hover .fa {
+    transform: scale(1.12);
+}
+
+/* ------------------------------------------------------------------ */
+/* Status pills (enrolled / purchased)                               */
+/* ------------------------------------------------------------------ */
+
+.lp-card-status,
+.lp-page-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.8rem;
+    border-radius: 10px;
+    font-weight: 700;
+}
+
+.lp-card-status {
+    font-size: 0.85rem;
+}
+
+.lp-card-status--enrolled {
+    background: #eaf6ee;
+    color: #1f9d55;
+    border: 1px solid rgba(31, 157, 85, 0.16);
+}
+
+.lp-card-status--purchased {
+    background: #eaf1fb;
+    color: #2563eb;
+    border: 1px solid rgba(37, 99, 235, 0.16);
+}
+
+/* Renew hint — shown when a lapsed enrolment keeps a course in "My courses". */
+.lp-card-status--renew {
+    background: #fdf3e7;
+    color: #b26b00;
+    border: 1px solid rgba(178, 107, 0, 0.18);
+    margin-bottom: 0.5rem;
+}
+
+/* ------------------------------------------------------------------ */
+/* Full course-page card (buy.php)                                   */
+/* ------------------------------------------------------------------ */
+
+.lp-page-card {
+    background: #fff;
+    border: 1px solid var(--lp-line);
+    border-radius: 18px;
+    padding: 1.75rem 1.5rem;
+    box-shadow: 0 10px 30px rgba(20, 20, 43, 0.07);
+    text-align: center;
+    transition: box-shadow 0.3s var(--lp-ease), transform 0.3s var(--lp-ease);
+}
+
+.lp-page-card:hover {
+    box-shadow: 0 16px 40px rgba(20, 20, 43, 0.11);
+    transform: translateY(-2px);
+}
+
+.lp-page-status {
+    flex-direction: column;
+    padding: 1.5rem 1rem;
+}
+
+.lp-page-status i {
+    font-size: 2.4rem;
+}
+
+.lp-page-status--enrolled {
+    color: var(--lp-green);
+}
+
+.lp-page-status--purchased {
+    color: #2563eb;
+}
+
+.lp-page-status--free {
+    flex-direction: column;
+}
+
+.lp-page-buy {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.lp-page-price-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.lp-secure-note {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--lp-muted);
+    margin-top: 0.85rem;
+    font-size: 0.82rem;
+}
+
+/* ------------------------------------------------------------------ */
+/* Dark footer context (frontpage "top courses" slider)              */
+/* The slider footer has a dark gradient bar, so invert text colors  */
+/* and let the buttons carry the accent.                             */
+/* ------------------------------------------------------------------ */
+
+.lp-context-dark-footer .lp-card-row {
+    background: transparent;
+    border: none;
+    padding: 0.15rem 0;
+    justify-content: space-between;
+    box-shadow: none;
+}
+
+.lp-context-dark-footer .lp-card-row:hover {
+    box-shadow: none;
+}
+
+.lp-context-dark-footer .lp-price--current,
+.lp-context-dark-footer .lp-price--sale {
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.lp-context-dark-footer .lp-price--original {
+    color: rgba(255, 255, 255, 0.55);
+    text-decoration-color: rgba(255, 255, 255, 0.5);
+}
+
+.lp-context-dark-footer .lp-btn {
+    padding: 0.38rem 0.9rem;
+    font-size: 0.8rem;
+    border-radius: 9px;
+}
+
+.lp-context-dark-footer .lp-card-status--enrolled,
+.lp-context-dark-footer .lp-card-status--purchased {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.22);
+    color: #fff;
+    backdrop-filter: blur(2px);
+}
+
+.lp-context-dark-footer .lp-card-status--renew {
+    background: rgba(255, 193, 94, 0.22);
+    border-color: rgba(255, 193, 94, 0.42);
+    color: #ffd89b;
+    backdrop-filter: blur(2px);
+}
+
+.tc_footer:has(.lp-context-dark-footer) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 3rem;
+}
+
+/* Lift the whole course card slightly when hovering its price CTA,
+   for a cohesive interactive feel on the slider. */
+.top_courses:has(.lp-btn:hover) {
+    transform: translateY(-4px);
+    box-shadow: 0 18px 38px rgba(14, 38, 71, 0.28);
+}
+
+.top_courses {
+    transition: transform 0.3s var(--lp-ease), box-shadow 0.3s var(--lp-ease);
+}
+
+/* ------------------------------------------------------------------ */
+/* Reduced motion: honour user preference                            */
+/* ------------------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+    .lp-btn,
+    .lp-btn::before,
+    .lp-btn .fa,
+    .lp-card-row,
+    .lp-page-card,
+    .top_courses,
+    .lp-badge--sale::after {
+        transition: none !important;
+        animation: none !important;
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/* Catalog / enrol-page price badge (injected by js/course_cards.js)  */
+/* This badge is injected OUTSIDE the .local-payments-* containers, so */
+/* it cannot inherit their palette — every colour here is explicit.   */
+/* ------------------------------------------------------------------ */
+.lp-card-badge {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0.55rem 0 0.15rem;
+    padding: 0;
+    font-family: inherit;
+    line-height: 1;
+}
+
+/* -NN% chip: solid gradient so the number is always legible. */
+.lp-card-badge .lp-badge--sale {
+    background: linear-gradient(135deg, #f43f5e, #e0234e);
+    color: #fff;
+    border: 0;
+    box-shadow: 0 2px 8px rgba(224, 35, 78, 0.35);
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 0.24rem 0.6rem;
+}
+
+.lp-card-badge .lp-price {
+    font-weight: 800;
+    letter-spacing: -0.01em;
+}
+
+.lp-card-badge .lp-price--original {
+    color: #6b7280;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-decoration: line-through;
+    text-decoration-color: rgba(224, 35, 78, 0.55);
+}
+
+.lp-card-badge .lp-price--sale {
+    color: #e0234e;
+    font-size: 1.15rem;
+}
+
+.lp-card-badge .lp-price--current {
+    color: #1a1a2e;
+    font-size: 1.1rem;
+}
+
+.lp-badge--purchased {
+    background: #eef2ff;
+    color: #3730a3;
+    border: 1px solid rgba(55, 48, 163, 0.18);
+}

@@ -1,0 +1,31 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// =============================================================================
+// Sticky action footer (the bar with "Save and return / Save and display /
+// Cancel" on the course-edit and other mform pages).
+//
+// Boost's core/sticky_footer template hard-codes `class="stickyfooter bg-white
+// border-top"`, so the bar renders as a white slab on the dark brand. It's a
+// raised second surface over the page background, so point it at the Surface
+// role (with a brand border and brand text). The `.bg-white` / `.border-top`
+// utilities are `!important`, so these overrides are too.
+// =============================================================================
+
+#sticky-footer.stickyfooter {
+    background-color: var(--nit-brand-surface) !important;
+    border-top-color: var(--nit-brand-borderprimary) !important;
+    color: var(--nit-brand-textprimary);
+}

@@ -1,0 +1,106 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// =============================================================================
+// File manager & file picker — brand colours.
+//
+// Two off-brand areas here:
+//
+//   1. The inline file-manager box (the "Course image" panel on course/edit.php)
+//      is a raised second surface sitting on the page background — its toolbar
+//      (`.fp-navbar.card`) and content box (`.filemanager-container.card`) took
+//      the Bootstrap card background instead of the brand Surface. Point them at
+//      the Surface role so the panel reads as a distinct second background.
+//
+//   2. The "Add file" picker is a YUI dialogue whose wrap defaults to
+//      `$dialogue-base-bg: #fff` with a `#ccc` border — a white modal on the
+//      dark brand. Rebind the wrap / header / footer / content to Surface +
+//      brand borders + brand text.
+//
+// Every selector matches core's own (same specificity) and, compiling after
+// Boost, wins by cascade order — no `!important` needed.
+// =============================================================================
+
+// ---- 1. Inline file-manager box (the "second background" panel) -------------
+.filemanager {
+    .fp-navbar,
+    .filemanager-container {
+        background-color: var(--nit-brand-surface);
+        border-color: var(--nit-brand-borderprimary);
+        color: var(--nit-brand-textprimary);
+    }
+
+    // The content area itself is transparent so the container surface shows
+    // through as one panel.
+    .fm-content-wrapper,
+    .fp-content {
+        background-color: transparent;
+    }
+
+    // File name label under each thumbnail.
+    .fp-filename,
+    .fp-filename-field .fp-filename {
+        color: var(--nit-brand-textprimary);
+    }
+}
+
+// ---- 2. File picker / manager modal (YUI dialogue) --------------------------
+.moodle-dialogue-base {
+    .moodle-dialogue-wrap {
+        background-color: var(--nit-brand-surface);
+        border-color: var(--nit-brand-borderprimary);
+        color: var(--nit-brand-textprimary);
+    }
+
+    .moodle-dialogue-wrap .moodle-dialogue-hd {
+        border-bottom-color: var(--nit-brand-borderprimary);
+    }
+
+    .moodle-dialogue-wrap .moodle-dialogue-hd h5 {
+        color: var(--nit-brand-textprimary);
+    }
+
+    .moodle-dialogue .moodle-dialogue-content .moodle-dialogue-ft {
+        border-top-color: var(--nit-brand-borderprimary);
+    }
+}
+
+// ---- Picker inner surfaces (repository list, content pane, navbar) ----------
+.file-picker {
+    .fp-content {
+        background-color: var(--nit-brand-surface);
+        color: var(--nit-brand-textprimary);
+    }
+
+    .fp-navbar {
+        background-color: var(--nit-brand-surface);
+        border-color: var(--nit-brand-borderprimary);
+    }
+
+    // Repository rows: brand text, brand hover fill, primary for the active repo.
+    .fp-list .fp-repo a {
+        color: var(--nit-brand-textprimary);
+
+        &:hover,
+        &:focus {
+            background-color: var(--nit-brand-hoverbackground);
+            color: var(--nit-brand-hovertext);
+        }
+    }
+
+    .fp-list .fp-repo.active {
+        background-color: var(--nit-brand-hoverbackground);
+    }
+}

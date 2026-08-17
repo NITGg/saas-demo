@@ -1,0 +1,29 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// -----------------------------------------------------------------------------
+// Self-hosted fonts (CSP- and privacy-safe: no external CDN, ever).
+//
+// M2 ships the @font-face STRUCTURE with a neutral system-font default. When a
+// brand font is chosen (M3), drop the woff2 files into theme/nit/fonts/ and
+// uncomment the @font-face block below — no external request is ever introduced.
+//
+// @font-face {
+//     font-family: "NIT Sans";
+//     src: url("[[font:theme|nitsans.woff2]]") format("woff2");
+//     font-weight: 100 900;
+//     font-display: swap;
+// }
+// -----------------------------------------------------------------------------

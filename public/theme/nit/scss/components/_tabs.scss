@@ -1,0 +1,111 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// NIT tab refinement: a brand three-state model applied to every .nav-tabs
+// across the site.
+//
+//   normal  → Text primary text, 50%-opacity Background fill, no border/underline
+//   active  → Text primary text, 50%-opacity Background fill, Primary border
+//   hover   → Text primary text, solid Background fill,        Primary border
+//
+// The fill reads through --nit-brand-background (translucent for the resting /
+// active states, solid on hover) and the indicator is a full Primary border on
+// the active and hovered tab, so the strip re-skins with the palette.
+.nav-tabs {
+    .nav-link {
+        font-weight: 600;
+
+        // The Primary indicator is a bottom underline drawn with an inset
+        // box-shadow (inset 0 -2px = a 2px line on the bottom edge only), not a
+        // CSS border: core forces `.nav-link { border: 0 }` in a way that outranks
+        // a plain border-bottom override, and a shadow adds no layout box so the
+        // tab never shifts size between states. Resting = brand text on a
+        // translucent (50%) Background fill, with no underline.
+        //
+        // Keep every CSS border transparent in ALL states. Core only zeroes the
+        // nav-link border below 768px; at ≥ 768px Bootstrap's default 1px border
+        // returns and the active / hover tab would otherwise draw a full box on
+        // its top/left/right edges — so the ONLY visible edge stays the bottom
+        // box-shadow underline at every breakpoint.
+        color: var(--nit-brand-textprimary);
+        background-color: color-mix(in srgb, var(--nit-brand-background) 50%, transparent);
+        border-color: transparent;
+        box-shadow: none;
+
+        // Hover: solid Background fill + a Primary bottom underline.
+        &:hover,
+        &:focus {
+            color: var(--nit-brand-textprimary);
+            background-color: var(--nit-brand-background);
+            border-color: transparent;
+            box-shadow: inset 0 -2px 0 0 var(--nit-brand-primary);
+        }
+
+        // Active: same translucent Background fill as the resting tab + a Primary
+        // bottom underline.
+        &.active {
+            color: var(--nit-brand-textprimary);
+            background-color: color-mix(in srgb, var(--nit-brand-background) 50%, transparent);
+            border-color: transparent;
+            box-shadow: inset 0 -2px 0 0 var(--nit-brand-primary);
+        }
+
+        &:focus-visible {
+            @include nit-focus-ring();
+        }
+    }
+}
+
+// Below 768px core turns every plain `.nav-tabs:not(.more-nav)` into a
+// segmented-control "track" and paints that track a light grey (#e9ecef) — an
+// off-brand grey frame around the (Background-filled) chips on the dark brand.
+// This hits any tabtree() strip on mobile (e.g. the mod_jobform Fields /
+// Submissions tabs). Repaint the track with a Surface fill so it stays a
+// brand-consistent segmented control; the chips keep their Background fill and
+// the active chip keeps its Primary underline. Scoped to the same breakpoint so
+// the ≥ 768px (transparent-track) layout is untouched.
+@media (max-width: 767.98px) {
+    .nav-tabs:not(.more-nav) {
+        background-color: var(--nit-brand-surface);
+    }
+}
+
+// Admin secondary navigation (Site administration: General / Users / …) is a
+// .moremenu .nav-tabs; core carries higher-specificity light-grey rules for its
+// hover / active states, so restate the same three-state brand model here to win
+// the cascade and keep the admin strip consistent with every other tab set.
+.moremenu .nav-link {
+    &:hover,
+    &:focus {
+        color: var(--nit-brand-textprimary);
+        background-color: var(--nit-brand-background);
+        border-color: transparent;
+        box-shadow: inset 0 -2px 0 0 var(--nit-brand-primary);
+    }
+
+    &.active {
+        color: var(--nit-brand-textprimary);
+        background-color: color-mix(in srgb, var(--nit-brand-background) 50%, transparent);
+        border-color: transparent;
+        box-shadow: inset 0 -2px 0 0 var(--nit-brand-primary);
+
+        &:hover,
+        &:focus {
+            background-color: var(--nit-brand-background);
+            border-color: transparent;
+            box-shadow: inset 0 -2px 0 0 var(--nit-brand-primary);
+        }
+    }
+}

@@ -1,0 +1,34 @@
+// -----------------------------------------------------------------------------
+// Boost drawers (side bars): the left nav drawer, the right blocks drawer, and
+// the message/index drawers all share core Boost's `.drawer`, which ships a
+// light `#f8f9fa` background. On the dark brand that surfaced a white band
+// behind the sidebar with unreadable white text.
+//
+// The brand system assigns the "side menu background" role to Surface, so the
+// drawer is a Surface panel (distinct from the page's Background ground). The
+// block cards inside are also Surface but carry their own Border-primary
+// outline, so they still read as separate cards on the panel. Background colour
+// is direction-agnostic, so this is correct for both the RTL (drawer-left in
+// Arabic) and LTR sides with no logical-prop work needed.
+// -----------------------------------------------------------------------------
+.drawer {
+    background-color: var(--nit-brand-surface);
+    // The drawer's own separator from the page uses the brand border, not the
+    // core grey it inherits from `$border-color`.
+    border-inline-color: var(--nit-brand-borderprimary);
+}
+
+// The open/close chevron ("Open/Close block drawer") is a bare `.btn`, so it
+// inherits Bootstrap's `--bs-btn-color` (#495057 grey) — off-brand and low
+// contrast on the dark ground. Pin it to the brand text colour, and use the
+// brand hover pair on interaction.
+.drawertoggle {
+    color: var(--nit-brand-textprimary);
+
+    &:hover,
+    &:focus,
+    &:active {
+        color: var(--nit-brand-hovertext);
+        background-color: var(--nit-brand-hoverbackground);
+    }
+}

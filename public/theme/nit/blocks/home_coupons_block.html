@@ -1,0 +1,378 @@
+<!-- NIT — Available coupons home-page block. Paste into an HTML block on the home page.
+     Inline styles only (editor-safe). Fetches live coupons from the plugin and renders a dark slider.
+     Shows: code, discount value, applies-to scope, usage type, max discount, valid dates.
+     Colours read from the Brand Colors palette (theme/nit gallery). Gold accents map to
+     --nit-brand-accent, the teal "positive" accent maps to --nit-brand-success; shades are
+     derived with color-mix from those same brand variables (no hard-coded colours).
+     Optional: if it can't find the API, set data-base on the wrapper to your Moodle URL,
+     e.g. data-base="https://academy2026.nitg-eg.com/moodle-new" -->
+<div dir="auto"
+  style="background: var(--nit-brand-background); padding: 64px 16px;"
+  data-nit-coupons="" data-endpoint="/local/nit_commerce/api.php" data-base="">
+  <div style="max-width: 1200px; margin: 0 auto;"><!-- Header -->
+    <div
+      style="text-align: center; margin-bottom: 40px; color: var(--nit-brand-textprimary);">
+      <span
+        style="display: inline-block; background: color-mix(in srgb, var(--nit-brand-accenttext) 15%, transparent); border: 1px solid color-mix(in srgb, var(--nit-brand-accenttext) 30%, transparent); border-radius: 50px; padding: 6px 18px; font-size: 14px; color: var(--nit-brand-accenttext); font-weight: bold;">
+        {mlang en}Discounts{mlang}{mlang ar}الخصومات{mlang} </span>
+      <h2
+        style="font-size: clamp(26px, 4vw, 38px); font-weight: 800; margin: 16px 0 0; color: var(--nit-brand-textprimary);">
+        {mlang en}Available coupons{mlang}{mlang ar}الكوبونات المتاحة{mlang}
+      </h2>
+    </div>
+    <!-- Slider Wrapper -->
+    <div style="position: relative; padding: 0 28px;"><!-- LEFT ARROW -->
+      <button
+        style="position: absolute; inset-inline-start: -23px; top: 50%; transform: translateY(-50%); z-index: 20; width: 46px; height: 46px; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--nit-brand-accent) 50%, transparent); background: var(--nit-brand-surface); color: var(--nit-brand-accent); font-size: 29px; font-weight: bold; line-height: 1; padding: 0; cursor: pointer; box-shadow: 0 8px 24px rgba(0,0,0,.35);"
+        type="button" data-nit-coupons-scroll="prev"> ‹ </button>
+      <!-- COUPONS HORIZONTAL SCROLL -->
+      <div
+        style="display: flex; flex-direction: row; flex-wrap: nowrap; align-items: stretch; gap: 20px; width: 100%; overflow-x: auto; overflow-y: hidden; padding: 8px 4px 20px; scroll-snap-type: x mandatory; scroll-behavior: smooth; scrollbar-width: thin; scrollbar-color: var(--nit-brand-accent) var(--nit-brand-surface); -webkit-overflow-scrolling: touch;"
+        data-nit-coupons-scroller=""><!-- CARD TEMPLATE -->
+        <div
+          style="display: none; flex: 0 0 320px; width: 320px; min-width: 320px; max-width: 320px; scroll-snap-align: start; align-self: stretch;"
+          data-nit-coupons-card="">
+          <div
+            style="box-sizing: border-box; width: 100%; min-height: 150px; height: 100%; display: flex; align-items: stretch; background: var(--nit-brand-surface); border: 1px dashed color-mix(in srgb, var(--nit-brand-accent) 55%, transparent); border-radius: 16px; overflow: hidden;">
+            <!-- VALUE -->
+            <div
+              style="flex: 0 0 104px; background: linear-gradient(135deg, color-mix(in srgb, var(--nit-brand-accent) 72%, #000), var(--nit-brand-accent)); color: var(--nit-brand-textprimary); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 8px;">
+              <strong style="font-size: 26px; line-height: 1; font-weight: 800;"
+                data-nit-value=""> {{value}} </strong> <span
+                style="font-size: 11px; font-weight: bold; margin-top: 4px;"
+                data-nit-valuelabel=""> {{valuelabel}} </span></div>
+            <!-- BODY -->
+            <div
+              style="flex: 1; min-width: 0; padding: 16px; display: flex; flex-direction: column; gap: 7px;">
+              <button
+                style="align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; font-family: monospace; font-weight: bold; font-size: 16px; color: var(--nit-brand-textprimary); background: color-mix(in srgb, var(--nit-brand-textprimary) 6%, transparent); border: 1px solid color-mix(in srgb, var(--nit-brand-accent) 40%, transparent); border-radius: 8px; padding: 6px 12px; cursor: pointer;"
+                type="button" data-nit-copy="" data-code="{{code}}"> {{code}}
+                <span aria-hidden="true">⧉</span> </button>
+              <p data-nit-scope=""
+                style="font-size: 12px; color: var(--nit-brand-textsecondary); margin: 0;">
+                {{scope}}</p>
+              <p data-nit-usage=""
+                style="font-size: 12px; color: var(--nit-brand-textsecondary); margin: 0;">
+                {{usage}}</p>
+              <p data-nit-max=""
+                style="font-size: 12px; color: var(--nit-brand-success); margin: 0;">
+                {{max}}</p>
+              <p data-nit-dates=""
+                style="font-size: 11px; color: var(--nit-brand-textsecondary); margin: 0;">
+                {{dates}}</p>
+            </div>
+          </div>
+        </div>
+        <!-- STATUS MESSAGE -->
+        <div
+          style="color: var(--nit-brand-textsecondary); padding: 24px 8px; font-size: 15px;"
+          data-nit-coupons-msg="">…</div>
+      </div>
+      <!-- RIGHT ARROW --> <button
+        style="position: absolute; inset-inline-end: -23px; top: 50%; transform: translateY(-50%); z-index: 20; width: 46px; height: 46px; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--nit-brand-accent) 50%, transparent); background: var(--nit-brand-surface); color: var(--nit-brand-accent); font-size: 29px; font-weight: bold; line-height: 1; padding: 0; cursor: pointer; box-shadow: 0 8px 24px rgba(0,0,0,.35);"
+        type="button" data-nit-coupons-scroll="next"> › </button>
+    </div>
+  </div>
+  <script>
+    (function() {
+      var root =
+        (document.currentScript &&
+          document.currentScript.closest('[data-nit-coupons]')) ||
+        document.querySelector('[data-nit-coupons]');
+
+      if (!root || root.getAttribute('data-nit-wired')) {
+        return;
+      }
+
+      root.setAttribute('data-nit-wired', '1');
+
+      var scroller = root.querySelector('[data-nit-coupons-scroller]');
+      var tpl = root.querySelector('[data-nit-coupons-card]');
+      var msg = root.querySelector('[data-nit-coupons-msg]');
+
+      var base =
+        window.M && M.cfg && M.cfg.wwwroot ?
+        M.cfg.wwwroot :
+        root.getAttribute('data-base') || '';
+
+      var endpoint =
+        base +
+        root.getAttribute('data-endpoint') +
+        '?function=get_available_coupons';
+
+      function esc(s) {
+        return String(s == null ? '' : s).replace(
+          /[&<>"]/g,
+          function(c) {
+            return {
+              '&': '&amp;',
+              '<': '&lt;',
+              '>': '&gt;',
+              '"': '&quot;'
+            } [c];
+          }
+        );
+      }
+
+      function num(n) {
+        return (
+          Math.round(Number(n) * 100) / 100
+        ).toLocaleString(undefined, {
+          minimumFractionDigits: 0
+        });
+      }
+
+      function fmt(ts) {
+        return ts ?
+          new Date(ts * 1000).toLocaleDateString() :
+          null;
+      }
+
+      function say(t) {
+        if (msg) {
+          msg.textContent = t;
+          msg.style.display = '';
+        }
+      }
+
+      /* Slider arrows */
+      Array.prototype.forEach.call(
+        root.querySelectorAll('[data-nit-coupons-scroll]'),
+        function(btn) {
+          btn.addEventListener('click', function() {
+            var dir =
+              btn.getAttribute('data-nit-coupons-scroll') === 'next' ?
+              1 :
+              -1;
+
+            if (
+              getComputedStyle(scroller).direction === 'rtl'
+            ) {
+              dir = -dir;
+            }
+
+            scroller.scrollBy({
+              left: dir *
+                Math.max(
+                  320,
+                  Math.round(scroller.clientWidth * 0.8)
+                ),
+              behavior: 'smooth'
+            });
+          });
+        }
+      );
+
+      say(
+        '{mlang en}Loading…{mlang}{mlang ar}جاري التحميل…{mlang}'
+      );
+
+      fetch(endpoint, {
+          headers: {
+            Accept: 'application/json'
+          }
+        })
+        .then(function(r) {
+          return r.json();
+        })
+        .then(function(res) {
+          if (!res || res.status !== 'success') {
+            throw new Error('load failed');
+          }
+
+          var rows = res.data || [];
+
+          if (!rows.length) {
+            say(
+              '{mlang en}No coupons available right now.{mlang}{mlang ar}لا توجد كوبونات متاحة حالياً.{mlang}'
+            );
+            return;
+          }
+
+          if (msg) {
+            msg.style.display = 'none';
+          }
+
+          var pctLabel =
+            '{mlang en}OFF{mlang}{mlang ar}خصم{mlang}';
+
+          var egpLabel =
+            '{mlang en}EGP OFF{mlang}{mlang ar}ج.م خصم{mlang}';
+
+          rows.forEach(function(c) {
+            var isPct =
+              c.discount_type === 'percent';
+
+            var value = isPct ?
+              num(c.discount_value) + '%' :
+              num(c.discount_value);
+
+            var scope =
+              c.applies_to && c.applies_to.length ?
+              c.applies_to
+              .map(function(a) {
+                return a.label;
+              })
+              .join(', ') :
+              '';
+
+            var s = fmt(c.startdate);
+            var e = fmt(c.enddate);
+
+            var dates =
+              s || e ?
+              '{mlang en}Valid{mlang}{mlang ar}صالح{mlang} ' +
+              (s || '…') +
+              ' → ' +
+              (e || '…') :
+              '';
+
+            /* Usage type */
+            var usage;
+
+            if (c.usage_type === 'once') {
+              usage =
+                '{mlang en}One-time use{mlang}{mlang ar}استخدام لمرة واحدة{mlang}';
+            } else {
+              usage =
+                '{mlang en}Multiple use{mlang}{mlang ar}استخدام متعدد{mlang}';
+
+              if (c.usage_limit > 0) {
+                usage +=
+                  ' (' +
+                  (c.usage_count || 0) +
+                  '/' +
+                  c.usage_limit +
+                  ')';
+              }
+            }
+
+            /* Max discount */
+            var max =
+              c.max_discount != null &&
+              Number(c.max_discount) > 0 ?
+              '{mlang en}Max discount{mlang}{mlang ar}أقصى خصم{mlang}: ' +
+              num(c.max_discount) +
+              ' EGP' :
+              '';
+
+            var html = tpl.innerHTML
+              .replace(/\{\{value\}\}/g, esc(value))
+              .replace(
+                /\{\{valuelabel\}\}/g,
+                isPct ? pctLabel : egpLabel
+              )
+              .replace(/\{\{code\}\}/g, esc(c.code))
+              .replace(/\{\{scope\}\}/g, esc(scope))
+              .replace(/\{\{usage\}\}/g, esc(usage))
+              .replace(/\{\{max\}\}/g, esc(max))
+              .replace(/\{\{dates\}\}/g, esc(dates));
+
+            var wrap = document.createElement('div');
+
+            wrap.style.cssText =
+              tpl
+              .getAttribute('style')
+              .replace('display: none;', '');
+
+            /*
+             * Make generated cards flex containers so every card stretches
+             * to the height of the tallest card in the row.
+             */
+            wrap.style.display = 'flex';
+            wrap.style.alignItems = 'stretch';
+
+            wrap.setAttribute(
+              'data-nit-coupons-card',
+              ''
+            );
+
+            wrap.innerHTML = html;
+
+            if (!scope) {
+              var sc =
+                wrap.querySelector('[data-nit-scope]');
+
+              if (sc) {
+                sc.style.display = 'none';
+              }
+            }
+
+            if (!max) {
+              var mx =
+                wrap.querySelector('[data-nit-max]');
+
+              if (mx) {
+                mx.style.display = 'none';
+              }
+            }
+
+            if (!dates) {
+              var dt =
+                wrap.querySelector('[data-nit-dates]');
+
+              if (dt) {
+                dt.style.display = 'none';
+              }
+            }
+
+            var btn =
+              wrap.querySelector('[data-nit-copy]');
+
+            if (btn) {
+              btn.addEventListener(
+                'click',
+                function() {
+                  var code =
+                    btn.getAttribute('data-code');
+
+                  if (navigator.clipboard) {
+                    navigator.clipboard
+                      .writeText(code)
+                      .catch(function() {});
+                  }
+
+                  var old =
+                    btn.style.borderColor;
+
+                  btn.style.borderColor =
+                    'var(--nit-brand-success)';
+
+                  setTimeout(function() {
+                    btn.style.borderColor = old;
+                  }, 1200);
+                }
+              );
+            }
+
+            scroller.appendChild(wrap);
+          });
+        })
+        .catch(function() {
+          say(
+            '{mlang en}Could not load coupons.{mlang}{mlang ar}تعذّر تحميل الكوبونات.{mlang}'
+          );
+        });
+    })();
+  </script>
+  <script>
+    (function() {
+      if (document.getElementById('nit-hoverfx-style')) {
+        return;
+      }
+      var css =
+        '.nit-btn-solid,.nit-btn-ghost,[data-nit-copy],[data-nit-scroll],[data-nit-coupons-scroll],[data-nit-categories]>a,[data-nit-my-courses]>div,[data-nit-about-card]{transition:background-color .2s ease,background .2s ease,color .2s ease,border-color .2s ease,transform .2s ease,box-shadow .2s ease}' +
+        '.nit-btn-solid:not(:disabled):hover{background:var(--nit-brand-primary-hover)!important;color:var(--nit-brand-textprimary)!important;transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.35)}' +
+        '.nit-btn-ghost:not(:disabled):hover{background:var(--nit-brand-hoverbackground)!important;color:var(--nit-brand-hovertext)!important;border-color:var(--nit-brand-bordersecondary)!important;transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.35)}' +
+        '[data-nit-copy]:hover{background:var(--nit-brand-hoverbackground)!important;color:var(--nit-brand-hovertext)!important;border-color:var(--nit-brand-hoverbackground)!important;transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.35)}' +
+        '[data-nit-scroll]:hover,[data-nit-coupons-scroll]:hover{background:var(--nit-brand-hoverbackground)!important;color:var(--nit-brand-hovertext)!important;border-color:var(--nit-brand-hoverbackground)!important;transform:translateY(-50%) scale(1.08)!important}' +
+        '[data-nit-categories]>a:hover,[data-nit-my-courses]>div:not([data-nit-my-course-card]):not([data-nit-my-courses-empty]):hover{transform:translateY(-6px);border-color:var(--nit-brand-accent)!important;box-shadow:0 16px 40px rgba(0,0,0,.45)}' +
+        '[data-nit-categories]>a:hover [data-nit-cta]{background:var(--nit-brand-primary-hover)!important;color:var(--nit-brand-textprimary)!important}' +
+        '[data-nit-about-card]:hover{transform:translateY(-4px);border-color:var(--nit-brand-accent)!important}';
+      var st = document.createElement('style');
+      st.id = 'nit-hoverfx-style';
+      st.textContent = css;
+      (document.head || document.documentElement).appendChild(st);
+    })();
+  </script>
+</div>

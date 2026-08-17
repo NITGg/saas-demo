@@ -1,0 +1,60 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// =============================================================================
+// Course & category management (course/management.php).
+//
+// Each category / course row is a Bootstrap `.list-group-item-action`, so its
+// hover fill comes from `$list-group-hover-bg` — a near-white tint that, on the
+// dark brand, flashes as a harsh bright band with the text washing out. Replace
+// it with one simple treatment: the hovered row adopts the brand "hover
+// background" role (the same fill the dropdowns use) and keeps the normal text
+// colour, so the whole page speaks one hover language.
+//
+// The `#course-category-listings` id keeps these overrides specific enough to
+// beat Bootstrap's `.list-group-item-action:hover` without `!important`.
+// =============================================================================
+
+#course-category-listings {
+    .listitem.list-group-item-action {
+        // Resting rows sit flat on the surrounding surface (no per-row fill).
+        background-color: transparent;
+
+        &:hover,
+        &:focus {
+            background-color: var(--nit-brand-hoverbackground);
+            color: var(--nit-brand-textprimary);
+        }
+
+        // Keyboard focus: add a clear brand ring on top of the hover fill.
+        &:focus-visible {
+            outline: 2px solid var(--nit-brand-primary);
+            outline-offset: -2px;
+        }
+    }
+
+    // Highlighted (just-moved / anchored) and selected rows use the same hover
+    // fill so the page never shows the light Bootstrap tint.
+    .listitem.highlight,
+    .listitem.highlight > div,
+    .listitem.highlight[data-selected='1'] > div {
+        background-color: var(--nit-brand-hoverbackground);
+    }
+
+    // The selection accent bar follows the brand primary.
+    .listitem[data-selected='1'] {
+        border-inline-start-color: var(--nit-brand-primary);
+    }
+}

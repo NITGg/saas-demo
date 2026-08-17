@@ -1,0 +1,90 @@
+<!-- NIT — Learning categories home-page block.
+     Paste into an HTML block on the FRONT PAGE (Site home).
+     Renders a horizontal slider of top-level course categories.
+     theme_nit's front-page engine populates cards from window.NIT_CATEGORIES and wires the arrows.
+     Colours read from the Brand Colors palette (--nit-brand-*). -->
+<div dir="auto"
+  style="background: var(--nit-brand-background); padding: 64px 16px;">
+  <div style="max-width: 1200px; margin: 0 auto;">
+    <div
+      style="text-align: center; margin-bottom: 40px; color: var(--nit-brand-textprimary);">
+      <span
+        style="display: inline-block; background: color-mix(in srgb, var(--nit-brand-accenttext) 15%, transparent); border: 1px solid color-mix(in srgb, var(--nit-brand-accenttext) 30%, transparent); border-radius: 50px; padding: 6px 18px; font-size: 14px; color: var(--nit-brand-accenttext); font-weight: bold;">
+        {mlang en}Explore Categories{mlang} {mlang ar}تصفح التصنيفات{mlang}
+      </span>
+      <h2
+        style="font-size: clamp(26px,4vw,38px); font-weight: 800; margin: 16px 0 0; color: var(--nit-brand-textprimary);">
+        {mlang en}Learning Categories{mlang} {mlang ar}تصنيفات التعلم{mlang}
+      </h2>
+    </div>
+    <div style="position: relative; padding: 0 28px;"><button
+        style="position: absolute; inset-inline-start: -23px; top: 50%; transform: translateY(-50%); z-index: 20; width: 46px; height: 46px; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--nit-brand-accent) 50%, transparent); background: var(--nit-brand-surface); color: var(--nit-brand-accent); font-size: 29px; font-weight: bold; line-height: 1; padding: 0; cursor: pointer; box-shadow: 0 8px 24px rgba(0,0,0,.35);"
+        type="button" data-nit-scroll="prev">‹</button>
+      <div class="nit-categories-scroll"
+        style="display: flex; flex-direction: row; flex-wrap: nowrap; align-items: stretch; gap: 20px; width: 100%; overflow-x: auto; overflow-y: hidden; padding: 8px 4px 20px; scroll-snap-type: x mandatory; scroll-behavior: smooth; scrollbar-width: thin; scrollbar-color: var(--nit-brand-accent) var(--nit-brand-surface); -webkit-overflow-scrolling: touch;"
+        data-nit-categories="" data-limit="12">
+        <div
+          style="display: none; flex: 0 0 280px; flex-grow: 0; flex-shrink: 0; width: 280px; min-width: 280px; max-width: 280px; height: 360px; scroll-snap-align: start;"
+          data-nit-category-card=""><a
+            style="flex: 0 0 280px; flex-shrink: 0; width: 280px; min-width: 280px; max-width: 280px; height: 360px; box-sizing: border-box; background: var(--nit-brand-surface); border: 1px solid color-mix(in srgb, var(--nit-brand-textprimary) 6%, transparent); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; text-decoration: none !important; scroll-snap-align: start; transition: border-color 0.3s ease, box-shadow 0.3s ease;"
+            href="{{url}}">
+            <div style="position: relative; flex: 0 0 160px; height: 160px;">
+              <div
+                style="width: 100%; height: 160px; background: color-mix(in srgb, var(--nit-brand-surface) 86%, var(--nit-brand-textprimary)) center/contain no-repeat; padding: 18px; box-sizing: border-box;"
+                data-nit-category-image=""> </div>
+            </div>
+            <div
+              style="padding: 20px; text-align: center; display: flex; flex-direction: column; flex: 1; min-height: 0;">
+              <h3
+                style="font-size: 18px; font-weight: bold; color: var(--nit-brand-textprimary); margin: 0 0 8px;">
+                {{name}}</h3>
+              <p
+                style="font-size: 13px; color: var(--nit-brand-textsecondary); margin: 0 0 16px; flex: 1;">
+                {{coursecount}} {mlang en}Courses{mlang}{mlang ar}دورة{mlang}
+              </p>
+              <span class="nit-btn-solid"
+                style="display: block; width: 100%; box-sizing: border-box; margin-top: auto; text-align: center; background: var(--nit-brand-primary); color: var(--nit-brand-textprimary); font-weight: bold; padding: 10px 12px; border-radius: 8px;"
+                data-nit-cta=""> {mlang en}Explore →{mlang} {mlang ar}استكشف
+                ←{mlang} </span>
+            </div>
+          </a></div>
+      </div>
+      <button
+        style="position: absolute; inset-inline-end: -23px; top: 50%; transform: translateY(-50%); z-index: 20; width: 46px; height: 46px; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--nit-brand-accent) 50%, transparent); background: var(--nit-brand-surface); color: var(--nit-brand-accent); font-size: 29px; font-weight: bold; line-height: 1; padding: 0; cursor: pointer; box-shadow: 0 8px 24px rgba(0,0,0,.35);"
+        type="button" data-nit-scroll="next">›</button>
+    </div>
+  </div>
+  <script>
+    (function() {
+
+      if (document.getElementById('nit-hoverfx-style')) {
+        return;
+      }
+
+      var css =
+        '.nit-btn-solid,.nit-btn-ghost,[data-nit-copy],[data-nit-scroll],[data-nit-coupons-scroll],[data-nit-categories]>a,[data-nit-my-courses]>div,[data-nit-about-card]{transition:background-color .2s ease,background .2s ease,color .2s ease,border-color .2s ease,transform .2s ease,box-shadow .2s ease}' +
+
+        '.nit-btn-solid:not(:disabled):hover{background:var(--nit-brand-primary-hover)!important;color:var(--nit-brand-textprimary)!important;transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.35)}' +
+
+        '.nit-btn-ghost:not(:disabled):hover{background:var(--nit-brand-hoverbackground)!important;color:var(--nit-brand-hovertext)!important;border-color:var(--nit-brand-bordersecondary)!important;transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.35)}' +
+
+        '[data-nit-copy]:hover{background:var(--nit-brand-hoverbackground)!important;color:var(--nit-brand-hovertext)!important;border-color:var(--nit-brand-hoverbackground)!important;transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.35)}' +
+
+        '[data-nit-scroll]:hover,[data-nit-coupons-scroll]:hover{background:var(--nit-brand-hoverbackground)!important;color:var(--nit-brand-hovertext)!important;border-color:var(--nit-brand-hoverbackground)!important;transform:translateY(-50%) scale(1.08)!important}' +
+
+        '[data-nit-categories]>a:hover,[data-nit-my-courses]>div:not([data-nit-my-course-card]):not([data-nit-my-courses-empty]):hover{border-color:var(--nit-brand-accent)!important;box-shadow:0 16px 40px rgba(0,0,0,.45)}' +
+
+        '[data-nit-categories]>a:hover [data-nit-cta]{background:var(--nit-brand-primary-hover)!important;color:var(--nit-brand-textprimary)!important}' +
+
+        '[data-nit-about-card]:hover{transform:translateY(-4px);border-color:var(--nit-brand-accent)!important}';
+
+      var st = document.createElement('style');
+
+      st.id = 'nit-hoverfx-style';
+      st.textContent = css;
+
+      (document.head || document.documentElement).appendChild(st);
+
+    })();
+  </script>
+</div>

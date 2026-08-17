@@ -1,0 +1,592 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Course-detail landing page — branded, on the theme_nit Brand Colors palette.
+//
+// Rendered by theme_nit\output\format_topics_renderer on course/view.php when NOT
+// editing. Every colour resolves from a --nit-brand-* role (via the local --cr-*
+// aliases below), so the page re-skins with the brand and adopts a course's
+// category palette group (.nit-brand-2 / .nit-brand-3) automatically. Layout uses
+// logical properties throughout so it is correct in both RTL (ar) and LTR (en).
+
+/* ===========================================================================
+ * Local token layer — each --cr-* alias points at a brand role (never a hex),
+ * so the whole page tracks the palette and any group switch.
+ * ==========================================================================*/
+body:has(.acad-cr) {
+    --cr-bg:        var(--nit-brand-background);
+    --cr-surface:   var(--nit-brand-surface);
+    --cr-soft:      color-mix(in srgb, var(--nit-brand-surface) 60%, var(--nit-brand-background));
+    --cr-ink:       var(--nit-brand-textprimary);
+    --cr-ink-2:     color-mix(in srgb, var(--nit-brand-textprimary) 78%, var(--nit-brand-textsecondary));
+    --cr-muted:     var(--nit-brand-textsecondary);
+    --cr-border:    var(--nit-brand-borderprimary);
+    --cr-border-2:  var(--nit-brand-bordersecondary);
+    --cr-primary:   var(--nit-brand-primary);
+    --cr-accent:    var(--nit-brand-accent);
+    // Lifted accent for small red TEXT on the dark canvas — derives from the
+    // "Accent Text" role (text of links/labels). Pure accent only clears 3:1
+    // (fine for icons/borders) but not the 4.5 body-text bar, so red labels/links
+    // use this tone instead.
+    --cr-link:      color-mix(in srgb, var(--nit-brand-accenttext) 74%, #fff);
+    --cr-hoverbg:   var(--nit-brand-hoverbackground);
+    --cr-success:   var(--nit-brand-success);
+    --cr-pill:      color-mix(in srgb, var(--nit-brand-textprimary) 8%, transparent);
+    --cr-pill-brd:  color-mix(in srgb, var(--nit-brand-textprimary) 14%, transparent);
+    --cr-hairline:  color-mix(in srgb, var(--nit-brand-textprimary) 10%, transparent);
+
+    --cr-radius: 12px;
+    --cr-radius-sm: 8px;
+    --cr-maxw: 1128px;
+}
+
+/* --- Category Brand-Colors group ------------------------------------------
+ * The renderer puts the group switch class (.nit-brand-2 / .nit-brand-3) on the
+ * .acad-cr wrapper so a course adopts its top-level category's palette. But the
+ * --cr-* token layer above — and the canvas rules below — are declared on <body>,
+ * an ANCESTOR of that wrapper. CSS custom properties resolve at the element that
+ * declares them, so there var(--nit-brand-*) always sees the default (Group 1)
+ * active layer and the switch never reaches the tokens or the page canvas.
+ *
+ * Hoist the active-layer re-point up to <body> for this page (keyed off the
+ * wrapper's switch class via :has()), mirroring .nit-brand-2 / .nit-brand-3 in
+ * foundation/_brand.scss. Now the whole course-detail page — tokens, bands and
+ * canvas alike — resolves against the category's group.
+ */
+body:has(.acad-cr.nit-brand-2) {
+    --nit-brand-primary: var(--nit-brand-g2-primary);
+    --nit-brand-secondary: var(--nit-brand-g2-secondary);
+    --nit-brand-accent: var(--nit-brand-g2-accent);
+    --nit-brand-accenttext: var(--nit-brand-g2-accenttext);
+    --nit-brand-background: var(--nit-brand-g2-background);
+    --nit-brand-surface: var(--nit-brand-g2-surface);
+    --nit-brand-textprimary: var(--nit-brand-g2-textprimary);
+    --nit-brand-textsecondary: var(--nit-brand-g2-textsecondary);
+    --nit-brand-borderprimary: var(--nit-brand-g2-borderprimary);
+    --nit-brand-bordersecondary: var(--nit-brand-g2-bordersecondary);
+    --nit-brand-hoverbackground: var(--nit-brand-g2-hoverbackground);
+    --nit-brand-hovertext: var(--nit-brand-g2-hovertext);
+    --nit-brand-error: var(--nit-brand-g2-error);
+    --nit-brand-success: var(--nit-brand-g2-success);
+    --nit-brand-warning: var(--nit-brand-g2-warning);
+    --nit-brand-info: var(--nit-brand-g2-info);
+}
+body:has(.acad-cr.nit-brand-3) {
+    --nit-brand-primary: var(--nit-brand-g3-primary);
+    --nit-brand-secondary: var(--nit-brand-g3-secondary);
+    --nit-brand-accent: var(--nit-brand-g3-accent);
+    --nit-brand-accenttext: var(--nit-brand-g3-accenttext);
+    --nit-brand-background: var(--nit-brand-g3-background);
+    --nit-brand-surface: var(--nit-brand-g3-surface);
+    --nit-brand-textprimary: var(--nit-brand-g3-textprimary);
+    --nit-brand-textsecondary: var(--nit-brand-g3-textsecondary);
+    --nit-brand-borderprimary: var(--nit-brand-g3-borderprimary);
+    --nit-brand-bordersecondary: var(--nit-brand-g3-bordersecondary);
+    --nit-brand-hoverbackground: var(--nit-brand-g3-hoverbackground);
+    --nit-brand-hovertext: var(--nit-brand-g3-hovertext);
+    --nit-brand-error: var(--nit-brand-g3-error);
+    --nit-brand-success: var(--nit-brand-g3-success);
+    --nit-brand-warning: var(--nit-brand-g3-warning);
+    --nit-brand-info: var(--nit-brand-g3-info);
+}
+
+/* --- Canvas: keep the branded page background across the content wrappers --- */
+body:has(.acad-cr) #region-main,
+body:has(.acad-cr) #region-main-box,
+body:has(.acad-cr) [role="main"] {
+    background: var(--cr-bg);
+    color: var(--cr-ink);
+}
+body:has(.acad-cr) #region-main {
+    padding: 0;
+    border: none;
+    box-shadow: none;
+}
+
+/* Base type + box model for the whole custom tree. Inherit the theme font so
+   the brand's Arabic/Latin faces are used in both languages. */
+body:has(.acad-cr) .acad-cr,
+body:has(.acad-cr) .acad-cr * {
+    box-sizing: border-box;
+}
+body:has(.acad-cr) .acad-cr {
+    color: var(--cr-ink);
+    font-size: 16px;
+    line-height: 1.55;
+}
+
+/* Centred content column shared by every band. */
+body:has(.acad-cr) .acad-cr__wrap {
+    max-width: var(--cr-maxw);
+    margin-inline: auto;
+    padding-inline: 24px;
+}
+
+body:has(.acad-cr) .acad-cr a { color: inherit; text-decoration: none; }
+body:has(.acad-cr) .acad-cr a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* Shared inline icon sizing. */
+body:has(.acad-cr) .acad-cr__ico { width: 22px; height: 22px; flex-shrink: 0; }
+
+/* ---- Breadcrumb ---------------------------------------------------------- */
+body:has(.acad-cr) .acad-cr__crumbs {
+    font-size: 14px;
+    color: var(--cr-muted);
+    padding-block: 18px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+body:has(.acad-cr) .acad-cr__crumb:last-child { color: var(--cr-ink-2); }
+body:has(.acad-cr) .acad-cr__crumb-sep { color: var(--cr-muted); opacity: .7; }
+
+/* ---- Hero ---------------------------------------------------------------- */
+body:has(.acad-cr) .acad-cr__hero {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 40px;
+    padding-block-end: 36px;
+    align-items: start;
+}
+body:has(.acad-cr) .acad-cr__hero-main { min-width: 0; }
+
+body:has(.acad-cr) .acad-cr__provider {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--cr-link);
+    margin-block-end: 16px;
+}
+
+body:has(.acad-cr) .acad-cr__title {
+    font-size: clamp(30px, 4vw, 44px);
+    line-height: 1.12;
+    font-weight: 800;
+    letter-spacing: -.015em;
+    color: var(--cr-ink);
+    margin: 0 0 14px;
+}
+
+body:has(.acad-cr) .acad-cr__partof {
+    font-size: 17px;
+    color: var(--cr-ink-2);
+    margin: 0 0 18px;
+    max-width: 60ch;
+}
+
+body:has(.acad-cr) .acad-cr__instructor {
+    font-size: 14px;
+    color: var(--cr-ink-2);
+    margin-block-end: 24px;
+}
+body:has(.acad-cr) .acad-cr__instructor strong { font-weight: 400; color: var(--cr-muted); }
+body:has(.acad-cr) .acad-cr__instr-name { font-weight: 600; color: var(--cr-ink); }
+
+/* Primary CTA — reuses the design-system primary button COMPONENT (.btn.btn-primary),
+   so it matches every other primary button on the site exactly: brand fill, brand
+   foreground text, the shared hover shade, focus ring and font weight all come from
+   the component (see scss/components/_buttons.scss). Here we only enlarge it for hero
+   prominence and add a subtle lift on hover. The renderer outputs the link with the
+   `btn btn-primary acad-cr-btn` classes. */
+body:has(.acad-cr) .acad-cr-btn.btn {
+    padding: 13px 30px;
+    font-size: 16px;
+    transition: background-color .15s ease, transform .15s ease;
+}
+body:has(.acad-cr) .acad-cr-btn.btn:hover {
+    transform: translateY(-1px);
+}
+/* The generic .acad-cr link rules add an underline on hover; the CTA is a button,
+   not a text link, so keep it clean (the component already sets text-decoration). */
+body:has(.acad-cr) .acad-cr a.acad-cr-btn,
+body:has(.acad-cr) .acad-cr a.acad-cr-btn:hover {
+    text-decoration: none;
+}
+
+body:has(.acad-cr) .acad-cr__cta-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-block-end: 14px;
+}
+body:has(.acad-cr) .acad-cr__starts {
+    font-size: 14px;
+    color: var(--cr-ink-2);
+    font-weight: 600;
+}
+
+/* Free / status pill next to the CTA. */
+body:has(.acad-cr) .acad-cr__badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .02em;
+    padding: 6px 12px;
+    border-radius: 999px;
+    text-transform: uppercase;
+}
+body:has(.acad-cr) .acad-cr__badge--free {
+    color: var(--cr-success);
+    background: color-mix(in srgb, var(--cr-success) 16%, transparent);
+    border: 1px solid color-mix(in srgb, var(--cr-success) 45%, transparent);
+}
+
+body:has(.acad-cr) .acad-cr__enrolled { font-size: 14px; color: var(--cr-ink-2); }
+body:has(.acad-cr) .acad-cr__enrolled b { font-weight: 700; color: var(--cr-ink); }
+
+/* ---- Signature: "At a glance" facts card -------------------------------- */
+body:has(.acad-cr) .acad-cr__glance {
+    border: 1px solid var(--cr-border);
+    border-radius: var(--cr-radius);
+    background: var(--cr-surface);
+    overflow: hidden;
+    position: relative;
+}
+/* Accent top rule — the one bold flourish. */
+body:has(.acad-cr) .acad-cr__glance::before {
+    content: "";
+    display: block;
+    height: 4px;
+    background: linear-gradient(90deg,
+        var(--cr-accent),
+        color-mix(in srgb, var(--cr-accent) 40%, transparent));
+}
+body:has(.acad-cr) .acad-cr__glance-h {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--cr-muted);
+    margin: 0;
+    padding: 18px 22px 6px;
+}
+body:has(.acad-cr) .acad-cr__glance-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 22px;
+    border-block-start: 1px solid var(--cr-hairline);
+}
+body:has(.acad-cr) .acad-cr__glance-row:first-of-type { border-block-start: none; }
+body:has(.acad-cr) .acad-cr__glance-ico {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    color: var(--cr-accent);
+    background: color-mix(in srgb, var(--cr-accent) 14%, transparent);
+    flex-shrink: 0;
+}
+body:has(.acad-cr) .acad-cr__glance-ico .acad-cr__ico { width: 20px; height: 20px; }
+body:has(.acad-cr) .acad-cr__glance-k {
+    font-size: 12px;
+    color: var(--cr-muted);
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+body:has(.acad-cr) .acad-cr__glance-v {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--cr-ink);
+}
+
+/* ---- Sticky tab bar ------------------------------------------------------ */
+body:has(.acad-cr) .acad-cr__tabs {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: color-mix(in srgb, var(--cr-bg) 92%, transparent);
+    backdrop-filter: blur(8px);
+    border-block-end: 1px solid var(--cr-border);
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+}
+body:has(.acad-cr) .acad-cr__tab {
+    padding: 15px 18px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--cr-muted);
+    background: none;
+    border: none;
+    border-block-end: 3px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color .15s ease, border-color .15s ease;
+}
+body:has(.acad-cr) .acad-cr__tab:hover { color: var(--cr-ink); }
+body:has(.acad-cr) .acad-cr__tab.is-active {
+    color: var(--cr-ink);
+    border-block-end-color: var(--cr-accent);
+}
+
+/* ---- Generic section heading -------------------------------------------- */
+body:has(.acad-cr) .acad-cr__band { padding-block: 40px; }
+body:has(.acad-cr) .acad-cr__h2 {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -.01em;
+    color: var(--cr-ink);
+    margin: 0 0 22px;
+}
+
+/* ---- What you'll learn --------------------------------------------------- */
+body:has(.acad-cr) .acad-cr__learn-card {
+    border: 1px solid var(--cr-border);
+    border-radius: var(--cr-radius);
+    background: var(--cr-surface);
+    padding: 28px 32px;
+}
+body:has(.acad-cr) .acad-cr__learn-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px 40px;
+}
+body:has(.acad-cr) .acad-cr__learn-item {
+    display: flex;
+    gap: 12px;
+    font-size: 15px;
+    color: var(--cr-ink-2);
+    line-height: 1.5;
+}
+body:has(.acad-cr) .acad-cr__learn-item .acad-cr__ico {
+    width: 20px; height: 20px;
+    color: var(--cr-accent);
+    margin-block-start: 1px;
+}
+
+/* ---- Skills pills -------------------------------------------------------- */
+body:has(.acad-cr) .acad-cr__skills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+body:has(.acad-cr) .acad-cr__pill {
+    display: inline-block;
+    background: var(--cr-pill);
+    border: 1px solid var(--cr-pill-brd);
+    color: var(--cr-ink);
+    font-size: 14px;
+    padding: 8px 15px;
+    border-radius: 999px;
+}
+
+/* ---- Requirements & audience -------------------------------------------- */
+body:has(.acad-cr) .acad-cr__req-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+body:has(.acad-cr) .acad-cr__req-card {
+    border: 1px solid var(--cr-border);
+    border-radius: var(--cr-radius);
+    background: var(--cr-surface);
+    padding: 24px 26px;
+}
+body:has(.acad-cr) .acad-cr__req-h {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--cr-ink);
+    margin-block-end: 14px;
+}
+body:has(.acad-cr) .acad-cr__req-h .acad-cr__ico { color: var(--cr-accent); }
+body:has(.acad-cr) .acad-cr__req-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+body:has(.acad-cr) .acad-cr__req-list li {
+    position: relative;
+    padding-inline-start: 18px;
+    margin-block-end: 10px;
+    font-size: 15px;
+    color: var(--cr-ink-2);
+    line-height: 1.5;
+}
+body:has(.acad-cr) .acad-cr__req-list li::before {
+    content: "";
+    position: absolute;
+    inset-inline-start: 0;
+    top: 9px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--cr-accent);
+}
+
+/* ---- About this course (soft band) -------------------------------------- */
+body:has(.acad-cr) .acad-cr__soft {
+    background: var(--cr-soft);
+    border-block: 1px solid var(--cr-border);
+}
+body:has(.acad-cr) .acad-cr__summary {
+    font-size: 16px;
+    color: var(--cr-ink-2);
+    line-height: 1.7;
+    max-width: 78ch;
+}
+body:has(.acad-cr) .acad-cr__summary :is(h1,h2,h3,h4,strong,b) { color: var(--cr-ink); }
+body:has(.acad-cr) .acad-cr__summary a { color: var(--cr-link); }
+
+/* ==========================================================================
+ * Modules band — accordion (left) + instructor rail (right)
+ * ==========================================================================*/
+body:has(.acad-cr) .acad-cr__modules-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 40px;
+    align-items: start;
+}
+body:has(.acad-cr) .acad-cr__modules-main { min-width: 0; }
+
+/* Accordion list */
+body:has(.acad-cr) .acad-cr__acc {
+    border: 1px solid var(--cr-border);
+    border-radius: var(--cr-radius);
+    background: var(--cr-surface);
+    overflow: hidden;
+}
+body:has(.acad-cr) .acad-cr__mod { border-block-end: 1px solid var(--cr-border); }
+body:has(.acad-cr) .acad-cr__mod:last-child { border-block-end: none; }
+
+body:has(.acad-cr) .acad-cr__mod-head {
+    width: 100%;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 22px 26px;
+    background: none;
+    border: none;
+    text-align: start;
+    cursor: pointer;
+    color: inherit;
+}
+body:has(.acad-cr) .acad-cr__mod-head:hover { background: var(--cr-hoverbg); }
+body:has(.acad-cr) .acad-cr__mod-title {
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--cr-ink);
+    margin: 0 0 6px;
+}
+body:has(.acad-cr) .acad-cr__mod-meta { font-size: 14px; color: var(--cr-muted); }
+body:has(.acad-cr) .acad-cr__mod-toggle {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--cr-link);
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+body:has(.acad-cr) .acad-cr__mod-toggle .acad-cr__ico { width: 18px; height: 18px; transition: transform .2s ease; }
+body:has(.acad-cr) .acad-cr__mod.is-open .acad-cr__mod-toggle .acad-cr__ico { transform: rotate(180deg); }
+
+body:has(.acad-cr) .acad-cr__mod-body {
+    display: none;
+    padding: 0 26px 26px;
+}
+body:has(.acad-cr) .acad-cr__mod.is-open .acad-cr__mod-body { display: block; }
+
+body:has(.acad-cr) .acad-cr__mod-desc {
+    font-size: 15px;
+    color: var(--cr-ink-2);
+    line-height: 1.6;
+    margin-block-end: 18px;
+}
+body:has(.acad-cr) .acad-cr__included-h { font-size: 15px; font-weight: 700; color: var(--cr-ink); margin: 0 0 8px; }
+body:has(.acad-cr) .acad-cr__included-sum { font-size: 14px; color: var(--cr-ink-2); margin-block-end: 14px; }
+body:has(.acad-cr) .acad-cr__included-sum b { font-weight: 700; color: var(--cr-ink); }
+
+/* Activity rows */
+body:has(.acad-cr) .acad-cr__act {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 0;
+    border-block-start: 1px solid var(--cr-hairline);
+    font-size: 14px;
+}
+body:has(.acad-cr) .acad-cr__act-ico { width: 20px; height: 20px; flex-shrink: 0; }
+body:has(.acad-cr) .acad-cr__act-name { flex: 1; min-width: 0; color: var(--cr-ink); font-weight: 600; }
+body:has(.acad-cr) .acad-cr__act-name a { color: var(--cr-ink); }
+body:has(.acad-cr) .acad-cr__act-name a:hover { color: var(--cr-link); }
+body:has(.acad-cr) .acad-cr__act-type { color: var(--cr-muted); white-space: nowrap; font-size: 13px; }
+body:has(.acad-cr) .acad-cr__act-locked { color: var(--cr-muted); font-size: 14px; padding: 8px 0; }
+
+/* ---- Instructor rail ----------------------------------------------------- */
+body:has(.acad-cr) .acad-cr__rail-card {
+    border: 1px solid var(--cr-border);
+    border-radius: var(--cr-radius);
+    background: var(--cr-surface);
+    padding: 24px;
+    margin-block-end: 20px;
+}
+body:has(.acad-cr) .acad-cr__rail-h { font-size: 19px; font-weight: 700; color: var(--cr-ink); margin: 0 0 14px; }
+body:has(.acad-cr) .acad-cr__tutor {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 0;
+    border-block-start: 1px solid var(--cr-hairline);
+}
+body:has(.acad-cr) .acad-cr__tutor:first-of-type { border-block-start: none; }
+body:has(.acad-cr) .acad-cr__tutor img,
+body:has(.acad-cr) .acad-cr__tutor .userpicture {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+body:has(.acad-cr) .acad-cr__tutor-name { font-weight: 700; font-size: 15px; color: var(--cr-ink); }
+body:has(.acad-cr) .acad-cr__tutor-name:hover { color: var(--cr-link); }
+body:has(.acad-cr) .acad-cr__tutor-org { font-size: 13px; color: var(--cr-muted); }
+
+body:has(.acad-cr) .acad-cr__offered-h { font-size: 16px; font-weight: 700; color: var(--cr-ink); margin: 0 0 10px; }
+body:has(.acad-cr) .acad-cr__offered-logo {
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--cr-link);
+}
+
+/* ---- Keyboard focus (quality floor) ------------------------------------- */
+body:has(.acad-cr) .acad-cr :is(a, button):focus-visible {
+    outline: 2px solid var(--cr-accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+/* ---- Reduced motion ------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+    body:has(.acad-cr) .acad-cr * { transition: none !important; }
+}
+
+/* ---- Responsive ---------------------------------------------------------- */
+@media (max-width: 1024px) {
+    body:has(.acad-cr) .acad-cr__hero { grid-template-columns: 1fr; }
+    body:has(.acad-cr) .acad-cr__modules-grid { grid-template-columns: 1fr; }
+    /* Keep the facts card — stack it, never hide it. */
+    body:has(.acad-cr) .acad-cr__glance { max-width: 480px; }
+}
+@media (max-width: 640px) {
+    body:has(.acad-cr) .acad-cr__wrap { padding-inline: 18px; }
+    body:has(.acad-cr) .acad-cr__band { padding-block: 32px; }
+    body:has(.acad-cr) .acad-cr__learn-grid,
+    body:has(.acad-cr) .acad-cr__req-grid { grid-template-columns: 1fr; }
+    body:has(.acad-cr) .acad-cr__learn-card { padding: 22px; }
+    body:has(.acad-cr) .acad-cr__h2 { font-size: 22px; }
+}

@@ -1,0 +1,54 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// NIT-specific component: a statistic tile (not provided by Bootstrap).
+// Fully token-driven; reads the component-tier custom properties where set.
+.nit-stat-tile {
+    display: flex;
+    flex-direction: column;
+    gap: $nit-space-1;
+    padding: $nit-space-5;
+    background: var(--nit-surface, #{$nit-surface});
+    border: 1px solid var(--nit-line, #{$nit-line});
+    border-radius: $nit-radius-lg;
+    @include nit-elevation(1);
+
+    &__value {
+        font-size: $nit-fs-3xl;
+        font-weight: 700;
+        line-height: 1.1;
+        color: var(--nit-ink, #{$nit-ink});
+    }
+
+    &__label {
+        font-size: $nit-fs-sm;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: $nit-slate-500;
+    }
+
+    &__trend {
+        font-size: $nit-fs-sm;
+        font-weight: 600;
+
+        &--up {
+            color: $nit-green-600;
+        }
+
+        &--down {
+            color: $nit-red-600;
+        }
+    }
+}

@@ -1,0 +1,11 @@
+# PHPStan configuration for local_nit_core.
+# The Moodle bootstrap and core stubs are supplied by moodle-plugin-ci at run
+# time; this file only sets the level and analysis paths. Level starts pragmatic
+# and is ratcheted up per milestone (Phase 1 Spec §8).
+parameters:
+    level: 5
+    paths:
+        - classes
+    # Tests use the Moodle testing framework; analysed separately if desired.
+    excludePaths:
+        - tests/fixtures/*

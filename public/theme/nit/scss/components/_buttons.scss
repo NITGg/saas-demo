@@ -1,0 +1,73 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// NIT refinements over Bootstrap buttons (base styling comes from tokens).
+.btn {
+    font-weight: $btn-font-weight;
+    transition: background-color $nit-motion-fast ease-in-out,
+                border-color $nit-motion-fast ease-in-out,
+                box-shadow $nit-motion-fast ease-in-out;
+
+    &:focus-visible {
+        @include nit-focus-ring();
+    }
+}
+
+// Solid brand-coloured buttons carry the white brand foreground (Brand Colors:
+// buttons text = Text primary). Bootstrap's auto-contrast otherwise flips the
+// label to black on the mid-tone red / green fills, which fights the brand.
+// Light fills (warning, info) correctly keep dark text, so they are left to
+// Bootstrap. Using the brand token means a .nit-brand-2/3 wrapper switches the
+// label colour with the rest of the group.
+.btn-primary,
+.btn-danger,
+.btn-success {
+    --bs-btn-color: var(--nit-brand-textprimary);
+    --bs-btn-hover-color: var(--nit-brand-textprimary);
+    --bs-btn-active-color: var(--nit-brand-textprimary);
+}
+
+// Icon-only buttons (`.btn-icon`) — the action-menu "⋮" triggers, the activity
+// chooser's info / favourite buttons, collapse toggles, …. Core (Boost buttons.scss)
+// gives them a hover / active fill of `--bs-secondary-bg` (#e9ecef, a light grey),
+// which flashes a near-white circle on the dark brand. Point the hover / active
+// pair at the brand Hover roles so every icon button hovers on-brand, in any
+// palette group.
+.btn-icon {
+    --bs-btn-hover-bg: var(--nit-brand-hoverbackground);
+    --bs-btn-hover-color: var(--nit-brand-hovertext);
+    --bs-btn-active-bg: var(--nit-brand-hoverbackground);
+    --bs-btn-active-color: var(--nit-brand-hovertext);
+}
+
+// Ghost / outline-secondary (e.g. the "Reset" actions). Bootstrap draws these
+// from its grey $secondary, giving a mid-grey border and label that sit off the
+// brand. Point the resting state at the Border secondary role (ghost-button
+// borders) with brand text, and fill from the Hover roles on hover / active.
+.btn-outline-secondary {
+    --bs-btn-color: var(--nit-brand-textprimary);
+    --bs-btn-border-color: var(--nit-brand-bordersecondary);
+    --bs-btn-hover-color: var(--nit-brand-hovertext);
+    --bs-btn-hover-bg: var(--nit-brand-hoverbackground);
+    --bs-btn-hover-border-color: var(--nit-brand-bordersecondary);
+    --bs-btn-active-color: var(--nit-brand-hovertext);
+    --bs-btn-active-bg: var(--nit-brand-hoverbackground);
+    --bs-btn-active-border-color: var(--nit-brand-bordersecondary);
+
+    // Core carries a direct `border-color` on this variant (not just the
+    // --bs-btn-border-color var), so the resting border needs an explicit
+    // brand value to win; the state borders follow the vars above.
+    border-color: var(--nit-brand-bordersecondary);
+}

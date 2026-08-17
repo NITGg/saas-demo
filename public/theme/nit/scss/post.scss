@@ -1,0 +1,230 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// -----------------------------------------------------------------------------
+// Global post-Bootstrap styles. Component styles live in scss/components/.
+// Kept minimal by design.
+// -----------------------------------------------------------------------------
+
+// The "drawers" layout (admin, course, dashboard, …) ships its main content
+// wrapper white from core Boost, leaving a white band behind the page header on
+// the dark brand. The page header sits directly on this wrapper, so follow the
+// brand background instead. (#region-main already carries the brand ground.)
+#page.drawers .main-inner {
+    background-color: var(--nit-brand-background);
+}
+
+// -----------------------------------------------------------------------------
+// Site-wide link affordance.
+//
+// The brand system already colours resting links with the "Accent Text" role
+// (--nit-brand-accenttext, documented usage: "text of links / underlines"; it
+// drives Bootstrap's $link-color) and reserves "hovertext"
+// (--nit-brand-hovertext) for the hover state. On hover,
+// keyboard focus, and click (active), every content link shifts to the brand
+// hover colour and shows an underline in that SAME colour — `currentColor`
+// keeps the underline matched to whatever brand group is in scope
+// (.nit-brand-2 / .nit-brand-3), so it never drifts from the text.
+//
+// Chrome-bearing anchors opt out (:not(...)) — buttons, nav/menu items,
+// dropdown entries, pagination, tabs, list-group rows, cards and badges own
+// their own hover treatment, and an underline would look wrong on them.
+a:not(.btn):not(.nav-link):not(.navbar-brand):not(.dropdown-item):not(.page-link):not(.list-group-item):not(.badge):not(.card):not([role="button"]):not([role="tab"]):not([role="menuitem"]) {
+    &:hover,
+    &:focus,
+    &:active {
+        color: var(--nit-brand-hovertext);
+        text-decoration: underline;
+        text-decoration-color: currentColor;
+        // No filled box on click — only the colour + underline should change.
+        background-color: transparent;
+        box-shadow: none;
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Front page (Site home) full-width block regions.
+//
+// The frontpage layout (layout/frontpage.php + templates/frontpage.mustache)
+// adds fullwidth-top / above-content / below-content / fullwidth-bottom regions.
+// `main-inner` is width-constrained, so the fullwidth bands break out to the
+// viewport edges; the in-flow regions just get vertical rhythm.
+// -----------------------------------------------------------------------------
+.nit-frontpage {
+    // Contain the full-bleed (100vw) regions so they never spawn a horizontal
+    // scrollbar. `clip` (not `hidden`) keeps position:sticky working.
+    #page-wrapper {
+        overflow-x: clip;
+    }
+
+    // Hide the site-name page heading ("أكاديمية التفوق") on the Site home —
+    // the marketing hero is built with blocks instead.
+    #page-header .page-header-headings {
+        display: none;
+    }
+
+    // Hide all admin-facing chrome on the Site home — the secondary nav tabs
+    // (Home / Settings / Participants / Reports / Question banks / More), the
+    // region settings gear, the "Add an activity or resource" course-section
+    // strip, and the "Add a new course" button.
+    .secondary-navigation,
+    [data-region="main-settings-menu"],
+    .course-content,
+    .addcourse {
+        display: none;
+    }
+
+    // Prominent "Add a block" entry at the top of the Site home (edit mode).
+    .nit-addblock-top {
+        max-width: 960px;
+        margin-inline: auto;
+        padding: map-get($spacers, 3) map-get($spacers, 3) 0;
+    }
+
+    // Each region is a flex row so block_nit_section instances can size and
+    // sit next to each other via their width/align classes.
+    .nit-region .block-region {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        width: 100%;
+        margin-bottom: 0;
+    }
+
+    // No gap between stacked sections by default — Bootstrap puts mb-3 on every
+    // block card. Authors add space back via the "Space above/below" fields
+    // (those inline styles are !important and override this).
+    .nit-region .block {
+        margin-bottom: 0 !important;
+    }
+
+    // Full-bleed: break out of #page's horizontal padding (added for the drawer
+    // toggles) so these regions span the whole viewport, edge to edge.
+    .nit-region-fullwidth-top,
+    .nit-region-fullwidth-bottom {
+        width: 100vw;
+        max-width: 100vw;
+        margin-inline: calc(50% - 50vw);
+    }
+
+    .nit-region-fullwidth-top {
+        margin-bottom: map-get($spacers, 4);
+    }
+
+    .nit-region-fullwidth-bottom {
+        margin-top: map-get($spacers, 4);
+    }
+
+    .nit-region-above-content {
+        margin-bottom: map-get($spacers, 3);
+    }
+
+    .nit-region-below-content {
+        margin-top: map-get($spacers, 3);
+    }
+
+    // Editing affordance: outline empty regions so authors can see the drop
+    // zones even before any block is added.
+    &.editing .nit-region .block-region:empty::after {
+        content: "";
+        display: block;
+        flex: 0 0 100%;
+        min-height: 3rem;
+        border: 1px dashed var(--bs-border-color, #ced4da);
+        border-radius: $border-radius;
+    }
+
+    // Edit-mode Surface backgrounds — make edit affordance areas clearly distinct.
+    &.editing {
+        // "Add a block" button strip — wraps [data-region="add-block-button"].
+        .nit-addblock-top {
+            background: var(--nit-brand-surface);
+            border-radius: $border-radius;
+            padding-bottom: map-get($spacers, 3);
+        }
+
+        // Block controls row (drag handle + ⋮ action menu) inside nit-regions.
+        .nit-region .block_with_controls .card-body > .d-flex {
+            background: var(--nit-brand-surface);
+            padding: map-get($spacers, 2) map-get($spacers, 2);
+            border-radius: $border-radius;
+        }
+    }
+
+    // Links inside section blocks: kill the browser/Moodle focus-ring artefact
+    // (the white bar over buttons on click) and give a clean keyboard ring.
+    .block_nit_section a {
+        -webkit-tap-highlight-color: transparent;
+
+        &:focus,
+        &:active {
+            outline: none;
+            box-shadow: none;
+            text-decoration: none;
+        }
+
+        &:focus-visible {
+            outline: 2px solid rgba(232, 184, 75, 0.7);
+            outline-offset: 2px;
+        }
+    }
+
+    // ---- block_nit_section: per-instance layout controls -------------------.
+    .block_nit_section {
+        // Widths. Blocks include Bootstrap gutters via padding on themselves.
+        &.nit-w-full     { flex: 0 0 100%; max-width: 100%; }
+        &.nit-w-twothirds { flex: 0 0 66.6667%; max-width: 66.6667%; }
+        &.nit-w-half     { flex: 0 0 50%; max-width: 50%; }
+        &.nit-w-third    { flex: 0 0 33.3333%; max-width: 33.3333%; }
+        &.nit-w-quarter  { flex: 0 0 25%; max-width: 25%; }
+
+        // Horizontal placement of a sub-full-width block within its row.
+        // Logical margins keep this correct under RTL (Arabic).
+        &.nit-align-center { margin-inline: auto; }
+        &.nit-align-start  { margin-inline-end: auto; }
+        &.nit-align-end    { margin-inline-start: auto; }
+
+        // Vertical spacing is applied per-instance as an inline style
+        // (Space above / Space below with a chosen unit); attach-prev is the
+        // one preset — it pins the block to the one above.
+        &.nit-attach-prev { margin-top: 0 !important; }
+
+        // Plain chrome: strip the card frame for hero / full-bleed sections.
+        // Bootstrap's p-3 / mt-3 utilities are !important, so these overrides
+        // must be too, otherwise the content stays inset by the card padding.
+        &.nit-chrome-plain {
+            border: 0 !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+
+            .card-body {
+                padding: 0 !important;
+            }
+
+            .card-text.content {
+                margin-top: 0 !important;
+            }
+        }
+    }
+
+    // On narrow viewports every section stacks full width.
+    @include media-breakpoint-down(md) {
+        .block_nit_section[class*="nit-w-"] {
+            flex: 0 0 100% !important;
+            max-width: 100% !important;
+        }
+    }
+}

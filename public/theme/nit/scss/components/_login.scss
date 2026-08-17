@@ -1,0 +1,146 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// =============================================================================
+// Login page — recoloured from the editable palette (--nit-* custom
+// properties). Layout stays 100% Boost; only colours are overridden so the
+// login screen tracks the same tokens as the navbar and hero bands. SCSS
+// primitives are kept as fallbacks.
+// =============================================================================
+
+.pagelayout-login {
+    // The page canvas follows the neutral background token.
+    #page {
+        background-color: var(--nit-background, #{$nit-surface});
+    }
+
+    // Form-side copy reads from the palette text tokens.
+    .login-layout-right {
+        color: var(--nit-textprimary, #{$nit-ink});
+    }
+}
+
+// Branded left panel: the navy brand field with a gold accent, matching the
+// navbar/hero identity.
+.login-layout-left {
+    background-color: var(--nit-navbarbg, #{$nit-navy-900});
+}
+
+.login-layout-left-content {
+    color: var(--nit-navbartext, #{$nit-on-navy});
+    // Semi-opaque navy scrim so the copy stays legible over the panel.
+    background-color: rgba($nit-navy-900, 0.65);
+
+    blockquote {
+        color: inherit;
+        // The coloured side rule is a border, not text → non-text "Accent" role.
+        border-inline-start-color: var(--nit-brand-accent, #{$nit-gold-500});
+    }
+
+    a {
+        color: var(--nit-accentgold, #{$nit-gold-500});
+
+        &:hover,
+        &:focus {
+            color: var(--nit-accentgolddark, #{$nit-gold-400});
+        }
+    }
+}
+
+// The three headline stats on the branded panel: gold values.
+.login-layout-stat-value {
+    color: var(--nit-accentgold, #{$nit-gold-500});
+}
+
+// Sign-up page: "Already have an account? Log in" prompt below the form.
+.signup-haveaccount {
+    padding-top: 1rem;
+    border-top: 1px solid rgba($nit-navy-900, 0.12);
+
+    .signup-haveaccount-text {
+        color: var(--nit-textsecondary, #{$nit-ink});
+    }
+
+    // The login link tracks the brand primary, matching the create-account CTA.
+    .signup-login-link {
+        color: var(--nit-primary, #{$nit-navy-900});
+        border-color: var(--nit-primary, #{$nit-navy-900});
+
+        &:hover,
+        &:focus {
+            color: var(--nit-navbartext, #fff);
+            background-color: var(--nit-primary, #{$nit-navy-900});
+            border-color: var(--nit-primary, #{$nit-navy-900});
+        }
+    }
+}
+
+// =============================================================================
+// Login form controls + provider buttons.
+//
+// Core Boost (theme/boost/scss/moodle/login.scss) paints these with FIXED greys
+// — `$login-input-bg` (= $gray-100) on the fields, `$white` / `$gray-*` on the
+// provider buttons — which ignore the palette. Re-point them at the Brand Colors
+// tokens here, in the THEME (never in core): our SCSS compiles after Boost, so
+// these same-specificity rules win by cascade order. This is why the login form
+// looked pale while the (unscoped) sign-up form already read from the brand.
+// =============================================================================
+.login-container {
+    // Username / password fields — core forces $gray-100; make them Surface so
+    // the brand-white text is readable (was white text on a pale grey field).
+    .login-form .form-control {
+        background-color: var(--nit-brand-surface);
+        color: var(--nit-brand-textprimary);
+        border-color: var(--nit-brand-borderprimary);
+
+        &:hover,
+        &:focus {
+            background-color: var(--nit-brand-surface);
+        }
+
+        &::placeholder {
+            color: var(--nit-brand-textsecondary);
+        }
+    }
+
+    // The "show password" eye toggle sits flush with the field — keep it Surface.
+    .login-form .toggle-sensitive-wrapper .toggle-sensitive-btn {
+        --bs-btn-bg: var(--nit-brand-surface);
+        --bs-btn-hover-bg: var(--nit-brand-surface);
+        --bs-btn-active-bg: var(--nit-brand-surface);
+        --bs-btn-border-color: var(--nit-brand-borderprimary);
+        --bs-btn-hover-border-color: var(--nit-brand-borderprimary);
+        color: var(--nit-brand-textsecondary);
+    }
+
+    // "Log in with Google" / "Log in as guest" (.login-identityprovider-btn,
+    // the guest one also .btn-outline-secondary). Core paints them white with
+    // grey text/border. These are secondary ACTIONS, so compose them from the
+    // button roles — Secondary fill + Border-secondary outline + brand text —
+    // not the Surface role (which is for cards / inputs), so they read as real
+    // secondary buttons and stay distinct from the surfaces around them.
+    .login-identityprovider-btn {
+        background-color: var(--nit-brand-secondary);
+        border-color: var(--nit-brand-bordersecondary);
+        color: var(--nit-brand-textprimary);
+
+        &:hover,
+        &:focus {
+            background-color: var(--nit-brand-secondary-hover, var(--nit-brand-secondary));
+            border-color: var(--nit-brand-bordersecondary);
+            color: var(--nit-brand-textprimary);
+        }
+    }
+}

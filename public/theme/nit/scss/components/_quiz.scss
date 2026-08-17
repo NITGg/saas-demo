@@ -1,0 +1,202 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// =============================================================================
+// NIT quiz editing structure (mod/quiz/edit.php).
+//
+// Core mod/quiz/styles.css hard-codes light greys for the quiz-structure list,
+// which render as near-white / grey slabs on the dark brand:
+//
+//   ul.slots li.section .content              background: #fafafa  (section box)
+//   ul.slots li.section li.activity           background: #e6e6e6  (each question row)
+//   ...li.activity.qtype_missingtype          background: #f0c5c1  (broken qtype)
+//
+// Rewire each to a --nit-brand-* role (matching the core selector so the theme
+// stream, which loads after the plugin CSS, wins by cascade order). The section
+// box becomes the Surface card; the question rows sit a shade darker (Background)
+// with a brand border so they still read as distinct items — mirroring core's
+// "rows slightly darker than the box" relationship. The missing-type row keeps
+// its warning meaning via an Error tint.
+// =============================================================================
+
+#page-mod-quiz-edit {
+
+    // Section container → Surface card.
+    ul.slots li.section .content {
+        background-color: var(--nit-brand-surface);
+    }
+
+    // Question / slot rows → a shade darker than the card, with a brand border
+    // for definition (was #e6e6e6).
+    ul.slots li.section li.activity {
+        background: var(--nit-brand-background);
+        border: 1px solid var(--nit-brand-borderprimary);
+    }
+
+    // Page separators are transparent in core; keep them transparent.
+    ul.slots li.section li.activity.page {
+        background: transparent;
+        border: 0;
+    }
+
+    // Broken/missing question type keeps its warning semantics (was #f0c5c1).
+    ul.slots li.section li.activity.qtype_missingtype {
+        background-color: color-mix(in srgb, var(--nit-brand-error) 20%, transparent);
+    }
+
+    // ---- Question-bank list controls (shown in the "Add from the question bank"
+    // modal). Core paints these #ddd / #fff. -----------------------------------
+    .paging,
+    .questionsortoptions {
+        background-color: var(--nit-brand-surface);
+    }
+
+    div.questionbank .categoryquestionscontainer,
+    .questionbank .categorysortopotionscontainer,
+    .questionbank .categorypagingbarcontainer,
+    .questionbank .categoryselectallcontainer {
+        background-color: var(--nit-brand-surface);
+    }
+
+    // "You cannot add/remove questions because this quiz has attempts" — core
+    // paints this .statusdisplay a flat light yellow (#ffc) with white text on
+    // the dark brand (invisible). Make it a readable Warning-tinted notice.
+    .statusdisplay {
+        background-color: color-mix(in srgb, var(--nit-brand-warning) 20%, transparent);
+        border: 1px solid var(--nit-brand-warning);
+        color: var(--nit-brand-textprimary);
+        border-radius: 0.25rem;
+    }
+
+    // The per-question action strip (edit / move / delete icons) — core #e6e6e6.
+    .section .activity .actions {
+        background: var(--nit-brand-background);
+    }
+
+    // The max-mark + edit-pencil box on the right of each question row — core
+    // hard-codes `background: white`, so it stays a white slab on the dark row.
+    ul.slots li.section li.activity .instancemaxmarkcontainer {
+        background: var(--nit-brand-surface);
+    }
+    // (core already makes the info-only variant transparent — keep it.)
+    ul.slots li.section li.activity .instancemaxmarkcontainer.infoitem {
+        background: transparent;
+    }
+
+    // Slot number badge (the "1 / 2 / 3" box) — core fills it $bs-secondary-bg
+    // (light) leaving the number unreadable. Brand Surface + brand text.
+    .slotnumber {
+        background-color: var(--nit-brand-surface);
+        color: var(--nit-brand-textprimary);
+    }
+
+    // Question name + text preview — core hard-codes #555 (dark grey), which is
+    // near-invisible on the dark row. Name → primary text, preview → secondary.
+    ul.slots li.activity div.activityinstance .questionname {
+        color: var(--nit-brand-textprimary);
+    }
+    ul.slots li.activity div.activityinstance .questiontext {
+        color: var(--nit-brand-textsecondary);
+    }
+}
+
+// =============================================================================
+// Quiz review summary table (mod/quiz/review.php: the User / Status / Started /
+// Marks header block). Core mod/quiz/styles.css paints the label cells #f0f0f0
+// and the value cells #fafafa — light slabs carrying white text on the dark
+// brand. Route both to the brand Surface; the label cells sit a shade darker so
+// the two columns still read apart.
+// =============================================================================
+
+table.quizreviewsummary {
+
+    th.cell {
+        background: var(--nit-brand-background);
+        color: var(--nit-brand-textprimary);
+    }
+
+    td.cell {
+        background: var(--nit-brand-surface);
+        color: var(--nit-brand-textprimary);
+    }
+}
+
+// =============================================================================
+// Quiz navigation buttons (the numbered block on attempt.php / review.php).
+// Core paints the per-question status from flat light tokens (#cfc / #ffa / #fcc)
+// that clash on the dark brand; route each to its status role as a dark tint so
+// the white number stays readable.
+// =============================================================================
+
+.path-mod-quiz {
+
+    .qnbutton.correct {
+        background-color: color-mix(in srgb, var(--nit-brand-success) 32%, var(--nit-brand-surface));
+    }
+
+    .qnbutton.partiallycorrect {
+        background-color: color-mix(in srgb, var(--nit-brand-warning) 32%, var(--nit-brand-surface));
+    }
+
+    .qnbutton.notanswered,
+    .qnbutton.incorrect {
+        background-color: color-mix(in srgb, var(--nit-brand-error) 32%, var(--nit-brand-surface));
+    }
+
+    .qnbutton.blocked {
+        color: var(--nit-brand-textsecondary);
+    }
+}
+
+// =============================================================================
+// Question attempt / review boxes (mod/quiz/attempt.php, review.php, and the
+// question preview). Boost's question.scss paints these from compile-time light
+// tokens:
+//
+//   .que .info         background: $gray-100                 (the marks/flag box)
+//   .que .formulation  gradient-bg(shift-color($info, …))    ($info = white → a
+//                                                             pale slab holding
+//                                                             the question)
+//   .que .outcome/.comment  gradient-bg(shift-color($warning,…))  (feedback)
+//
+// Route the question body to the brand Surface with brand text/border, and keep
+// the feedback boxes tinted with their status role.
+// =============================================================================
+
+.que {
+
+    // Marks / flag side box.
+    .info {
+        background-color: var(--nit-brand-surface);
+        border-color: var(--nit-brand-borderprimary);
+        color: var(--nit-brand-textprimary);
+    }
+
+    // The question body — core makes it an $info-tinted alert (white on our
+    // palette). Put it on the brand Surface with brand text and a brand edge.
+    .formulation {
+        background: var(--nit-brand-surface);
+        color: var(--nit-brand-textprimary);
+        border-color: var(--nit-brand-borderprimary);
+    }
+
+    // Feedback / manual-comment boxes keep a warning tint (readable brand text).
+    .outcome,
+    .comment {
+        background: color-mix(in srgb, var(--nit-brand-warning) 16%, transparent);
+        border-color: var(--nit-brand-warning);
+        color: var(--nit-brand-textprimary);
+    }
+}

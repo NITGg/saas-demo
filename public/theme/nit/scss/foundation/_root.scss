@@ -1,0 +1,135 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// =============================================================================
+// NIT design tokens — Tier 3: COMPONENT (CSS custom properties).
+// The runtime surface the branding engine (M5) flips per instance. Ships with
+// light values, plus dark values under prefers-color-scheme.
+// =============================================================================
+
+// Every entry in the user-editable palette (theme_nit_colour_palette()) is
+// emitted by pre_scss as a `$nit-c-<key>` SCSS variable, then republished here
+// as a `--nit-<key>` CSS custom property. Components — the navbar included —
+// read their colour from these, so editing a token on the gallery page recolours
+// the whole site. Legacy aliases (--nit-surface/-ink/-line/-primary) are kept
+// because existing components (stat-tile, welcome_panel) already consume them.
+:root {
+    --nit-foundation: 1;
+
+    // Palette tokens — now aliased onto the active Brand Colors layer
+    // (--nit-brand-*, see _brand.scss). Every legacy consumer of these --nit-*
+    // properties therefore follows the brand, and any component wrapped in a
+    // group switch class (.nit-brand-2/3) recolours with it. The old
+    // $nit-c-* palette (Colours tab) is being retired.
+    --nit-primary: var(--nit-brand-primary);
+    --nit-secondary: var(--nit-brand-secondary);
+
+    // Marketing accent (gold underlines / highlights) now tracks the brand
+    // "Accent Text" role — it is only ever consumed as text colour / underline.
+    // The gradient companions stay on the legacy palette this pass so gold
+    // gradients aren't flattened to a single hue.
+    --nit-accentgold: var(--nit-brand-accenttext);
+    --nit-accentgolddark: #{$nit-c-accentgolddark};
+    --nit-accentteal: #{$nit-c-accentteal};
+
+    --nit-navbarbg: var(--nit-brand-background);
+    --nit-navbarsurface: var(--nit-brand-surface);
+    --nit-navbarborder: var(--nit-brand-borderprimary);
+    // Navbar TEXT accent (site name / wordmark, dropdown section headers, the
+    // "see all" link) — reads from the text-facing "Accent Text" role.
+    --nit-navbaraccent: var(--nit-brand-accenttext);
+    --nit-navbaraccenthover: var(--nit-brand-accenttext-vivid);
+    // Navbar ICON accent (the round bell + gear buttons and the notification
+    // action icons) — these are glyphs, not text, so they read from the
+    // non-text "Accent" role, keeping icon and link colours independently tunable.
+    --nit-navbariconaccent: var(--nit-brand-accent);
+    --nit-navbariconaccenthover: var(--nit-brand-accent-vivid);
+    --nit-navbartext: var(--nit-brand-textprimary);
+    --nit-navbarpanel: var(--nit-brand-surface);
+    --nit-navbarpaneltext: var(--nit-brand-textsecondary);
+    --nit-navbarpanelborder: var(--nit-brand-borderprimary);
+
+    --nit-background: var(--nit-brand-background);
+    --nit-fill: var(--nit-brand-surface);
+    --nit-textprimary: var(--nit-brand-textprimary);
+    --nit-textsecondary: var(--nit-brand-textsecondary);
+    --nit-border: var(--nit-brand-borderprimary);
+
+    --nit-success: var(--nit-brand-success);
+    --nit-warning: var(--nit-brand-warning);
+    --nit-error: var(--nit-brand-error);
+    --nit-danger: var(--nit-brand-error);
+    --nit-info: var(--nit-brand-info);
+
+    // Dark-palette tokens. Available in both schemes so always-dark surfaces
+    // (the navy marketing bands) can read them directly, e.g.
+    // `background: var(--nit-darkbackground)`.
+    --nit-darkprimary: #{$nit-c-darkprimary};
+    --nit-darkbackground: #{$nit-c-darkbackground};
+    --nit-darksurface: #{$nit-c-darksurface};
+    --nit-darksurfacevariant: #{$nit-c-darksurfacevariant};
+    --nit-darktextprimary: #{$nit-c-darktextprimary};
+    --nit-darktextsecondary: #{$nit-c-darktextsecondary};
+    --nit-darkborder: #{$nit-c-darkborder};
+
+    // Category details-page styles (local_nit_category). Three interchangeable
+    // palettes; a page picks one by position via a scoped mapping. 4 text + 4 bg.
+    --nit-cat-style1-text1: #{$nit-c-cat_style1_text1};
+    --nit-cat-style1-text2: #{$nit-c-cat_style1_text2};
+    --nit-cat-style1-text3: #{$nit-c-cat_style1_text3};
+    --nit-cat-style1-text4: #{$nit-c-cat_style1_text4};
+    --nit-cat-style1-bg1: #{$nit-c-cat_style1_bg1};
+    --nit-cat-style1-bg2: #{$nit-c-cat_style1_bg2};
+    --nit-cat-style1-bg3: #{$nit-c-cat_style1_bg3};
+    --nit-cat-style1-bg4: #{$nit-c-cat_style1_bg4};
+
+    --nit-cat-style2-text1: #{$nit-c-cat_style2_text1};
+    --nit-cat-style2-text2: #{$nit-c-cat_style2_text2};
+    --nit-cat-style2-text3: #{$nit-c-cat_style2_text3};
+    --nit-cat-style2-text4: #{$nit-c-cat_style2_text4};
+    --nit-cat-style2-bg1: #{$nit-c-cat_style2_bg1};
+    --nit-cat-style2-bg2: #{$nit-c-cat_style2_bg2};
+    --nit-cat-style2-bg3: #{$nit-c-cat_style2_bg3};
+    --nit-cat-style2-bg4: #{$nit-c-cat_style2_bg4};
+
+    --nit-cat-style3-text1: #{$nit-c-cat_style3_text1};
+    --nit-cat-style3-text2: #{$nit-c-cat_style3_text2};
+    --nit-cat-style3-text3: #{$nit-c-cat_style3_text3};
+    --nit-cat-style3-text4: #{$nit-c-cat_style3_text4};
+    --nit-cat-style3-bg1: #{$nit-c-cat_style3_bg1};
+    --nit-cat-style3-bg2: #{$nit-c-cat_style3_bg2};
+    --nit-cat-style3-bg3: #{$nit-c-cat_style3_bg3};
+    --nit-cat-style3-bg4: #{$nit-c-cat_style3_bg4};
+
+    // Legacy aliases kept for existing consumers (stat-tile, welcome_panel).
+    // In the brand era these card surfaces are the brand surface (dark), not the
+    // page background.
+    --nit-surface: var(--nit-brand-surface);
+    --nit-ink: var(--nit-brand-textprimary);
+    --nit-line: var(--nit-brand-borderprimary);
+
+    // Readable foreground for filled brand/status surfaces.
+    --nit-on-primary: var(--nit-brand-on-primary);
+
+    --nit-radius-md: #{$nit-radius-md};
+    --nit-radius-lg: #{$nit-radius-lg};
+    --nit-shadow-2: #{$nit-shadow-2};
+}
+
+// No prefers-color-scheme override: Group 1 of the Brand Colors palette is
+// itself the dark brand (dark-blue background, white text), so the site renders
+// in the brand regardless of the OS light/dark preference. The legacy
+// Dark-palette tokens (--nit-dark*) remain published above for the always-dark
+// marketing bands that read them directly.

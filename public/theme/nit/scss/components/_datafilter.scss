@@ -1,0 +1,60 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// =============================================================================
+// NIT data filter — the condition builder used by the question bank
+// (question/edit.php) and other admin lists (core/datafilter).
+//
+// filter.mustache wraps the whole panel in `.filter-group ... bg-light border`
+// and each condition row (filter_row.mustache) in `... bg-white border`. On the
+// dark brand those Bootstrap utilities paint light-grey / white islands, and the
+// labels inside them ("Match", "AND", the "Also show questions from
+// subcategories" checkbox label — all `text-reset` or inheriting the page's
+// white) land on near-white → invisible until selected. Route both islands to
+// the brand Surface so the white text reads (measured white-on-#f8f9fa ≈ 1.05 →
+// white-on-Surface ≈ 15:1). The row borders already resolve to the brand border
+// (theme sets --bs-border-color globally). The Apply (btn-primary) and Clear
+// (btn-secondary) buttons already resolve from the palette; only "Show all"
+// (btn-light) is a light slab — send it to the Surface too.
+// =============================================================================
+
+.filter-group {
+
+    // Outer bg-light panel → brand Surface (the .bg-white/.bg-light utilities
+    // carry !important, so match them).
+    &.bg-light {
+        background-color: var(--nit-brand-surface) !important;
+    }
+
+    // Ensure inherited / text-reset text reads on the now-dark surface.
+    color: var(--nit-brand-textprimary);
+
+    // Inner condition rows (bg-white) → brand Surface; the brand row border keeps
+    // them delineated.
+    .bg-white {
+        background-color: var(--nit-brand-surface) !important;
+    }
+
+    // "Show all" (btn-light) is a light button — route it through the Surface
+    // with brand text/border and a brand hover, like a neutral secondary control.
+    .btn-light {
+        --bs-btn-bg: var(--nit-brand-surface);
+        --bs-btn-color: var(--nit-brand-textprimary);
+        --bs-btn-border-color: var(--nit-brand-borderprimary);
+        --bs-btn-hover-bg: var(--nit-brand-hoverbackground);
+        --bs-btn-hover-color: var(--nit-brand-textprimary);
+        --bs-btn-hover-border-color: var(--nit-brand-borderprimary);
+    }
+}

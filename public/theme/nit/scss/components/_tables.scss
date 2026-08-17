@@ -1,0 +1,52 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// =============================================================================
+// Tables — site-wide brand colours.
+//
+// Bootstrap drives every `.table` from CSS vars that default to the light theme
+// (`--bs-table-color` a near-black), so on the dark brand the text — most
+// visibly the `<thead>` column headers (e.g. "Custom field / Short name / Type"
+// on course/customfield.php) — renders dark-on-dark and is unreadable. Rebind
+// the whole family to the Brand-Colors palette so headers, cells, stripes and
+// hover rows all read from the brand. (The gallery / plugin-check tabs set the
+// same vars on their own scopes; those still win locally — this is the default
+// for every other table on the site.)
+// =============================================================================
+
+.table {
+    --bs-table-color: var(--nit-brand-textprimary);
+    --bs-table-bg: transparent;
+    --bs-table-border-color: var(--nit-brand-borderprimary);
+
+    // Striped rows: a faint wash of the text colour over whatever surface the
+    // table sits on (keeps the stripe subtle in any brand group).
+    --bs-table-striped-color: var(--nit-brand-textprimary);
+    --bs-table-striped-bg: color-mix(in srgb, var(--nit-brand-textprimary) 6%, transparent);
+
+    // Hover + selected rows use the brand hover / a slightly stronger wash.
+    --bs-table-hover-color: var(--nit-brand-textprimary);
+    --bs-table-hover-bg: var(--nit-brand-hoverbackground);
+    --bs-table-active-color: var(--nit-brand-textprimary);
+    --bs-table-active-bg: color-mix(in srgb, var(--nit-brand-textprimary) 10%, transparent);
+
+    // Column headers occasionally ship a muted utility colour from core; keep
+    // them on the primary text role so they never fade into the surface.
+    > thead th,
+    > thead td {
+        color: var(--nit-brand-textprimary);
+        border-bottom-color: var(--nit-brand-borderprimary);
+    }
+}

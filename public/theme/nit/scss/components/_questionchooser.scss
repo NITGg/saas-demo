@@ -1,0 +1,102 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// =============================================================================
+// NIT question-type chooser — the legacy YUI "Choose a question type to add"
+// dialogue (mod/quiz/edit.php → Add). Unlike the activity chooser (a Bootstrap
+// modal, see _modchooser.scss), this one is a YUI `moodle-core-chooserdialogue`
+// (class .chooserdialogue / .chooserdialogue-questionchooser).
+//
+// Core (theme/boost core.scss + moodle variables) already darkens the dialogue
+// FRAME (.moodle-dialogue-wrap → brand Surface, brand border), but paints the
+// inner chooser from COMPILE-TIME light tokens that leave near-white islands
+// under the dark brand's white text — so the whole option list reads as blank /
+// faded:
+//
+//   .moodle-dialogue-bd (body)   background: $chooserdialogue-bg          (#f2f2f2)
+//   .options                     border-bottom: $chooserdialogue-...      (#bbb)
+//   .option label                border-bottom: $choosercontainer-...     (#fff)
+//   .selected (chosen row)       background: $choosercontainer-...-bg     (#fff)
+//   .instruction / .typesummary  background: $choosercontainer-...-bg     (#fff)
+//   .closebutton "×"             color: initial (from .yui3-widget-hd)    (#000)
+//
+// Rewire each to a --nit-brand-* role so the modal reads from the palette and
+// re-skins with a category group. The Add (btn-primary → Primary) and Cancel
+// (btn-secondary → Secondary) buttons already resolve from the palette and are
+// left untouched. Layout uses logical properties (RTL + LTR safe).
+// =============================================================================
+
+.chooserdialogue {
+
+    // ---- Dialogue body -------------------------------------------------------
+    // Core fills the body $chooserdialogue-bg (#f2f2f2). The frame around it is
+    // already on the brand Surface with white text, so the light-grey body hides
+    // the white option labels. Put the body on the same Surface — one dark panel.
+    .moodle-dialogue-wrap .moodle-dialogue-bd {
+        background: var(--nit-brand-surface);
+    }
+
+    // ---- Close (×) -----------------------------------------------------------
+    // `.closebutton` inherits `color: initial` (black) from the YUI header, so
+    // its "×" glyph is black on the dark header. Route it to the brand foreground.
+    .closebutton {
+        color: var(--nit-brand-textprimary);
+    }
+
+    // ---- Options + summary ---------------------------------------------------
+    .choosercontainer #chooseform {
+
+        // The options block underlines itself #bbb; use the brand primary border.
+        .options {
+            border-block-end-color: var(--nit-brand-borderprimary);
+        }
+
+        // Every option row is divided by a #fff border-bottom (bright-invisible
+        // on the dark surface). Route to a subtle brand border.
+        .option label {
+            border-block-end-color: var(--nit-brand-borderprimary);
+        }
+
+        // Section legend ("QUESTIONS"): keep it as primary brand text so the
+        // uppercase heading stays legible (white on Surface ≈ 15:1).
+        .moduletypetitle {
+            color: var(--nit-brand-textprimary);
+        }
+
+        // Chosen row: core slabs it $white. Use a translucent Primary tint on the
+        // dark surface so "selected" reads without a white block and the white
+        // row text keeps ≥ 4.5 contrast.
+        .selected {
+            background-color: color-mix(in srgb, var(--nit-brand-primary) 18%, transparent);
+        }
+
+        // Hover affordance (core ships none for this chooser): brand hover fill.
+        .option:not(.selected):hover {
+            background-color: var(--nit-brand-hoverbackground);
+        }
+
+        // Instruction / type-summary panel (the right column). Core paints both
+        // $white. Move onto the brand Background (a touch darker than the Surface
+        // list) with brand text, divided from the list by a brand border. The
+        // logical inset-inline-start border tracks the 240px column split that
+        // core flips for RTL.
+        .instruction,
+        .typesummary {
+            background-color: var(--nit-brand-background);
+            color: var(--nit-brand-textprimary);
+            border-inline-start: 1px solid var(--nit-brand-borderprimary);
+        }
+    }
+}

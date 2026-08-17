@@ -1,0 +1,64 @@
+{{!
+    Course card price display.
+    Context: {price, sale_price, original_price, currency, is_sale_active, discount_pct, is_purchased, is_enrolled, is_free, can_enroll_via_sub, can_renew, course_url, buy_url, enroll_url}
+}}
+<div class="local-payments-card-price">
+    {{#can_renew}}
+        <div class="lp-card-status lp-card-status--renew">
+            <i class="fa fa-exclamation-circle"></i>
+            <span>{{#str}}renew_subscription, local_payments{{/str}}</span>
+        </div>
+    {{/can_renew}}
+    {{#is_enrolled}}
+        <div class="lp-card-status lp-card-status--enrolled">
+            <i class="fa fa-check-circle"></i>
+            <span>{{#str}}enrolled, local_payments{{/str}}</span>
+        </div>
+    {{/is_enrolled}}
+    {{^is_enrolled}}
+        {{#can_enroll_via_sub}}
+            <div class="lp-card-row">
+                <a href="{{enroll_url}}" class="lp-btn lp-btn--subscribe" id="local-payments-enroll-btn">
+                    <i class="fa fa-sign-in-alt"></i> {{#str}}enroll, local_payments{{/str}}
+                </a>
+            </div>
+        {{/can_enroll_via_sub}}
+        {{^can_enroll_via_sub}}
+            {{#is_free}}
+                <div class="lp-card-row">
+                    <span class="lp-badge lp-badge--free">{{#str}}free, local_payments{{/str}}</span>
+                    <a href="{{course_url}}" class="lp-btn lp-btn--join">
+                        <i class="fa fa-sign-in-alt"></i> {{#str}}entercourse, local_payments{{/str}}
+                    </a>
+                </div>
+            {{/is_free}}
+            {{^is_free}}
+                {{#is_purchased}}
+                    <div class="lp-card-status lp-card-status--purchased">
+                        <i class="fa fa-shopping-bag"></i>
+                        <span>{{#str}}purchased, local_payments{{/str}}</span>
+                    </div>
+                {{/is_purchased}}
+                {{^is_purchased}}
+                    <div class="lp-card-row">
+                        <div class="lp-price-block">
+                            {{#is_sale_active}}
+                                <span class="lp-badge lp-badge--sale">-{{discount_pct}}%</span>
+                                <span class="lp-price-pair">
+                                    <span class="lp-price lp-price--original">{{original_price}} {{currency}}</span>
+                                    <span class="lp-price lp-price--sale">{{sale_price}} {{currency}}</span>
+                                </span>
+                            {{/is_sale_active}}
+                            {{^is_sale_active}}
+                                <span class="lp-price lp-price--current">{{price}} {{currency}}</span>
+                            {{/is_sale_active}}
+                        </div>
+                        <a href="{{buy_url}}" class="lp-btn lp-btn--subscribe">
+                            <i class="fa fa-credit-card"></i> {{#str}}buynow, local_payments{{/str}}
+                        </a>
+                    </div>
+                {{/is_purchased}}
+            {{/is_free}}
+        {{/can_enroll_via_sub}}
+    {{/is_enrolled}}
+</div>

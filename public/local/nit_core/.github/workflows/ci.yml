@@ -1,0 +1,76 @@
+name: NIT Core CI
+
+# Phase 1 (M0) pipeline. Lives inside the plugin for now; relocates to the
+# monorepo root when the suite is extracted (Reference Architecture §19, §CI/CD).
+
+on:
+  push:
+    branches: [main, 'release/**', 'support/**']
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: [5432:5432]
+        options: >-
+          --health-cmd="pg_isready" --health-interval=10s
+          --health-timeout=5s --health-retries=3
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # Support matrix: active LTS + current stable lines (Reference Architecture §17).
+        moodle-branch: ['MOODLE_405_STABLE', 'MOODLE_500_STABLE', 'MOODLE_502_STABLE']
+        php: ['8.2', '8.3']
+
+    steps:
+      - name: Check out plugin
+        uses: actions/checkout@v4
+        with:
+          path: plugin
+
+      - name: Set up PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: pgsql, mbstring, intl, gd, zip, soap
+          ini-values: max_input_vars=5000
+          coverage: none
+
+      - name: Install moodle-plugin-ci
+        run: |
+          composer create-project moodlehq/moodle-plugin-ci ci ^4 --no-interaction
+          echo "$(pwd)/ci/bin" >> "$GITHUB_PATH"
+          echo "$(pwd)/ci/vendor/bin" >> "$GITHUB_PATH"
+
+      - name: Install Moodle + plugin
+        run: moodle-plugin-ci install --plugin ./plugin --db-host 127.0.0.1
+        env:
+          DB: pgsql
+          MOODLE_BRANCH: ${{ matrix.moodle-branch }}
+
+      - name: PHP Lint
+        run: moodle-plugin-ci phplint
+
+      - name: Coding standards (moodle-cs)
+        run: moodle-plugin-ci phpcs --max-warnings 0
+
+      - name: Static analysis (PHPStan)
+        run: moodle-plugin-ci phpstan
+
+      - name: Mustache / grunt / validate
+        run: moodle-plugin-ci validate
+
+      - name: PHPUnit
+        run: moodle-plugin-ci phpunit
+
+      - name: Behat
+        run: moodle-plugin-ci behat --profile chrome

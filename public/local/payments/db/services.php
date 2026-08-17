@@ -1,0 +1,77 @@
+<?php
+defined('MOODLE_INTERNAL') || die();
+
+$functions = [
+    'local_payments_get_course_price' => [
+        'classname'   => 'local_payments\external\get_course_price',
+        'methodname'  => 'execute',
+        'description' => 'Get the resolved price for a course based on user country.',
+        'type'        => 'read',
+        'ajax'        => true,
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
+    ],
+    'local_payments_get_payment_methods' => [
+        'classname'   => 'local_payments\external\get_payment_methods',
+        'methodname'  => 'execute',
+        'description' => 'Get available payment providers for the user country and currency.',
+        'type'        => 'read',
+        'ajax'        => true,
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
+    ],
+    'local_payments_create_checkout' => [
+        'classname'   => 'local_payments\external\create_checkout',
+        'methodname'  => 'execute',
+        'description' => 'Create a payment checkout session and return the checkout URL.',
+        'type'        => 'write',
+        'ajax'        => true,
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
+    ],
+    'local_payments_verify_payment' => [
+        'classname'   => 'local_payments\external\verify_payment',
+        'methodname'  => 'execute',
+        'description' => 'Verify a payment after redirect callback.',
+        'type'        => 'write',
+        'ajax'        => true,
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
+    ],
+    'local_payments_get_payment_history' => [
+        'classname'   => 'local_payments\external\get_payment_history',
+        'methodname'  => 'execute',
+        'description' => 'Get payment history for the current user.',
+        'type'        => 'read',
+        'ajax'        => true,
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
+    ],
+    'local_payments_get_purchased_courses' => [
+        'classname'   => 'local_payments\external\get_purchased_courses',
+        'methodname'  => 'execute',
+        'description' => 'Get courses purchased by the current user.',
+        'type'        => 'read',
+        'ajax'        => true,
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
+    ],
+    'local_payments_get_course_access' => [
+        'classname'   => 'local_payments\external\get_course_access',
+        'methodname'  => 'execute',
+        'description' => 'Get enrollment and payment status for a course.',
+        'type'        => 'read',
+        'ajax'        => true,
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
+    ],
+    'local_payments_get_invoice' => [
+        'classname'   => 'local_payments\external\get_invoice',
+        'methodname'  => 'execute',
+        'description' => 'Get invoice details for a transaction.',
+        'type'        => 'read',
+        'ajax'        => true,
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
+    ],
+    'local_payments_get_courses_with_pricing' => [
+        'classname'   => 'local_payments\external\get_courses_with_pricing',
+        'methodname'  => 'execute',
+        'description' => 'Get courses filtered by field with country-resolved pricing for each course.',
+        'type'        => 'read',
+        'ajax'        => true,
+        'services'    => [MOODLE_OFFICIAL_MOBILE_SERVICE],
+    ],
+];

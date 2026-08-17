@@ -1,0 +1,108 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// =============================================================================
+// NIT activity chooser — the "Add an activity or resource" modal.
+//
+// Core (theme/boost/scss/moodle/modchooser.scss + Bootstrap) paints several
+// states of this modal from COMPILE-TIME tokens that are light in the abstract
+// but which the dark-default brand leaves as invisible / near-white islands:
+//
+//   .modchoosernav active pill   --bs-nav-pills-link-active-bg: $body-color (#fff)
+//                                 → white pill + white text (invisible)
+//   .nav-link / .option hover    background-color: $gray-100  (#f8f9fa light grey)
+//   .option.selected             background-color: $primary-light-background (#fcebeb)
+//   .optionsummary               background-color: $white
+//   .btn-close (X)               black SVG @ .5 opacity, no filter → invisible
+//
+// Rewire each to a --nit-brand-* role so the whole modal reads from the palette
+// and re-skins with a course's category group (.nit-brand-2 / .nit-brand-3).
+// The Add button (btn-primary → Primary), Cancel / Back (btn-secondary), the
+// search box (_forms/_dropdowns) and the marketplace link (Accent Text) already
+// resolve from the palette and are left untouched. `.btn-icon` hover is fixed
+// site-wide in _buttons.scss. Layout uses logical properties (RTL + LTR safe).
+// =============================================================================
+
+.modchooser {
+
+    // ---- Modal frame ---------------------------------------------------------
+    // Bootstrap's faint rgba(0,0,0,.175) content border is invisible on the dark
+    // ground; give the modal a subtle brand edge instead.
+    .modal-content {
+        border-color: var(--nit-brand-borderprimary);
+    }
+
+    // ---- Category navigation pills ------------------------------------------
+    .modchoosernav {
+        // Selected category: core fills the pill with $body-color (#fff) and keeps
+        // white active text → white-on-white. Use the Primary role for the chosen
+        // pill (same "selected = Primary" rule as the site dropdowns). The fill is
+        // nudged a touch darker via color-mix so the white label clears the 4.5
+        // contrast bar on the mid-tone brand red while staying unmistakably Primary.
+        --bs-nav-pills-link-active-bg: color-mix(in srgb, var(--nit-brand-primary) 88%, #000);
+        --bs-nav-pills-link-active-color: var(--nit-brand-textprimary);
+
+        // Resting-pill hover: core fills $gray-100 (light grey). Darken to the
+        // brand Hover Background and keep the white label (a category name is
+        // primary navigation text — white on the dark hover fill clears 4.5 with
+        // room to spare, where the reddish Hover Text tone would sit right on the
+        // line). The border picks up the brand primary border.
+        .nav-link:not(.active):hover {
+            background-color: var(--nit-brand-hoverbackground);
+            color: var(--nit-brand-textprimary);
+            border-color: var(--nit-brand-borderprimary);
+        }
+    }
+
+    // ---- Option cards --------------------------------------------------------
+    .modchoosercontent .optionscontainer {
+        // Selected card: core fills $primary-light-background (a near-white pink
+        // tint) behind a $primary border. Use a subtle Primary tint on the dark
+        // surface + the Primary border, so it reads as "selected" without a white
+        // slab and the white card text stays readable.
+        .option.selected {
+            border-color: var(--nit-brand-primary);
+            background-color: color-mix(in srgb, var(--nit-brand-primary) 18%, transparent);
+        }
+
+        // Resting-card hover: core fills $gray-100 (light grey). Brand hover fill;
+        // the card's white text keeps ≥ 4.5 contrast on the dark hover ground.
+        .option:not(.selected):hover {
+            background-color: var(--nit-brand-hoverbackground);
+        }
+    }
+
+    // ---- Info-summary panel --------------------------------------------------
+    // Revealed when a card's (i) button is pressed. Core paints it $white with
+    // dark text; move it onto the brand Surface with brand text like every other
+    // panel on the site.
+    .optionsummary {
+        background-color: var(--nit-brand-surface);
+        color: var(--nit-brand-textprimary);
+    }
+
+    // ---- Close (X) -----------------------------------------------------------
+    // Core's .btn-close is a black SVG at .5 opacity with no filter → invisible on
+    // the dark modal header. Invert it to the brand white foreground.
+    .btn-close {
+        filter: var(--bs-btn-close-white-filter);
+        opacity: 0.75;
+
+        &:hover,
+        &:focus {
+            opacity: 1;
+        }
+    }
+}

@@ -1,0 +1,109 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// =============================================================================
+// NIT design tokens — Tier 1: PRIMITIVES.
+// Raw palette and scales. Not customer-editable. Referenced by the semantic
+// tier (_semantic.scss) and by components — never hard-coded elsewhere.
+// =============================================================================
+
+// --- Brand blue ramp ---------------------------------------------------------
+$nit-blue-50:  #eef2fe;
+$nit-blue-100: #e4eafb;
+$nit-blue-200: #c6d2f6;
+$nit-blue-300: #9db2ee;
+$nit-blue-400: #6c8ae4;
+$nit-blue-500: #4269d8;
+$nit-blue-600: #2a50c8; // Primary.
+$nit-blue-700: #1c3a9e; // Primary hover.
+$nit-blue-800: #182f7c;
+$nit-blue-900: #16295f;
+
+// --- Neutrals (slightly blue-biased, deliberately chosen) --------------------
+$nit-ink:       #171b22;
+$nit-slate-800: #242a34;
+$nit-slate-700: #3a424e;
+$nit-slate-600: #4b5563;
+$nit-slate-500: #626c7a;
+$nit-slate-400: #8b95a3;
+$nit-slate-300: #c3cbd6;
+$nit-slate-200: #dce1e8;
+$nit-slate-100: #eef1f5;
+$nit-slate-50:  #f7f8fa;
+$nit-surface:   #ffffff;
+$nit-line:      #dce1e8;
+
+// --- Navbar brand (navy field + gold wordmark) -------------------------------
+// The top navbar carries a distinct dark treatment, independent of the blue
+// product brand: a navy field with a gold wordmark and muted icons. Sourced
+// from the reference site (theme_edumy) so the rebuilt navbar matches it.
+// Consumed only by components/_navbar.scss.
+$nit-navy-900: #0a1628; // Navbar field.
+$nit-navy-800: #10203a; // Dropdown surface / hover on the navy field.
+$nit-navy-700: #1b2c48; // Dividers / borders on the navy field.
+$nit-gold-500: #e8b84b; // Wordmark + hover accents.
+$nit-gold-400: #f0c86a; // Wordmark hover.
+$nit-on-navy:  #cdd5e0; // Muted foreground (icons / links) on navy.
+
+// --- Semantic hues -----------------------------------------------------------
+$nit-green-600: #1e7a54;
+$nit-green-100: #e0f0e8;
+$nit-amber-600: #9a6410;
+$nit-amber-100: #f6ecd6;
+$nit-red-600:   #b23a2e;
+$nit-red-100:   #f6e1dd;
+$nit-cyan-600:  #0e7c86;
+
+// --- Foreground-on-colour (explicit & deterministic) -------------------------
+$nit-on-primary: #ffffff;
+$nit-on-success: #ffffff;
+$nit-on-warning: #1b1300;
+$nit-on-danger:  #ffffff;
+
+// --- Typography --------------------------------------------------------------
+$nit-font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+$nit-font-size-base: 1rem;
+$nit-fs-xs:  0.75rem;
+$nit-fs-sm:  0.875rem;
+$nit-fs-lg:  1.125rem;
+$nit-fs-xl:  1.25rem;
+$nit-fs-2xl: 1.5rem;
+$nit-fs-3xl: 1.875rem;
+$nit-fs-4xl: 2.25rem;
+
+// --- Spacing scale -----------------------------------------------------------
+$nit-space-1: 0.25rem;
+$nit-space-2: 0.5rem;
+$nit-space-3: 0.75rem;
+$nit-space-4: 1rem;
+$nit-space-5: 1.5rem;
+$nit-space-6: 2rem;
+$nit-space-8: 3rem;
+
+// --- Radius ------------------------------------------------------------------
+$nit-radius-sm: 0.25rem;
+$nit-radius-md: 0.5rem;
+$nit-radius-lg: 0.75rem;
+$nit-radius-pill: 50rem;
+
+// --- Elevation (shadow) ------------------------------------------------------
+$nit-shadow-1: 0 1px 2px rgba(23, 27, 34, 0.06), 0 1px 1px rgba(23, 27, 34, 0.04);
+$nit-shadow-2: 0 2px 8px rgba(23, 27, 34, 0.08), 0 1px 3px rgba(23, 27, 34, 0.06);
+$nit-shadow-3: 0 12px 32px rgba(23, 27, 34, 0.16);
+
+// --- Motion ------------------------------------------------------------------
+$nit-motion-fast: 120ms;
+$nit-motion-base: 200ms;
+$nit-motion-slow: 320ms;

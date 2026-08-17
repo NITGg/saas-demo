@@ -1,0 +1,89 @@
+<!-- NIT — About / Vision & Mission home-page block.
+     Paste into an HTML block on the FRONT PAGE (Site home).
+     Renders three info cards: Vision, Mission, Goal.
+     Colours read from the Brand Colors palette (--nit-brand-*). -->
+<div dir="auto"
+  style="background: var(--nit-brand-background); color: var(--nit-brand-textprimary); padding: 72px 20px;">
+  <div style="max-width: 1140px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 48px;"><span
+        style="display: inline-block; background: color-mix(in srgb, var(--nit-brand-accenttext) 15%, transparent); border: 1px solid color-mix(in srgb, var(--nit-brand-accenttext) 30%, transparent); border-radius: 50px; padding: 6px 18px; font-size: 14px; color: var(--nit-brand-accenttext); font-weight: bold;">
+        {mlang en}About the Academy{mlang} {mlang ar}عن الأكاديمية{mlang}
+      </span>
+      <h2
+        style="font-size: clamp(26px,4vw,40px); font-weight: 800; margin: 18px 0 0;">
+        {mlang en}Our Vision &amp; Mission{mlang} {mlang ar}رؤيتنا
+        ورسالتنا{mlang}</h2>
+    </div>
+    <div
+      style="display: grid; grid-template-columns: repeat(auto-fit,minmax(280px,1fr)); gap: 24px;">
+      <div
+        style="background: var(--nit-brand-surface); border: 1px solid color-mix(in srgb, var(--nit-brand-textprimary) 6%, transparent); border-radius: 16px; padding: 32px; text-align: center;"
+        data-nit-about-card="">
+        <div
+          style="width: 72px; height: 72px; line-height: 72px; margin: 0 auto 18px; border-radius: 50%; background: color-mix(in srgb, var(--nit-brand-accent) 15%, transparent); font-size: 32px;">
+          🎯</div>
+        <h3
+          style="font-size: 20px; font-weight: bold; margin: 0 0 10px; color: var(--nit-brand-accenttext);">
+          {mlang en}Vision{mlang} {mlang ar}الرؤية{mlang}</h3>
+        <p
+          style="font-size: 15px; color: var(--nit-brand-textsecondary); line-height: 1.8; margin: 0;">
+          {mlang en} To provide learners with high-quality educational services
+          through an accessible and effective online learning experience.
+          {mlang} {mlang ar} أن يستطيع الدارس الحصول على أفضل خدمات تعليمية عبر
+          الإنترنت. {mlang}</p>
+      </div>
+      <div
+        style="background: var(--nit-brand-surface); border: 1px solid color-mix(in srgb, var(--nit-brand-textprimary) 6%, transparent); border-radius: 16px; padding: 32px; text-align: center;"
+        data-nit-about-card="">
+        <div
+          style="width: 72px; height: 72px; line-height: 72px; margin: 0 auto 18px; border-radius: 50%; background: color-mix(in srgb, var(--nit-brand-accenttext) 15%, transparent); font-size: 32px;">
+          🚀</div>
+        <h3
+          style="font-size: 20px; font-weight: bold; margin: 0 0 10px; color: var(--nit-brand-accenttext);">
+          {mlang en}Mission{mlang} {mlang ar}الرسالة{mlang}</h3>
+        <p
+          style="font-size: 15px; color: var(--nit-brand-textsecondary); line-height: 1.8; margin: 0;">
+          {mlang en} To deliver practical and professional educational programs
+          that help learners develop their skills and achieve their goals.
+          {mlang} {mlang ar} تقديم برامج تعليمية عملية واحترافية تساعد الدارسين
+          على تطوير مهاراتهم وتحقيق أهدافهم. {mlang}</p>
+      </div>
+      <div
+        style="background: var(--nit-brand-surface); border: 1px solid color-mix(in srgb, var(--nit-brand-textprimary) 6%, transparent); border-radius: 16px; padding: 32px; text-align: center;"
+        data-nit-about-card="">
+        <div
+          style="width: 72px; height: 72px; line-height: 72px; margin: 0 auto 18px; border-radius: 50%; background: color-mix(in srgb, var(--nit-brand-accenttext) 15%, transparent); font-size: 32px;">
+          💬</div>
+        <h3
+          style="font-size: 20px; font-weight: bold; margin: 0 0 10px; color: var(--nit-brand-accenttext);">
+          {mlang en}Goal{mlang} {mlang ar}الهدف{mlang}</h3>
+        <p
+          style="font-size: 15px; color: var(--nit-brand-textsecondary); line-height: 1.8; margin: 0;">
+          {mlang en} To build a professional learning environment that connects
+          knowledge, skills and real-world application. {mlang} {mlang ar} بناء
+          بيئة تعليمية احترافية تربط بين المعرفة والمهارات والتطبيق العملي.
+          {mlang}</p>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function() {
+      if (document.getElementById('nit-hoverfx-style')) {
+        return;
+      }
+      var css =
+        '.nit-btn-solid,.nit-btn-ghost,[data-nit-copy],[data-nit-scroll],[data-nit-coupons-scroll],[data-nit-categories]>a,[data-nit-my-courses]>div,[data-nit-about-card]{transition:background-color .2s ease,background .2s ease,color .2s ease,border-color .2s ease,transform .2s ease,box-shadow .2s ease}' +
+        '.nit-btn-solid:not(:disabled):hover{background:var(--nit-brand-primary-hover)!important;color:var(--nit-brand-textprimary)!important;transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.35)}' +
+        '.nit-btn-ghost:not(:disabled):hover{background:var(--nit-brand-hoverbackground)!important;color:var(--nit-brand-hovertext)!important;border-color:var(--nit-brand-bordersecondary)!important;transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.35)}' +
+        '[data-nit-copy]:hover{background:var(--nit-brand-hoverbackground)!important;color:var(--nit-brand-hovertext)!important;border-color:var(--nit-brand-hoverbackground)!important;transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.35)}' +
+        '[data-nit-scroll]:hover,[data-nit-coupons-scroll]:hover{background:var(--nit-brand-hoverbackground)!important;color:var(--nit-brand-hovertext)!important;border-color:var(--nit-brand-hoverbackground)!important;transform:translateY(-50%) scale(1.08)!important}' +
+        '[data-nit-categories]>a:hover,[data-nit-my-courses]>div:not([data-nit-my-course-card]):not([data-nit-my-courses-empty]):hover{transform:translateY(-6px);border-color:var(--nit-brand-accent)!important;box-shadow:0 16px 40px rgba(0,0,0,.45)}' +
+        '[data-nit-categories]>a:hover [data-nit-cta]{background:var(--nit-brand-primary-hover)!important;color:var(--nit-brand-textprimary)!important}' +
+        '[data-nit-about-card]:hover{transform:translateY(-4px);border-color:var(--nit-brand-accent)!important}';
+      var st = document.createElement('style');
+      st.id = 'nit-hoverfx-style';
+      st.textContent = css;
+      (document.head || document.documentElement).appendChild(st);
+    })();
+  </script>
+</div>

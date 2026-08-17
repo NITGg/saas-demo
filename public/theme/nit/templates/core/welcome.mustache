@@ -1,0 +1,36 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_nit/core/welcome
+
+    theme_nit override of core/welcome — intentionally renders NOTHING.
+
+    Core (lib/classes/output/core_renderer::full_header) injects a one-time
+    "Welcome, {firstname}! 👋" / "Hi, {firstname}! 👋" greeting into the page
+    header on the user's home page (see \core_user::welcome_message() and the
+    lang strings welcometosite / welcomeback). The EAAC front page is a branded
+    marketing home built from our own section blocks, where that per-user
+    greeting is off-design, so we suppress it site-wide by overriding the
+    partial with an empty body. No core files are touched; the greeting's empty
+    wrapper <div> in full_header collapses to zero height, so nothing shows.
+
+    Blanking the lang strings would only empty the text and leave the box; this
+    removes the whole section.
+
+    Context variables required for this template:
+    * welcomemessage - string (ignored here)
+}}

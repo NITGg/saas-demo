@@ -1,0 +1,169 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// =============================================================================
+// NIT Brand Colors — the semantic colour layer (gallery "Brand Colors" tab).
+//
+// A "group" is a complete named set of the 16 semantic roles (Primary, Surface,
+// Text primary, …). Every component references a role by its ACTIVE name
+// (`--nit-brand-primary`) and, by default, resolves it from Group 1. Wrapping a
+// component in `.nit-brand-2` / `.nit-brand-3` re-points all 13 names at that
+// group's values — same variable names, different palette.
+//
+// Emission order (one combined stream): pre_scss defines `$nit-b-<gkey>-<role>`
+// SCSS vars (saved value, else the Group 1 seed); this file republishes them as
+// custom properties; _root.scss then aliases the legacy `--nit-*` properties
+// onto the active layer here, so the whole existing site follows the brand.
+// =============================================================================
+
+:root {
+    // --- Per-group raw palettes (reference values; the switch classes read
+    //     these). 16 roles × 3 groups. -------------------------------------
+    --nit-brand-g1-primary: #{$nit-b-g1-primary};
+    --nit-brand-g1-secondary: #{$nit-b-g1-secondary};
+    --nit-brand-g1-accent: #{$nit-b-g1-accent};
+    --nit-brand-g1-accenttext: #{$nit-b-g1-accenttext};
+    --nit-brand-g1-background: #{$nit-b-g1-background};
+    --nit-brand-g1-surface: #{$nit-b-g1-surface};
+    --nit-brand-g1-textprimary: #{$nit-b-g1-textprimary};
+    --nit-brand-g1-textsecondary: #{$nit-b-g1-textsecondary};
+    --nit-brand-g1-borderprimary: #{$nit-b-g1-borderprimary};
+    --nit-brand-g1-bordersecondary: #{$nit-b-g1-bordersecondary};
+    --nit-brand-g1-hoverbackground: #{$nit-b-g1-hoverbackground};
+    --nit-brand-g1-hovertext: #{$nit-b-g1-hovertext};
+    --nit-brand-g1-error: #{$nit-b-g1-error};
+    --nit-brand-g1-success: #{$nit-b-g1-success};
+    --nit-brand-g1-warning: #{$nit-b-g1-warning};
+    --nit-brand-g1-info: #{$nit-b-g1-info};
+
+    --nit-brand-g2-primary: #{$nit-b-g2-primary};
+    --nit-brand-g2-secondary: #{$nit-b-g2-secondary};
+    --nit-brand-g2-accent: #{$nit-b-g2-accent};
+    --nit-brand-g2-accenttext: #{$nit-b-g2-accenttext};
+    --nit-brand-g2-background: #{$nit-b-g2-background};
+    --nit-brand-g2-surface: #{$nit-b-g2-surface};
+    --nit-brand-g2-textprimary: #{$nit-b-g2-textprimary};
+    --nit-brand-g2-textsecondary: #{$nit-b-g2-textsecondary};
+    --nit-brand-g2-borderprimary: #{$nit-b-g2-borderprimary};
+    --nit-brand-g2-bordersecondary: #{$nit-b-g2-bordersecondary};
+    --nit-brand-g2-hoverbackground: #{$nit-b-g2-hoverbackground};
+    --nit-brand-g2-hovertext: #{$nit-b-g2-hovertext};
+    --nit-brand-g2-error: #{$nit-b-g2-error};
+    --nit-brand-g2-success: #{$nit-b-g2-success};
+    --nit-brand-g2-warning: #{$nit-b-g2-warning};
+    --nit-brand-g2-info: #{$nit-b-g2-info};
+
+    --nit-brand-g3-primary: #{$nit-b-g3-primary};
+    --nit-brand-g3-secondary: #{$nit-b-g3-secondary};
+    --nit-brand-g3-accent: #{$nit-b-g3-accent};
+    --nit-brand-g3-accenttext: #{$nit-b-g3-accenttext};
+    --nit-brand-g3-background: #{$nit-b-g3-background};
+    --nit-brand-g3-surface: #{$nit-b-g3-surface};
+    --nit-brand-g3-textprimary: #{$nit-b-g3-textprimary};
+    --nit-brand-g3-textsecondary: #{$nit-b-g3-textsecondary};
+    --nit-brand-g3-borderprimary: #{$nit-b-g3-borderprimary};
+    --nit-brand-g3-bordersecondary: #{$nit-b-g3-bordersecondary};
+    --nit-brand-g3-hoverbackground: #{$nit-b-g3-hoverbackground};
+    --nit-brand-g3-hovertext: #{$nit-b-g3-hovertext};
+    --nit-brand-g3-error: #{$nit-b-g3-error};
+    --nit-brand-g3-success: #{$nit-b-g3-success};
+    --nit-brand-g3-warning: #{$nit-b-g3-warning};
+    --nit-brand-g3-info: #{$nit-b-g3-info};
+
+    // --- Active layer — the names components actually use. Defaults to Group 1.
+    --nit-brand-primary: var(--nit-brand-g1-primary);
+    --nit-brand-secondary: var(--nit-brand-g1-secondary);
+    --nit-brand-accent: var(--nit-brand-g1-accent);
+    --nit-brand-accenttext: var(--nit-brand-g1-accenttext);
+    --nit-brand-background: var(--nit-brand-g1-background);
+    --nit-brand-surface: var(--nit-brand-g1-surface);
+    --nit-brand-textprimary: var(--nit-brand-g1-textprimary);
+    --nit-brand-textsecondary: var(--nit-brand-g1-textsecondary);
+    --nit-brand-borderprimary: var(--nit-brand-g1-borderprimary);
+    --nit-brand-bordersecondary: var(--nit-brand-g1-bordersecondary);
+    --nit-brand-hoverbackground: var(--nit-brand-g1-hoverbackground);
+    --nit-brand-hovertext: var(--nit-brand-g1-hovertext);
+    --nit-brand-error: var(--nit-brand-g1-error);
+    --nit-brand-success: var(--nit-brand-g1-success);
+    --nit-brand-warning: var(--nit-brand-g1-warning);
+    --nit-brand-info: var(--nit-brand-g1-info);
+
+    // --- Derived helpers. These reference the ACTIVE role vars, so they follow
+    //     whichever group is in scope automatically (no per-group duplication).
+    // Button hover (primary a touch darker); accent hover as a translucent wash
+    // (the "shapes with opacity text" hover treatment); a raised surface and a
+    // translucent surface for dropdown / overlay panels over the page bg.
+    --nit-brand-primary-hover: color-mix(in srgb, var(--nit-brand-primary) 86%, #000);
+    --nit-brand-secondary-hover: color-mix(in srgb, var(--nit-brand-secondary) 82%, #fff);
+    --nit-brand-accent-hover: color-mix(in srgb, var(--nit-brand-accent) 16%, transparent);
+    // A brighter accent for text / icon hover (where a translucent wash would
+    // just fade the glyph).
+    // NOTE: name deliberately avoids the substring "right"/"left" — Moodle's RTL
+    // post-processor (rtlcss) rewrites those inside identifiers too, so an earlier
+    // `--nit-brand-accent-bright` was silently emitted as `--nit-brand-accent-bleft`
+    // in the RTL stylesheet, breaking every consumer (e.g. the navbar hover) in
+    // Arabic only. Keep directional words out of custom-property names.
+    --nit-brand-accent-vivid: color-mix(in srgb, var(--nit-brand-accent) 70%, #fff);
+    // Text-facing accent (links, important words, underlines). Its own hover/vivid
+    // companions so link and text-icon hover states track "Accent Text", not the
+    // (now non-text) "Accent" role.
+    --nit-brand-accenttext-hover: color-mix(in srgb, var(--nit-brand-accenttext) 16%, transparent);
+    --nit-brand-accenttext-vivid: color-mix(in srgb, var(--nit-brand-accenttext) 70%, #fff);
+    --nit-brand-surface-2: color-mix(in srgb, var(--nit-brand-surface) 90%, #fff);
+    --nit-brand-surface-translucent: color-mix(in srgb, var(--nit-brand-surface) 88%, transparent);
+    --nit-brand-on-primary: var(--nit-brand-textprimary);
+}
+
+// --- Group switch classes. A component (or any wrapper) carrying one of these
+//     re-resolves every active role name to that group. Same names, different
+//     palette; the derived helpers above follow because they read the active
+//     vars, which are overridden here.
+.nit-brand-2 {
+    --nit-brand-primary: var(--nit-brand-g2-primary);
+    --nit-brand-secondary: var(--nit-brand-g2-secondary);
+    --nit-brand-accent: var(--nit-brand-g2-accent);
+    --nit-brand-accenttext: var(--nit-brand-g2-accenttext);
+    --nit-brand-background: var(--nit-brand-g2-background);
+    --nit-brand-surface: var(--nit-brand-g2-surface);
+    --nit-brand-textprimary: var(--nit-brand-g2-textprimary);
+    --nit-brand-textsecondary: var(--nit-brand-g2-textsecondary);
+    --nit-brand-borderprimary: var(--nit-brand-g2-borderprimary);
+    --nit-brand-bordersecondary: var(--nit-brand-g2-bordersecondary);
+    --nit-brand-hoverbackground: var(--nit-brand-g2-hoverbackground);
+    --nit-brand-hovertext: var(--nit-brand-g2-hovertext);
+    --nit-brand-error: var(--nit-brand-g2-error);
+    --nit-brand-success: var(--nit-brand-g2-success);
+    --nit-brand-warning: var(--nit-brand-g2-warning);
+    --nit-brand-info: var(--nit-brand-g2-info);
+}
+
+.nit-brand-3 {
+    --nit-brand-primary: var(--nit-brand-g3-primary);
+    --nit-brand-secondary: var(--nit-brand-g3-secondary);
+    --nit-brand-accent: var(--nit-brand-g3-accent);
+    --nit-brand-accenttext: var(--nit-brand-g3-accenttext);
+    --nit-brand-background: var(--nit-brand-g3-background);
+    --nit-brand-surface: var(--nit-brand-g3-surface);
+    --nit-brand-textprimary: var(--nit-brand-g3-textprimary);
+    --nit-brand-textsecondary: var(--nit-brand-g3-textsecondary);
+    --nit-brand-borderprimary: var(--nit-brand-g3-borderprimary);
+    --nit-brand-bordersecondary: var(--nit-brand-g3-bordersecondary);
+    --nit-brand-hoverbackground: var(--nit-brand-g3-hoverbackground);
+    --nit-brand-hovertext: var(--nit-brand-g3-hovertext);
+    --nit-brand-error: var(--nit-brand-g3-error);
+    --nit-brand-success: var(--nit-brand-g3-success);
+    --nit-brand-warning: var(--nit-brand-g3-warning);
+    --nit-brand-info: var(--nit-brand-g3-info);
+}

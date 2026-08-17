@@ -1,0 +1,165 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// =============================================================================
+// Plugins check / upgrade page  (admin/index.php → #plugins-check-page, and the
+// plugins overview #plugins-control-panel).
+//
+// Core (Boost `moodle/admin.scss` + the Bootstrap table layer) hard-codes a
+// stack of light-theme colours that break on the dark brand:
+//   • table headers + `versiondb` / `versiondisk` cells render BLACK text
+//     (`--bs-table-color`) on the dark page — unreadable.
+//   • "requires attention" rows (missing / downgrade / deprecated) get a light
+//     pink fill (`#fadadb`) that then carries our white cell text — unreadable.
+//   • the per-plugin available-update boxes (`.pluginupdateinfo`) get light
+//     pastel fills (`#cce6ea` / `#f4d6d2` / `#fcefdc`) with inherited white
+//     text — unreadable light islands.
+//   • the `.sourcetext` / `.statustext` badges ship `.bg-info.text-white`, and
+//     because our palette's Info role is white, that is white-on-white.
+//
+// Everything below re-points those to Brand Colors roles so the whole page
+// tracks the palette (Background / Surface / Text / Border + Error / Warning /
+// Success / Info status tints). Scoped to the two page ids so no other table is
+// touched. Bootstrap utilities (`.bg-*` / `.text-*`) are `!important`, so the
+// badge overrides must be `!important` too.
+// =============================================================================
+
+#plugins-check-page,
+#plugins-control-panel {
+
+    // ---- The plugins table --------------------------------------------------
+    // Force the Bootstrap table variables (and the cells directly) onto brand
+    // tokens so headers and version cells stop rendering black text.
+    .generaltable {
+        --bs-table-color: var(--nit-brand-textprimary);
+        --bs-table-bg: transparent;
+        --bs-table-border-color: var(--nit-brand-borderprimary);
+        color: var(--nit-brand-textprimary);
+        border-color: var(--nit-brand-borderprimary);
+
+        th,
+        td {
+            color: var(--nit-brand-textprimary);
+            border-color: var(--nit-brand-borderprimary);
+            background-color: transparent;
+        }
+
+        // Header row: a subtly raised Surface strip, brand text.
+        thead th,
+        .plugintypeheader {
+            background-color: var(--nit-brand-surface);
+            color: var(--nit-brand-textprimary);
+        }
+    }
+
+    // ---- Attention rows: missing / downgrade / deprecated -------------------
+    // Core paints these `#fadadb` (light pink). Swap for a dark Error tint over
+    // Surface so the white cell text stays readable (≥ 4.5).
+    #plugins-check .status-missing td,
+    #plugins-check .deprecatedtype td,
+    #plugins-check .status-downgrade td,
+    .status-missing td,
+    .deprecatedtype td {
+        background-color: color-mix(in srgb, var(--nit-brand-error) 22%, var(--nit-brand-surface));
+        color: var(--nit-brand-textprimary);
+    }
+
+    // ---- Source / status metadata badges ------------------------------------
+    // `.bg-info` (white in our palette) and `.bg-light` become neutral Surface
+    // chips; the status colours map to the matching brand roles. `!important`
+    // beats the Bootstrap `.bg-*` / `.text-*` utilities.
+    .badge {
+        &.bg-info,
+        &.bg-light,
+        &.bg-secondary {
+            background-color: var(--nit-brand-surface) !important;
+            color: var(--nit-brand-textprimary) !important;
+            border: 1px solid var(--nit-brand-borderprimary);
+        }
+
+        &.bg-success {
+            background-color: var(--nit-brand-success) !important;
+            color: var(--nit-brand-textprimary) !important;
+        }
+
+        &.bg-danger {
+            background-color: var(--nit-brand-error) !important;
+            color: var(--nit-brand-textprimary) !important;
+        }
+
+        &.bg-warning {
+            background-color: var(--nit-brand-warning) !important;
+            color: var(--nit-brand-background) !important;
+        }
+    }
+
+    // Muted helper text (last-check timestamp, dependency notes) → Text secondary.
+    .text-muted {
+        color: var(--nit-brand-textsecondary) !important;
+    }
+
+    // ---- Per-plugin available-update box ------------------------------------
+    // Default (stable release) = a raised Surface panel; the maturity variants
+    // carry a status tint. Force brand text + accent links so nothing inherits
+    // white onto a light fill.
+    .pluginupdateinfo {
+        background-color: var(--nit-brand-surface);
+        color: var(--nit-brand-textprimary);
+        border: 1px solid var(--nit-brand-borderprimary);
+
+        &.maturity50 { // alpha → danger
+            background-color: color-mix(in srgb, var(--nit-brand-error) 20%, var(--nit-brand-surface));
+            border-color: color-mix(in srgb, var(--nit-brand-error) 45%, transparent);
+        }
+
+        &.maturity100, // beta
+        &.maturity150 { // release candidate → warning
+            background-color: color-mix(in srgb, var(--nit-brand-warning) 22%, var(--nit-brand-surface));
+            border-color: color-mix(in srgb, var(--nit-brand-warning) 45%, transparent);
+        }
+
+        .version,
+        .info,
+        .separator {
+            color: var(--nit-brand-textprimary);
+        }
+
+        a:not(.btn) {
+            color: var(--nit-brand-accenttext);
+
+            &:hover,
+            &:focus {
+                color: var(--nit-brand-hovertext);
+            }
+        }
+    }
+}
+
+// ---- Core (Moodle itself) available-update box on the admin dashboard -------
+// `admin/index.php` normal view shows `.availableupdatesinfo .moodleupdateinfo`.
+// Keep it a Surface panel with brand text / accent links instead of the
+// inherited light alert look.
+#page-admin-index .availableupdatesinfo .moodleupdateinfo {
+    color: var(--nit-brand-textprimary);
+
+    a:not(.btn) {
+        color: var(--nit-brand-accenttext);
+
+        &:hover,
+        &:focus {
+            color: var(--nit-brand-hovertext);
+        }
+    }
+}

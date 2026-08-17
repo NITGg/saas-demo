@@ -1,0 +1,90 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_nit/fullwidth
+
+    NIT full-width layout: Boost navbar + footer, but the main content is rendered
+    edge-to-edge with no content-column max-width, no page heading, and no
+    secondary navigation. See theme/nit/layout/fullwidth.php.
+
+    Context variables required for this template:
+    * output - The core renderer for the page
+    * bodyattributes - attributes for the body tag as a string of html attributes
+    * sitename - The name of the site
+    * primarymoremenu / mobileprimarynav / usermenu / langmenu - navbar menus
+}}
+{{> theme_boost/head }}
+
+<body {{{ bodyattributes }}}>
+<style>
+    /* Edge-to-edge canvas: strip Boost's content-column width, padding, card
+       background and border so NIT pages paint their own full-bleed surface. */
+    /* #page carries horizontal padding for the drawer-toggle rails; this layout
+       has no drawers, so drop it (that padding was the gap at the page edges). */
+    body.nit-fullwidth-page #page { padding: 0 !important; }
+    body.nit-fullwidth-page #page-wrapper { overflow-x: clip; }
+    body.nit-fullwidth-page #page.drawers .main-inner {
+        max-width: 100% !important;
+        width: 100%;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        border-radius: 0 !important;
+    }
+    body.nit-fullwidth-page #page-content { padding: 0 !important; }
+    body.nit-fullwidth-page #region-main-box { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
+    body.nit-fullwidth-page #region-main {
+        max-width: 100% !important;
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: 0 !important;
+        background: transparent !important;
+        display: block !important;
+    }
+</style>
+{{> core/local/toast/wrapper}}
+<div id="page-wrapper" class="d-print-block">
+
+    {{{ output.standard_top_of_body_html }}}
+
+    {{> theme_boost/navbar }}
+
+    <div id="page" data-region="mainpage" class="drawers drag-container">
+        <div id="topofscroll" class="main-inner">
+            <div id="page-content">
+                <div id="region-main-box">
+                    <div id="region-main">
+                        {{{ output.main_content }}}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {{> theme_boost/footer }}
+    </div>
+    {{{ output.standard_after_main_region_html }}}
+</div>
+
+</body>
+</html>
+{{#js}}
+M.util.js_pending('theme_boost/loader');
+require(['theme_boost/loader', 'theme_boost/drawer'], function(Loader, Drawer) {
+    Drawer.init();
+    M.util.js_complete('theme_boost/loader');
+});
+{{/js}}

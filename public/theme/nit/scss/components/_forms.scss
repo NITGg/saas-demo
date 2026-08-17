@@ -1,0 +1,60 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// NIT form-control focus using the brand ring.
+.form-control,
+.form-select {
+    &:focus {
+        border-color: $nit-blue-500;
+        box-shadow: 0 0 0 0.25rem rgba($nit-blue-500, 0.25);
+    }
+}
+
+// Checkboxes / radios (.form-check-input) keep Bootstrap's default grey resting
+// border (#8f959e), which clashes with the Border-primary edge every other form
+// control (.form-control / .form-select) uses on the dark brand. Route the
+// resting border through the same Border-primary token so a checkbox field (e.g.
+// a mod_jobform TYPE_CHECKBOX question) matches the inputs around it. The
+// :checked (solid Primary fill) and :focus (site focus ring) states already come
+// from brand tokens, so they are left as-is.
+.form-check-input {
+    border-color: var(--nit-brand-borderprimary);
+}
+
+// Some Moodle widgets tag an editable field with the Bootstrap .bg-light /
+// .bg-white utility (e.g. inline-edit text areas). On the dark brand that
+// leaves the white field text on a light fill — unreadable. Keep editable
+// fields on the brand surface regardless of the utility. Scoped to form
+// controls only, so intentional light panels elsewhere are untouched.
+// !important is required to beat the utility's own !important background.
+.form-control.bg-light,
+.form-control.bg-white,
+textarea.bg-light,
+textarea.bg-white {
+    background-color: var(--nit-brand-surface) !important;
+    color: var(--nit-brand-textprimary);
+}
+
+// Bootstrap input-group addons (.input-group-text) default to a light grey fill
+// ($input-group-addon-bg) with body text. On the dark brand that is a light
+// island carrying the page's white text → unreadable (e.g. the "Show question
+// text in the question list?" addon on the question bank measured white-on-
+// #f8f9fa ≈ 1.05). Match the brand Surface the adjoining inputs sit on, with
+// brand text and the Border-primary edge every other control uses.
+.input-group-text {
+    background-color: var(--nit-brand-surface);
+    color: var(--nit-brand-textprimary);
+    border-color: var(--nit-brand-borderprimary);
+}

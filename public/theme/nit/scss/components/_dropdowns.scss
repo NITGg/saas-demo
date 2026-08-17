@@ -1,0 +1,201 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// =============================================================================
+// NIT dropdowns — the site-wide brand-aware dropdown menu.
+//
+// Bootstrap ships `.dropdown-menu` on a hard-coded WHITE background
+// (`$dropdown-bg: $white`) with dark text, and theme_nit never overrode that
+// SCSS var — so every content dropdown (course management "Sort by…", the
+// action / "more" menus, editcategory selects' sibling menus, activity chooser
+// filters, …) rendered as a white panel on the dark brand. This component wires
+// those panels to the Brand-Colors palette instead, so they read from the same
+// single source of truth as the rest of the site:
+//
+//   surface         → panel background           (documented usage: "dropdowns background")
+//   borderprimary   → panel + divider border
+//   textprimary     → resting item text
+//   hoverbackground → hovered / focused item fill (documented usage: "hover background")
+//   hovertext       → hovered / focused item text (documented usage: "hover text")
+//   primary         → the selected / active item
+//   textsecondary   → headers, disabled items, muted helper text
+//
+// Because everything resolves from the ACTIVE `--nit-brand-*` layer, a dropdown
+// inside a `.nit-brand-2` / `.nit-brand-3` scope re-skins automatically.
+//
+// The navbar dropdowns (language / user / gear panels) keep their own navy
+// "sub-menu" look: those rules live under `.nit-navbar …` (see _navbar.scss),
+// which is more specific than the bare `.dropdown-menu` selectors here, so they
+// win untouched. This component deliberately does NOT reach into the navbar.
+// =============================================================================
+
+.dropdown-menu {
+    background-color: var(--nit-brand-surface);
+    color: var(--nit-brand-textprimary);
+    border: 1px solid var(--nit-brand-borderprimary);
+    border-radius: $border-radius;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    // A hair of inset breathing room so the first/last item never touch the
+    // rounded corners.
+    padding-block: 0.35rem;
+
+    // ---- Items ---------------------------------------------------------------
+    // `.dropdown-item` covers plain links, Moodle action-menu rows
+    // (`a.menu-action`), and button items alike.
+    .dropdown-item {
+        color: var(--nit-brand-textprimary);
+
+        // The glyph in Moodle action items follows the text colour.
+        .icon {
+            color: inherit;
+        }
+
+        &:hover,
+        &:focus {
+            background-color: var(--nit-brand-hoverbackground);
+            color: var(--nit-brand-hovertext);
+        }
+
+        // Keyboard focus gets a visible brand ring on top of the hover fill.
+        &:focus-visible {
+            outline: 2px solid var(--nit-brand-primary);
+            outline-offset: -2px;
+        }
+
+        // Selected row (Bootstrap `.active` / pressed `:active`) — the one
+        // filled state, using the brand primary so it reads as "chosen".
+        &.active,
+        &:active {
+            background-color: var(--nit-brand-primary);
+            color: var(--nit-brand-on-primary);
+        }
+
+        // Unavailable rows sit back on the muted text role, no fill on hover.
+        &.disabled,
+        &:disabled {
+            color: var(--nit-brand-textsecondary);
+            background-color: transparent;
+        }
+    }
+
+    // Non-interactive text rows (Moodle uses these for read-only entries).
+    .dropdown-item-text {
+        color: var(--nit-brand-textprimary);
+    }
+
+    // ---- Structure -----------------------------------------------------------
+    .dropdown-header {
+        color: var(--nit-brand-textsecondary);
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        font-size: $nit-fs-xs;
+    }
+
+    .dropdown-divider {
+        border-top-color: var(--nit-brand-borderprimary);
+    }
+}
+
+// -----------------------------------------------------------------------------
+// The closed select control (`<select class="form-select">`, e.g. the
+// editcategory.php "Parent category" / sort pickers). The OPEN option list is
+// painted by the OS and can't be themed with CSS, but the resting control
+// should sit on the brand surface like every other input rather than the
+// browser's default white box. Focus already gets the brand ring from
+// _forms.scss.
+// -----------------------------------------------------------------------------
+.form-select {
+    background-color: var(--nit-brand-surface);
+    color: var(--nit-brand-textprimary);
+    border-color: var(--nit-brand-borderprimary);
+    // Bootstrap's default caret is a near-black chevron — invisible on the dark
+    // surface. Swap in a light one (matches the textprimary default, #fff).
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+}
+
+// Disabled selects — e.g. the "Sort by …" / "Move … to" pickers on
+// course/management.php, which core ships disabled until a row is selected.
+// Bootstrap's `.form-select:disabled` fills them with `--bs-secondary-bg`
+// (#e9ecef, a light grey) while our text stays white → white-on-grey, unreadable
+// and off-brand. Keep them on the brand surface with muted (but legible) text and
+// a dimmed look that still reads as "disabled".
+.form-select:disabled,
+.form-select[disabled] {
+    background-color: var(--nit-brand-surface);
+    color: var(--nit-brand-textsecondary);
+    border-color: var(--nit-brand-borderprimary);
+    opacity: 0.6;
+}
+// -----------------------------------------------------------------------------
+// Autocomplete (`form-autocomplete`) — the THIRD dropdown family. This is a
+// searchable widget with its own suggestions list, NOT a Bootstrap
+// `.dropdown-menu` and NOT a native `<select>`, so the rules above never touch
+// it. It backs the "Course category" picker (course/edit.php), the "Search"
+// selectors, tag / cohort / user pickers, report-builder filters, and more.
+//
+// Core paints the suggestions panel on `$forms-autocomplete-bg` (white) with
+// `$body-color` text (dark → invisible on the brand) and fills the hovered /
+// keyboard-selected row with `$dropdown-link-active-bg` — the solid primary red
+// bars. Rebind the whole widget to the palette so it matches the other
+// dropdowns: Surface panel, brand text, and the subtle Hover roles for the
+// active row (instead of a full-width red slab).
+// -----------------------------------------------------------------------------
+.form-autocomplete-suggestions {
+    background-color: var(--nit-brand-surface);
+    border: 1px solid var(--nit-brand-borderprimary);
+    border-radius: $border-radius;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+
+    li {
+        color: var(--nit-brand-textprimary);
+
+        // Hovered or keyboard-highlighted suggestion — the brand hover pair,
+        // matching `.dropdown-item` above (no more solid red bars).
+        &:hover,
+        &:focus,
+        &[aria-selected="true"] {
+            background-color: var(--nit-brand-hoverbackground);
+            color: var(--nit-brand-hovertext);
+        }
+
+        // Unavailable suggestion.
+        &[aria-disabled="true"] {
+            color: var(--nit-brand-textsecondary);
+            background-color: transparent;
+        }
+
+        // Group heading inside the list.
+        &.suggestions-heading {
+            color: var(--nit-brand-textsecondary);
+            background-color: var(--nit-brand-surface);
+        }
+    }
+}
+
+// The selected-item chips (above the search box). Core renders each as
+// `<span class="badge bg-secondary text-dark …">`, and the `.text-dark` /
+// `.bg-secondary` utilities are `!important` — so `.text-dark` forces near-black
+// text that is invisible on the dark chip, and no plain colour rule can beat it.
+// Re-skin the chip to a readable brand tile; `!important` is required to win
+// against the utilities.
+.form-autocomplete-selection [role="option"] {
+    background-color: var(--nit-brand-surface-2) !important;
+    color: var(--nit-brand-textprimary) !important;
+    border: 1px solid var(--nit-brand-borderprimary);
+}
+
+.form-autocomplete-downarrow {
+    color: var(--nit-brand-textprimary);
+}

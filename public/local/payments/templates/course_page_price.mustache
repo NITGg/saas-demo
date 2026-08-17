@@ -1,0 +1,68 @@
+{{!
+    Course page price display with full details.
+    Context: {price, sale_price, original_price, currency, is_sale_active, discount_pct, is_purchased, is_enrolled, is_free, courseid, country, course_url, buy_url}
+}}
+<div class="local-payments-course-price lp-page-card">
+    {{#is_enrolled}}
+        <div class="lp-page-status lp-page-status--enrolled">
+            <i class="fa fa-check-circle"></i>
+            <h5>{{#str}}already_enrolled, local_payments{{/str}}</h5>
+        </div>
+    {{/is_enrolled}}
+    {{^is_enrolled}}
+        {{#is_free}}
+            <div class="lp-page-status lp-page-status--free">
+                <span class="lp-badge lp-badge--free lp-badge--lg">{{#str}}free, local_payments{{/str}}</span>
+                <a href="{{course_url}}" class="lp-btn lp-btn--join lp-btn--block">
+                    <i class="fa fa-sign-in-alt"></i> {{#str}}entercourse, local_payments{{/str}}
+                </a>
+            </div>
+        {{/is_free}}
+        {{^is_free}}
+            {{#is_purchased}}
+                <div class="lp-page-status lp-page-status--purchased">
+                    <i class="fa fa-shopping-bag"></i>
+                    <h5>{{#str}}already_purchased, local_payments{{/str}}</h5>
+                </div>
+            {{/is_purchased}}
+            {{^is_purchased}}
+                <div class="lp-page-buy">
+                    {{#is_sale_active}}
+                        <span class="lp-badge lp-badge--sale lp-badge--lg">
+                            {{#str}}sale, local_payments{{/str}} -{{discount_pct}}%
+                        </span>
+                        <div class="lp-page-price-row">
+                            <span class="lp-price lp-price--original lp-price--lg">{{original_price}} {{currency}}</span>
+                            <span class="lp-price lp-price--sale lp-price--xl">{{sale_price}} {{currency}}</span>
+                        </div>
+                    {{/is_sale_active}}
+                    {{^is_sale_active}}
+                        <div class="lp-page-price-row">
+                            <span class="lp-price lp-price--current lp-price--xl">{{price}} {{currency}}</span>
+                        </div>
+                    {{/is_sale_active}}
+
+                    {{#can_enroll_via_sub}}
+                        <div class="lp-page-price-row">
+                            <span class="lp-price lp-price--current lp-price--xl">{{#str}}covered_by_subscription, local_payments{{/str}}</span>
+                        </div>
+                        <a href="{{enroll_url}}" class="lp-btn lp-btn--subscribe lp-btn--block lp-btn--lg" id="local-payments-enroll-btn"
+                           data-courseid="{{courseid}}">
+                            <i class="fa fa-sign-in-alt"></i> {{#str}}enroll, local_payments{{/str}}
+                        </a>
+                    {{/can_enroll_via_sub}}
+                    {{^can_enroll_via_sub}}
+                        <a href="{{buy_url}}" class="lp-btn lp-btn--subscribe lp-btn--block lp-btn--lg" id="local-payments-buy-btn"
+                           data-courseid="{{courseid}}">
+                            <i class="fa fa-credit-card"></i> {{#str}}buycourse, local_payments{{/str}}
+                        </a>
+                    {{/can_enroll_via_sub}}
+
+                    <small class="lp-secure-note">
+                        <i class="fa fa-lock"></i> {{#str}}secure_checkout, local_payments{{/str}}
+                    </small>
+                </div>
+            {{/is_purchased}}
+        {{/is_free}}
+    {{/is_enrolled}}
+</div>

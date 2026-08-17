@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/payments/db" VERSION="2026062900" COMMENT="local_payments tables"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd">
+  <TABLES>
+
+    <!-- ================================================================== -->
+    <!-- Provider registry (credentials stored in config_plugins via sub-plugin settings) -->
+    <!-- ================================================================== -->
+    <TABLE NAME="local_payments_providers" COMMENT="Registered payment providers">
+      <FIELDS>
+        <FIELD NAME="id"                   TYPE="int"  LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="name"                 TYPE="char" LENGTH="100" NOTNULL="true" COMMENT="Unique slug: kashier, stripe"/>
+        <FIELD NAME="display_name"         TYPE="char" LENGTH="255" NOTNULL="true"/>
+        <FIELD NAME="plugin_name"          TYPE="char" LENGTH="255" NOTNULL="true" COMMENT="Frankenstyle: paymentprovider_kashier"/>
+        <FIELD NAME="enabled"              TYPE="int"  LENGTH="1"  NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="priority"             TYPE="int"  LENGTH="4"  NOTNULL="true" DEFAULT="100"/>
+        <FIELD NAME="supported_countries"  TYPE="text" NOTNULL="false" COMMENT="JSON array or * for all"/>
+        <FIELD NAME="supported_currencies" TYPE="text" NOTNULL="false" COMMENT="JSON array or * for all"/>
+        <FIELD NAME="timecreated"          TYPE="int"  LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timemodified"         TYPE="int"  LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="idx_name" UNIQUE="true" FIELDS="name"/>
+        <INDEX NAME="idx_enabled_priority" UNIQUE="false" FIELDS="enabled, priority"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- ================================================================== -->
+    <!-- Course pricing rules -->
+    <!-- ================================================================== -->
+    <TABLE NAME="local_payments_course_prices" COMMENT="Per-course per-country pricing rules">
+      <FIELDS>
+        <FIELD NAME="id"           TYPE="int"    LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="courseid"     TYPE="int"    LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="country"      TYPE="char"   LENGTH="2"  NOTNULL="true" DEFAULT="*" COMMENT="ISO 3166-1 alpha-2 or * for default"/>
+        <FIELD NAME="currency"     TYPE="char"   LENGTH="3"  NOTNULL="true" COMMENT="ISO 4217"/>
+        <FIELD NAME="price"        TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="true"/>
+        <FIELD NAME="sale_price"   TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="false"/>
+        <FIELD NAME="start_date"   TYPE="int"    LENGTH="10" NOTNULL="false" COMMENT="Sale start timestamp"/>
+        <FIELD NAME="end_date"     TYPE="int"    LENGTH="10" NOTNULL="false" COMMENT="Sale end timestamp"/>
+        <FIELD NAME="is_default"   TYPE="int"    LENGTH="1"  NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="is_active"    TYPE="int"    LENGTH="1"  NOTNULL="true" DEFAULT="1"/>
+        <FIELD NAME="priority"     TYPE="int"    LENGTH="4"  NOTNULL="true" DEFAULT="0" COMMENT="Higher = preferred when multiple match"/>
+        <FIELD NAME="created_by"   TYPE="int"    LENGTH="10" NOTNULL="true"/>
+        <FIELD NAME="timecreated"  TYPE="int"    LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timemodified" TYPE="int"    LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="fk_courseid" TYPE="foreign" FIELDS="courseid" REFTABLE="course" REFFIELDS="id"/>
+        <KEY NAME="fk_created_by" TYPE="foreign" FIELDS="created_by" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="idx_course_country_active" UNIQUE="false" FIELDS="courseid, country, is_active"/>
+        <INDEX NAME="idx_course_default" UNIQUE="false" FIELDS="courseid, is_default"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- ================================================================== -->
+    <!-- Payment transactions -->
+    <!-- ================================================================== -->
+    <TABLE NAME="local_payments_transactions" COMMENT="Payment transaction records">
+      <FIELDS>
+        <FIELD NAME="id"                        TYPE="int"    LENGTH="10"  NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid"                    TYPE="int"    LENGTH="10"  NOTNULL="true"/>
+        <FIELD NAME="courseid"                  TYPE="int"    LENGTH="10"  NOTNULL="true"/>
+        <FIELD NAME="provider_id"               TYPE="int"    LENGTH="10"  NOTNULL="true"/>
+        <FIELD NAME="price_id"                  TYPE="int"    LENGTH="10"  NOTNULL="false"/>
+        <FIELD NAME="order_id"                  TYPE="char"   LENGTH="64"  NOTNULL="true" COMMENT="Unique internal reference: PAY-2026-00001234"/>
+        <FIELD NAME="idempotency_key"           TYPE="char"   LENGTH="64"  NOTNULL="true"/>
+        <FIELD NAME="amount"                    TYPE="number" LENGTH="10"  DECIMALS="2" NOTNULL="true"/>
+        <FIELD NAME="original_amount"           TYPE="number" LENGTH="10"  DECIMALS="2" NOTNULL="false"/>
+        <FIELD NAME="currency"                  TYPE="char"   LENGTH="3"   NOTNULL="true"/>
+        <FIELD NAME="status"                    TYPE="char"   LENGTH="25"  NOTNULL="true" DEFAULT="pending" COMMENT="pending|completed|failed|cancelled|expired|timed_out|refunded|partially_refunded|voided|chargeback|duplicate"/>
+        <FIELD NAME="provider_session_id"       TYPE="char"   LENGTH="255" NOTNULL="false" COMMENT="Kashier _id / session ID"/>
+        <FIELD NAME="provider_order_id"         TYPE="char"   LENGTH="255" NOTNULL="false" COMMENT="kashierOrderId for refund/void"/>
+        <FIELD NAME="provider_txn_id"           TYPE="char"   LENGTH="255" NOTNULL="false" COMMENT="Provider transaction ID"/>
+        <FIELD NAME="checkout_url"              TYPE="text"   NOTNULL="false" COMMENT="Provider checkout URL"/>
+        <FIELD NAME="payment_method_type"       TYPE="char"   LENGTH="50"  NOTNULL="false" COMMENT="card, wallet, bank"/>
+        <FIELD NAME="reject_reason"             TYPE="char"   LENGTH="255" NOTNULL="false"/>
+        <FIELD NAME="provider_response_code"    TYPE="char"   LENGTH="100" NOTNULL="false"/>
+        <FIELD NAME="provider_response_message" TYPE="text"   NOTNULL="false"/>
+        <FIELD NAME="customer_email"            TYPE="char"   LENGTH="255" NOTNULL="false"/>
+        <FIELD NAME="customer_reference"        TYPE="char"   LENGTH="100" NOTNULL="false"/>
+        <FIELD NAME="display_lang"              TYPE="char"   LENGTH="5"   NOTNULL="false" DEFAULT="en"/>
+        <FIELD NAME="country"                   TYPE="char"   LENGTH="2"   NOTNULL="false"/>
+        <FIELD NAME="ip_address"                TYPE="char"   LENGTH="45"  NOTNULL="false"/>
+        <FIELD NAME="user_agent"                TYPE="char"   LENGTH="500" NOTNULL="false"/>
+        <FIELD NAME="metadata"                  TYPE="text"   NOTNULL="false" COMMENT="JSON extensible"/>
+        <FIELD NAME="expires_at"                TYPE="int"    LENGTH="10"  NOTNULL="false"/>
+        <FIELD NAME="timecreated"               TYPE="int"    LENGTH="10"  NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timemodified"              TYPE="int"    LENGTH="10"  NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="fk_userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="fk_courseid" TYPE="foreign" FIELDS="courseid" REFTABLE="course" REFFIELDS="id"/>
+        <KEY NAME="fk_provider_id" TYPE="foreign" FIELDS="provider_id" REFTABLE="local_payments_providers" REFFIELDS="id"/>
+        <KEY NAME="fk_price_id" TYPE="foreign" FIELDS="price_id" REFTABLE="local_payments_course_prices" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="idx_order_id" UNIQUE="true" FIELDS="order_id"/>
+        <INDEX NAME="idx_idempotency_key" UNIQUE="true" FIELDS="idempotency_key"/>
+        <INDEX NAME="idx_userid_courseid" UNIQUE="false" FIELDS="userid, courseid"/>
+        <INDEX NAME="idx_provider_txn_id" UNIQUE="false" FIELDS="provider_txn_id"/>
+        <INDEX NAME="idx_status_expires" UNIQUE="false" FIELDS="status, expires_at"/>
+        <INDEX NAME="idx_provider_session_id" UNIQUE="false" FIELDS="provider_session_id"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- ================================================================== -->
+    <!-- Webhook log -->
+    <!-- ================================================================== -->
+    <TABLE NAME="local_payments_webhooks" COMMENT="Raw webhook payloads received from providers">
+      <FIELDS>
+        <FIELD NAME="id"                TYPE="int"  LENGTH="10"  NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="provider_id"       TYPE="int"  LENGTH="10"  NOTNULL="true"/>
+        <FIELD NAME="transaction_id"    TYPE="int"  LENGTH="10"  NOTNULL="false"/>
+        <FIELD NAME="event_type"        TYPE="char" LENGTH="100" NOTNULL="true" COMMENT="pay, refund, authorize, void, capture"/>
+        <FIELD NAME="merchant_order_id" TYPE="char" LENGTH="100" NOTNULL="false" COMMENT="Our order ref echoed back"/>
+        <FIELD NAME="provider_order_id" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Provider order ID"/>
+        <FIELD NAME="order_reference"   TYPE="char" LENGTH="255" NOTNULL="false"/>
+        <FIELD NAME="payment_method"    TYPE="char" LENGTH="50"  NOTNULL="false" COMMENT="card, wallet"/>
+        <FIELD NAME="amount"            TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="false"/>
+        <FIELD NAME="currency"          TYPE="char" LENGTH="3"   NOTNULL="false"/>
+        <FIELD NAME="payload"           TYPE="text" NOTNULL="true" COMMENT="Full raw JSON"/>
+        <FIELD NAME="headers"           TYPE="text" NOTNULL="false" COMMENT="JSON request headers"/>
+        <FIELD NAME="card_info"         TYPE="text" NOTNULL="false" COMMENT="JSON masked card details"/>
+        <FIELD NAME="source_of_funds"   TYPE="text" NOTNULL="false" COMMENT="JSON"/>
+        <FIELD NAME="channel"           TYPE="char" LENGTH="100" NOTNULL="false"/>
+        <FIELD NAME="signature_keys"    TYPE="text" NOTNULL="false" COMMENT="JSON array of signed fields"/>
+        <FIELD NAME="signature_valid"   TYPE="int"  LENGTH="1"   NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="status"            TYPE="char" LENGTH="20"  NOTNULL="true" DEFAULT="received" COMMENT="received, processed, failed"/>
+        <FIELD NAME="processed_at"      TYPE="int"  LENGTH="10"  NOTNULL="false"/>
+        <FIELD NAME="timecreated"       TYPE="int"  LENGTH="10"  NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="fk_provider_id" TYPE="foreign" FIELDS="provider_id" REFTABLE="local_payments_providers" REFFIELDS="id"/>
+        <KEY NAME="fk_transaction_id" TYPE="foreign" FIELDS="transaction_id" REFTABLE="local_payments_transactions" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="idx_merchant_order" UNIQUE="false" FIELDS="merchant_order_id"/>
+        <INDEX NAME="idx_provider_status" UNIQUE="false" FIELDS="provider_id, status"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- ================================================================== -->
+    <!-- Refunds & voids -->
+    <!-- ================================================================== -->
+    <TABLE NAME="local_payments_refunds" COMMENT="Refund and void records">
+      <FIELDS>
+        <FIELD NAME="id"                 TYPE="int"    LENGTH="10"  NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="transaction_id"     TYPE="int"    LENGTH="10"  NOTNULL="true"/>
+        <FIELD NAME="operation_type"     TYPE="char"   LENGTH="20"  NOTNULL="true" DEFAULT="refund" COMMENT="refund or void"/>
+        <FIELD NAME="amount"             TYPE="number" LENGTH="10"  DECIMALS="2" NOTNULL="false" COMMENT="NULL for void (full reversal)"/>
+        <FIELD NAME="currency"           TYPE="char"   LENGTH="3"   NOTNULL="false"/>
+        <FIELD NAME="reason"             TYPE="text"   NOTNULL="false"/>
+        <FIELD NAME="status"             TYPE="char"   LENGTH="20"  NOTNULL="true" DEFAULT="pending" COMMENT="pending, completed, failed"/>
+        <FIELD NAME="provider_refund_id" TYPE="char"   LENGTH="255" NOTNULL="false"/>
+        <FIELD NAME="provider_order_id"  TYPE="char"   LENGTH="255" NOTNULL="false" COMMENT="Provider order ID used in request"/>
+        <FIELD NAME="gateway_code"       TYPE="char"   LENGTH="100" NOTNULL="false" COMMENT="APPROVED, declined reason"/>
+        <FIELD NAME="initiated_by"       TYPE="int"    LENGTH="10"  NOTNULL="true"/>
+        <FIELD NAME="timecreated"        TYPE="int"    LENGTH="10"  NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timemodified"       TYPE="int"    LENGTH="10"  NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="fk_transaction_id" TYPE="foreign" FIELDS="transaction_id" REFTABLE="local_payments_transactions" REFFIELDS="id"/>
+        <KEY NAME="fk_initiated_by" TYPE="foreign" FIELDS="initiated_by" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="idx_txn_status" UNIQUE="false" FIELDS="transaction_id, status"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- ================================================================== -->
+    <!-- Invoices -->
+    <!-- ================================================================== -->
+    <TABLE NAME="local_payments_invoices" COMMENT="Payment invoices">
+      <FIELDS>
+        <FIELD NAME="id"              TYPE="int"    LENGTH="10"  NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="transaction_id"  TYPE="int"    LENGTH="10"  NOTNULL="true"/>
+        <FIELD NAME="userid"          TYPE="int"    LENGTH="10"  NOTNULL="true"/>
+        <FIELD NAME="invoice_number"  TYPE="char"   LENGTH="50"  NOTNULL="true"/>
+        <FIELD NAME="amount"          TYPE="number" LENGTH="10"  DECIMALS="2" NOTNULL="true"/>
+        <FIELD NAME="currency"        TYPE="char"   LENGTH="3"   NOTNULL="true"/>
+        <FIELD NAME="status"          TYPE="char"   LENGTH="20"  NOTNULL="true" DEFAULT="issued" COMMENT="draft, issued, void"/>
+        <FIELD NAME="pdf_path"        TYPE="char"   LENGTH="500" NOTNULL="false"/>
+        <FIELD NAME="timecreated"     TYPE="int"    LENGTH="10"  NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="fk_transaction_id" TYPE="foreign" FIELDS="transaction_id" REFTABLE="local_payments_transactions" REFFIELDS="id"/>
+        <KEY NAME="fk_userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="idx_invoice_number" UNIQUE="true" FIELDS="invoice_number"/>
+        <INDEX NAME="idx_userid" UNIQUE="false" FIELDS="userid"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- ================================================================== -->
+    <!-- Audit logs -->
+    <!-- ================================================================== -->
+    <TABLE NAME="local_payments_audit_logs" COMMENT="Audit trail for payment actions">
+      <FIELDS>
+        <FIELD NAME="id"             TYPE="int"  LENGTH="10"  NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="transaction_id" TYPE="int"  LENGTH="10"  NOTNULL="false"/>
+        <FIELD NAME="userid"         TYPE="int"  LENGTH="10"  NOTNULL="false"/>
+        <FIELD NAME="action"         TYPE="char" LENGTH="100" NOTNULL="true" COMMENT="status_changed, refund_initiated, etc."/>
+        <FIELD NAME="old_value"      TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="new_value"      TYPE="text" NOTNULL="false"/>
+        <FIELD NAME="ip_address"     TYPE="char" LENGTH="45"  NOTNULL="false"/>
+        <FIELD NAME="user_agent"     TYPE="char" LENGTH="500" NOTNULL="false"/>
+        <FIELD NAME="timecreated"    TYPE="int"  LENGTH="10"  NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="fk_transaction_id" TYPE="foreign" FIELDS="transaction_id" REFTABLE="local_payments_transactions" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="idx_txn_action" UNIQUE="false" FIELDS="transaction_id, action"/>
+        <INDEX NAME="idx_timecreated" UNIQUE="false" FIELDS="timecreated"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- ================================================================== -->
+    <!-- General logs -->
+    <!-- ================================================================== -->
+    <TABLE NAME="local_payments_logs" COMMENT="Debug and operational logs">
+      <FIELDS>
+        <FIELD NAME="id"             TYPE="int"  LENGTH="10"  NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="provider_id"    TYPE="int"  LENGTH="10"  NOTNULL="false"/>
+        <FIELD NAME="transaction_id" TYPE="int"  LENGTH="10"  NOTNULL="false"/>
+        <FIELD NAME="level"          TYPE="char" LENGTH="20"  NOTNULL="true" DEFAULT="info" COMMENT="debug, info, warning, error"/>
+        <FIELD NAME="message"        TYPE="char" LENGTH="500" NOTNULL="true"/>
+        <FIELD NAME="context"        TYPE="text" NOTNULL="false" COMMENT="JSON contextual data"/>
+        <FIELD NAME="timecreated"    TYPE="int"  LENGTH="10"  NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="idx_level_time" UNIQUE="false" FIELDS="level, timecreated"/>
+        <INDEX NAME="idx_provider_time" UNIQUE="false" FIELDS="provider_id, timecreated"/>
+      </INDEXES>
+    </TABLE>
+
+  </TABLES>
+</XMLDB>

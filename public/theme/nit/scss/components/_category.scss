@@ -1,0 +1,19 @@
+// local_nit_category — category details page (pagelayout: nit_fullwidth).
+//
+// The page itself is fully driven by the Brand Colors palette: local/nit_category/
+// index.php maps its local --cbg*/--ctext* slots straight to --nit-brand-* roles, so
+// every colour it renders re-skins with the site and honours RTL/LTR + dark/light.
+//
+// The one thing the page can't reach from inline styles is the local_payments price
+// component (.lp-card-badge) that the payments plugin injects into the course cards.
+// That component ships its own light-surface ink (--lp-ink ≈ #1a1a2e), which lands on
+// the brand-dark card surface at ~1.02 contrast (invisible). Re-point just those price
+// classes to brand tokens, scoped to this page so the shared component is untouched
+// everywhere else it appears.
+.nit-cat-details {
+    .lp-card-badge {
+        .lp-price--current  { color: var(--nit-brand-textprimary)   !important; }
+        .lp-price--original { color: var(--nit-brand-textsecondary) !important; }
+        .lp-price--sale     { color: var(--nit-brand-accenttext)    !important; }
+    }
+}

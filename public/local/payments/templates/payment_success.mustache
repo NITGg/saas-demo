@@ -1,0 +1,26 @@
+{{!
+    Payment success page template.
+}}
+<div class="local-payments-result text-center p-4">
+    <div class="mb-4">
+        <i class="fa fa-check-circle text-success" style="font-size: 4rem;"></i>
+    </div>
+    <h3>{{#str}}payment_success, local_payments{{/str}}</h3>
+    <p class="lead">{{#str}}payment_success_message, local_payments{{/str}}</p>
+
+    <div class="card mx-auto mt-3" style="max-width: 400px;">
+        <div class="card-body">
+            <p><strong>{{#str}}course, local_payments{{/str}}:</strong> {{{course_name}}}</p>
+            <p><strong>{{#str}}orderid, local_payments{{/str}}:</strong> {{order_id}}</p>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <a href="{{course_url}}" class="btn btn-primary btn-lg">
+            {{#str}}gotocourse, local_payments{{/str}}
+        </a>
+        <a href="{{history_url}}" class="btn btn-outline-secondary btn-lg ms-2">
+            {{#str}}viewhistory, local_payments{{/str}}
+        </a>
+    </div>
+</div>

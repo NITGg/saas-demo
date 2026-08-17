@@ -1,0 +1,28 @@
+{{!
+    Payment failure page template.
+}}
+<div class="local-payments-result text-center p-4">
+    <div class="mb-4">
+        <i class="fa fa-times-circle text-danger" style="font-size: 4rem;"></i>
+    </div>
+    <h3>{{#str}}payment_failure, local_payments{{/str}}</h3>
+    <p class="lead">{{#str}}payment_failure_message, local_payments{{/str}}</p>
+
+    <div class="card mx-auto mt-3" style="max-width: 400px;">
+        <div class="card-body">
+            <p><strong>{{#str}}orderid, local_payments{{/str}}:</strong> {{order_id}}</p>
+            <p><strong>{{#str}}status, local_payments{{/str}}:</strong>
+                <span class="badge text-bg-danger">{{status}}</span>
+            </p>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <a href="{{retry_url}}" class="btn btn-primary">
+            {{#str}}tryagain, local_payments{{/str}}
+        </a>
+        <a href="{{history_url}}" class="btn btn-outline-secondary ms-2">
+            {{#str}}viewhistory, local_payments{{/str}}
+        </a>
+    </div>
+</div>

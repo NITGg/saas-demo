@@ -1,0 +1,43 @@
+# ===== Moodle: secrets & environment (CRITICAL) =====
+# config.php holds DB credentials + environment paths. config-dist.php is the template.
+/config.php
+# Moodle data directory (uploads, cache, sessions) — never commit
+moodledata/
+
+# ===== Dependencies (re-installable) =====
+/node_modules/
+**/node_modules/
+/vendor/
+
+# ===== Build / cache artifacts (generated) =====
+.grunt/
+.esbuild/
+*.log
+
+# ===== Generated test/dev config =====
+/behat.yml
+/phpunit.xml
+/config-local.php
+
+# ===== OS files =====
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== IDE / editor =====
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ===== Local Docker / server environment (not part of the app) =====
+/000-default.conf
+/Dockerfile
+/docker-compose.yml
+/php-moodle.ini
+
+# ===== Local DB / data snapshots (large, environment-specific) =====
+/moodle_backup.sql
+/moodledata.zip
+public/filter/multilang2/

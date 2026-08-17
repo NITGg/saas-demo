@@ -1,0 +1,43 @@
+# NIT: dependency vulnerability audit (additive — not part of Moodle core CI).
+# Runs Composer + npm audits on push/PR and weekly, so newly-disclosed CVEs in
+# dependencies surface without upgrading anything automatically.
+name: NIT dependency audit
+
+on:
+  push:
+    branches: [moodle-new-version, main, master]
+  pull_request:
+  schedule:
+    - cron: '0 3 * * 1'  # Every Monday 03:00 UTC.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  composer-audit:
+    name: Composer audit (PHP)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer
+      - name: composer audit
+        # Report only; never fail the build on transitive advisories you can't
+        # immediately fix. Remove "|| true" to make advisories blocking.
+        run: composer audit --no-interaction --ansi || true
+
+  npm-audit:
+    name: npm audit (JS)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: npm audit (production dependencies)
+        run: npm audit --omit=dev || true

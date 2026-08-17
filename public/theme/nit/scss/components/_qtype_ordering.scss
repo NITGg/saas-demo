@@ -1,0 +1,62 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// =============================================================================
+// NIT ordering question type (qtype_ordering) — the stacked draggable answer
+// boxes on attempt.php / review.php.
+//
+// Core question/type/ordering/styles.css paints each sortable item white
+// (`background-color: #fff`) with a black border, so on the dark brand the box
+// is a white slab and the item text (which the theme paints white) is invisible.
+// The feedback states use flat light greens / oranges / reds. Route the boxes to
+// the brand Surface with brand text + border, and the feedback states to their
+// status role as a dark tint so the white text stays readable.
+// =============================================================================
+
+.que.ordering {
+
+    // The draggable answer boxes.
+    .sortablelist li {
+        background-color: var(--nit-brand-surface);
+        border-color: var(--nit-brand-borderprimary);
+        color: var(--nit-brand-textprimary);
+    }
+
+    // Active drop list outline.
+    .sortablelist.active {
+        border-color: var(--nit-brand-bordersecondary);
+    }
+
+    // ---- Feedback states (after submit) --------------------------------------
+    .sortablelist.notactive {
+
+        li.correct {
+            background-color: color-mix(in srgb, var(--nit-brand-success) 26%, var(--nit-brand-surface));
+            border-color: var(--nit-brand-success);
+        }
+
+        li.partial66,
+        li.partial33 {
+            background-color: color-mix(in srgb, var(--nit-brand-warning) 26%, var(--nit-brand-surface));
+            border-color: var(--nit-brand-warning);
+        }
+
+        li.partial00,
+        li.incorrect {
+            background-color: color-mix(in srgb, var(--nit-brand-error) 26%, var(--nit-brand-surface));
+            border-color: var(--nit-brand-error);
+        }
+    }
+}

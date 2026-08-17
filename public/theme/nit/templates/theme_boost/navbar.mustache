@@ -1,0 +1,119 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_boost/navbar
+
+    NIT override of the Boost top navbar (a "طبق الأصل" of the legacy edumy
+    header, rebuilt on Boost primitives — no edumy/cocoon dependency).
+
+    Differences from theme_boost/navbar.mustache (re-diff on each Moodle upgrade;
+    tracked in theme/nit/docs/override-budget.md):
+      * Brand shows the compact logo AND the site name together (Boost shows one
+        or the other).
+      * The language menu sits on the left, right after the brand.
+      * The horizontal primary navigation is collapsed into a single gear-icon
+        dropdown (built from `mobileprimarynav`).
+      * Right cluster order: notifications (navbar_plugin_output), gear nav,
+        user menu. Search + edit switch are kept but only render when present.
+
+    Visual treatment (navy field, gold wordmark) lives in
+    theme/nit/scss/components/_navbar.scss, keyed off the `nit-navbar` class.
+
+    Context variables required for this template:
+    * output - The core renderer for the page.
+    * sitename - The name of the site.
+    * config - wwwroot / homeurl.
+    * langmenu - Language menu context (from the primary output).
+    * usermenu - User menu context (from the primary output).
+    * mobileprimarynav - Array of primary nav items ({text, url, isactive}).
+}}
+<nav class="navbar fixed-top navbar-expand nit-navbar" aria-label="{{#str}}sitemenubar, admin{{/str}}">
+    <div class="container-fluid">
+        <button class="navbar-toggler aabtn d-block d-md-none px-1 my-1 border-0" data-toggler="drawers" data-action="toggle" data-target="theme_boost-drawers-primary">
+            <span class="navbar-toggler-icon"></span>
+            <span class="visually-hidden">{{#str}}sidepanel, core{{/str}}</span>
+        </button>
+
+        {{! NIT: brand — compact logo AND the site name together. }}
+        <a href="{{{ config.homeurl }}}" class="navbar-brand nit-navbar-brand d-none d-md-flex align-items-center m-0 me-3 p-0 aabtn">
+            {{# output.should_display_navbar_logo }}
+                <img src="{{output.get_compact_logo_url}}" class="nit-navbar-logo me-2" alt="{{sitename}}">
+            {{/ output.should_display_navbar_logo }}
+            <span class="nit-navbar-title">{{{ sitename }}}</span>
+        </a>
+
+        {{! NIT: language menu on the left, right after the brand. Rendered via
+            the renderer (output.navbar_language_menu) so it shows for logged-in
+            users too — core hides the standalone menu once logged in. }}
+        <div class="nit-navbar-lang d-none d-md-flex align-items-center">
+            {{{ output.navbar_language_menu }}}
+        </div>
+
+        <div id="usernavigation" class="navbar-nav ms-auto h-100 align-items-center">
+            {{# output.search_box }}
+                {{{ output.search_box }}}
+                <div class="divider border-start h-75 align-self-center mx-1"></div>
+            {{/output.search_box}}
+
+            {{! NIT: the edit-mode switch was moved OUT of the bar and INTO the
+                gear/navigation dropdown below (matches the legacy clean bar). }}
+
+            {{! NIT: notifications / messaging (the bell) — kept as-is. }}
+            {{# output.navbar_plugin_output }}
+                {{{ . }}}
+            {{/output.navbar_plugin_output}}
+
+            {{! NIT: primary navigation collapsed into a single gear-icon dropdown. }}
+            <div class="dropdown nit-navmenu d-flex align-items-center">
+                <a href="#" role="button" id="nit-navmenu-toggle" class="btn nit-navbar-icon" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="{{#str}}navigation, core{{/str}}">
+                    <i class="icon fa fa-gear fa-fw" aria-hidden="true"></i>
+                    <span class="visually-hidden">{{#str}}navigation, core{{/str}}</span>
+                </a>
+                <div class="dropdown-menu dropdown-menu-end nit-navbar-dropdown" aria-labelledby="nit-navmenu-toggle">
+                    <h6 class="dropdown-header">{{#str}}navigation, core{{/str}}</h6>
+                    {{#mobileprimarynav}}
+                        {{^haschildren}}
+                            <a class="dropdown-item{{#isactive}} active{{/isactive}}" href="{{{url}}}" {{#isactive}}aria-current="true"{{/isactive}}>{{{text}}}</a>
+                        {{/haschildren}}
+                        {{#haschildren}}
+                            <a class="dropdown-item{{#isactive}} active{{/isactive}}" href="{{{url}}}">{{{text}}}</a>
+                            {{#children}}
+                                {{^divider}}
+                                    <a class="dropdown-item nit-navmenu-child{{#isactive}} active{{/isactive}}" href="{{{url}}}" {{#isactive}}aria-current="true"{{/isactive}}>{{{text}}}</a>
+                                {{/divider}}
+                            {{/children}}
+                        {{/haschildren}}
+                    {{/mobileprimarynav}}
+
+                    {{! NIT: edit-mode toggle lives here (moved from the bar). The
+                        wrapper is `:empty` when core returns no switch — CSS then
+                        hides it, so no stray row on pages without editing. }}
+                    <div class="nit-navmenu-editswitch">{{{ output.edit_switch }}}</div>
+                </div>
+            </div>
+
+            {{! NIT: user menu (avatar) — Dashboard / Profile / Grades / Log out / Switch role. }}
+            {{#usermenu}}
+                <div class="d-flex align-items-stretch usermenu-container ms-1" data-region="usermenu">
+                    {{> core/user_menu }}
+                </div>
+            {{/usermenu}}
+        </div>
+    </div>
+</nav>
+
+{{> theme_boost/primary-drawer-mobile }}

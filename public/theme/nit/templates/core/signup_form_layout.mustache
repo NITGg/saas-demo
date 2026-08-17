@@ -1,0 +1,23 @@
+{{!
+    @template theme_nit/core/signup_form_layout
+
+    Overrides core/signup_form_layout to add a prompt sending existing users
+    back to the login page. Layout otherwise matches core.
+
+    Example context (json):
+    {
+        "logourl": "https://moodle.org/logo/moodle-logo.svg",
+        "sitename": "Site name",
+        "formhtml": "<p>(Form html would go here)</p>"
+    }
+}}
+<div class="signupform">
+    <h1 class="login-heading">{{#str}} newaccount {{/str}}</h1>
+    {{{formhtml}}}
+    <div class="signup-haveaccount text-center mt-3">
+        <span class="signup-haveaccount-text">{{#str}} alreadyhaveaccount, theme_nit {{/str}}</span>
+        <a href="{{config.wwwroot}}/login/index.php" class="btn btn-outline-primary signup-login-link ml-2">
+            {{#str}} logintoaccount, theme_nit {{/str}}
+        </a>
+    </div>
+</div>

@@ -1,0 +1,63 @@
+/* Job Form field manager — shared by local_jobform and mod_jobform. */
+
+/* Group section header rows use the theme's Surface brand colour. */
+.local-jobform-fields-table .local-jobform-group-header {
+    background-color: var(--nit-brand-surface, #f1f3f5) !important;
+    color: var(--nit-brand-textprimary, inherit);
+    border-top: 2px solid var(--nit-brand-borderprimary, #dee2e6);
+    font-weight: 600;
+}
+
+.local-jobform-fields-table .local-jobform-group-header-none {
+    /* The "no group" section is slightly muted so real groups stand out. */
+    opacity: 0.9;
+}
+
+.local-jobform-group-tools .action-icon {
+    margin-inline-start: 0.35rem;
+}
+
+/* Keep each dropdown option row on one line, wrapping gracefully on mobile. */
+.local-jobform-fields #fitem_id_optiongroup_0 .felement,
+[id^="fitem_id_optiongroup_"] .felement {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+/* Read-only submitted answers — fully brand-coloured. */
+.jobform-readonly .jobform-ro-section {
+    margin-bottom: 1.25rem;
+}
+
+.jobform-readonly .jobform-ro-group {
+    background-color: var(--nit-brand-surface, #f1f3f5);
+    color: var(--nit-brand-textprimary, inherit);
+    border: 1px solid var(--nit-brand-borderprimary, #dee2e6);
+    border-radius: 0.4rem;
+    padding: 0.5rem 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.jobform-readonly .jobform-ro-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 0.55rem 0.9rem;
+    border-bottom: 1px solid var(--nit-brand-bordersecondary, #e9ecef);
+}
+
+.jobform-readonly .jobform-ro-label {
+    flex: 0 0 220px;
+    max-width: 220px;
+    font-weight: 600;
+    color: var(--nit-brand-textsecondary, inherit);
+}
+
+.jobform-readonly .jobform-ro-value {
+    flex: 1 1 240px;
+    color: var(--nit-brand-textprimary, inherit);
+    word-break: break-word;
+}

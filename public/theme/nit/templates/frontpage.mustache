@@ -1,0 +1,494 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_nit/frontpage
+
+    Front page (Site home) layout for theme_nit.
+
+    A copy of theme_boost/drawers with four NIT-added full-width block regions
+    (fullwidth-top, above-content, below-content, fullwidth-bottom) so the Site
+    home can stack page-wide marketing sections. Re-diff against
+    theme_boost/templates/drawers.mustache on each Moodle upgrade; NIT additions
+    are fenced with "NIT:" comments.
+
+    Context variables required for this template:
+    * sitename - The name of the site
+    * output - The core renderer for the page
+    * bodyattributes - attributes for the body tag as a string of html attributes
+    * sidepreblocks - HTML for the blocks
+    * hasblocks - true if there are blocks on this page
+    * courseindexopen - true if the nav drawer should be open on page load
+    * regionmainsettingsmenu - HTML for the region main settings menu
+    * hasregionmainsettingsmenu - There is a region main settings menu on this page.
+    * fullwidthtop / hasfullwidthtop - NIT full-width hero region.
+    * abovecontent / hasabovecontent - NIT region above the main content column.
+    * belowcontent / hasbelowcontent - NIT region below the main content column.
+    * fullwidthbottom / hasfullwidthbottom - NIT full-width closing region.
+
+    Example context (json):
+    {
+        "sitename": "Moodle",
+        "output": {
+            "doctype": "<!DOCTYPE html>",
+            "page_title": "Test page",
+            "favicon": "favicon.ico",
+            "main_content": "<h1>Headings make html validators happier</h1>"
+         },
+        "bodyattributes":"",
+        "sidepreblocks": "<h2>Blocks html goes here</h2>",
+        "hasblocks":true,
+        "courseindexopen": true,
+        "navdraweropen": false,
+        "blockdraweropen": true,
+        "regionmainsettingsmenu": "",
+        "hasregionmainsettingsmenu": false,
+        "addblockbutton": ""
+    }
+}}
+{{> theme_boost/head }}
+
+<body {{{ bodyattributes }}}>
+{{! NIT: live site counters + a global filler for front-page section blocks.
+    Any element with data-nit-stat="courses|categories|topcategories|subcategories|students"
+    is counted up to the real value — pasted section HTML needs no script of its own. }}
+<script>
+window.NIT_STATS = {{{ nitstatsjson }}};
+window.NIT_COURSES = {{{ nitcoursesjson }}};
+window.NIT_MY_COURSES = {{{ nitmycoursesjson }}};
+window.NIT_CATEGORIES = {{{ nitcategoriesjson }}};
+(function () {
+    function esc(s) {
+        var d = document.createElement('div');
+        d.textContent = (s == null ? '' : String(s));
+        return d.innerHTML;
+    }
+    // Lazy background images: defer setting a container's background-image until
+    // it scrolls near the viewport, so off-screen course/category art doesn't
+    // compete with the initial render (better LCP + less wasted bandwidth).
+    // Falls back to eager loading when IntersectionObserver is unavailable.
+    var nitBgObserver = ('IntersectionObserver' in window) ? new IntersectionObserver(function (entries, obs) {
+        entries.forEach(function (e) {
+            if (!e.isIntersecting) { return; }
+            var el = e.target, bg = el.getAttribute('data-nit-bg');
+            if (bg) { el.style.backgroundImage = bg; el.removeAttribute('data-nit-bg'); }
+            obs.unobserve(el);
+        });
+    }, { rootMargin: '200px' }) : null;
+    function nitLazyBg(el, url) {
+        var bg = 'url("' + String(url).replace(/["\\]/g, '') + '")';
+        if (nitBgObserver) {
+            el.setAttribute('data-nit-bg', bg);
+            nitBgObserver.observe(el);
+        } else {
+            el.style.backgroundImage = bg;
+        }
+    }
+    // Count up every [data-nit-stat] element to its real value.
+    function fillStats() {
+        var stats = window.NIT_STATS || {};
+        Array.prototype.forEach.call(document.querySelectorAll('[data-nit-stat]'), function (el) {
+            var key = el.getAttribute('data-nit-stat');
+            if (stats[key] === undefined) { return; }
+            var target = parseInt(stats[key], 10) || 0;
+            // Reserve the final number's width up front so the count-up animation
+            // (0 → target) can't reflow the surrounding content and cause layout
+            // shift (CLS). Only touches this counter element's own box — not the
+            // block's structure or design.
+            el.style.display = 'inline-block';
+            el.style.minWidth = String(target).length + 'ch';
+            var dur = 900, start = null;
+            function step(now) {
+                if (!start) { start = now; }
+                var p = Math.min((now - start) / dur, 1);
+                el.textContent = Math.round(target * p);
+                if (p < 1) { requestAnimationFrame(step); }
+            }
+            requestAnimationFrame(step);
+        });
+    }
+    // Clone each [data-nit-courses] container's <template> once per course,
+    // substituting {{fullname}} {{summary}} {{url}} {{image}} {{price}}.
+    function renderCourses() {
+        var data = window.NIT_COURSES || [];
+        Array.prototype.forEach.call(document.querySelectorAll('[data-nit-courses]'), function (container) {
+            // The card template may be a <template> or a hidden <div>; both are
+            // matched by [data-nit-course-card] and .innerHTML works for both.
+            var tpl = container.querySelector('[data-nit-course-card]');
+            if (!tpl) { return; }
+            var freeLabel = container.getAttribute('data-free-label') || '';
+            var limit = parseInt(container.getAttribute('data-limit'), 10) || data.length;
+            var frag = document.createDocumentFragment();
+            data.slice(0, limit).forEach(function (c) {
+                // {{pricebadge}} — a fully styled pill that looks distinct for
+                // enrolled / paid / free courses (see the <style> block below).
+                // {{cta}} — the call-to-action text: "Continue" once the user owns
+                // the course, else the container's data-cta-label (or "View More").
+                // {{price}} stays as plain substituted text for backward compat.
+                var isFree = c.is_free || !c.price;
+                var ctaLabel = container.getAttribute('data-cta-label') || 'View More';
+                var continueLabel = container.getAttribute('data-continue-label') || 'Continue';
+                var enrolledLabel = container.getAttribute('data-enrolled-label') || 'Enrolled';
+                var priceBadge;
+                if (c.is_enrolled) {
+                    priceBadge = '<span class="nit-price-badge nit-price-badge--enrolled">' + esc(enrolledLabel) + '</span>';
+                } else if (isFree) {
+                    priceBadge = '<span class="nit-price-badge nit-price-badge--free">' + esc(freeLabel || 'Free') + '</span>';
+                } else {
+                    priceBadge = '<span class="nit-price-badge nit-price-badge--paid">' + esc(c.price) + '</span>';
+                }
+                var cta = c.is_enrolled ? continueLabel : ctaLabel;
+                var html = tpl.innerHTML
+                    .replace(/\{\{url\}\}/g, encodeURI(c.url || '#'))
+                    .replace(/\{\{image\}\}/g, encodeURI(c.image || ''))
+                    .replace(/\{\{fullname\}\}/g, esc(c.fullname))
+                    .replace(/\{\{summary\}\}/g, esc(c.summary))
+                    .replace(/\{\{teacher\}\}/g, esc(c.teacher))
+                    .replace(/\{\{pricebadge\}\}/g, priceBadge)
+                    .replace(/\{\{cta\}\}/g, esc(cta))
+                    .replace(/\{\{price\}\}/g, c.price ? esc(c.price) : esc(freeLabel));
+                var wrap = document.createElement('div');
+                wrap.innerHTML = html;
+                // Course image as a CSS background — no <img> token in the HTML,
+                // so the visual editor can't mangle a src. Set it here from data.
+                if (c.image) {
+                    Array.prototype.forEach.call(wrap.querySelectorAll('[data-nit-course-image]'), function (el) {
+                        nitLazyBg(el, c.image);
+                    });
+                    // Also support an <img data-src> template, if used. Mark it
+                    // lazy + async so off-screen course images don't block the
+                    // initial render (better LCP; native browser lazy-loading).
+                    Array.prototype.forEach.call(wrap.querySelectorAll('img[data-src]'), function (img) {
+                        if (!img.hasAttribute('loading')) { img.setAttribute('loading', 'lazy'); }
+                        if (!img.hasAttribute('decoding')) { img.setAttribute('decoding', 'async'); }
+                        img.setAttribute('src', img.getAttribute('data-src'));
+                        img.removeAttribute('data-src');
+                    });
+                }
+                while (wrap.firstChild) { frag.appendChild(wrap.firstChild); }
+            });
+            container.appendChild(frag);
+        });
+    }
+
+    // Clone each [data-nit-my-courses] container's <template> once per enrolled course
+    // (window.NIT_MY_COURSES = the current user's enrolments). Same token set as renderCourses.
+    function renderMyCourses() {
+        var data = window.NIT_MY_COURSES || [];
+        Array.prototype.forEach.call(document.querySelectorAll('[data-nit-my-courses]'), function (container) {
+            var tpl = container.querySelector('[data-nit-my-course-card]');
+            if (!tpl) { return; }
+            var emptyEl = container.querySelector('[data-nit-my-courses-empty]');
+            if (!data.length) {
+                if (emptyEl) { emptyEl.style.display = ''; }
+                return;
+            }
+            if (emptyEl) { emptyEl.style.display = 'none'; }
+            var freeLabel = container.getAttribute('data-free-label') || '';
+            var limit = parseInt(container.getAttribute('data-limit'), 10) || data.length;
+            var frag = document.createDocumentFragment();
+            data.slice(0, limit).forEach(function (c) {
+                var html = tpl.innerHTML
+                    .replace(/\{\{url\}\}/g, encodeURI(c.url || '#'))
+                    .replace(/\{\{image\}\}/g, encodeURI(c.image || ''))
+                    .replace(/\{\{fullname\}\}/g, esc(c.fullname))
+                    .replace(/\{\{summary\}\}/g, esc(c.summary))
+                    .replace(/\{\{teacher\}\}/g, esc(c.teacher))
+                    .replace(/\{\{price\}\}/g, esc(freeLabel));
+                var wrap = document.createElement('div');
+                wrap.innerHTML = html;
+                if (c.image) {
+                    Array.prototype.forEach.call(wrap.querySelectorAll('[data-nit-my-course-image]'), function (el) {
+                        nitLazyBg(el, c.image);
+                    });
+                }
+                while (wrap.firstChild) { frag.appendChild(wrap.firstChild); }
+            });
+            container.appendChild(frag);
+        });
+    }
+
+    // Clone each [data-nit-categories] container's <template> once per category.
+    function renderCategories() {
+        var data = window.NIT_CATEGORIES || [];
+        Array.prototype.forEach.call(document.querySelectorAll('[data-nit-categories]'), function (container) {
+            var tpl = container.querySelector('[data-nit-category-card]');
+            if (!tpl) { return; }
+            var limit = parseInt(container.getAttribute('data-limit'), 10) || data.length;
+            var frag = document.createDocumentFragment();
+
+            data.slice(0, limit).forEach(function (cat) {
+                // URL is built server-side (theme_nit_get_categories) so no wwwroot guessing.
+                var html = tpl.innerHTML
+                    .replace(/\{\{id\}\}/g, cat.id)
+                    .replace(/\{\{url\}\}/g, encodeURI(cat.url || '#'))
+                    .replace(/\{\{image\}\}/g, encodeURI(cat.image || ''))
+                    .replace(/\{\{name\}\}/g, esc(cat.name))
+                    .replace(/\{\{coursecount\}\}/g, esc(cat.coursecount));
+                var wrap = document.createElement('div');
+                wrap.innerHTML = html;
+                // Category image as a CSS background on any [data-nit-category-image].
+                if (cat.image) {
+                    Array.prototype.forEach.call(wrap.querySelectorAll('[data-nit-category-image]'), function (el) {
+                        nitLazyBg(el, cat.image);
+                    });
+                }
+                while (wrap.firstChild) { frag.appendChild(wrap.firstChild); }
+            });
+            container.appendChild(frag);
+        });
+    }
+
+    // Wire prev/next slider arrows. Inline onclick is stripped by Moodle's HTML
+    // editor, so the arrows carry data-nit-scroll="prev|next" and are wired here.
+    function wireSliders() {
+        Array.prototype.forEach.call(document.querySelectorAll('[data-nit-scroll]'), function (btn) {
+            if (btn.getAttribute('data-nit-wired')) { return; }
+            btn.setAttribute('data-nit-wired', '1');
+            btn.addEventListener('click', function () {
+                var wrapper = btn.parentElement;
+                var scroller = wrapper ? wrapper.querySelector('[data-nit-courses],[data-nit-my-courses],[data-nit-categories]') : null;
+                if (!scroller) { return; }
+                var dir = btn.getAttribute('data-nit-scroll') === 'next' ? 1 : -1;
+                // In RTL the horizontal scroll axis is mirrored, so flip the sign.
+                if (getComputedStyle(scroller).direction === 'rtl') { dir = -dir; }
+                var amount = Math.max(280, Math.round(scroller.clientWidth * 0.8));
+                scroller.scrollBy({ left: dir * amount, behavior: 'smooth' });
+            });
+        });
+    }
+
+    function init() { fillStats(); renderCourses(); renderMyCourses(); renderCategories(); wireSliders(); }
+    if (document.readyState !== 'loading') { init(); }
+    else { document.addEventListener('DOMContentLoaded', init); }
+})();
+</script>
+{{! NIT: self-contained styling for the {{pricebadge}} pill so paid and free
+    courses read differently on the course cards. Kept here (not in SCSS) so it
+    ships with the template and needs only a cache purge, no theme rebuild. }}
+<style>
+.nit-price-badge {
+    display: inline-block;
+    padding: .28em .7em;
+    font-size: .82rem;
+    font-weight: 700;
+    line-height: 1;
+    border-radius: 999px;
+    white-space: nowrap;
+    letter-spacing: .01em;
+}
+.nit-price-badge--paid {
+    color: #1a1400;
+    background: linear-gradient(135deg, #ffd54a, #f5a623);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .25);
+}
+.nit-price-badge--free {
+    color: #ffffff;
+    background: #2e7d32;
+}
+.nit-price-badge--enrolled {
+    color: #ffffff;
+    background: #1565c0;
+}
+</style>
+{{! NIT (SEO): schema.org structured data for the course catalogue, so search
+    engines can index the courses even though the visible grid is built client
+    side. Slashes are escaped server-side, so this is safe inside <script>. }}
+{{#nitcoursesldjson}}
+<script type="application/ld+json">{{{ nitcoursesldjson }}}</script>
+{{/nitcoursesldjson}}
+{{! NIT (SEO): crawlable fallback — real <a> links to every course for engines
+    (and users) that don't run the JS that builds the visual grid. }}
+{{#nitcoursesnoscript}}
+<noscript>
+    <nav class="nit-course-crawl-links" aria-label="{{#str}}courses{{/str}}">
+        {{{ nitcoursesnoscript }}}
+    </nav>
+</noscript>
+{{/nitcoursesnoscript}}
+{{> core/local/toast/wrapper}}
+<div id="page-wrapper" class="d-print-block">
+
+    {{{ output.standard_top_of_body_html }}}
+
+    {{> theme_boost/navbar }}
+    {{#courseindex}}
+        {{< theme_boost/drawer }}
+            {{$id}}theme_boost-drawers-courseindex{{/id}}
+            {{$drawerheadercontent}}
+                {{> theme_boost/courseindexdrawercontrols}}
+            {{/drawerheadercontent}}
+            {{$drawerheading}}{{> theme_boost/courseindexdrawerheading}}{{/drawerheading}}
+            {{$drawerclasses}}drawer drawer-left {{#courseindexopen}}show{{/courseindexopen}}{{/drawerclasses}}
+            {{$drawercontent}}
+                {{{courseindex}}}
+            {{/drawercontent}}
+            {{$drawerpreferencename}}drawer-open-index{{/drawerpreferencename}}
+            {{$drawerstate}}show-drawer-left{{/drawerstate}}
+            {{$tooltipplacement}}right{{/tooltipplacement}}
+            {{$closebuttontext}}{{#str}}closecourseindex, core{{/str}}{{/closebuttontext}}
+            {{$closebuttonicon}}
+                <span class="dir-rtl-hide">{{#pix}} e/sidebar_left, core {{/pix}}</span>
+                <span class="dir-ltr-hide">{{#pix}} e/sidebar_right, core {{/pix}}</span>
+            {{/closebuttonicon}}
+        {{/ theme_boost/drawer}}
+    {{/courseindex}}
+    {{#hasblocks}}
+        {{< theme_boost/drawer }}
+            {{$id}}theme_boost-drawers-blocks{{/id}}
+            {{$drawerclasses}}drawer drawer-right{{#blockdraweropen}} show{{/blockdraweropen}}{{/drawerclasses}}
+            {{$drawercontent}}
+                {{! NIT: add-block button moved to top of page; drawer holds side-pre blocks only. }}
+                <div class="d-print-none">
+                    {{{ sidepreblocks }}}
+                </div>
+            {{/drawercontent}}
+            {{$drawerpreferencename}}drawer-open-block{{/drawerpreferencename}}
+            {{$forceopen}}{{#forceblockdraweropen}}1{{/forceblockdraweropen}}{{/forceopen}}
+            {{$drawerstate}}show-drawer-right{{/drawerstate}}
+            {{$tooltipplacement}}left{{/tooltipplacement}}
+            {{$drawercloseonresize}}1{{/drawercloseonresize}}
+            {{$closebuttontext}}{{#str}}closeblockdrawer, core{{/str}}{{/closebuttontext}}
+            {{$closebuttonicon}}
+                <span class="dir-rtl-hide">{{#pix}} e/sidebar_right, core {{/pix}}</span>
+                <span class="dir-ltr-hide">{{#pix}} e/sidebar_left, core {{/pix}}</span>
+            {{/closebuttonicon}}
+        {{/ theme_boost/drawer}}
+    {{/hasblocks}}
+    <div id="page" data-region="mainpage" data-usertour="scroller" class="drawers {{#courseindexopen}}show-drawer-left{{/courseindexopen}} {{#blockdraweropen}}show-drawer-right{{/blockdraweropen}} drag-container">
+        {{! NIT: prominent "Add a block" entry — visible only in edit mode. }}
+        {{#addblockbutton}}
+            <div class="nit-addblock-top d-print-none">
+                {{{ addblockbutton }}}
+            </div>
+        {{/addblockbutton}}
+        {{! NIT: end add-block entry. }}
+        {{! NIT: full-width hero region — edge-to-edge, above the content shell. }}
+        {{#hasfullwidthtop}}
+            <div class="nit-region nit-region-fullwidth-top" data-region="fullwidth-top">
+                {{{ fullwidthtop }}}
+            </div>
+        {{/hasfullwidthtop}}
+        {{! NIT: end fullwidth-top. }}
+        <div id="topofscroll" class="main-inner">
+            <div class="drawer-toggles d-flex">
+                {{#courseindex}}
+                    <div class="drawer-toggler drawer-left-toggle open-nav d-print-none">
+                        <button
+                            class="btn btn-icon icon-size-3"
+                            data-toggler="drawers"
+                            data-action="toggle"
+                            data-target="theme_boost-drawers-courseindex"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="right"
+                            title="{{#str}}opendrawerindex, core{{/str}}"
+                        >
+                            <span class="visually-hidden">{{#str}}opendrawerindex, core{{/str}}</span>
+                            <span class="dir-rtl-hide">{{#pix}} e/sidebar_left, core {{/pix}}</span>
+                            <span class="dir-ltr-hide">{{#pix}} e/sidebar_right, core {{/pix}}</span>
+                        </button>
+                    </div>
+                {{/courseindex}}
+                {{#hasblocks}}
+                    <div class="drawer-toggler drawer-right-toggle ms-auto d-print-none">
+                        <button
+                            class="btn btn-icon icon-size-3"
+                            data-toggler="drawers"
+                            data-action="toggle"
+                            data-target="theme_boost-drawers-blocks"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="right"
+                            title="{{#str}}opendrawerblocks, core{{/str}}"
+                        >
+                            <span class="visually-hidden">{{#str}}opendrawerblocks, core{{/str}}</span>
+                            <span class="dir-rtl-hide">{{#pix}} e/sidebar_right, core {{/pix}}</span>
+                            <span class="dir-ltr-hide">{{#pix}} e/sidebar_left, core {{/pix}}</span>
+                        </button>
+                    </div>
+                {{/hasblocks}}
+            </div>
+            {{{ output.full_header }}}
+            {{#secondarymoremenu}}
+                <div class="secondary-navigation d-print-none">
+                    {{> core/moremenu}}
+                </div>
+            {{/secondarymoremenu}}
+            {{! NIT: region above the main content column. }}
+            {{#hasabovecontent}}
+                <div class="nit-region nit-region-above-content" data-region="above-content">
+                    {{{ abovecontent }}}
+                </div>
+            {{/hasabovecontent}}
+            {{! NIT: end above-content. }}
+            <div id="page-content" class="pb-3 d-print-block">
+                <div id="region-main-box">
+                    {{#hasregionmainsettingsmenu}}
+                    <div id="region-main-settings-menu" class="d-print-none">
+                        <div> {{{ regionmainsettingsmenu }}} </div>
+                    </div>
+                    {{/hasregionmainsettingsmenu}}
+                    <div id="region-main">
+
+                        {{#hasregionmainsettingsmenu}}
+                            <div class="region_main_settings_menu_proxy"></div>
+                        {{/hasregionmainsettingsmenu}}
+                        {{{ output.course_content_header }}}
+                        {{#headercontent}}
+                            {{> core/activity_header }}
+                        {{/headercontent}}
+                        {{#overflow}}
+                            <div class="container-fluid tertiary-navigation">
+                                <div class="navitem">
+                                    {{> core/tertiary_navigation_selector}}
+                                </div>
+                            </div>
+                        {{/overflow}}
+                        {{{ output.main_content }}}
+                        {{{ output.activity_navigation }}}
+                        {{{ output.course_content_footer }}}
+
+                    </div>
+                </div>
+            </div>
+            {{! NIT: region below the main content column. }}
+            {{#hasbelowcontent}}
+                <div class="nit-region nit-region-below-content" data-region="below-content">
+                    {{{ belowcontent }}}
+                </div>
+            {{/hasbelowcontent}}
+            {{! NIT: end below-content. }}
+        </div>
+        {{! NIT: full-width closing region — edge-to-edge, below the content shell. }}
+        {{#hasfullwidthbottom}}
+            <div class="nit-region nit-region-fullwidth-bottom" data-region="fullwidth-bottom">
+                {{{ fullwidthbottom }}}
+            </div>
+        {{/hasfullwidthbottom}}
+        {{! NIT: end fullwidth-bottom. }}
+        {{> theme_boost/footer }}
+    </div>
+    {{{ output.standard_after_main_region_html }}}
+</div>
+
+</body>
+</html>
+{{#js}}
+M.util.js_pending('theme_boost/loader');
+require(['theme_boost/loader', 'theme_boost/drawer'], function(Loader, Drawer) {
+    Drawer.init();
+    M.util.js_complete('theme_boost/loader');
+});
+{{/js}}

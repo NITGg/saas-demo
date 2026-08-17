@@ -1,0 +1,58 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// =============================================================================
+// NIT design tokens — Tier 2: SEMANTIC.
+// Maps primitives onto Bootstrap 5 variables. Loaded BEFORE Bootstrap, so every
+// Bootstrap component adopts the NIT look with no per-component code.
+// This is the tier that branding presets (M5) will override per customer.
+// =============================================================================
+
+// --- Brand + status ----------------------------------------------------------
+$primary:   $nit-blue-600;
+$secondary: $nit-slate-500;
+$success:   $nit-green-600;
+$warning:   $nit-amber-600;
+$danger:    $nit-red-600;
+$info:      $nit-cyan-600;
+
+// --- Body & surfaces ---------------------------------------------------------
+$body-color: $nit-ink;
+$body-bg:    $nit-surface;
+
+// --- Typography --------------------------------------------------------------
+$font-family-sans-serif: $nit-font-sans;
+$font-size-base: $nit-font-size-base;
+$headings-font-weight: 650;
+
+// --- Links -------------------------------------------------------------------
+$link-color: $nit-blue-600;
+$link-hover-color: $nit-blue-700;
+
+// --- Borders & radius --------------------------------------------------------
+$border-color:      $nit-line;
+$border-radius:     $nit-radius-md;
+$border-radius-sm:  $nit-radius-sm;
+$border-radius-lg:  $nit-radius-lg;
+
+// --- Component-level Bootstrap variables -------------------------------------
+// Taller top bar to match the legacy header. `$navbar-height` drives the
+// fixed-navbar content offset across every Boost layout (drawer.scss,
+// layout.scss), so overriding it here keeps content clear of the bar site-wide.
+$navbar-height:      100px;
+$btn-font-weight:    600;
+$card-border-color:  $nit-line;
+$card-border-radius: $nit-radius-lg;
+$focus-ring-color:   rgba($nit-blue-500, 0.35);

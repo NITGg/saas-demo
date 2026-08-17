@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<ruleset name="local_nit_core">
+    <description>NIT Core coding standard — the official Moodle standard (moodle-cs).</description>
+
+    <!-- Analyse the whole plugin. -->
+    <file>.</file>
+
+    <!-- Vendor and build output are never linted. -->
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+    <exclude-pattern>*/node_modules/*</exclude-pattern>
+
+    <!-- The Moodle standard, provided by moodlehq/moodle-cs. -->
+    <rule ref="moodle"/>
+</ruleset>

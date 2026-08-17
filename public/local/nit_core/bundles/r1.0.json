@@ -1,0 +1,15 @@
+{
+  "release": "r1.0",
+  "sdkApi": "0.1.0",
+  "moodle": {
+    "min": "4.5",
+    "tested": ["4.5", "5.0", "5.2"]
+  },
+  "php": ["8.2", "8.3"],
+  "plugins": [
+    {
+      "component": "local_nit_core",
+      "version": 2026080400
+    }
+  ]
+}

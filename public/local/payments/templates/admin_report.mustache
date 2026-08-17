@@ -1,0 +1,99 @@
+{{!
+    Admin payment reports dashboard.
+}}
+<div class="local-payments-reports">
+    {{! Summary cards }}
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="text-muted">{{#str}}total_revenue, local_payments{{/str}}</h5>
+                    <h2>{{total_revenue}}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="text-muted">{{#str}}total_transactions, local_payments{{/str}}</h5>
+                    <h2>{{total_transactions}}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="text-muted">{{#str}}pending, local_payments{{/str}}</h5>
+                    <h2 class="text-warning">{{pending_count}}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="text-muted">{{#str}}failedpayments, local_payments{{/str}}</h5>
+                    <h2 class="text-danger">{{failed_count}}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="text-muted">{{#str}}refunds, local_payments{{/str}}</h5>
+                    <h2 class="text-info">{{refund_count}}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{! Revenue by country }}
+    {{#has_country_data}}
+    <div class="card mb-4">
+        <div class="card-header"><h5>{{#str}}revenue_by_country, local_payments{{/str}}</h5></div>
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead><tr><th>{{#str}}country, local_payments{{/str}}</th><th>{{#str}}currency, local_payments{{/str}}</th><th>{{#str}}transactions, local_payments{{/str}}</th><th>{{#str}}revenue, local_payments{{/str}}</th></tr></thead>
+                <tbody>
+                    {{#by_country}}
+                    <tr><td>{{country}}</td><td>{{currency}}</td><td>{{count}}</td><td>{{revenue}}</td></tr>
+                    {{/by_country}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {{/has_country_data}}
+
+    {{! Revenue by provider }}
+    {{#has_provider_data}}
+    <div class="card mb-4">
+        <div class="card-header"><h5>{{#str}}revenue_by_provider, local_payments{{/str}}</h5></div>
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead><tr><th>{{#str}}provider, local_payments{{/str}}</th><th>{{#str}}currency, local_payments{{/str}}</th><th>{{#str}}transactions, local_payments{{/str}}</th><th>{{#str}}revenue, local_payments{{/str}}</th></tr></thead>
+                <tbody>
+                    {{#by_provider}}
+                    <tr><td>{{provider}}</td><td>{{currency}}</td><td>{{count}}</td><td>{{revenue}}</td></tr>
+                    {{/by_provider}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {{/has_provider_data}}
+
+    {{! Top courses }}
+    {{#has_course_data}}
+    <div class="card mb-4">
+        <div class="card-header"><h5>{{#str}}top_selling_courses, local_payments{{/str}}</h5></div>
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead><tr><th>{{#str}}course, local_payments{{/str}}</th><th>{{#str}}currency, local_payments{{/str}}</th><th>{{#str}}purchases, local_payments{{/str}}</th><th>{{#str}}revenue, local_payments{{/str}}</th></tr></thead>
+                <tbody>
+                    {{#top_courses}}
+                    <tr><td>{{course}}</td><td>{{currency}}</td><td>{{purchases}}</td><td>{{revenue}}</td></tr>
+                    {{/top_courses}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {{/has_course_data}}
+</div>

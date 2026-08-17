@@ -1,0 +1,208 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// =============================================================================
+// Design-system gallery — the colour-palette editor (theme/nit/gallery.php).
+// Admin-only surface; kept self-contained and token-driven.
+// =============================================================================
+
+// Page chrome that core paints off-brand on this admin surface.
+.nit-gallery {
+    // Inline <code> (the CSS-var names in the intro, font filenames). Bootstrap's
+    // --bs-code-color is a raw magenta; point it at the Accent Text role (code is
+    // text). Use the brighter accent-text tint so red code clears 4.5:1 on the
+    // dark Background (flat Accent Text measures ~4.2). The colour editor's own
+    // .nit-colour-config keeps its Text-secondary colour via its more specific rule.
+    --bs-code-color: var(--nit-brand-accenttext-vivid);
+
+    // Muted descriptive copy — the per-tab intro paragraphs and the "GROUP n"
+    // labels. Core's `.text-muted` resolves to a translucent white here; point it
+    // at the Text secondary role instead. `.text-muted` ships `!important`, so
+    // match it (this higher-specificity !important wins).
+    .text-muted {
+        color: var(--nit-brand-textsecondary) !important;
+    }
+
+    // The tab strip. Core hands the admin <ul class="nav-tabs"> a light-grey
+    // ($gray-200) fill and a grey bottom rule, which flashes a pale band across
+    // the dark page. Drop the fill and reband the rule to Border primary. Scoped
+    // by id so it wins the cascade regardless of the core rule's origin; the
+    // per-tab active/hover styling stays with the global _tabs.scss.
+    #nit-gallery-tabs.nav-tabs {
+        background-color: transparent;
+        --bs-nav-tabs-border-color: var(--nit-brand-borderprimary);
+    }
+}
+
+// The editor practises what it preaches: its chrome is built from the very
+// Brand Colors roles it edits, so the page demonstrates the rules —
+//   card   → Surface        name   → Text primary
+//   border → Border primary usage/config/default → Text secondary
+//   field  → Background (a step darker than the Surface card, for contrast)
+// Everything reads through var(--nit-brand-*), so it recolours live on save.
+.nit-colour-editor {
+    color: var(--nit-brand-textprimary);
+
+    .nit-colour-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+        gap: $nit-space-3;
+    }
+
+    // Vertical card: name on top (full width, reads horizontally), then a row
+    // with the swatch, the hex field and the default note.
+    .nit-colour-row {
+        display: flex;
+        flex-direction: column;
+        gap: $nit-space-2;
+        padding: $nit-space-3;
+        border: 1px solid var(--nit-brand-borderprimary);
+        border-radius: $nit-radius-md;
+        background: var(--nit-brand-surface);
+        color: var(--nit-brand-textprimary);
+    }
+
+    .nit-colour-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+    }
+
+    .nit-colour-name {
+        margin: 0;
+        font-weight: 600;
+        font-size: $nit-fs-lg;
+        line-height: 1.2;
+        color: var(--nit-brand-textprimary);
+        white-space: normal;
+        word-break: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .nit-colour-config {
+        font-size: $nit-fs-xs;
+        color: var(--nit-brand-textsecondary);
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    // The "what should use this colour" guidance — one chip per UI target.
+    .nit-colour-usage {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-top: 4px;
+    }
+
+    .nit-colour-usage-item {
+        font-size: .75rem;
+        line-height: 1.4;
+        padding: 2px 9px;
+        border-radius: 999px;
+        // A step darker than the Surface card so the chips read as pills.
+        background: var(--nit-brand-background);
+        border: 1px solid var(--nit-brand-borderprimary);
+        color: var(--nit-brand-textsecondary);
+        white-space: nowrap;
+    }
+
+    // The swatch + hex + default sit in one horizontal row under the name.
+    .nit-colour-controls {
+        display: flex;
+        align-items: center;
+        gap: $nit-space-3;
+    }
+
+    .nit-colour-default {
+        margin-inline-start: auto;
+        font-size: $nit-fs-xs;
+        color: var(--nit-brand-textsecondary);
+        white-space: nowrap;
+    }
+
+    // The native colour well, styled to a neat rounded swatch.
+    .nit-colour-swatch {
+        flex: 0 0 auto;
+        width: 44px;
+        height: 44px;
+        padding: 0;
+        border: 1px solid var(--nit-brand-borderprimary);
+        border-radius: $nit-radius-md;
+        background: none;
+        cursor: pointer;
+
+        &::-webkit-color-swatch-wrapper {
+            padding: 3px;
+        }
+
+        &::-webkit-color-swatch {
+            border: 0;
+            border-radius: $nit-radius-sm;
+        }
+
+        &::-moz-color-swatch {
+            border: 0;
+            border-radius: $nit-radius-sm;
+        }
+    }
+
+    // Hex field sits on the Surface card, so drop it to Background for contrast.
+    .nit-colour-hex {
+        flex: 0 1 8rem;
+        min-width: 6rem;
+        font-family: $font-family-monospace;
+        text-transform: uppercase;
+        background: var(--nit-brand-background);
+        color: var(--nit-brand-textprimary);
+        border-color: var(--nit-brand-borderprimary);
+    }
+
+    .nit-colour-default {
+        flex: 0 0 auto;
+    }
+}
+
+// Category styles tab — the category → brand-group table. Bootstrap's `.table`
+// ships its own light-theme colours (`--bs-table-color` a near-black, grey
+// borders) which read as dark, low-contrast text on the brand-dark admin page —
+// that's why the "Category" / "Brand group" headers looked unstyled. Re-point the
+// table's own CSS variables at brand roles so the whole thing follows the palette.
+.nit-catstyles-table {
+    --bs-table-color: var(--nit-brand-textprimary);
+    --bs-table-bg: transparent;
+    --bs-table-border-color: var(--nit-brand-borderprimary);
+    color: var(--nit-brand-textprimary);
+
+    thead th {
+        color: var(--nit-brand-textsecondary);
+        border-bottom-color: var(--nit-brand-borderprimary);
+        font-weight: 600;
+    }
+
+    td,
+    th {
+        border-color: var(--nit-brand-borderprimary);
+        vertical-align: middle;
+    }
+
+    // The Group 1/2/3 pickers: brand surface field, so they match the rest of the
+    // theme's inputs rather than Bootstrap's default light select.
+    .form-select {
+        background-color: var(--nit-brand-surface);
+        color: var(--nit-brand-textprimary);
+        border-color: var(--nit-brand-borderprimary);
+    }
+}

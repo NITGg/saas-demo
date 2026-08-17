@@ -1,0 +1,33 @@
+{{!
+    Payment history table template.
+}}
+{{#has_transactions}}
+<div class="table-responsive">
+    <table class="table table-striped generaltable">
+        <thead>
+            <tr>
+                <th>{{#str}}orderid, local_payments{{/str}}</th>
+                <th>{{#str}}course, local_payments{{/str}}</th>
+                <th>{{#str}}amount, local_payments{{/str}}</th>
+                <th>{{#str}}status, local_payments{{/str}}</th>
+                <th>{{#str}}paymentmethod, local_payments{{/str}}</th>
+                <th>{{#str}}invoice, local_payments{{/str}}</th>
+                <th>{{#str}}date, local_payments{{/str}}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{#transactions}}
+            <tr>
+                <td><code>{{order_id}}</code></td>
+                <td>{{course_name}}</td>
+                <td>{{amount}}</td>
+                <td><span class="badge {{status_class}}">{{status}}</span></td>
+                <td>{{payment_method}}</td>
+                <td>{{invoice_number}}</td>
+                <td>{{date}}</td>
+            </tr>
+            {{/transactions}}
+        </tbody>
+    </table>
+</div>
+{{/has_transactions}}
