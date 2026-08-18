@@ -40,4 +40,3 @@ desktop.ini
 # ===== Local DB / data snapshots (large, environment-specific) =====
 /moodle_backup.sql
 /moodledata.zip
-public/filter/multilang2/
