@@ -7,7 +7,7 @@
 // has to touch Moodle's admin settings.
 
 /**
- * Apply per-client branding (site name + logo + favicon) to this academy.
+ * Apply per-client branding (site name + logo + compact logo + favicon) to this academy.
  *
  * Run inside the client's Moodle container by create.sh, once the site is up:
  *
@@ -22,6 +22,7 @@
  *     "shortname_ar": "المستقبل",
  *     "shortname_en": "Future",
  *     "logo": "logo.png",          // path, absolute or relative to the manifest
+ *     "logocompact": "logocompact.png",
  *     "favicon": "favicon.ico"
  *   }
  *
@@ -55,6 +56,7 @@ list($options, $unrecognised) = cli_get_params(
         'shortname-ar' => null,
         'shortname-en' => null,
         'logo'        => null,
+        'logocompact' => null,
         'favicon'     => null,
     ],
     ['h' => 'help']
@@ -64,7 +66,7 @@ if ($options['help']) {
     echo "Apply NIT per-client branding (site name + logo + favicon).\n\n";
     echo "  --manifest=PATH   JSON file with the branding fields (see file header).\n";
     echo "  Individual flags (--fullname-ar, --fullname-en, --shortname-ar,\n";
-    echo "  --shortname-en, --logo, --favicon) override the manifest.\n";
+    echo "  --shortname-en, --logo, --logocompact, --favicon) override the manifest.\n";
     exit(0);
 }
 
@@ -133,7 +135,7 @@ if ($options['manifest'] !== '') {
     $manifestdir = getcwd();
 }
 
-foreach (['fullname-ar', 'fullname-en', 'shortname-ar', 'shortname-en', 'logo', 'favicon'] as $flag) {
+foreach (['fullname-ar', 'fullname-en', 'shortname-ar', 'shortname-en', 'logo', 'logocompact', 'favicon'] as $flag) {
     if ($options[$flag] !== null) {
         $data[str_replace('-', '_', $flag)] = $options[$flag];
     }
@@ -172,6 +174,9 @@ if ($shortname !== '') {
 // ── 2. Logo + favicon ───────────────────────────────────────────────────────
 if (!empty($data['logo'])) {
     nit_brand_set_site_file('logo', 'logo', $resolvepath($data['logo']));
+}
+if (!empty($data['logocompact'])) {
+    nit_brand_set_site_file('logocompact', 'logocompact', $resolvepath($data['logocompact']));
 }
 if (!empty($data['favicon'])) {
     nit_brand_set_site_file('favicon', 'favicon', $resolvepath($data['favicon']));
