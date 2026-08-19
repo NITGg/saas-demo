@@ -531,18 +531,140 @@ function theme_nit_components_export(): array {
  *         brandcolors: array, categorystyles: array, fonts: array, components: array}
  */
 function theme_nit_design_system_export(): array {
-    global $SITE, $CFG;
-    return [
+    $payload = [
         'generated'      => time(),
-        'site'           => [
-            'name' => format_string($SITE->fullname ?? ''),
-            'url'  => $CFG->wwwroot,
-        ],
+        'site'           => theme_nit_site_export(),
         'brandcolors'    => theme_nit_brand_export(),
         'categorystyles' => theme_nit_category_styles_export(),
         'fonts'          => theme_nit_fonts_export(),
         'components'     => theme_nit_components_export(),
     ];
+    // Only emit branding / links blocks when the tenant has actually published
+    // something — the app falls back to bundled assets for any missing key.
+    if ($branding = theme_nit_branding_export()) {
+        $payload['branding'] = $branding;
+    }
+    if ($links = theme_nit_links_export()) {
+        $payload['links'] = $links;
+    }
+    return $payload;
+}
+
+/**
+ * The `site` identity block the white-label mobile app reads before login:
+ * name, canonical URL, version handshake, provisioning/expiry status, and the
+ * authoritative (licence-driven) feature map.
+ *
+ * The `features` key is emitted ONLY when local_license enforcement is on, so an
+ * unmanaged host reads as "legacy => everything on" per the app's absence rule
+ * (a missing object, not an all-true one). Likewise `package`/`status`/`expires`
+ * appear only when the licence plugin is present.
+ *
+ * @return array
+ */
+function theme_nit_site_export(): array {
+    global $SITE, $CFG;
+
+    $site = [
+        'name'            => format_string($SITE->fullname ?? ''),
+        'shortname'       => format_string($SITE->shortname ?? ''),
+        'url'             => $CFG->wwwroot,   // retained for backward compatibility
+        'wwwroot'         => $CFG->wwwroot,
+        'apiversion'      => 1,               // bump on a breaking payload change
+        'supportedapp'    => true,
+        'provisioned'     => (bool) (int) (get_config('theme_nit', 'provisioned') ?? 1),
+        'status'          => 'active',        // active | expired | suspended
+        'defaultlanguage' => $CFG->lang ?? 'en',
+        'languages'       => array_values(array_keys(
+            get_string_manager()->get_list_of_translations() ?: [($CFG->lang ?? 'en') => 1])),
+    ];
+
+    if (class_exists('\local_license\license')) {
+        $lic = '\local_license\license';
+        $site['package'] = ['code' => $lic::tier(), 'name' => $lic::tiername()];
+        if (method_exists($lic, 'is_expired') && $lic::is_expired()) {
+            $site['status'] = 'expired';
+        }
+        if (method_exists($lic, 'expiry') && ($exp = (int) $lic::expiry()) > 0) {
+            $site['expires'] = $exp;
+        }
+        // Absence rule: authoritative map only when enforcement is on.
+        if (method_exists($lic, 'is_enforced') && $lic::is_enforced()
+                && method_exists($lic, 'mobile_features')) {
+            $site['features'] = $lic::mobile_features();
+        }
+    }
+
+    return $site;
+}
+
+/**
+ * Remote branding assets (logos, splash, hero) the app downloads and caches.
+ * Each value is a URL stored in theme_nit config; missing keys are omitted so the
+ * app keeps its bundled fallback. Light + dark variants for every logo.
+ *
+ * @return array (empty when nothing is published)
+ */
+function theme_nit_branding_export(): array {
+    $url = static function (string $key): string {
+        $v = get_config('theme_nit', $key);
+        return ($v === false || $v === null) ? '' : (string) $v;
+    };
+    $pair = static function (string $light, string $dark) use ($url): array {
+        return array_filter(['light' => $url($light), 'dark' => $url($dark)]);
+    };
+
+    $branding = array_filter([
+        'logo'      => $pair('mobile_logo_light', 'mobile_logo_dark'),
+        'logomark'  => $pair('mobile_logomark_light', 'mobile_logomark_dark'),
+        'loginhero' => $pair('mobile_loginhero_light', 'mobile_loginhero_dark'),
+        'splash'    => array_filter([
+            'lottie_light'     => $url('mobile_splash_lottie_light'),
+            'lottie_dark'      => $url('mobile_splash_lottie_dark'),
+            'image_light'      => $url('mobile_splash_image_light'),
+            'image_dark'       => $url('mobile_splash_image_dark'),
+            'background_light' => $url('mobile_splash_bg_light'),
+            'background_dark'  => $url('mobile_splash_bg_dark'),
+        ]),
+    ]);
+    if (($p = $url('mobile_courseplaceholder')) !== '') {
+        $branding['courseplaceholder'] = $p;
+    }
+    if (($e = $url('mobile_emptystate')) !== '') {
+        $branding['emptystate'] = $e;
+    }
+    return $branding;
+}
+
+/**
+ * Per-tenant legal / social links. About/Privacy/Terms/FAQ are per language and
+ * open in a webview (must be chrome-less). All from theme_nit config; omitted
+ * when unset.
+ *
+ * @return array (empty when nothing is published)
+ */
+function theme_nit_links_export(): array {
+    $s = static function (string $key): string {
+        $v = get_config('theme_nit', $key);
+        return ($v === false || $v === null) ? '' : (string) $v;
+    };
+    $bilingual = static function (string $base) use ($s): array {
+        return array_filter(['en' => $s($base . '_en'), 'ar' => $s($base . '_ar')]);
+    };
+
+    return array_filter([
+        'about'         => $bilingual('link_about'),
+        'privacy'       => $bilingual('link_privacy'),
+        'terms'         => $bilingual('link_terms'),
+        'faq'           => $bilingual('link_faq'),
+        'support_email' => $s('support_email'),
+        'support_phone' => $s('support_phone'),
+        'facebook'      => $s('social_facebook'),
+        'instagram'     => $s('social_instagram'),
+        'youtube'       => $s('social_youtube'),
+        'tiktok'        => $s('social_tiktok'),
+        'website'       => $s('social_website'),
+    ]);
 }
 
 /**

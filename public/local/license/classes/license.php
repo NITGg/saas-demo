@@ -111,6 +111,52 @@ class license {
     }
 
     /**
+     * The mobile app's feature map for the current tier.
+     *
+     * This is the "licence output" the white-label mobile app reads from
+     * design_system.php (site.features) — booleans only, never editable by the
+     * tenant's own admin. It maps our internal tier features (drm|coupons|
+     * offers|subscriptions|packages|jitsi) onto the app's fixed feature keys.
+     *
+     * When enforcement is OFF, has_feature() returns true for everything, so this
+     * returns an all-on map — but callers honouring the "absence rule" should emit
+     * `features` only when {@see is_enforced()} is true, so an unmanaged host reads
+     * as "legacy => everything on" (a missing object, not an all-true one).
+     *
+     * The key→feature mapping is the one commercial knob — adjust it here when the
+     * package definitions are finalised.
+     *
+     * @return array<string,bool>
+     */
+    public static function mobile_features(): array {
+        $has = static function (string $f): bool {
+            return self::has_feature($f);
+        };
+        return [
+            // Core — always available.
+            'quizzes'        => true,
+            'assignments'    => true,
+            'teachers'       => true,
+            'calendar'       => true,
+            'messaging'      => true,
+            'notifications'  => true,
+            // Commerce.
+            'payments'       => $has('coupons') || $has('subscriptions') || $has('packages'),
+            'coupons'        => $has('coupons'),
+            'subscriptions'  => $has('subscriptions'),
+            // Media.
+            'vdocipher'      => $has('drm'),
+            'watermark'      => $has('drm'),
+            // Extras.
+            'jobform'        => $has('packages'),
+            // Social login (Apple/Facebook not built yet — off by default).
+            'google_login'   => true,
+            'apple_login'    => false,
+            'facebook_login' => false,
+        ];
+    }
+
+    /**
      * Expiry as a timestamp (0 = none set / never).
      *
      * Stored as a 'YYYY-MM-DD' string ('expirydate') so admins can type it; a
