@@ -75,20 +75,35 @@ class license {
         return (bool) get_config('local_license', 'enabled');
     }
 
-    /** @return string current tier key (defaults to 'demo' when unset). */
+    /** @return string current tier/licence key (defaults to 'demo' when unset). */
     public static function tier(): string {
-        $t = (string) get_config('local_license', 'tier');
-        return isset(self::TIERS[$t]) ? $t : 'demo';
+        $t = trim((string) get_config('local_license', 'tier'));
+        return $t !== '' ? $t : 'demo';
     }
 
-    /** @return array the current tier definition. */
+    /**
+     * The current licence definition. Prefers the JSON pushed by the control plane
+     * (local_license/definition) so limits + features are editable without a code
+     * change; falls back to the built-in {@see TIERS} default when absent/invalid.
+     * Missing keys in a pushed definition are backfilled from the default.
+     *
+     * @return array
+     */
     public static function tierdef(): array {
-        return self::TIERS[self::tier()];
+        $default = self::TIERS[self::tier()] ?? self::TIERS['demo'];
+        $raw = trim((string) get_config('local_license', 'definition'));
+        if ($raw !== '') {
+            $def = json_decode($raw, true);
+            if (is_array($def)) {
+                return $def + $default; // pushed definition wins; default fills any gaps
+            }
+        }
+        return $default;
     }
 
     /** @return string human tier name. */
     public static function tiername(): string {
-        return self::tierdef()['name'];
+        return (string) (self::tierdef()['name'] ?? self::tier());
     }
 
     /**
@@ -102,7 +117,8 @@ class license {
         if (!self::is_enforced()) {
             return true;
         }
-        return in_array($feature, self::tierdef()['features'], true);
+        $feats = self::tierdef()['features'] ?? [];
+        return is_array($feats) && in_array($feature, $feats, true);
     }
 
     /** @return string allowed video source (all|limited|youtube|vimeo|vdocipher). */
