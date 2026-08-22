@@ -18,10 +18,6 @@ class hook_callbacks {
     public static function before_http_headers(\core\hook\output\before_http_headers $hook): void {
         global $SCRIPT;
 
-        // Nothing to do when the master switch is off.
-        if (!license::is_enforced()) {
-            return;
-        }
         // Never interfere with CLI, AJAX or web-service requests.
         if (CLI_SCRIPT
                 || (defined('AJAX_SCRIPT') && AJAX_SCRIPT)
@@ -31,11 +27,21 @@ class hook_callbacks {
 
         $script = (string) ($SCRIPT ?? '');
 
-        // Always let these through so an admin can still recover / upgrade / log in.
+        // Always let these through so an admin can still recover / upgrade / log in / see the notice.
         foreach (['/login/', '/admin/', '/local/license/'] as $allow) {
             if (strpos($script, $allow) === 0) {
                 return;
             }
+        }
+
+        // 0) Admin suspend — locks the whole academy regardless of tier enforcement.
+        if (license::is_suspended()) {
+            redirect(new \moodle_url('/local/license/expired.php', ['reason' => 'suspended']));
+        }
+
+        // Everything below is tier enforcement — only when the master switch is on.
+        if (!license::is_enforced()) {
+            return;
         }
 
         // 1) Expiry lock — send everyone to the upgrade page.

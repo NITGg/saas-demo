@@ -45,4 +45,7 @@ $string['expired_title']    = 'Academy expired';
 $string['expired_heading']  = 'This academy has expired';
 $string['expired_body']     = 'Your {$a} period has ended. Upgrade to reactivate your academy and keep your content.';
 $string['expired_contact']  = 'Contact NIT to upgrade or renew.';
+$string['suspended_title']   = 'Academy suspended';
+$string['suspended_heading'] = 'This academy is suspended';
+$string['suspended_body']    = 'Access to this academy has been temporarily suspended. Your content is safe — contact NIT to restore it.';
 $string['backtosite']       = 'Back to site';

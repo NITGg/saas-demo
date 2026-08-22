@@ -194,6 +194,16 @@ class license {
         return time() > ($expiry + self::grace_days() * DAYSECS);
     }
 
+    /**
+     * Admin "suspend" switch — independent of the tier / enforcement flag. When on,
+     * the academy is locked to the notice page regardless of tier (used by the
+     * dashboard's Suspend/Resume). Set by the provisioner (local_license/suspended).
+     * @return bool
+     */
+    public static function is_suspended(): bool {
+        return (bool) get_config('local_license', 'suspended');
+    }
+
     /** @return int whole days left before expiry (negative once past). */
     public static function days_left(): int {
         $expiry = self::expiry();
