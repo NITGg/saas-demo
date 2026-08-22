@@ -106,4 +106,76 @@ class hook_callbacks {
     protected static function block(\moodle_url $to, string $message): void {
         redirect($to, $message, null, \core\output\notification::NOTIFY_ERROR);
     }
+
+    /**
+     * Front-end lock for the teacher cap: when the academy is already at its
+     * teacher limit, grey out the "Teacher" option in the enrol/assign role
+     * pickers on the participants page so an admin can't pick it in the first
+     * place. This is a UX nicety only — the {@see observers::role_assigned}
+     * backstop still reverts any teacher role that slips through (e.g. scripted
+     * or from an older cached page), so the limit is enforced either way.
+     *
+     * @param \core\hook\output\before_standard_footer_html_generation $hook
+     */
+    public static function before_standard_footer(
+        \core\hook\output\before_standard_footer_html_generation $hook): void {
+        global $SCRIPT, $DB;
+
+        if (CLI_SCRIPT
+                || (defined('AJAX_SCRIPT') && AJAX_SCRIPT)
+                || (defined('WS_SERVER') && WS_SERVER)) {
+            return;
+        }
+        if (!license::is_enforced()) {
+            return;
+        }
+        // Only the participants page hosts the enrol / assign-role pickers.
+        if ((string) ($SCRIPT ?? '') !== '/user/index.php') {
+            return;
+        }
+        $max = license::max_teachers();
+        if ($max < 0 || enforcer::count_teachers() < $max) {
+            return; // unlimited, or seats still free — nothing to lock.
+        }
+        $teacherroleid = (int) $DB->get_field('role', 'id', ['shortname' => 'editingteacher']);
+        if (!$teacherroleid) {
+            return;
+        }
+
+        $rid = json_encode($teacherroleid, JSON_HEX_TAG | JSON_HEX_AMP);
+        $msg = json_encode(
+            get_string('limit_teacher', 'local_license', ['tier' => license::tiername(), 'max' => $max]),
+            JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE
+        );
+
+        // Disable any "Teacher" <option> in role-picker selects (enrol modal loads
+        // async, so also watch the DOM). Scoped to role-named selects to avoid
+        // touching unrelated dropdowns that happen to share the numeric value.
+        $js = <<<JS
+<script>
+(function(){
+  var RID=$rid, MSG=$msg;
+  function patch(){
+    document.querySelectorAll('select[name*="role" i],select[id*="role" i]').forEach(function(sel){
+      var changed=false;
+      Array.prototype.forEach.call(sel.options,function(o){
+        if(String(o.value)===String(RID)&&!o.dataset.licLocked){
+          o.dataset.licLocked='1'; o.disabled=true; o.title=MSG;
+          o.text=o.text+' (max reached)';
+          changed=true;
+        }
+      });
+      if(changed&&String(sel.value)===String(RID)){
+        for(var i=0;i<sel.options.length;i++){ if(!sel.options[i].disabled){ sel.selectedIndex=i; break; } }
+      }
+    });
+  }
+  document.addEventListener('DOMContentLoaded',patch);
+  try{ new MutationObserver(patch).observe(document.documentElement,{childList:true,subtree:true}); }catch(e){}
+  patch();
+})();
+</script>
+JS;
+        $hook->add_html($js);
+    }
 }
