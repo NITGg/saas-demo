@@ -76,8 +76,8 @@ class hook_callbacks {
                     ]));
                 }
 
-                // Quantity limit for this activity type.
-                if (!enforcer::can_add_activity($add)) {
+                // Quantity limit for this activity type (per course).
+                if (!enforcer::can_add_activity($add, $courseid)) {
                     self::block($courseurl, get_string('limit_activity', 'local_license', [
                         'type' => $add,
                         'tier' => license::tiername(),

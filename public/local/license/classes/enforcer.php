@@ -5,8 +5,10 @@ defined('MOODLE_INTERNAL') || die();
 
 /**
  * Counts current usage and decides whether one more of something is allowed
- * under the academy's tier. All counts are academy-wide (the whole site), which
- * matches how the tiers are described ("1 course, 4 videos, 2 quizzes").
+ * under the academy's tier. Courses and teachers are counted academy-wide (the
+ * whole site); ACTIVITY caps are counted per-course (a "3 quizzes" cap means 3
+ * quizzes in each course, not 3 in the whole academy) — matching the dashboard's
+ * "Per-course activity caps" label.
  */
 class enforcer {
 
@@ -26,12 +28,17 @@ class enforcer {
     }
 
     /**
-     * Count course modules whose module maps to a given bucket, academy-wide.
+     * Count course modules whose module maps to a given bucket.
+     *
+     * Scoped to one course when $courseid is given (the normal enforcement path,
+     * so caps are per-course); academy-wide when null (used by the status page's
+     * totals).
      *
      * @param string $bucket
+     * @param int|null $courseid limit the count to this course (null = whole site)
      * @return int
      */
-    public static function count_bucket(string $bucket): int {
+    public static function count_bucket(string $bucket, ?int $courseid = null): int {
         global $DB;
 
         // Module names that fall in this bucket.
@@ -43,7 +50,7 @@ class enforcer {
         }
         // 'default' bucket = every module NOT explicitly bucketed.
         if ($bucket === 'default') {
-            return self::count_default_bucket();
+            return self::count_default_bucket($courseid);
         }
         if (!$modnames) {
             return 0;
@@ -54,25 +61,36 @@ class enforcer {
             return 0;
         }
         list($insql, $params) = $DB->get_in_or_equal($moduleids, SQL_PARAMS_NAMED);
-        return $DB->count_records_select('course_modules',
-            "module $insql AND deletioninprogress = 0", $params);
+        $where = "module $insql AND deletioninprogress = 0";
+        if ($courseid !== null) {
+            $where .= ' AND course = :courseid';
+            $params['courseid'] = $courseid;
+        }
+        return $DB->count_records_select('course_modules', $where, $params);
     }
 
     /**
      * Count modules that are NOT in any named bucket (the 'default' bucket).
      *
+     * @param int|null $courseid limit the count to this course (null = whole site)
      * @return int
      */
-    protected static function count_default_bucket(): int {
+    protected static function count_default_bucket(?int $courseid = null): int {
         global $DB;
         $named = array_keys(license::BUCKETS);
         $namedids = self::module_ids($named);
+        $params = [];
         if (!$namedids) {
-            return $DB->count_records_select('course_modules', 'deletioninprogress = 0');
+            $where = 'deletioninprogress = 0';
+        } else {
+            list($insql, $params) = $DB->get_in_or_equal($namedids, SQL_PARAMS_NAMED, 'm', false); // NOT IN
+            $where = "module $insql AND deletioninprogress = 0";
         }
-        list($insql, $params) = $DB->get_in_or_equal($namedids, SQL_PARAMS_NAMED, 'm', false); // NOT IN
-        return $DB->count_records_select('course_modules',
-            "module $insql AND deletioninprogress = 0", $params);
+        if ($courseid !== null) {
+            $where .= ' AND course = :courseid';
+            $params['courseid'] = $courseid;
+        }
+        return $DB->count_records_select('course_modules', $where, $params);
     }
 
     /**
@@ -92,18 +110,19 @@ class enforcer {
     }
 
     /**
-     * Can another activity of this module type be added?
+     * Can another activity of this module type be added to a course?
      *
      * @param string $modname
+     * @param int|null $courseid the course it's being added to (per-course cap)
      * @return bool
      */
-    public static function can_add_activity(string $modname): bool {
+    public static function can_add_activity(string $modname, ?int $courseid = null): bool {
         $bucket = license::bucket_for($modname);
         $limit  = license::bucket_limit($bucket);
         if ($limit < 0) {
             return true;
         }
-        return self::count_bucket($bucket) < $limit;
+        return self::count_bucket($bucket, $courseid) < $limit;
     }
 
     /**

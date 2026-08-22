@@ -37,7 +37,7 @@ $string['usage_pdf']        = 'Files / PDFs';
 
 // Enforcement messages.
 $string['limit_course']     = 'Your {$a} plan has reached its course limit. Upgrade to add more courses.';
-$string['limit_activity']   = 'Your {$a->tier} plan has reached its limit for this activity type ({$a->type}). Upgrade to add more.';
+$string['limit_activity']   = 'Your {$a->tier} plan has reached its per-course limit for this activity type ({$a->type}). Upgrade to add more.';
 $string['feature_locked']   = 'The {$a->type} activity is not included in your {$a->tier} plan. Upgrade to use it.';
 $string['video_source_locked'] = 'Your {$a->tier} plan\'s video source ({$a->source}) does not allow the {$a->type} activity. Upgrade for DRM video.';
 $string['limit_teacher']    = 'Your {$a->tier} plan has reached its teacher limit ({$a->max}). Upgrade to add more teachers.';
