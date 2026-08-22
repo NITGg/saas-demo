@@ -90,6 +90,16 @@ class enforcer {
             $where .= ' AND course = :courseid';
             $params['courseid'] = $courseid;
         }
+        // Moodle auto-creates an Announcements (news) forum in every course — it
+        // must not eat into the tenant's 'default' activity quota, or a cap of 1
+        // would block the very first real activity in an otherwise empty course.
+        $forumid = (int) $DB->get_field('modules', 'id', ['name' => 'forum']);
+        if ($forumid) {
+            $where .= ' AND NOT (module = :forummod'
+                    . ' AND instance IN (SELECT id FROM {forum} WHERE type = :newstype))';
+            $params['forummod'] = $forumid;
+            $params['newstype'] = 'news';
+        }
         return $DB->count_records_select('course_modules', $where, $params);
     }
 
