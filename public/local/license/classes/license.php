@@ -127,6 +127,29 @@ class license {
     }
 
     /**
+     * Whether a given activity type is allowed under the tier's video source.
+     *
+     * Moodle can only tell one video type apart at add-time: the DRM VdoCipher
+     * activity. External links (YouTube/Vimeo) both use the generic `url` module,
+     * so which host is allowed is enforced by the mobile app (it reads
+     * `video_source` from getsettings). Here we only gate the DRM host: it needs a
+     * tier whose source is `vdocipher` (or the catch-all `all`).
+     *
+     * @param string $modname
+     * @return bool
+     */
+    public static function video_allowed(string $modname): bool {
+        if (!self::is_enforced()) {
+            return true;
+        }
+        if ($modname !== 'vdocipher') {
+            return true; // only the DRM host is source-gated at the Moodle level.
+        }
+        $vs = self::video_source();
+        return $vs === 'vdocipher' || $vs === 'all';
+    }
+
+    /**
      * The mobile app's feature map for the current tier.
      *
      * This is the "licence output" the white-label mobile app reads from

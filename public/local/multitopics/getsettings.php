@@ -91,6 +91,14 @@ if (class_exists('\local_license\license') && method_exists('\local_license\lice
     $facebook_login = $f['facebook_login'] ?? $facebook_login;
 }
 
+// ── Video source ← local_license (all|limited|youtube|vimeo|vdocipher) ────────
+// The app uses this to restrict which external video hosts it will play — the one
+// video rule Moodle can't enforce itself (YouTube/Vimeo share the same module).
+$video_source = 'all';
+if (class_exists('\local_license\license') && method_exists('\local_license\license', 'video_source')) {
+    $video_source = \local_license\license::video_source();
+}
+
 // ── The payload the app expects (AppSettings) ────────────────────────────────
 $data = [
     // Tokens — per academy. Set by provisioning / tenant settings page.
@@ -105,6 +113,7 @@ $data = [
     'watermark'                => $watermarkenabled,
     'watermark_text'           => $watermarktext,
     'videourl'                 => ms_str('videourl'),
+    'video_source'             => $video_source,
 
     // Contact / WhatsApp FAB.
     'whatsapp_phone'   => ms_str('whatsapp_phone'),

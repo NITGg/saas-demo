@@ -65,6 +65,17 @@ class hook_callbacks {
                     ]));
                 }
 
+                // Video source — the DRM/VdoCipher activity needs a tier whose
+                // video source allows it (external YouTube/Vimeo links are gated
+                // in the app, which Moodle can't distinguish at add-time).
+                if (!license::video_allowed($add)) {
+                    self::block($courseurl, get_string('video_source_locked', 'local_license', [
+                        'type'   => $add,
+                        'source' => license::video_source(),
+                        'tier'   => license::tiername(),
+                    ]));
+                }
+
                 // Quantity limit for this activity type.
                 if (!enforcer::can_add_activity($add)) {
                     self::block($courseurl, get_string('limit_activity', 'local_license', [
