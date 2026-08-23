@@ -1,0 +1,29 @@
+# Keep the baked image lean and secret-free. The build context is a clean
+# saas-demo checkout, but exclude anything that must NEVER go into the image.
+.git
+.github
+.claude
+.upgradenotes
+
+# Per-client / environment — generated or mounted at run time, never baked.
+config.php
+config.php.*
+config-dist.php
+moodledata
+dataroot
+
+# Dumps, backups, local junk seen in the working checkout.
+*.sql
+*.bak
+*.backup
+*.backup*
+*.pre-ssl-cleanup
+*.log
+
+# Build/dev artefacts not needed at runtime.
+node_modules
+docker-compose.yml
+docker-compose.yml.*
+Dockerfile
+Dockerfile.saas
+.dockerignore

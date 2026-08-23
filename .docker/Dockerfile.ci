@@ -1,0 +1,42 @@
+# ============================================================================
+#  Dockerfile.ci — SELF-CONTAINED baked SaaS Moodle image (the "real" image).
+#
+#  Unlike docker/Dockerfile (which starts FROM the local moodle-new:latest and
+#  is only buildable on server B), this one builds the WHOLE image from the
+#  public php:8.3-apache base. It depends on nothing local, so a GitHub Actions
+#  runner — or any machine — can build and publish it to GHCR.
+#
+#  This file + the two config files it COPYs must live IN THE CODE REPO
+#  (saas-demo), because CI builds from that repo's context. Suggested layout:
+#      .docker/Dockerfile.ci
+#      .docker/php-moodle.ini        (copy of the server's, committed)
+#      .docker/000-default.conf      (DocumentRoot -> public, committed)
+#  and the workflow at .github/workflows/build-image.yml
+# ============================================================================
+FROM php:8.3-apache
+
+# ── System libs needed to build Moodle's PHP extensions (from the base image) ─
+RUN apt-get update && apt-get install -y \
+    git unzip curl \
+    libcurl4-openssl-dev libfreetype6-dev libicu-dev libjpeg62-turbo-dev \
+    libpng-dev libxml2-dev libzip-dev libonig-dev libsodium-dev \
+    libldap2-dev libxslt1-dev libpq-dev default-mysql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-configure ldap
+
+RUN docker-php-ext-install -j"$(nproc)" \
+    mysqli pdo pdo_mysql intl gd soap exif zip mbstring opcache sodium ldap xsl bcmath
+
+RUN a2enmod rewrite headers expires
+
+# ── Moodle-tuned PHP + the vhost (DocumentRoot -> public) ────────────────────
+COPY .docker/php-moodle.ini   /usr/local/etc/php/conf.d/php-moodle.ini
+COPY .docker/000-default.conf /etc/apache2/sites-available/000-default.conf
+
+# ── Bake the code in. Build context = repo root; .dockerignore keeps junk out. ─
+# config.php is NOT baked — it's generated per client and mounted at run time.
+COPY --chown=33:33 . /var/www/html
+
+WORKDIR /var/www/html

@@ -1,0 +1,71 @@
+// -----------------------------------------------------------------------------
+// Activity / section availability notice — the "Not available unless: …" box
+// shown under a restricted activity on the course page (most visible in edit
+// mode, where an "Edit restrictions" action is appended).
+//
+// Core Boost (theme/boost/scss/moodle/course.scss → `.availabilityinfo`) paints
+// this box `background-color: $gray-200` with core body text. On the dark brand
+// that surfaced as a near-white card with washed-out, low-contrast text — the
+// white boxes under Quiz / cert / form activities in the course editor.
+//
+// Re-point every colour to a brand role: the box becomes a Surface panel with a
+// Border-primary outline (the same treatment cards/inputs get), its text uses
+// Text-secondary (a muted notice), and the "Edit restrictions" action uses the
+// Accent-Text link colour with the Hover Background / Hover Text pair on hover.
+//
+// Selectors mirror core's compiled shape (`.course-content .section-item[ .activity-item]
+// .availabilityinfo`) at equal-or-higher specificity, so — compiling after Boost
+// in one stream — they win by cascade order. Colour is direction-agnostic, so
+// this is correct in both RTL (ar) and LTR (en); no logical-prop work needed
+// beyond the one divider below.
+// -----------------------------------------------------------------------------
+
+.course-content .section-item .availabilityinfo,
+.course-content .section-item .activity-item .availabilityinfo {
+    background-color: var(--nit-brand-surface);
+    color: var(--nit-brand-textsecondary);
+    border: 1px solid var(--nit-brand-borderprimary);
+
+    // Bold fragments (activity names, dates) inside the notice read as primary text.
+    strong,
+    b,
+    .availability-excerpt strong {
+        color: var(--nit-brand-textprimary);
+    }
+
+    // Any link in the notice body (e.g. a linked activity name) is link-coloured.
+    a {
+        color: var(--nit-brand-accenttext);
+    }
+
+    // "Show more / Show less" restriction toggle.
+    .collapse-toggle,
+    [data-toggle="collapse"] {
+        color: var(--nit-brand-accenttext);
+    }
+
+    // The "Edit restrictions" action row (edit mode only).
+    .editavailability {
+        border-block-start-color: var(--nit-brand-borderprimary);
+
+        a {
+            color: var(--nit-brand-accenttext);
+
+            &:hover,
+            &:focus {
+                background-color: var(--nit-brand-hoverbackground);
+                color: var(--nit-brand-hovertext);
+            }
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Hidden / stealth activity cards. Core paints these `$gray-100` (another light
+// island on the dark brand). Give them a subtle Surface lift over the page
+// Background instead, so a hidden activity still reads as dimmed but on-brand.
+// -----------------------------------------------------------------------------
+.course-content .activity-item.hiddenactivity,
+.course-content .activity-item.stealth {
+    background-color: color-mix(in srgb, var(--nit-brand-surface) 55%, var(--nit-brand-background));
+}
