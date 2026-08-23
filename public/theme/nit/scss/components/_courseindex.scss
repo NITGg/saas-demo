@@ -1,0 +1,59 @@
+// -----------------------------------------------------------------------------
+// Course index (the left sidebar drawer listing sections + activities).
+//
+// Core Boost (theme/boost/scss/moodle/courseindex.scss) hard-codes
+// `$courseindex-link-hover-color: black` and applies it to the WHOLE item on
+// hover — `.courseindex-item:hover { color: black; .courseindex-link { color:
+// black } }`. So hovering a row's empty padding (not the link text) flipped the
+// activity label to raw black — off-brand, and inconsistent with the link's own
+// hover. The fix: repoint every hover/focus target to the brand Hover Text role
+// and give the row a brand Hover Background, so hovering ANYWHERE on the row
+// looks identical to hovering the text itself.
+//
+// The current-page item (`.pageitem`) owns its Primary fill and is left to
+// core: it excludes itself from the generic hover via `:not(.pageitem)`. Core
+// derives its label colour with `color-contrast($primary)`, which adapts to the
+// active brand group (black on a light Primary, white on a dark one) and keeps
+// the label readable in every group — forcing a fixed brand foreground there
+// would only lower its contrast, so we don't touch it.
+//
+// Selectors mirror core's compiled shape at equal-or-higher specificity, so —
+// compiling after Boost in one stream — they win by cascade order. Colour is
+// direction-agnostic: correct in both RTL (ar) and LTR (en).
+// -----------------------------------------------------------------------------
+
+.courseindex .courseindex-item {
+
+    // Whole-row hover / focus (every item except the current page). Covers the
+    // row padding, the link and the chevron with one brand pair.
+    &:hover:not(.pageitem),
+    &:focus:not(.pageitem),
+    &:focus-within:not(.pageitem) {
+        background-color: var(--nit-brand-hoverbackground);
+        color: var(--nit-brand-hovertext);
+
+        .courseindex-link,
+        .courseindex-chevron {
+            color: var(--nit-brand-hovertext);
+        }
+
+        // Hidden ("dimmed") items keep the same hover colour rather than core black.
+        &.dimmed {
+            color: var(--nit-brand-hovertext);
+
+            .courseindex-link,
+            .courseindex-chevron {
+                color: var(--nit-brand-hovertext);
+            }
+        }
+    }
+
+    // Direct text / chevron hover (cursor on the label itself) — same brand
+    // colour, kept in sync with the whole-row hover above.
+    .courseindex-link:hover,
+    .courseindex-link:focus,
+    .courseindex-chevron:hover,
+    .courseindex-chevron:focus {
+        color: var(--nit-brand-hovertext);
+    }
+}

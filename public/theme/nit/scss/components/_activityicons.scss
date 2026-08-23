@@ -1,0 +1,39 @@
+// -----------------------------------------------------------------------------
+// Activity icons for the "other" module purpose (MOD_PURPOSE_OTHER) — e.g.
+// mod_customcert (the "cert01" certificate activity).
+//
+// Core recolours each activity icon by its module purpose: theme/boost
+// icons.scss loops `$activity-icon-colors` and applies a flat-colour SVG filter
+// to `.activityiconcontainer.{purpose} .activityicon`. But that map only holds
+// the six standard purposes (administration / assessment / collaboration /
+// communication / content / interactivecontent). Modules whose purpose is
+// "other" get NO entry, so no filter is applied and the icon renders in its
+// native SVG colour — black — which is all but invisible on the dark brand
+// (the black certificate icon the user reported).
+//
+// Add the missing purpose here: recolour the "other" icon to the brand Accent
+// role — the documented slot for a non-text icon glyph. We use the compile-time
+// `$nit-b-g1-accent` SCSS variable (the configured group-1 Accent colour,
+// emitted by theme_nit_get_pre_scss and the same value published as
+// --nit-brand-g1-accent) rather than a raw hex, so it tracks the palette:
+// changing Brand Colors rebuilds the theme CSS and this filter regenerates with
+// the new value. `recolor-icon` needs a compile-time colour (it bakes the RGB
+// into an feColorMatrix SVG filter), so the group-1 SCSS var is used rather
+// than the runtime `var(--nit-brand-accent)` custom property. This mirrors
+// core's own mechanism exactly — the six standard purpose colours are likewise
+// fixed hues applied via `recolor-icon`.
+//
+// `:not(.isbranded)` / `:not(.nofilter)` honour the same opt-outs core uses, so
+// a module that ships its own branded icon is left untouched. Colour only — no
+// layout — so it is correct in RTL (ar) and LTR (en) and at every breakpoint.
+// -----------------------------------------------------------------------------
+
+.activityiconcontainer.other:not(.isbranded) {
+    .activityicon,
+    .icon,
+    img {
+        &:not(.nofilter) {
+            @include recolor-icon($nit-b-g1-accent, 1);
+        }
+    }
+}
