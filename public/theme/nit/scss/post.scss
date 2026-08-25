@@ -134,27 +134,15 @@ a:not(.btn):not(.nav-link):not(.navbar-brand):not(.dropdown-item):not(.page-link
     }
 
     // The marketing sections (incl. the footer) live in the full-width regions
-    // above; the normal content shell (#topofscroll .main-inner + region-main)
-    // is empty on the Site home, so — when NOT editing — collapse its padding /
-    // min-height. Otherwise it renders as a tall empty band BELOW the footer.
-    &:not(.editing) {
-        #topofscroll.main-inner {
-            padding-top: 0;
-            padding-bottom: 0;
-        }
-
-        #region-main-box,
-        #region-main {
-            min-height: 0;
-            padding-top: 0;
-            padding-bottom: 0;
-        }
-
-        // The course-index / block-drawer toggle row isn't needed on the
-        // marketing home — hiding it removes the last sliver of gap.
-        .main-inner > .drawer-toggles {
-            display: none;
-        }
+    // above; the normal content shell (#topofscroll .main-inner) only holds the
+    // empty page-header (site name, already hidden) + an empty region-main on the
+    // Site home. When NOT editing, HIDE it entirely — zeroing padding wasn't
+    // enough because the header/region boxes still rendered a ~230px empty band
+    // BELOW the footer. Hidden only for guests/viewers; edit mode keeps it so
+    // admins can still reach the content region. (#page-footer is the fixed
+    // "?" popover button — it doesn't take layout space.)
+    &:not(.editing) #topofscroll.main-inner {
+        display: none;
     }
 
     .nit-region-above-content {
