@@ -876,8 +876,18 @@ function theme_nit_login_bg_scss($theme): string {
     if (empty($url)) {
         return '';
     }
-    // A dark scrim over the photo keeps the white login card readable on any image.
-    return 'body.pagelayout-login {'
+    // theme_nit uses a custom two-column login (login_panel.mustache): the left
+    // aside (.login-layout-left) is the branded image panel. Put the uploaded
+    // photo there, with a dark scrim so the panel's white copy stays legible.
+    // Fall back to covering the whole login page too, in case a layout renders
+    // without the split (e.g. very narrow screens hide .login-layout-left).
+    return '.login-layout-left {'
+        . 'background-image: linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.55)), url("' . $url . '") !important;'
+        . 'background-size: cover !important;'
+        . 'background-position: center center !important;'
+        . 'background-repeat: no-repeat !important;'
+        . "}\n"
+        . 'body.pagelayout-login #page {'
         . 'background-image: linear-gradient(rgba(0,0,0,.45), rgba(0,0,0,.55)), url("' . $url . '");'
         . 'background-size: cover;'
         . 'background-position: center center;'
