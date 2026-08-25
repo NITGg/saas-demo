@@ -49,5 +49,6 @@ $string['expired_body']     = 'Your {$a} period has ended. Upgrade to reactivate
 $string['expired_contact']  = 'Contact NIT to upgrade or renew.';
 $string['suspended_title']   = 'Academy suspended';
 $string['suspended_heading'] = 'This academy is suspended';
-$string['suspended_body']    = 'Access to this academy has been temporarily suspended. Your content is safe — contact NIT to restore it.';
+$string['suspended_body']    = 'Access to this academy has been temporarily suspended. Your content is safe — contact us to restore it.';
+$string['contact_btn']      = 'Contact us';
 $string['backtosite']       = 'Back to site';

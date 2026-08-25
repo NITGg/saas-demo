@@ -25,12 +25,24 @@ class hook_callbacks {
             return;
         }
 
-        $script = (string) ($SCRIPT ?? '');
+        // Resolve the current script path from every source Moodle populates —
+        // $SCRIPT can be empty this early on some entry points, and if it is the
+        // exemption below would fail and even /local/license/expired.php would be
+        // redirected to itself (ERR_TOO_MANY_REDIRECTS). SCRIPT_NAME/PHP_SELF are
+        // reliable because the Moodle docroot is public/.
+        $paths = [
+            (string) ($SCRIPT ?? ''),
+            (string) ($_SERVER['SCRIPT_NAME'] ?? ''),
+            (string) ($_SERVER['PHP_SELF'] ?? ''),
+        ];
 
-        // Always let these through so an admin can still recover / upgrade / log in / see the notice.
+        // Always let these through so an admin can still recover / upgrade / log
+        // in, and so ANYONE can see the suspended/expired notice itself.
         foreach (['/login/', '/admin/', '/local/license/'] as $allow) {
-            if (strpos($script, $allow) === 0) {
-                return;
+            foreach ($paths as $p) {
+                if ($p !== '' && strpos($p, $allow) !== false) {
+                    return;
+                }
             }
         }
 
