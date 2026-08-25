@@ -120,6 +120,12 @@ a:not(.btn):not(.nav-link):not(.navbar-brand):not(.dropdown-item):not(.page-link
     }
 
     .nit-region-fullwidth-top {
+        // Sit the full-bleed hero flush under the fixed navbar. #page already
+        // carries a navbar-height top margin, but the front-page wrapper adds an
+        // extra spacer of top offset above it, leaving a visible gap between the
+        // header and the hero. Pull that spacer back so the cover image starts
+        // right at the header's bottom edge (verified: closes the ~24px gap).
+        margin-top: calc(-1 * #{map-get($spacers, 4)});
         margin-bottom: map-get($spacers, 4);
     }
 
