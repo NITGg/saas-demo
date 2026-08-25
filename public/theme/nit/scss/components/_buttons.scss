@@ -25,18 +25,39 @@
     }
 }
 
-// Solid brand-coloured buttons carry the white brand foreground (Brand Colors:
-// buttons text = Text primary). Bootstrap's auto-contrast otherwise flips the
-// label to black on the mid-tone red / green fills, which fights the brand.
-// Light fills (warning, info) correctly keep dark text, so they are left to
-// Bootstrap. Using the brand token means a .nit-brand-2/3 wrapper switches the
-// label colour with the rest of the group.
-.btn-primary,
-.btn-danger,
+// Solid brand-coloured buttons need a label that CONTRASTS with the fill. The
+// previous fixed `--nit-brand-textprimary` assumed a light foreground (true for
+// dark palettes) — but on a LIGHT palette Text primary is near-black, so the
+// label went dark-on-dark (invisible) on the dark primary fill. Derive the label
+// per fill with Bootstrap's color-contrast(), which returns black or white for
+// the academy's actual Group-1 colour (each academy compiles its own CSS, so
+// $nit-b-g1-* already carry that academy's palette).
+.btn-primary {
+    --bs-btn-color: #{color-contrast($nit-b-g1-primary)};
+    --bs-btn-hover-color: #{color-contrast($nit-b-g1-primary)};
+    --bs-btn-active-color: #{color-contrast($nit-b-g1-primary)};
+}
+
+.btn-danger {
+    --bs-btn-color: #{color-contrast($nit-b-g1-error)};
+    --bs-btn-hover-color: #{color-contrast($nit-b-g1-error)};
+    --bs-btn-active-color: #{color-contrast($nit-b-g1-error)};
+}
+
 .btn-success {
-    --bs-btn-color: var(--nit-brand-textprimary);
-    --bs-btn-hover-color: var(--nit-brand-textprimary);
-    --bs-btn-active-color: var(--nit-brand-textprimary);
+    --bs-btn-color: #{color-contrast($nit-b-g1-success)};
+    --bs-btn-hover-color: #{color-contrast($nit-b-g1-success)};
+    --bs-btn-active-color: #{color-contrast($nit-b-g1-success)};
+}
+
+// Solid CTA used inside the front-page section blocks (course-card "Start now",
+// etc.). The seeded block HTML hard-codes an inline `color: var(--nit-brand-
+// textprimary)` that assumes a light foreground and goes invisible on a light
+// palette's dark primary. Force the contrast-correct on-primary label; the
+// !important beats the (non-important) inline colour, so it fixes already-seeded
+// pages too — no template rebuild needed.
+.nit-btn-solid {
+    color: var(--nit-brand-on-primary) !important;
 }
 
 // Icon-only buttons (`.btn-icon`) — the action-menu "⋮" triggers, the activity

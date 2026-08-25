@@ -123,7 +123,11 @@
     --nit-brand-accenttext-vivid: color-mix(in srgb, var(--nit-brand-accenttext) 70%, #fff);
     --nit-brand-surface-2: color-mix(in srgb, var(--nit-brand-surface) 90%, #fff);
     --nit-brand-surface-translucent: color-mix(in srgb, var(--nit-brand-surface) 88%, transparent);
-    --nit-brand-on-primary: var(--nit-brand-textprimary);
+    // Text/label that sits ON the primary fill (solid buttons, CTAs). Must
+    // CONTRAST with the primary — not follow the body Text primary, which on a
+    // light palette is near-black and vanishes on a dark primary. color-contrast()
+    // returns black or white for this academy's Group-1 primary.
+    --nit-brand-on-primary: #{color-contrast($nit-b-g1-primary)};
 }
 
 // --- Group switch classes. A component (or any wrapper) carrying one of these
