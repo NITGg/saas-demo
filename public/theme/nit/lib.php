@@ -858,6 +858,35 @@ function theme_nit_font_scss($theme): string {
 }
 
 /**
+ * The login / signup page background image.
+ *
+ * Boost ships a `loginbackgroundimage` setting whose CSS is emitted by
+ * theme_boost_get_extra_scss(). Because theme_nit overrides extra_scss (it does
+ * NOT chain Boost's callback), that logic never runs for us — so we re-emit it
+ * here off our own `loginbackgroundimage` file area. The file lives in the
+ * system context (itemid 0) exactly like the fonts and is served by
+ * theme_nit_pluginfile(); the config `theme_nit/loginbackgroundimage` holds the
+ * filename. When no file is uploaded the login page keeps its plain background.
+ *
+ * @param theme_config $theme the theme config object
+ * @return string CSS (valid SCSS)
+ */
+function theme_nit_login_bg_scss($theme): string {
+    $url = $theme->setting_file_url('loginbackgroundimage', 'loginbackgroundimage');
+    if (empty($url)) {
+        return '';
+    }
+    // A dark scrim over the photo keeps the white login card readable on any image.
+    return 'body.pagelayout-login {'
+        . 'background-image: linear-gradient(rgba(0,0,0,.45), rgba(0,0,0,.55)), url("' . $url . '");'
+        . 'background-size: cover;'
+        . 'background-position: center center;'
+        . 'background-repeat: no-repeat;'
+        . 'background-attachment: fixed;'
+        . "}\n";
+}
+
+/**
  * How long (seconds) the front-page data helpers cache their result.
  *
  * Read from the theme setting `frontpagecachettl` (edited under Site admin →
@@ -1333,6 +1362,9 @@ function theme_nit_get_extra_scss($theme) {
     // Admin-uploaded, per-language custom fonts (edited on the gallery page).
     $scss .= theme_nit_font_scss($theme);
 
+    // Admin/provision-uploaded login + signup page background image.
+    $scss .= theme_nit_login_bg_scss($theme);
+
     if (!empty($theme->settings->scss)) {
         $scss .= $theme->settings->scss;
     }
@@ -1360,8 +1392,11 @@ function theme_nit_get_extra_scss($theme) {
  */
 function theme_nit_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload, array $options = []) {
     $fontareas = array_map(static fn($slot) => $slot['filearea'], theme_nit_font_slots());
+    // Image file areas served exactly like the fonts (system context, itemid 0).
+    $imageareas = ['loginbackgroundimage'];
+    $servable = array_merge($fontareas, $imageareas);
 
-    if ($context->contextlevel == CONTEXT_SYSTEM && in_array($filearea, $fontareas, true)) {
+    if ($context->contextlevel == CONTEXT_SYSTEM && in_array($filearea, $servable, true)) {
         $theme = theme_config::load('nit');
         // Theme files must be cache-able by both browsers and proxies by default.
         if (!array_key_exists('cacheability', $options)) {
