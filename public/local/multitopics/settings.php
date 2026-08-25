@@ -34,6 +34,16 @@ if ($hassiteconfig) {
         get_string('watermark_desc', 'local_multitopics'), 0));
     $settings->add(new admin_setting_configtext('local_multitopics/watermark_text',
         get_string('watermark_text', 'local_multitopics'), '', '{fullname}', PARAM_TEXT));
+    // Overlay style — served to the app. Colour is 6 hex digits with NO leading '#'.
+    $settings->add(new admin_setting_configtext('local_multitopics/watermark_color',
+        get_string('watermark_color', 'local_multitopics'),
+        get_string('watermark_color_desc', 'local_multitopics'), 'ffffff', PARAM_TEXT));
+    $settings->add(new admin_setting_configtext('local_multitopics/watermark_speed',
+        get_string('watermark_speed', 'local_multitopics'),
+        get_string('watermark_speed_desc', 'local_multitopics'), '0.002', PARAM_TEXT));
+    $settings->add(new admin_setting_configtext('local_multitopics/watermark_fontsize',
+        get_string('watermark_fontsize', 'local_multitopics'),
+        get_string('watermark_fontsize_desc', 'local_multitopics'), '14', PARAM_TEXT));
     $settings->add(new admin_setting_configtext('local_multitopics/videourl',
         get_string('videourl', 'local_multitopics'), '', '', PARAM_URL));
 

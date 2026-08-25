@@ -19,6 +19,12 @@ $string['prevent_screen_recording_desc'] = 'Ask the app to block screenshots / s
 $string['watermark']         = 'Watermark (fallback)';
 $string['watermark_desc']    = 'Fallback only — the app prefers the VdoCipher plugin\'s watermark setting when installed.';
 $string['watermark_text']    = 'Watermark text (fallback)';
+$string['watermark_color']      = 'Watermark colour';
+$string['watermark_color_desc'] = '6 hex digits, no leading # (e.g. ff3b30). White (ffffff) if left blank.';
+$string['watermark_speed']      = 'Watermark drift speed';
+$string['watermark_speed_desc'] = 'Decimal, e.g. 0.002 (the app default).';
+$string['watermark_fontsize']      = 'Watermark font size';
+$string['watermark_fontsize_desc'] = 'Number, e.g. 14.';
 $string['videourl']          = 'Video base URL';
 
 $string['whatsapp_phone']    = 'WhatsApp phone';
