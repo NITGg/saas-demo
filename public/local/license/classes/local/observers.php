@@ -79,4 +79,54 @@ class observers {
             debugging('local_license: teacher-cap notice skipped: ' . $e->getMessage(), DEBUG_DEVELOPER);
         }
     }
+
+    /**
+     * Enforce the tier's course cap — the reliable backstop.
+     *
+     * Fires after a course is created (whatever the path: UI, restore, CSV
+     * upload, web service). If the site now holds more real courses than the
+     * tier allows, the just-created course is deleted, so the cap can't be
+     * exceeded even by flows the before_http_headers guard never sees.
+     *
+     * @param \core\event\course_created $event
+     */
+    public static function course_created(\core\event\course_created $event): void {
+        global $CFG, $DB;
+
+        if (!license::is_enforced()) {
+            return;
+        }
+        $max = license::max_courses();
+        if ($max < 0) {
+            return; // unlimited — nothing to enforce.
+        }
+        // Within the cap after this creation? Then it's fine.
+        if (enforcer::count_courses() <= $max) {
+            return;
+        }
+
+        $courseid = (int) $event->objectid;
+        if ($courseid <= 0 || $courseid == SITEID) {
+            return;
+        }
+
+        // Over the cap — remove the course this event just announced.
+        require_once($CFG->dirroot . '/course/lib.php');
+        try {
+            delete_course($courseid, false); // false = no "deleting…" output.
+        } catch (\Throwable $e) {
+            // If the delete can't run here (rare), at least hide it so it's
+            // unusable and clearly over-limit; the admin must upgrade or remove one.
+            $DB->set_field('course', 'visible', 0, ['id' => $courseid]);
+            debugging('local_license: could not delete over-limit course ' . $courseid
+                . ' (' . $e->getMessage() . ') — hid it instead', DEBUG_DEVELOPER);
+        }
+
+        // Best-effort notice on the next full page load (ignored on AJAX/WS).
+        try {
+            \core\notification::error(get_string('limit_course', 'local_license', license::tiername()));
+        } catch (\Throwable $e) {
+            debugging('local_license: course-cap notice skipped: ' . $e->getMessage(), DEBUG_DEVELOPER);
+        }
+    }
 }

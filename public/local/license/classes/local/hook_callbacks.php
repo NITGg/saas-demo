@@ -97,10 +97,13 @@ class hook_callbacks {
                 }
             }
         } else if ($script === '/course/edit.php') {
-            // A new course has a category but no course id.
-            $id       = optional_param('id', 0, PARAM_INT);
-            $category = optional_param('category', 0, PARAM_INT);
-            if (!$id && $category && !enforcer::can_add_course()) {
+            // A new course form has no course id (id=0); editing an existing one
+            // sets id. Block the new-course form whenever we're at the cap — do
+            // NOT also require a category in the URL, because several entry points
+            // open /course/edit.php without one (and the category is then chosen
+            // in the form), which used to slip past the guard.
+            $id = optional_param('id', 0, PARAM_INT);
+            if (!$id && !enforcer::can_add_course()) {
                 self::block(
                     new \moodle_url('/course/management.php'),
                     get_string('limit_course', 'local_license', license::tiername())

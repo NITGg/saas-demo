@@ -15,4 +15,13 @@ $observers = [
         'callback'  => '\local_license\local\observers::role_assigned',
         'internal'  => false, // run after the DB transaction commits, so the row exists to count / unassign.
     ],
+    [
+        // Course cap backstop: the before_http_headers guard only catches the
+        // /course/edit.php page load — course restore, CSV upload and web-service
+        // creation all bypass it. Watch course_created and delete any course that
+        // pushes past the tier's maxcourses.
+        'eventname' => '\core\event\course_created',
+        'callback'  => '\local_license\local\observers::course_created',
+        'internal'  => false, // after commit, so the course row exists to count / delete.
+    ],
 ];
