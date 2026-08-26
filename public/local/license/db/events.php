@@ -24,4 +24,12 @@ $observers = [
         'callback'  => '\local_license\local\observers::course_created',
         'internal'  => false, // after commit, so the course row exists to count / delete.
     ],
+    [
+        // Per-course activity-cap backstop: same story as courses — the modedit
+        // page guard misses restore/import/web-service. Watch course_module_created
+        // and delete any module that pushes its bucket past the per-course limit.
+        'eventname' => '\core\event\course_module_created',
+        'callback'  => '\local_license\local\observers::course_module_created',
+        'internal'  => false,
+    ],
 ];

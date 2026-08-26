@@ -129,4 +129,63 @@ class observers {
             debugging('local_license: course-cap notice skipped: ' . $e->getMessage(), DEBUG_DEVELOPER);
         }
     }
+
+    /**
+     * Enforce the tier's per-course activity cap — the reliable backstop.
+     *
+     * Mirrors {@see course_created}: the modedit page guard misses course
+     * restore, import and web-service module creation. If adding this module
+     * pushes its bucket past the per-course limit, the module is removed.
+     *
+     * @param \core\event\course_module_created $event
+     */
+    public static function course_module_created(\core\event\course_module_created $event): void {
+        global $CFG, $DB;
+
+        if (!license::is_enforced()) {
+            return;
+        }
+        $modname = (string) ($event->other['modulename'] ?? '');
+        if ($modname === '') {
+            return;
+        }
+        $courseid = (int) $event->courseid;
+        if ($courseid <= 0 || $courseid == SITEID) {
+            return;
+        }
+
+        $bucket = license::bucket_for($modname);
+        $limit  = license::bucket_limit($bucket);
+        if ($limit < 0) {
+            return; // unlimited bucket — nothing to enforce.
+        }
+        // Within the cap after this module (count includes the new one)? Fine.
+        if (enforcer::count_bucket($bucket, $courseid) <= $limit) {
+            return;
+        }
+
+        // Over the per-course cap — remove the module this event just announced.
+        $cmid = (int) $event->objectid;
+        if ($cmid <= 0) {
+            return;
+        }
+        require_once($CFG->dirroot . '/course/lib.php');
+        try {
+            course_delete_module($cmid);
+        } catch (\Throwable $e) {
+            // Fall back to hiding it so it's unusable if the delete can't run here.
+            $DB->set_field('course_modules', 'visible', 0, ['id' => $cmid]);
+            debugging('local_license: could not delete over-limit module ' . $cmid
+                . ' (' . $e->getMessage() . ') — hid it instead', DEBUG_DEVELOPER);
+        }
+
+        try {
+            \core\notification::error(get_string('limit_activity', 'local_license', [
+                'type' => $modname,
+                'tier' => license::tiername(),
+            ]));
+        } catch (\Throwable $e) {
+            debugging('local_license: activity-cap notice skipped: ' . $e->getMessage(), DEBUG_DEVELOPER);
+        }
+    }
 }
