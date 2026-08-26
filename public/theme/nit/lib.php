@@ -639,14 +639,15 @@ function theme_nit_design_system_export(): array {
     ];
     // The mobile app applies `brandcolors` to its DARK theme only, pairing these
     // surfaces with its own light (near-white) text. A LIGHT academy palette
-    // (light background/surface) would then render as white text on a light
-    // field — invisible. So only publish the palette when it is actually dark;
-    // a light academy falls back to the app's compiled neutral brand, which is
-    // internally consistent (readable in both the app's light and dark themes).
-    // The web is unaffected — it reads --nit-brand-* from config directly.
-    if (theme_nit_export_palette_is_dark($brand)) {
-        $payload['brandcolors'] = $brand;
-    }
+    // (light background/surface) would render as white text on a light field —
+    // invisible. So always hand the app a DARK palette: a dark academy palette
+    // as-is; a light one transformed to a dark-branded palette that keeps the
+    // primary/secondary/accent hues (brightened to read on a dark ground) but
+    // swaps in dark neutrals + light text. The web is unaffected — it reads
+    // --nit-brand-* from config directly.
+    $payload['brandcolors'] = theme_nit_export_palette_is_dark($brand)
+        ? $brand
+        : theme_nit_brand_export_darkened($brand);
     // Only emit branding / links blocks when the tenant has actually published
     // something — the app falls back to bundled assets for any missing key.
     if ($branding = theme_nit_branding_export()) {
@@ -680,26 +681,118 @@ function theme_nit_export_palette_is_dark(array $brand): bool {
     return true;
 }
 
-/**
- * Relative-luminance test: is this #rrggbb / #rgb colour "dark" (luminance < 0.5)?
- * Unparseable input is treated as dark (safe default for the palette gate).
- *
- * @param string $hex
- * @return bool
- */
-function theme_nit_hex_is_dark(string $hex): bool {
+/** Normalise a #rgb / #rrggbb string to lowercase #rrggbb, or null if invalid. */
+function theme_nit_normalize_hex(string $hex): ?string {
     $hex = ltrim(trim($hex), '#');
     if (strlen($hex) === 3) {
         $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
     }
-    if (!preg_match('/^[0-9a-fA-F]{6}$/', $hex)) {
+    return preg_match('/^[0-9a-fA-F]{6}$/', $hex) ? '#' . strtolower($hex) : null;
+}
+
+/** @return array{0:int,1:int,2:int} RGB (falls back to a mid brand blue). */
+function theme_nit_hex_rgb(string $hex): array {
+    $n = theme_nit_normalize_hex($hex) ?? '#5488c4';
+    return [hexdec(substr($n, 1, 2)), hexdec(substr($n, 3, 2)), hexdec(substr($n, 5, 2))];
+}
+
+function theme_nit_rgb_hex(int $r, int $g, int $b): string {
+    return sprintf('#%02x%02x%02x',
+        max(0, min(255, $r)), max(0, min(255, $g)), max(0, min(255, $b)));
+}
+
+/** Blend colour $a toward $b by ratio $t (0..1). */
+function theme_nit_mix(string $a, string $b, float $t): string {
+    [$ar, $ag, $ab] = theme_nit_hex_rgb($a);
+    [$br, $bg, $bb] = theme_nit_hex_rgb($b);
+    return theme_nit_rgb_hex(
+        (int) round($ar * (1 - $t) + $br * $t),
+        (int) round($ag * (1 - $t) + $bg * $t),
+        (int) round($ab * (1 - $t) + $bb * $t));
+}
+
+/** Relative luminance 0..1. */
+function theme_nit_hex_lum(string $hex): float {
+    [$r, $g, $b] = theme_nit_hex_rgb($hex);
+    return (0.2126 * $r + 0.7152 * $g + 0.0722 * $b) / 255;
+}
+
+/**
+ * Is this colour "dark" (luminance < 0.5)? Unparseable input is treated as dark
+ * (safe default for the palette gate).
+ */
+function theme_nit_hex_is_dark(string $hex): bool {
+    if (theme_nit_normalize_hex($hex) === null) {
         return true;
     }
-    $r = hexdec(substr($hex, 0, 2));
-    $g = hexdec(substr($hex, 2, 2));
-    $b = hexdec(substr($hex, 4, 2));
-    $lum = (0.2126 * $r + 0.7152 * $g + 0.0722 * $b) / 255;
-    return $lum < 0.5;
+    return theme_nit_hex_lum($hex) < 0.5;
+}
+
+/** Lighten a colour toward white until it reads on a dark ground (min luminance). */
+function theme_nit_brighten_for_dark(string $hex, float $minlum = 0.42): string {
+    $lum = theme_nit_hex_lum($hex);
+    if ($lum >= $minlum) {
+        return theme_nit_normalize_hex($hex) ?? $hex;
+    }
+    $t = max(0.0, min(0.72, ($minlum - $lum) / max(0.001, 1 - $lum)));
+    return theme_nit_mix($hex, '#ffffff', $t);
+}
+
+/**
+ * Transform a LIGHT brand-export palette into a DARK-branded one for the mobile
+ * app: keep every group's primary/secondary/accent hue (brightened so it reads
+ * on a dark ground), but replace the neutral roles with dark surfaces + light
+ * text (subtly tinted toward the primary so it still feels branded). Status
+ * colours are preserved when set. Only the role `value`s change — the export
+ * structure (labels, cssvars, usage) is untouched.
+ *
+ * @param array $brand theme_nit_brand_export() payload (assumed light)
+ * @return array a dark-valid palette in the same shape
+ */
+function theme_nit_brand_export_darkened(array $brand): array {
+    foreach ($brand['groups'] as &$g) {
+        $val = [];
+        foreach ($g['roles'] as $r) {
+            $val[$r['role']] = (string) $r['value'];
+        }
+
+        $primary   = theme_nit_brighten_for_dark($val['primary']   ?? '#5488c4');
+        $secondary = theme_nit_brighten_for_dark($val['secondary'] ?? $primary);
+        $accent    = theme_nit_brighten_for_dark($val['accent']    ?? $primary);
+
+        $background = theme_nit_mix('#0b0f14', $primary, 0.06);   // near-black, faint brand tint
+        $surface    = theme_nit_mix('#161c23', $primary, 0.06);   // elevated dark card
+
+        $dark = [
+            'primary'         => $primary,
+            'secondary'       => $secondary,
+            'accent'          => $accent,
+            // Text drawn ON an accent fill: contrast against the accent itself.
+            'accenttext'      => theme_nit_hex_is_dark($accent) ? '#f2f5f7' : '#0b0f14',
+            'background'      => $background,
+            'surface'         => $surface,
+            'textprimary'     => '#f2f5f7',
+            'textsecondary'   => '#9aa6b0',
+            'borderprimary'   => theme_nit_mix($surface, '#ffffff', 0.12),
+            'bordersecondary' => theme_nit_mix($surface, '#ffffff', 0.07),
+            'hoverbackground' => theme_nit_mix($surface, $primary, 0.16),
+            'hovertext'       => '#ffffff',
+            'error'           => $val['error']   ?? '#e5484d',
+            'success'         => $val['success'] ?? '#30a46c',
+            'warning'         => $val['warning'] ?? '#f5a524',
+            'info'            => $val['info']    ?? '#3b82f6',
+        ];
+
+        foreach ($g['roles'] as &$r) {
+            if (isset($dark[$r['role']])) {
+                $r['value']    = $dark[$r['role']];
+                $r['iscustom'] = true;   // derived, not the compiled default
+            }
+        }
+        unset($r);
+    }
+    unset($g);
+    return $brand;
 }
 
 /**
