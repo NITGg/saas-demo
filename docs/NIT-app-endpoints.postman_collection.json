@@ -1,0 +1,183 @@
+{
+  "info": {
+    "name": "NIT Academy — App Endpoints",
+    "description": "Anonymous, pre-login endpoints the white-label mobile app reads per tenant.\n\n1. App settings  — GET {{baseUrl}}/local/multitopics/getsettings.php\n2. Design system — GET {{baseUrl}}/theme/nit/design_system.php\n\nSet the collection variable `baseUrl` to an academy wwwroot (https, no trailing slash), e.g. https://test.academy2026.nitg-eg.com. Each request's Tests tab validates the app contract from BACKEND_ENDPOINTS.md (every settings value a string/null; site object present; features rule; anonymous logo).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://test.academy2026.nitg-eg.com",
+      "type": "string"
+    },
+    {
+      "key": "logoLightUrl",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. App settings (getsettings.php)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": {
+          "raw": "{{baseUrl}}/local/multitopics/getsettings.php",
+          "host": ["{{baseUrl}}"],
+          "path": ["local", "multitopics", "getsettings.php"]
+        },
+        "description": "Consumed by AppSettings.load(). CRITICAL: every value must be a JSON string or null — a single boolean/number discards the whole payload on the client."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "pm.test('Content-Type is application/json', () =>",
+              "  pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+              "",
+              "let body;",
+              "pm.test('Body is valid JSON with a data object', () => {",
+              "  body = pm.response.json();",
+              "  pm.expect(body).to.have.property('data');",
+              "  pm.expect(body.data).to.be.an('object');",
+              "});",
+              "",
+              "pm.test('§2.2 — every value is a string or null (no booleans/numbers/arrays)', () => {",
+              "  const bad = [];",
+              "  Object.entries(body.data || {}).forEach(([k, v]) => {",
+              "    if (v !== null && typeof v !== 'string') bad.push(`${k} = ${JSON.stringify(v)} (${typeof v})`);",
+              "  });",
+              "  pm.expect(bad, 'non-string values would discard the WHOLE payload on the app:\\n' + bad.join('\\n')).to.have.lengthOf(0);",
+              "});",
+              "",
+              "pm.test('admin_token present (else the app uses the compiled EAAC fallback)', () => {",
+              "  const t = (body.data || {}).admin_token;",
+              "  pm.expect(t, 'admin_token is empty — run apply_apptoken / ⟳ Update').to.be.a('string').and.not.equal('');",
+              "});",
+              "",
+              "pm.test('google_client_id present (else app Google sign-in is unconfigured)', () => {",
+              "  pm.expect((body.data || {}).google_client_id).to.be.a('string').and.not.equal('');",
+              "});",
+              "",
+              "pm.test('watermark_color has no leading # (would throw FormatException)', () => {",
+              "  const c = (body.data || {}).watermark_color;",
+              "  if (c) pm.expect(c).to.match(/^[0-9a-fA-F]{6}$/);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Design system (design_system.php)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": {
+          "raw": "{{baseUrl}}/theme/nit/design_system.php",
+          "host": ["{{baseUrl}}"],
+          "path": ["theme", "nit", "design_system.php"]
+        },
+        "description": "Consumed by the design-system data source. Refreshed on every launch and used as the onboarding probe. Must expose `site` OR `brandcolors` as an object or the app rejects the host."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "pm.test('Content-Type is application/json', () =>",
+              "  pm.expect(pm.response.headers.get('Content-Type') || '').to.include('application/json'));",
+              "",
+              "let ds;",
+              "pm.test('Body is valid JSON', () => { ds = pm.response.json(); pm.expect(ds).to.be.an('object'); });",
+              "",
+              "pm.test('Sanity gate — site OR brandcolors is an object', () => {",
+              "  const ok = (ds.site && typeof ds.site === 'object') || (ds.brandcolors && typeof ds.brandcolors === 'object');",
+              "  pm.expect(ok, 'app rejects a host that publishes neither').to.be.true;",
+              "});",
+              "",
+              "pm.test('site.apiversion is 1 (app supports 1..1)', () => {",
+              "  if (ds.site && ds.site.apiversion !== undefined) pm.expect(ds.site.apiversion).to.eql(1);",
+              "});",
+              "",
+              "pm.test('site.name and site.url present', () => {",
+              "  if (ds.site) {",
+              "    pm.expect(ds.site.name).to.be.a('string').and.not.equal('');",
+              "    pm.expect(ds.site.url || ds.site.wwwroot).to.be.a('string').and.not.equal('');",
+              "  }",
+              "});",
+              "",
+              "pm.test('site.status is active|expired|suspended (or absent)', () => {",
+              "  const s = ds.site && ds.site.status;",
+              "  if (s !== undefined) pm.expect(['active', 'expired', 'suspended']).to.include(s);",
+              "});",
+              "",
+              "pm.test('site.features — if present it is an object (a missing key means OFF)', () => {",
+              "  if (ds.site && ds.site.features !== undefined) pm.expect(ds.site.features).to.be.an('object');",
+              "});",
+              "",
+              "pm.test('brandcolors.groups includes g1 when present', () => {",
+              "  if (ds.brandcolors && Array.isArray(ds.brandcolors.groups)) {",
+              "    const keys = ds.brandcolors.groups.map(g => g.key);",
+              "    pm.expect(keys, 'g1 is the site-wide default and every-role fallback').to.include('g1');",
+              "  }",
+              "});",
+              "",
+              "// Capture the light logo so the next request can prove it loads anonymously.",
+              "if (ds.branding && ds.branding.logo) {",
+              "  let u = ds.branding.logo.light || ds.branding.logo.dark || (typeof ds.branding.logo === 'string' ? ds.branding.logo : '');",
+              "  if (u && u.startsWith('//')) u = 'https:' + u;",
+              "  pm.collectionVariables.set('logoLightUrl', u || '');",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Logo loads anonymously (asset check)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{logoLightUrl}}", "host": ["{{logoLightUrl}}"] },
+        "description": "Runs against branding.logo.light captured by request 2. Must return an image, NOT Moodle's login HTML — a pluginfile URL behind forcelogin renders a blank logo in the app. Skips itself when no logo is published."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.collectionVariables.get('logoLightUrl')) {",
+              "  console.log('No branding.logo published — skipping the anonymous-asset check.');",
+              "  pm.execution.skipRequest();",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "pm.test('Content-Type is an image (not text/html login page)', () => {",
+              "  const ct = pm.response.headers.get('Content-Type') || '';",
+              "  pm.expect(ct, 'text/html means the asset is behind login — logo renders blank').to.include('image');",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
