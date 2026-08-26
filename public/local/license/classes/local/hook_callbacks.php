@@ -46,6 +46,13 @@ class hook_callbacks {
             }
         }
 
+        // The tier-enforcement checks below key off the exact script path. Use the
+        // first non-empty resolved path (normally $SCRIPT).
+        $script = '';
+        foreach ($paths as $p) {
+            if ($p !== '') { $script = $p; break; }
+        }
+
         // 0) Admin suspend — locks the whole academy regardless of tier enforcement.
         if (license::is_suspended()) {
             redirect(new \moodle_url('/local/license/expired.php', ['reason' => 'suspended']));
