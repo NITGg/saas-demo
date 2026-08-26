@@ -1,16 +1,10 @@
 name: Run tests in a Composed Moodle Setup
 
 on:
-  push:
-    branches-ignore:
-      - main
-      - MOODLE_[0-9]+_STABLE
-      # Per-academy deployment branches (created by provisioning) must NOT run
-      # Moodle's upstream test suite — it's not set up for them and only produces
-      # red-X noise + wasted Actions minutes on every academy creation.
-      - client/**
-    tags-ignore:
-      - v[0-9]+.[0-9]+.[0-9]+*
+  # Moodle's upstream composed-services test suite. DISABLED for automatic runs
+  # on this deployment fork (same reason as push.yml/Core: needs a test DB +
+  # phpunit secrets we don't provide). Our real CI is build-image +
+  # nit-dependency-audit. Still runnable on demand from the Actions tab.
   workflow_dispatch:
     inputs:
       phpunit_extra_options:
