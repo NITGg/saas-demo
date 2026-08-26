@@ -126,7 +126,10 @@ a:not(.btn):not(.nav-link):not(.navbar-brand):not(.dropdown-item):not(.page-link
         // header and the hero. Pull that spacer back so the cover image starts
         // right at the header's bottom edge (verified: closes the ~24px gap).
         margin-top: calc(-1 * #{map-get($spacers, 4)});
-        margin-bottom: map-get($spacers, 4);
+        // No bottom margin: the footer is the last section in this region and the
+        // content shell below it is hidden on the Site home, so any margin here is
+        // just dead space under the footer.
+        margin-bottom: 0;
     }
 
     .nit-region-fullwidth-bottom {
