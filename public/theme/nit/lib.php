@@ -851,18 +851,54 @@ function theme_nit_site_export(): array {
  * @return array (empty when nothing is published)
  */
 function theme_nit_branding_export(): array {
+    global $OUTPUT;
+
+    // A dedicated mobile override stored in theme_nit config (a URL). Rarely set;
+    // the real site assets below are the normal source.
     $url = static function (string $key): string {
         $v = get_config('theme_nit', $key);
         return ($v === false || $v === null) ? '' : (string) $v;
     };
-    $pair = static function (string $light, string $dark) use ($url): array {
-        return array_filter(['light' => $url($light), 'dark' => $url($dark)]);
+    // {light, dark} pair from optional config overrides, falling back to a shared
+    // asset for both themes (the app accepts one variant used for both).
+    $pair = static function (string $light, string $dark, string $fallback = '') use ($url): array {
+        $l = $url($light) ?: $fallback;
+        $d = $url($dark) ?: $fallback;
+        return array_filter(['light' => $l, 'dark' => $d]);
     };
 
+    // The anonymous, public assets provisioning actually sets:
+    //   logo / logocompact  -> core_admin site files  (get_logo_url / get_compact_logo_url)
+    //   login background    -> theme_nit/loginbackgroundimage  (setting_file_url)
+    // These pluginfile URLs are public (no forcelogin) and their path keeps the
+    // real file extension, so the app's image/SVG renderer picks correctly.
+    $sitelogo = '';
+    $compact  = '';
+    try {
+        if ($OUTPUT && ($u = $OUTPUT->get_logo_url())) {
+            $sitelogo = $u->out(false);
+        }
+        if ($OUTPUT && ($u = $OUTPUT->get_compact_logo_url())) {
+            $compact = $u->out(false);
+        }
+    } catch (\Throwable $e) {
+        // Bootstrap renderer edge cases — fall back to no logo rather than 500.
+    }
+    $loginbg = '';
+    try {
+        $loginbg = (string) theme_config::load('nit')
+            ->setting_file_url('loginbackgroundimage', 'loginbackgroundimage');
+    } catch (\Throwable $e) {
+        $loginbg = '';
+    }
+
     $branding = array_filter([
-        'logo'      => $pair('mobile_logo_light', 'mobile_logo_dark'),
-        'logomark'  => $pair('mobile_logomark_light', 'mobile_logomark_dark'),
-        'loginhero' => $pair('mobile_loginhero_light', 'mobile_loginhero_dark'),
+        // Wordmark: dedicated mobile override, else the real site logo (both themes).
+        'logo'      => $pair('mobile_logo_light', 'mobile_logo_dark', $sitelogo),
+        // Square mark: override, else the compact logo (falls back to the full logo).
+        'logomark'  => $pair('mobile_logomark_light', 'mobile_logomark_dark', $compact ?: $sitelogo),
+        // Login screen illustration: override, else the login background image.
+        'loginhero' => $pair('mobile_loginhero_light', 'mobile_loginhero_dark', $loginbg),
         'splash'    => array_filter([
             'lottie_light'     => $url('mobile_splash_lottie_light'),
             'lottie_dark'      => $url('mobile_splash_lottie_dark'),
@@ -889,6 +925,8 @@ function theme_nit_branding_export(): array {
  * @return array (empty when nothing is published)
  */
 function theme_nit_links_export(): array {
+    global $CFG;
+
     $s = static function (string $key): string {
         $v = get_config('theme_nit', $key);
         return ($v === false || $v === null) ? '' : (string) $v;
@@ -897,13 +935,18 @@ function theme_nit_links_export(): array {
         return array_filter(['en' => $s($base . '_en'), 'ar' => $s($base . '_ar')]);
     };
 
+    // Support contact falls back to the academy's core support settings so the
+    // app always has a way to reach the academy even before legal URLs are set.
+    $supportemail = $s('support_email') ?: trim((string) ($CFG->supportemail ?? ''));
+    $supportphone = $s('support_phone') ?: $s('contact_phone');
+
     return array_filter([
         'about'         => $bilingual('link_about'),
         'privacy'       => $bilingual('link_privacy'),
         'terms'         => $bilingual('link_terms'),
         'faq'           => $bilingual('link_faq'),
-        'support_email' => $s('support_email'),
-        'support_phone' => $s('support_phone'),
+        'support_email' => $supportemail,
+        'support_phone' => $supportphone,
         'facebook'      => $s('social_facebook'),
         'instagram'     => $s('social_instagram'),
         'youtube'       => $s('social_youtube'),
