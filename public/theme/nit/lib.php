@@ -629,14 +629,24 @@ function theme_nit_components_export(): array {
  *         branding?: array, links?: array}
  */
 function theme_nit_design_system_export(): array {
+    $brand = theme_nit_brand_export();
     $payload = [
         'generated'      => time(),
         'site'           => theme_nit_site_export(),
-        'brandcolors'    => theme_nit_brand_export(),
         'categorystyles' => theme_nit_category_styles_export(),
         'fonts'          => theme_nit_fonts_export(),
         'components'     => theme_nit_components_export(),
     ];
+    // The mobile app applies `brandcolors` to its DARK theme only, pairing these
+    // surfaces with its own light (near-white) text. A LIGHT academy palette
+    // (light background/surface) would then render as white text on a light
+    // field — invisible. So only publish the palette when it is actually dark;
+    // a light academy falls back to the app's compiled neutral brand, which is
+    // internally consistent (readable in both the app's light and dark themes).
+    // The web is unaffected — it reads --nit-brand-* from config directly.
+    if (theme_nit_export_palette_is_dark($brand)) {
+        $payload['brandcolors'] = $brand;
+    }
     // Only emit branding / links blocks when the tenant has actually published
     // something — the app falls back to bundled assets for any missing key.
     if ($branding = theme_nit_branding_export()) {
@@ -646,6 +656,50 @@ function theme_nit_design_system_export(): array {
         $payload['links'] = $links;
     }
     return $payload;
+}
+
+/**
+ * Is the exported palette dark enough to hand the app as its dark-theme brand?
+ * Inspects Group 1's `background` role luminance. Defaults to true (publish) when
+ * the role is missing/unparseable, matching the legacy dark EAAC palette.
+ *
+ * @param array $brand the theme_nit_brand_export() payload
+ * @return bool
+ */
+function theme_nit_export_palette_is_dark(array $brand): bool {
+    foreach ($brand['groups'] ?? [] as $g) {
+        if (($g['key'] ?? '') !== 'g1') {
+            continue;
+        }
+        foreach ($g['roles'] ?? [] as $r) {
+            if (($r['role'] ?? '') === 'background') {
+                return theme_nit_hex_is_dark((string) ($r['value'] ?? ''));
+            }
+        }
+    }
+    return true;
+}
+
+/**
+ * Relative-luminance test: is this #rrggbb / #rgb colour "dark" (luminance < 0.5)?
+ * Unparseable input is treated as dark (safe default for the palette gate).
+ *
+ * @param string $hex
+ * @return bool
+ */
+function theme_nit_hex_is_dark(string $hex): bool {
+    $hex = ltrim(trim($hex), '#');
+    if (strlen($hex) === 3) {
+        $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+    }
+    if (!preg_match('/^[0-9a-fA-F]{6}$/', $hex)) {
+        return true;
+    }
+    $r = hexdec(substr($hex, 0, 2));
+    $g = hexdec(substr($hex, 2, 2));
+    $b = hexdec(substr($hex, 4, 2));
+    $lum = (0.2126 * $r + 0.7152 * $g + 0.0722 * $b) / 255;
+    return $lum < 0.5;
 }
 
 /**
