@@ -796,10 +796,20 @@ function theme_nit_links_export(): array {
     $supportemail = $s('support_email') ?: trim((string) ($CFG->supportemail ?? ''));
     $supportphone = $s('support_phone') ?: $s('contact_phone');
 
+    // Terms / Privacy default to the built-in chrome-less pages (local_multitopics
+    // /legal.php) unless an academy set an explicit URL. So the app always has a
+    // working Terms + Privacy link out of the box.
+    $legal = static function (string $doc) use ($CFG): array {
+        $base = $CFG->wwwroot . '/local/multitopics/legal.php?doc=' . $doc . '&embedded=1';
+        return ['en' => $base . '&lang=en', 'ar' => $base . '&lang=ar'];
+    };
+    $terms   = $bilingual('link_terms')   ?: $legal('terms');
+    $privacy = $bilingual('link_privacy') ?: $legal('privacy');
+
     return array_filter([
         'about'         => $bilingual('link_about'),
-        'privacy'       => $bilingual('link_privacy'),
-        'terms'         => $bilingual('link_terms'),
+        'privacy'       => $privacy,
+        'terms'         => $terms,
         'faq'           => $bilingual('link_faq'),
         'support_email' => $supportemail,
         'support_phone' => $supportphone,
