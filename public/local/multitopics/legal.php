@@ -44,8 +44,9 @@ require(__DIR__ . '/../../config.php');
 
 global $SITE, $CFG, $OUTPUT, $PAGE;
 
-$doc = optional_param('doc', 'terms', PARAM_ALPHA);
-if (!in_array($doc, ['terms', 'privacy'], true)) {
+$doc = optional_param('doc', 'terms', PARAM_ALPHANUMEXT);
+$doc = str_replace('-', '', $doc);   // accept 'delete-account' as 'delete'
+if (!in_array($doc, ['terms', 'privacy', 'delete'], true)) {
     $doc = 'terms';
 }
 $lang = optional_param('lang', '', PARAM_ALPHA);
@@ -55,11 +56,15 @@ if ($lang !== 'ar' && $lang !== 'en') {
 $isar = ($lang === 'ar');
 $sitename = format_string($SITE->fullname ?? 'Academy');
 $support  = trim((string) ($CFG->supportemail ?? ''));
+// The app + developer name shown on the store listing (one published app). Set
+// platform-wide via local_multitopics/app_name; falls back to the site name.
+$appname = trim((string) (get_config('local_multitopics', 'app_name') ?: $sitename));
 
 // ── Titles ───────────────────────────────────────────────────────────────────
 $titles = [
-    'terms'   => ['en' => 'Terms of Service', 'ar' => 'شروط الاستخدام'],
-    'privacy' => ['en' => 'Privacy Policy',   'ar' => 'سياسة الخصوصية'],
+    'terms'   => ['en' => 'Terms of Service',   'ar' => 'شروط الاستخدام'],
+    'privacy' => ['en' => 'Privacy Policy',      'ar' => 'سياسة الخصوصية'],
+    'delete'  => ['en' => 'Delete Your Account', 'ar' => 'حذف حسابك'],
 ];
 $title = $titles[$doc][$lang];
 
@@ -68,7 +73,7 @@ $override = get_config('local_multitopics', $doc . '_' . $lang);
 if (is_string($override) && trim($override) !== '') {
     $body = $override;   // trusted admin-authored HTML.
 } else {
-    $body = local_multitopics_legal_default($doc, $isar, $sitename, $support);
+    $body = local_multitopics_legal_default($doc, $isar, $appname, $support);
 }
 
 // ── Render ────────────────────────────────────────────────────────────────────
@@ -153,6 +158,42 @@ function local_multitopics_legal_default(string $doc, bool $isar, string $name, 
             . "<h2>Suspension</h2>"
             . "<p>We may suspend or terminate an account that breaches these terms.</p>"
             . "<h2>Contact</h2><p>$contact</p>";
+    }
+
+    if ($doc === 'delete') {
+        // The registered-email step; softened when no support address is set.
+        $mail = $support !== ''
+            ? ($isar ? "<a href=\"mailto:$support?subject=%D8%AD%D8%B0%D9%81%20%D8%A7%D9%84%D8%AD%D8%B3%D8%A7%D8%A8\">$support</a>"
+                     : "<a href=\"mailto:$support?subject=Delete%20my%20account\">$support</a>")
+            : ($isar ? 'بريد الدعم' : 'our support email');
+        if ($isar) {
+            return "<p>توضّح هذه الصفحة كيفية طلب حذف حسابك والبيانات المرتبطة به في تطبيق «$n».</p>"
+                . "<h2>كيفية طلب الحذف</h2><ol>"
+                . "<li><b>من داخل التطبيق:</b> افتح «$n» ثم اذهب إلى <b>الملف الشخصي ← الإعدادات ← حذف الحساب</b> وأكّد العملية.</li>"
+                . "<li><b>عبر البريد الإلكتروني:</b> أرسل من بريدك المسجَّل رسالة إلى $mail بعنوان <b>«حذف الحساب»</b>. نتحقق من الطلب وننفّذه خلال 30 يومًا.</li>"
+                . "</ol>"
+                . "<h2>البيانات التي تُحذف</h2><ul>"
+                . "<li>ملفك الشخصي: الاسم والبريد الإلكتروني ورقم الهاتف والصورة الشخصية.</li>"
+                . "<li>بياناتك التعليمية: التسجيلات في الكورسات والتقدّم ومحاولات الاختبارات والتسليمات.</li>"
+                . "<li>بيانات الدخول وبيانات الجهاز/الجلسة.</li></ul>"
+                . "<h2>البيانات التي يتم الاحتفاظ بها ومدّتها</h2><ul>"
+                . "<li><b>سجلات الدفع والفواتير</b> يُحتفظ بها حتى <b>5 سنوات</b> حسبما تقتضيه قوانين المحاسبة والضرائب، ثم تُحذف، ولا تُستخدم لأي غرض آخر.</li>"
+                . "<li><b>النسخ الاحتياطية</b> التي تحتوي على بياناتك تُمحى ضمن دورتها المعتادة خلال <b>30 يومًا</b> من الحذف.</li></ul>"
+                . "<p>تُنفَّذ جميع الطلبات خلال 30 يومًا. $contact</p>";
+        }
+        return "<p>This page explains how to request deletion of your account and associated data in the “$n” app.</p>"
+            . "<h2>How to request deletion</h2><ol>"
+            . "<li><b>In the app:</b> open “$n”, go to <b>Profile → Settings → Delete account</b>, and confirm.</li>"
+            . "<li><b>By email:</b> from your registered email address, send a message to $mail with the subject <b>“Delete my account”</b>. We verify the request and process it within 30 days.</li>"
+            . "</ol>"
+            . "<h2>What is deleted</h2><ul>"
+            . "<li>Your profile: name, email, phone number and profile photo.</li>"
+            . "<li>Your learning data: course enrolments, progress, quiz attempts and submissions.</li>"
+            . "<li>Your login credentials and device/session data.</li></ul>"
+            . "<h2>What is kept, and for how long</h2><ul>"
+            . "<li><b>Payment &amp; invoice records</b> are retained for up to <b>5 years</b> where required by applicable tax/accounting law, then deleted. They are not used for any other purpose.</li>"
+            . "<li><b>Backups</b> containing your data are purged on their normal rotation, within <b>30 days</b> of the deletion request.</li></ul>"
+            . "<p>Requests are completed within 30 days. $contact</p>";
     }
 
     // Privacy.

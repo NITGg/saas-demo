@@ -805,13 +805,16 @@ function theme_nit_links_export(): array {
     };
     $terms   = $bilingual('link_terms')   ?: $legal('terms');
     $privacy = $bilingual('link_privacy') ?: $legal('privacy');
+    // Google Play requires a public account-deletion URL. Always available.
+    $delete  = $bilingual('link_delete')  ?: $legal('delete');
 
     return array_filter([
-        'about'         => $bilingual('link_about'),
-        'privacy'       => $privacy,
-        'terms'         => $terms,
-        'faq'           => $bilingual('link_faq'),
-        'support_email' => $supportemail,
+        'about'          => $bilingual('link_about'),
+        'privacy'        => $privacy,
+        'terms'          => $terms,
+        'delete_account' => $delete,
+        'faq'            => $bilingual('link_faq'),
+        'support_email'  => $supportemail,
         'support_phone' => $supportphone,
         'facebook'      => $s('social_facebook'),
         'instagram'     => $s('social_instagram'),
