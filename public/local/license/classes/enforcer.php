@@ -138,16 +138,28 @@ class enforcer {
     /**
      * Count distinct users who hold the editing-teacher role anywhere.
      *
+     * Site admins are excluded: the academy owner runs on the Moodle `admin`
+     * account (send_welcome points it at the owner), and the owner must not
+     * consume a paid teacher seat just for teaching their own courses.
+     *
      * @return int
      */
     public static function count_teachers(): int {
-        global $DB;
+        global $DB, $CFG;
         $roleid = $DB->get_field('role', 'id', ['shortname' => 'editingteacher']);
         if (!$roleid) {
             return 0;
         }
+        $adminids = array_filter(array_map('intval', explode(',', (string) $CFG->siteadmins)));
+        $params = [$roleid];
+        $exclude = '';
+        if ($adminids) {
+            list($insql, $inparams) = $DB->get_in_or_equal($adminids, SQL_PARAMS_QM, 'param', false);
+            $exclude = " AND userid {$insql}";
+            $params = array_merge($params, $inparams);
+        }
         return $DB->count_records_sql(
-            "SELECT COUNT(DISTINCT userid) FROM {role_assignments} WHERE roleid = ?", [$roleid]);
+            "SELECT COUNT(DISTINCT userid) FROM {role_assignments} WHERE roleid = ?{$exclude}", $params);
     }
 
     /** @return bool can another teacher be added? */
