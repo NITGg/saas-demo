@@ -39,6 +39,42 @@ function local_nit_subscriptions_string_map(array $keys): array {
 }
 
 /**
+ * Whether the academy's licence includes the subscriptions feature.
+ *
+ * Returns true when local_license is absent or enforcement is off (license::has_feature()
+ * already yields true there), so unmanaged academies keep subscriptions.
+ *
+ * @return bool
+ */
+function local_nit_subscriptions_feature(): bool {
+    if (!class_exists('\\local_license\\license')) {
+        return true;
+    }
+    return \local_license\license::has_feature('subscriptions');
+}
+
+/**
+ * Block a management page when subscriptions are not on the current licence: render a
+ * short notice and stop. Call after admin_externalpage_setup(), before header().
+ *
+ * @return void
+ */
+function local_nit_subscriptions_require_feature(): void {
+    global $OUTPUT, $PAGE;
+    if (local_nit_subscriptions_feature()) {
+        return;
+    }
+    $PAGE->set_title(get_string('feature_unavailable', 'local_nit_subscriptions'));
+    echo $OUTPUT->header();
+    echo $OUTPUT->notification(
+        get_string('feature_unavailable_desc', 'local_nit_subscriptions'),
+        \core\output\notification::NOTIFY_INFO
+    );
+    echo $OUTPUT->footer();
+    exit;
+}
+
+/**
  * Active subscription plans shaped for public listing (front-page block + mobile web service).
  *
  * Each plan carries its price, unlocked courses, B2B seat tiers and the best current auto-offer.

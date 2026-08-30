@@ -29,6 +29,7 @@ require_once($CFG->dirroot . '/local/nit_commerce/lib.php');
 
 admin_externalpage_setup('local_nit_commerce_manageoffers');
 require_capability('local/nit_commerce:manageoffers', context_system::instance());
+local_nit_commerce_require_feature('offers');
 
 global $OUTPUT, $CFG, $PAGE;
 

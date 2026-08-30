@@ -391,17 +391,24 @@ class discount_manager {
             'final'           => $base,
         );
 
-        $od = self::offers_discount($itemtype, $itemid, $base, $now);
+        // Licence gates: a downgraded academy must not keep honouring offers/coupons
+        // that were created earlier. has_feature() is true when unmanaged/enforcement off.
+        $offersok = !class_exists('\\local_license\\license') || \local_license\license::has_feature('offers');
+        $couponsok = !class_exists('\\local_license\\license') || \local_license\license::has_feature('coupons');
+
         $running = $base;
-        if ($od['total'] > 0) {
-            $result['offers']         = $od['offers'];
-            $result['offer_discount'] = $od['total'];
-            $result['offer_id']       = $od['offers'][0]['id'];
-            $result['offer_name']     = format_string($od['offers'][0]['name']);
-            $running = round($running - $od['total'], 2);
+        if ($offersok) {
+            $od = self::offers_discount($itemtype, $itemid, $base, $now);
+            if ($od['total'] > 0) {
+                $result['offers']         = $od['offers'];
+                $result['offer_discount'] = $od['total'];
+                $result['offer_id']       = $od['offers'][0]['id'];
+                $result['offer_name']     = format_string($od['offers'][0]['name']);
+                $running = round($running - $od['total'], 2);
+            }
         }
 
-        $couponcode = trim((string)$couponcode);
+        $couponcode = $couponsok ? trim((string)$couponcode) : '';
         if ($couponcode !== '') {
             $coupon = self::validate_coupon($couponcode, $itemtype, $itemid, $userid, $now);
             $cdiscount = self::discount_amount($coupon->discount_type, $coupon->discount_value,

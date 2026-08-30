@@ -37,3 +37,41 @@ function local_nit_commerce_string_map(array $keys): array {
     }
     return $out;
 }
+
+/**
+ * Whether the academy's licence includes a nit_commerce feature (coupons|offers).
+ *
+ * Returns true when local_license is absent or enforcement is off — license::has_feature()
+ * already yields true in those cases — so unmanaged academies keep everything.
+ *
+ * @param string $feature 'coupons'|'offers'
+ * @return bool
+ */
+function local_nit_commerce_feature(string $feature): bool {
+    if (!class_exists('\\local_license\\license')) {
+        return true;
+    }
+    return \local_license\license::has_feature($feature);
+}
+
+/**
+ * Block a management page when the feature is not on the current licence: render a
+ * short notice and stop. Call after admin_externalpage_setup(), before header().
+ *
+ * @param string $feature 'coupons'|'offers'
+ * @return void
+ */
+function local_nit_commerce_require_feature(string $feature): void {
+    global $OUTPUT, $PAGE;
+    if (local_nit_commerce_feature($feature)) {
+        return;
+    }
+    $PAGE->set_title(get_string('feature_unavailable', 'local_nit_commerce'));
+    echo $OUTPUT->header();
+    echo $OUTPUT->notification(
+        get_string('feature_unavailable_desc', 'local_nit_commerce'),
+        \core\output\notification::NOTIFY_INFO
+    );
+    echo $OUTPUT->footer();
+    exit;
+}

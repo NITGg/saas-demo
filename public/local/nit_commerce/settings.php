@@ -24,13 +24,21 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-if ($hassiteconfig) {
+// Only surface a menu item when the current licence includes the feature. When
+// local_license is absent or enforcement is off, has_feature() returns true.
+$nitcommercefeat = static function (string $f): bool {
+    return !class_exists('\\local_license\\license') || \local_license\license::has_feature($f);
+};
+
+if ($hassiteconfig && $nitcommercefeat('coupons')) {
     $ADMIN->add('localplugins', new admin_externalpage(
         'local_nit_commerce_managecoupons',
         get_string('managecoupons', 'local_nit_commerce'),
         new moodle_url('/local/nit_commerce/manage_coupons.php'),
         'local/nit_commerce:managecoupons'
     ));
+}
+if ($hassiteconfig && $nitcommercefeat('offers')) {
     $ADMIN->add('localplugins', new admin_externalpage(
         'local_nit_commerce_manageoffers',
         get_string('manageoffers', 'local_nit_commerce'),

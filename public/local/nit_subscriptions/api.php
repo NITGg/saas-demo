@@ -47,6 +47,14 @@ if (!in_array($function, $publicfns, true)) {
 $context = context_system::instance();
 $PAGE->set_context($context);
 
+// Licence gate: when the tier doesn't include subscriptions, refuse every call
+// (management errors; the public listing returns an empty set). Nothing runs.
+if (!local_nit_subscriptions_feature()) {
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['success' => false, 'error' => 'feature_unavailable', 'subscriptions' => []]);
+    exit;
+}
+
 // Honour an explicit language for multilang name/description resolution.
 $alang = optional_param('alang', '', PARAM_LANG);
 if ($alang === '') {

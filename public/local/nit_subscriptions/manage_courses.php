@@ -31,6 +31,7 @@ require_once($CFG->dirroot . '/local/nit_subscriptions/lib.php');
 
 admin_externalpage_setup('local_nit_subscriptions_managecourses');
 require_capability('local/nit_subscriptions:managesubscriptions', context_system::instance());
+local_nit_subscriptions_require_feature();
 
 global $OUTPUT, $CFG, $PAGE;
 

@@ -25,6 +25,8 @@
 defined('MOODLE_INTERNAL') || die();
 
 $string['pluginname'] = 'NIT Subscriptions';
+$string['feature_unavailable'] = 'Not available on your plan';
+$string['feature_unavailable_desc'] = 'Subscriptions are not included in your current plan. Upgrade your academy to enable them.';
 $string['managesubscriptions'] = 'Manage subscriptions';
 $string['managecourses']       = 'Manage courses';
 $string['privacy:metadata'] = 'The NIT Subscriptions plugin stores subscription plans and course-access rules defined by administrators; it does not store personal data by itself.';

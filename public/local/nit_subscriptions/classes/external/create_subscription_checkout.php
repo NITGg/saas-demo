@@ -89,6 +89,11 @@ class create_subscription_checkout extends external_api {
         self::validate_context($context);
         require_capability('local/nit_subscriptions:subscribe', $context);
 
+        // Licence gate: subscriptions must be on the tier to start a checkout.
+        if (class_exists('\\local_license\\license') && !\local_license\license::has_feature('subscriptions')) {
+            throw new \moodle_exception('feature_unavailable', 'local_nit_subscriptions');
+        }
+
         $mgrfile = $CFG->dirroot . '/local/payments/classes/manager.php';
         if (!file_exists($mgrfile) || !class_exists('\local_payments\manager')
                 || !method_exists('\local_payments\manager', 'create_subscription_checkout')) {

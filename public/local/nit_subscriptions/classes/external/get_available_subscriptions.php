@@ -64,6 +64,10 @@ class get_available_subscriptions extends external_api {
     public static function execute(string $lang = '', string $alang = ''): array {
         $params = self::validate_parameters(self::execute_parameters(), ['lang' => $lang, 'alang' => $alang]);
         self::validate_context(\context_system::instance());
+        // Licence gate: no subscriptions feature → nothing to offer.
+        if (class_exists('\\local_license\\license') && !\local_license\license::has_feature('subscriptions')) {
+            return [];
+        }
         $chosen = $params['alang'] !== '' ? $params['alang'] : $params['lang'];
         if ($chosen !== '') {
             force_current_language($chosen);

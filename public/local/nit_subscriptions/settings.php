@@ -24,7 +24,11 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-if ($hassiteconfig) {
+// Only surface the menu when the current licence includes subscriptions. When
+// local_license is absent or enforcement is off, has_feature() returns true.
+$nitsubsfeat = !class_exists('\\local_license\\license') || \local_license\license::has_feature('subscriptions');
+
+if ($hassiteconfig && $nitsubsfeat) {
     $ADMIN->add('localplugins', new admin_externalpage(
         'local_nit_subscriptions_managesubscriptions',
         get_string('managesubscriptions', 'local_nit_subscriptions'),

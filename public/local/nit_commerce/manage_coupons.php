@@ -29,6 +29,7 @@ require_once($CFG->dirroot . '/local/nit_commerce/lib.php');
 
 admin_externalpage_setup('local_nit_commerce_managecoupons');
 require_capability('local/nit_commerce:managecoupons', context_system::instance());
+local_nit_commerce_require_feature('coupons');
 
 global $OUTPUT, $CFG, $PAGE;
 

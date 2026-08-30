@@ -25,6 +25,8 @@
 defined('MOODLE_INTERNAL') || die();
 
 $string['pluginname'] = 'NIT Commerce';
+$string['feature_unavailable'] = 'Not available on your plan';
+$string['feature_unavailable_desc'] = 'Coupons and offers are not included in your current plan. Upgrade your academy to enable them.';
 $string['managecoupons'] = 'Manage coupons';
 $string['manageoffers']  = 'Manage offers';
 $string['privacy:metadata'] = 'The NIT Commerce plugin stores discount coupons and offers defined by administrators; it does not store personal data by itself.';

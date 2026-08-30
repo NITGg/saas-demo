@@ -44,6 +44,16 @@ if (!in_array($function, $publicfns, true)) {
 $context = context_system::instance();
 $PAGE->set_context($context);
 
+// Licence gate: refuse coupon/offer calls when the tier doesn't include them.
+// Public listings return empty; management calls return an error. Nothing runs.
+$nitreqfeat = (strpos($function, 'coupon') !== false) ? 'coupons'
+    : ((strpos($function, 'offer') !== false) ? 'offers' : null);
+if ($nitreqfeat !== null && !local_nit_commerce_feature($nitreqfeat)) {
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['success' => false, 'error' => 'feature_unavailable', 'coupons' => [], 'offers' => []]);
+    exit;
+}
+
 $alang = optional_param('alang', '', PARAM_LANG);
 if ($alang === '') {
     $alang = optional_param('lang', '', PARAM_LANG);
