@@ -28,7 +28,12 @@ defined('MOODLE_INTERNAL') || die();
 // local_license is absent or enforcement is off, has_feature() returns true.
 $nitsubsfeat = !class_exists('\\local_license\\license') || \local_license\license::has_feature('subscriptions');
 
-if ($hassiteconfig && $nitsubsfeat) {
+// Surface the menu to a full site admin OR to a restricted academy manager who
+// holds the manage capability (the owner is no longer a site admin — see
+// provisioning/ensure_owner_role.php). Each externalpage's own req_capability
+// still gates actual access; this only widens who SEES the node.
+$nitsubsctx = context_system::instance();
+if (($hassiteconfig || has_capability('local/nit_subscriptions:managesubscriptions', $nitsubsctx)) && $nitsubsfeat) {
     $ADMIN->add('localplugins', new admin_externalpage(
         'local_nit_subscriptions_managesubscriptions',
         get_string('managesubscriptions', 'local_nit_subscriptions'),

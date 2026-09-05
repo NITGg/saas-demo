@@ -30,7 +30,12 @@ $nitcommercefeat = static function (string $f): bool {
     return !class_exists('\\local_license\\license') || \local_license\license::has_feature($f);
 };
 
-if ($hassiteconfig && $nitcommercefeat('coupons')) {
+// Surface the menu to a full site admin OR to a restricted academy manager who
+// holds the specific manage capability (the owner is no longer a site admin —
+// see provisioning/ensure_owner_role.php). The externalpage's own req_capability
+// still gates actual access, so this only widens who SEES the node.
+$nitcommercectx = context_system::instance();
+if (($hassiteconfig || has_capability('local/nit_commerce:managecoupons', $nitcommercectx)) && $nitcommercefeat('coupons')) {
     $ADMIN->add('localplugins', new admin_externalpage(
         'local_nit_commerce_managecoupons',
         get_string('managecoupons', 'local_nit_commerce'),
@@ -38,7 +43,7 @@ if ($hassiteconfig && $nitcommercefeat('coupons')) {
         'local/nit_commerce:managecoupons'
     ));
 }
-if ($hassiteconfig && $nitcommercefeat('offers')) {
+if (($hassiteconfig || has_capability('local/nit_commerce:manageoffers', $nitcommercectx)) && $nitcommercefeat('offers')) {
     $ADMIN->add('localplugins', new admin_externalpage(
         'local_nit_commerce_manageoffers',
         get_string('manageoffers', 'local_nit_commerce'),
