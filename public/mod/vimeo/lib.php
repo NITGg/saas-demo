@@ -155,17 +155,27 @@ function vimeo_sync_mapping(int $cmid, int $courseid, string $videoid, string $v
     }
 
     $now = time();
-    $existing = $DB->get_record('local_vimeo_videos', ['cmid' => $cmid]);
-    if ($existing) {
-        $existing->videoid      = $videoid;
-        $existing->videohash    = $videohash;
-        $existing->courseid     = $courseid;
-        $existing->title        = core_text::substr($title, 0, 255);
-        $existing->usermodified = (int) $USER->id;
-        $existing->timemodified = $now;
-        $DB->update_record('local_vimeo_videos', $existing);
+    // videoid is UNIQUE. The upload step (local_vimeo/upload_credentials.php →
+    // video_service::create_upload) already inserted a PENDING row for this
+    // videoid with cmid=0. Claim that row here instead of inserting a duplicate
+    // (which fails with "Duplicate entry … for key …vid_uix"). Fall back to the
+    // cmid's current row (the activity's video was changed), else insert fresh.
+    $row = $DB->get_record('local_vimeo_videos', ['videoid' => $videoid]);
+    if (!$row) {
+        $row = $DB->get_record('local_vimeo_videos', ['cmid' => $cmid]);
+    }
+    if ($row) {
+        $row->videoid      = $videoid;
+        $row->videohash    = $videohash;
+        $row->cmid         = $cmid;
+        $row->courseid     = $courseid;
+        $row->title        = core_text::substr($title, 0, 255);
+        $row->usermodified = (int) $USER->id;
+        $row->timemodified = $now;
+        $DB->update_record('local_vimeo_videos', $row);
+        $keepid = (int) $row->id;
     } else {
-        $DB->insert_record('local_vimeo_videos', (object) [
+        $keepid = (int) $DB->insert_record('local_vimeo_videos', (object) [
             'videoid'      => $videoid,
             'videohash'    => $videohash,
             'cmid'         => $cmid,
@@ -178,4 +188,7 @@ function vimeo_sync_mapping(int $cmid, int $courseid, string $videoid, string $v
             'timemodified' => $now,
         ]);
     }
+    // Drop any OTHER row still attached to this cmid (e.g. after the activity's
+    // video was swapped) so a course module maps to exactly one video.
+    $DB->delete_records_select('local_vimeo_videos', 'cmid = ? AND id <> ?', [$cmid, $keepid]);
 }
