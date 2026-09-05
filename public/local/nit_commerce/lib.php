@@ -75,3 +75,39 @@ function local_nit_commerce_require_feature(string $feature): void {
     echo $OUTPUT->footer();
     exit;
 }
+
+/**
+ * Add "Manage coupons/offers" links to the main navigation so the academy owner
+ * (a restricted manager, not a site admin) can find them without digging into
+ * Site administration or knowing the URL. Shown only to users who hold the
+ * manage capability and when the licence includes the feature.
+ *
+ * @param global_navigation $navigation
+ * @return void
+ */
+function local_nit_commerce_extend_navigation(global_navigation $navigation): void {
+    $context = context_system::instance();
+
+    if (local_nit_commerce_feature('coupons')
+            && has_capability('local/nit_commerce:managecoupons', $context)) {
+        $navigation->add(
+            get_string('managecoupons', 'local_nit_commerce'),
+            new moodle_url('/local/nit_commerce/manage_coupons.php'),
+            navigation_node::TYPE_CUSTOM,
+            null,
+            'local_nit_commerce_coupons',
+            new pix_icon('i/settings', '')
+        );
+    }
+    if (local_nit_commerce_feature('offers')
+            && has_capability('local/nit_commerce:manageoffers', $context)) {
+        $navigation->add(
+            get_string('manageoffers', 'local_nit_commerce'),
+            new moodle_url('/local/nit_commerce/manage_offers.php'),
+            navigation_node::TYPE_CUSTOM,
+            null,
+            'local_nit_commerce_offers',
+            new pix_icon('i/settings', '')
+        );
+    }
+}

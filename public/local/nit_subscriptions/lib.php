@@ -75,6 +75,31 @@ function local_nit_subscriptions_require_feature(): void {
 }
 
 /**
+ * Add a "Manage subscriptions" link to the main navigation so the academy owner
+ * (a restricted manager, not a site admin) can find it without digging into Site
+ * administration or knowing the URL. Shown only to users who hold the manage
+ * capability and when the licence includes subscriptions.
+ *
+ * @param global_navigation $navigation
+ * @return void
+ */
+function local_nit_subscriptions_extend_navigation(global_navigation $navigation): void {
+    $context = context_system::instance();
+
+    if (local_nit_subscriptions_feature()
+            && has_capability('local/nit_subscriptions:managesubscriptions', $context)) {
+        $navigation->add(
+            get_string('managesubscriptions', 'local_nit_subscriptions'),
+            new moodle_url('/local/nit_subscriptions/manage_subscriptions.php'),
+            navigation_node::TYPE_CUSTOM,
+            null,
+            'local_nit_subscriptions_manage',
+            new pix_icon('i/settings', '')
+        );
+    }
+}
+
+/**
  * Active subscription plans shaped for public listing (front-page block + mobile web service).
  *
  * Each plan carries its price, unlocked courses, B2B seat tiers and the best current auto-offer.
