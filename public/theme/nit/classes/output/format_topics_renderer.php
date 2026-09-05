@@ -305,8 +305,12 @@ class format_topics_renderer extends \format_topics\output\renderer {
         if (empty($roles)) {
             return $out;
         }
-        $fields = 'u.id, u.firstname, u.lastname, u.email, u.picture, u.imagealt, u.firstnamephonetic,
-                   u.lastnamephonetic, u.middlename, u.alternatename';
+        // With multiple role ids, get_role_users() requires the first field to be
+        // the unique role-assignment id (ra.id) — otherwise it emits a developer
+        // debugging warning. The duplicate users this can yield (a teacher holding
+        // both roles) are collapsed by the $seen check below.
+        $fields = 'ra.id AS raid, u.id, u.firstname, u.lastname, u.email, u.picture, u.imagealt,
+                   u.firstnamephonetic, u.lastnamephonetic, u.middlename, u.alternatename';
         $users = get_role_users(array_keys($roles), $context, false, $fields);
         $seen  = [];
         foreach ($users as $u) {
