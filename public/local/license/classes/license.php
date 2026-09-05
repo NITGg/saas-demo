@@ -127,6 +127,34 @@ class license {
     }
 
     /**
+     * Whether the mobile app may be used with this academy at all — the
+     * design_system `site.supportedapp` flag. Driven by the DYNAMIC licence: the
+     * control plane sets `supportedapp:false` in the pushed definition on a
+     * package that must not open in the app (e.g. Demo). This is read regardless
+     * of enforcement, because "can the app connect" is a packaging question, not a
+     * limit that only applies once enforcement is switched on.
+     *
+     * Fallbacks when the definition doesn't carry the flag (legacy hosts): the
+     * built-in demo tier is refused, everything else is allowed.
+     *
+     * @return bool
+     */
+    public static function supported_app(): bool {
+        $def = self::tierdef();
+        if (array_key_exists('supportedapp', $def)) {
+            $v = $def['supportedapp'];
+            if (is_bool($v)) {
+                return $v;
+            }
+            if (is_int($v)) {
+                return $v !== 0;
+            }
+            return in_array(strtolower(trim((string) $v)), ['1', 'true', 'yes'], true);
+        }
+        return self::tier() !== 'demo';
+    }
+
+    /**
      * Whether a given activity type is allowed under the tier's video source.
      *
      * Moodle can only tell one video type apart at add-time: the DRM VdoCipher

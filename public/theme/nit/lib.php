@@ -672,6 +672,8 @@ function theme_nit_site_export(): array {
         'url'             => $CFG->wwwroot,   // retained for backward compatibility
         'wwwroot'         => $CFG->wwwroot,
         'apiversion'      => 1,               // bump on a breaking payload change
+        // supportedapp is set from the dynamic licence below (defaults true only
+        // when local_license isn't installed at all — a non-SaaS host).
         'supportedapp'    => true,
         'provisioned'     => (bool) (int) (get_config('theme_nit', 'provisioned') ?? 1),
         'status'          => 'active',        // active | expired | suspended
@@ -683,6 +685,10 @@ function theme_nit_site_export(): array {
     if (class_exists('\local_license\license')) {
         $lic = '\local_license\license';
         $site['package'] = ['code' => $lic::tier(), 'name' => $lic::tiername()];
+        // Dynamic app-access gate (Demo = false), from the pushed licence definition.
+        if (method_exists($lic, 'supported_app')) {
+            $site['supportedapp'] = $lic::supported_app();
+        }
         if (method_exists($lic, 'is_expired') && $lic::is_expired()) {
             $site['status'] = 'expired';
         }
