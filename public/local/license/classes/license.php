@@ -214,6 +214,9 @@ class license {
             // Media.
             'vdocipher'      => $has('drm'),
             'watermark'      => $has('drm'),
+            // Vimeo video is on when the licence's video source is Vimeo (mod_vimeo
+            // + local_vimeo). Lets the app know this academy plays Vimeo embeds.
+            'vimeo'          => self::video_source() === 'vimeo',
             // Extras.
             'jobform'        => $has('packages'),
             // Social login (Apple/Facebook not built yet — off by default).
