@@ -90,7 +90,7 @@ function local_nit_commerce_extend_navigation(global_navigation $navigation): vo
 
     if (local_nit_commerce_feature('coupons')
             && has_capability('local/nit_commerce:managecoupons', $context)) {
-        $navigation->add(
+        $node = $navigation->add(
             get_string('managecoupons', 'local_nit_commerce'),
             new moodle_url('/local/nit_commerce/manage_coupons.php'),
             navigation_node::TYPE_CUSTOM,
@@ -98,10 +98,12 @@ function local_nit_commerce_extend_navigation(global_navigation $navigation): vo
             'local_nit_commerce_coupons',
             new pix_icon('i/settings', '')
         );
+        // Boost's nav drawer / flat navigation only renders nodes flagged for it.
+        $node->showinflatnavigation = true;
     }
     if (local_nit_commerce_feature('offers')
             && has_capability('local/nit_commerce:manageoffers', $context)) {
-        $navigation->add(
+        $node = $navigation->add(
             get_string('manageoffers', 'local_nit_commerce'),
             new moodle_url('/local/nit_commerce/manage_offers.php'),
             navigation_node::TYPE_CUSTOM,
@@ -109,5 +111,6 @@ function local_nit_commerce_extend_navigation(global_navigation $navigation): vo
             'local_nit_commerce_offers',
             new pix_icon('i/settings', '')
         );
+        $node->showinflatnavigation = true;
     }
 }

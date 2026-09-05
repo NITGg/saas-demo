@@ -88,7 +88,7 @@ function local_nit_subscriptions_extend_navigation(global_navigation $navigation
 
     if (local_nit_subscriptions_feature()
             && has_capability('local/nit_subscriptions:managesubscriptions', $context)) {
-        $navigation->add(
+        $node = $navigation->add(
             get_string('managesubscriptions', 'local_nit_subscriptions'),
             new moodle_url('/local/nit_subscriptions/manage_subscriptions.php'),
             navigation_node::TYPE_CUSTOM,
@@ -96,6 +96,8 @@ function local_nit_subscriptions_extend_navigation(global_navigation $navigation
             'local_nit_subscriptions_manage',
             new pix_icon('i/settings', '')
         );
+        // Boost's nav drawer / flat navigation only renders nodes flagged for it.
+        $node->showinflatnavigation = true;
     }
 }
 

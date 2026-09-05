@@ -38,7 +38,6 @@ $PAGE->set_heading(get_string('managecoupons', 'local_nit_commerce'));
 $PAGE->requires->js(new moodle_url('/local/nit_commerce/ui.js'), true);
 
 echo $OUTPUT->header();
-echo $OUTPUT->heading(get_string('managecoupons', 'local_nit_commerce'));
 
 $STR = local_nit_commerce_string_map(array(
     'ui_refresh', 'ui_loading', 'ui_save', 'ui_cancel', 'ui_active', 'ui_activate', 'ui_deactivate',

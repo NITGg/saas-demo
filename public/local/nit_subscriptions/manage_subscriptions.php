@@ -38,7 +38,6 @@ $PAGE->set_heading(get_string('managesubscriptions', 'local_nit_subscriptions'))
 $PAGE->requires->js(new moodle_url('/local/nit_subscriptions/ui.js'), true);
 
 echo $OUTPUT->header();
-echo $OUTPUT->heading(get_string('managesubscriptions', 'local_nit_subscriptions'));
 
 // Localised strings: server-rendered HTML reads $STR['key']; the JS reads window.ACADEMY_STR.
 $STR = local_nit_subscriptions_string_map(array(
