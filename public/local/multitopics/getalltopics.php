@@ -263,6 +263,12 @@ function build_activities(array $cms, object $modinfo, string $wstoken, string $
             'isvdocipher'     => false,
             'videoid'         => '',
             'otpurl'          => '',
+            // Vimeo video attached to a resource2 (or vimeo) activity. When
+            // isvimeo is true the app plays the Vimeo embed at embedurl — a
+            // domain-private embed (no OTP). embedurl is fetched right before
+            // playback from /local/vimeo/api.php?function=get_playback.
+            'isvimeo'         => false,
+            'embedurl'        => '',
             // Distinguishes a downloadable certificate (customcert) from a plain
             // PDF resource, so the app can show certificate-specific UI (download,
             // share, "your certificate", etc.).
@@ -305,6 +311,16 @@ function build_activities(array $cms, object $modinfo, string $wstoken, string $
                 // watermarked OTP + playbackInfo.
                 $act['otpurl']       = $wwwroot . '/local/vdocipher/api.php?function=get_playback&cmid='
                                        . $cm->id . '&token=' . $wstoken;
+            } else if ($vimrow = $DB->get_record('local_vimeo_videos', ['cmid' => $cm->id])) {
+                // A Vimeo video also takes precedence over any uploaded file: the
+                // app plays the domain-private embed, never a webview.
+                $act['mediatype']    = 'vimeo';
+                $act['isvimeo']      = true;
+                $act['videoid']      = $vimrow->videoid;
+                $act['resourcetype'] = 'video/vimeo';
+                // Client GETs this right before playback to obtain the embed URL.
+                $act['embedurl']     = $wwwroot . '/local/vimeo/api.php?function=get_playback&cmid='
+                                       . $cm->id . '&token=' . $wstoken;
             } else {
                 $fs   = get_file_storage();
                 $ctx  = context_module::instance($cm->id);
@@ -331,6 +347,19 @@ function build_activities(array $cms, object $modinfo, string $wstoken, string $
                 $act['videoid']      = $vrow->videoid;
                 $act['resourcetype'] = 'video/vdocipher';
                 $act['otpurl']       = $wwwroot . '/local/vdocipher/api.php?function=get_playback&cmid='
+                                       . $cm->id . '&token=' . $wstoken;
+            }
+        }
+
+        // ── vimeo: Vimeo-backed video activity (mod_vimeo) ──────────────────
+        if ($cm->modname === 'vimeo') {
+            $vimrow = $DB->get_record('local_vimeo_videos', ['cmid' => $cm->id]);
+            if ($vimrow && $vimrow->videoid !== '') {
+                $act['mediatype']    = 'vimeo';
+                $act['isvimeo']      = true;
+                $act['videoid']      = $vimrow->videoid;
+                $act['resourcetype'] = 'video/vimeo';
+                $act['embedurl']     = $wwwroot . '/local/vimeo/api.php?function=get_playback&cmid='
                                        . $cm->id . '&token=' . $wstoken;
             }
         }
