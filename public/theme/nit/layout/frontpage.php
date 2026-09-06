@@ -333,7 +333,13 @@ if (\theme_nit\local\editor::can_edit()) {
             'imagetoolarge' => get_string('edit_imagetoolarge', 'theme_nit'),
         ],
     ];
-    $PAGE->requires->js_init_code('window.NIT_EDIT=' . json_encode($niteditcfg, JSON_UNESCAPED_SLASHES) . ';', true);
+    // Publish the config in <head> BEFORE editor.js runs (it reads window.NIT_EDIT
+    // at load and bails if absent — js_init_code runs too late). JSON_HEX_TAG stops
+    // any value from breaking out of the <script>.
+    $CFG->additionalhtmlhead = ($CFG->additionalhtmlhead ?? '')
+        . "\n<script>window.NIT_EDIT="
+        . json_encode($niteditcfg, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT)
+        . ";</script>\n";
 }
 
 echo $OUTPUT->render_from_template('theme_nit/frontpage', $templatecontext);
