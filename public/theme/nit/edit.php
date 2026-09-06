@@ -110,6 +110,60 @@ try {
             nit_edit_respond(true);
             break;
 
+        // About section — replace the photo box image (not the section bg).
+        case 'about_image':
+            $found = editor::find_section('about');
+            if (!$found) {
+                nit_edit_respond(false, ['error' => 'notfound']);
+            }
+            $err = null;
+            $datauri = editor::uploaded_image_datauri($_FILES['image'] ?? [], $err);
+            if ($datauri === null) {
+                nit_edit_respond(false, ['error' => $err ?? 'image']);
+            }
+            [$bi, $cfg] = $found;
+            $html = editor::section_html($cfg);
+            $newhtml = editor::set_about_image($html, $datauri);
+            if ($newhtml === null) {
+                // Older block without the photo-box marker → fall back to section bg.
+                $newhtml = editor::set_marker_background($html, 'about', $datauri);
+            }
+            if ($newhtml === null) {
+                nit_edit_respond(false, ['error' => 'noimgslot']);
+            }
+            editor::save_section_html($bi, $cfg, $newhtml);
+            nit_edit_respond(true);
+            break;
+
+        // About section — replace the bullet points (JSON array of strings).
+        case 'about_points':
+            $found = editor::find_section('about');
+            if (!$found) {
+                nit_edit_respond(false, ['error' => 'notfound']);
+            }
+            $decoded = json_decode(required_param('bullets', PARAM_RAW), true);
+            if (!is_array($decoded)) {
+                nit_edit_respond(false, ['error' => 'badbullets']);
+            }
+            $bullets = [];
+            foreach ($decoded as $b) {
+                $b = trim((string) $b);
+                if ($b !== '') {
+                    $bullets[] = \core_text::substr($b, 0, 200);
+                }
+                if (count($bullets) >= 8) {
+                    break;
+                }
+            }
+            [$bi, $cfg] = $found;
+            $newhtml = editor::set_about_points(editor::section_html($cfg), $bullets);
+            if ($newhtml === null) {
+                nit_edit_respond(false, ['error' => 'nolist']);
+            }
+            editor::save_section_html($bi, $cfg, $newhtml);
+            nit_edit_respond(true);
+            break;
+
         // Replace the site logo (core_admin site file; old file really deleted).
         // One upload drives BOTH the navbar compact logo and the full logo, the
         // same as provisioning's brand applier.

@@ -198,6 +198,85 @@
         return body;
     }
 
+    // About panel: replace the photo + edit the bullet points (seeded from the
+    // live DOM, so no extra fetch). Points save as a JSON array to about_points.
+    function aboutPanel(sec) {
+        var body = document.createElement('div');
+
+        var imgRow = document.createElement('div');
+        imgRow.className = 'nit-edit-row';
+        var imgBtn = document.createElement('button');
+        imgBtn.type = 'button';
+        imgBtn.className = 'nit-edit-btn';
+        imgBtn.textContent = '🖼 ' + t('replaceimage', 'Replace image');
+        imgBtn.addEventListener('click', function () { uploadImage('about_image', {}, imgBtn); });
+        imgRow.appendChild(imgBtn);
+        body.appendChild(imgRow);
+
+        var lbl = document.createElement('label');
+        lbl.textContent = t('aboutpoints', 'Points');
+        body.appendChild(lbl);
+        var list = document.createElement('div');
+        list.style.margin = '6px 0 10px';
+
+        function addRow(val) {
+            if (list.querySelectorAll('.nit-point-input').length >= 8) {
+                return;
+            }
+            var row = document.createElement('div');
+            row.style.cssText = 'display:flex;gap:6px;margin-bottom:6px';
+            var inp = document.createElement('input');
+            inp.type = 'text';
+            inp.className = 'nit-point-input';
+            inp.maxLength = 200;
+            inp.value = val || '';
+            inp.style.cssText = 'flex:1;padding:8px;border:1px solid #ccc;border-radius:8px;font:inherit';
+            var del = document.createElement('button');
+            del.type = 'button';
+            del.className = 'nit-edit-btn sec';
+            del.textContent = '✕';
+            del.addEventListener('click', function () { row.remove(); });
+            row.appendChild(inp);
+            row.appendChild(del);
+            list.appendChild(row);
+        }
+
+        Array.prototype.slice.call(sec.querySelectorAll('ul li')).forEach(function (li) {
+            addRow(li.textContent.replace(/^[\s◆]+/, '').trim());
+        });
+        body.appendChild(list);
+
+        var addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.className = 'nit-edit-btn sec';
+        addBtn.textContent = '+ ' + t('addpoint', 'Add point');
+        addBtn.style.marginBottom = '14px';
+        addBtn.addEventListener('click', function () { addRow(''); });
+        body.appendChild(addBtn);
+
+        var act = document.createElement('div');
+        act.className = 'nit-edit-actions';
+        var cancel = document.createElement('button');
+        cancel.type = 'button';
+        cancel.className = 'nit-edit-btn sec';
+        cancel.textContent = t('cancel', 'Cancel');
+        cancel.addEventListener('click', closePanel);
+        var save = document.createElement('button');
+        save.type = 'button';
+        save.className = 'nit-edit-btn';
+        save.textContent = t('save', 'Save');
+        save.addEventListener('click', function () {
+            var bullets = Array.prototype.slice.call(list.querySelectorAll('.nit-point-input'))
+                .map(function (i) { return i.value.trim(); })
+                .filter(function (v) { return v !== ''; });
+            postFields({ action: 'about_points', bullets: JSON.stringify(bullets) }, save);
+        });
+        act.appendChild(cancel);
+        act.appendChild(save);
+        body.appendChild(act);
+        return body;
+    }
+
     // ── pencils ───────────────────────────────────────────────────────────────
     function attachPencil(el, label, onClick) {
         if (el.querySelector(':scope > .nit-edit-pencil')) {
@@ -226,6 +305,10 @@
             if (marker === 'hero') {
                 attachPencil(sec, t('edithero', 'Edit hero'), function () {
                     openPanel(t('edithero', 'Edit hero'), heroPanel(marker));
+                });
+            } else if (marker === 'about') {
+                attachPencil(sec, t('editabout', 'Edit about'), function () {
+                    openPanel(t('editabout', 'Edit about'), aboutPanel(sec));
                 });
             } else {
                 attachPencil(sec, t('editimage', 'Edit image'), function (pencil) {

@@ -145,3 +145,6 @@ $string['edit_replaceimage'] = 'استبدال الصورة';
 $string['edit_heroheight'] = 'الارتفاع';
 $string['edit_save'] = 'حفظ';
 $string['edit_cancel'] = 'إلغاء';
+$string['edit_editabout'] = 'تعديل نبذة عنا';
+$string['edit_aboutpoints'] = 'النقاط';
+$string['edit_addpoint'] = 'إضافة نقطة';

@@ -218,6 +218,88 @@ class editor {
         return self::inner_html($dom, $xp);
     }
 
+    /**
+     * Set the background image of the about section's photo box
+     * (data-nit-about-image), leaving the section background alone. Returns new
+     * HTML, or null if the photo box isn't found.
+     */
+    public static function set_about_image(string $html, string $datauri): ?string {
+        $dom = new \DOMDocument();
+        $prev = libxml_use_internal_errors(true);
+        $ok = $dom->loadHTML(
+            '<?xml encoding="utf-8"?><div data-nitwrap="1">' . $html . '</div>',
+            LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
+        );
+        libxml_clear_errors();
+        libxml_use_internal_errors($prev);
+        if (!$ok) {
+            return null;
+        }
+        $xp = new \DOMXPath($dom);
+        $node = $xp->query('//*[@data-nit-about-image]')->item(0);
+        if (!$node) {
+            return null;
+        }
+        /** @var \DOMElement $node */
+        $style = $node->getAttribute('style');
+        $bg = "background:#000 url('" . $datauri . "') center/cover no-repeat";
+        if (preg_match('/background\s*:/i', $style)) {
+            $style = preg_replace('/background\s*:[^;]*;?/i', $bg . ';', $style, 1);
+        } else {
+            $style = rtrim($style, '; ') . ';' . $bg . ';';
+        }
+        $node->setAttribute('style', $style);
+        return self::inner_html($dom, $xp);
+    }
+
+    /**
+     * Replace the bullet points in the about section's list (the first <ul>),
+     * rebuilding each <li> with the same styling the brand applier uses. Text is
+     * added as DOM text nodes, so it is escaped on serialize (no HTML injection).
+     * Returns new HTML, or null if no list is found.
+     *
+     * @param string $html
+     * @param string[] $bullets
+     * @return string|null
+     */
+    public static function set_about_points(string $html, array $bullets): ?string {
+        $dom = new \DOMDocument();
+        $prev = libxml_use_internal_errors(true);
+        $ok = $dom->loadHTML(
+            '<?xml encoding="utf-8"?><div data-nitwrap="1">' . $html . '</div>',
+            LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
+        );
+        libxml_clear_errors();
+        libxml_use_internal_errors($prev);
+        if (!$ok) {
+            return null;
+        }
+        $xp = new \DOMXPath($dom);
+        $ul = $xp->query('(//ul)[1]')->item(0);
+        if (!$ul) {
+            return null;
+        }
+        while ($ul->firstChild) {
+            $ul->removeChild($ul->firstChild);
+        }
+        $listyle = 'display:flex; gap:10px; font-size:15px; color: var(--nit-brand-textsecondary); line-height:1.7;';
+        foreach ($bullets as $b) {
+            $b = trim((string) $b);
+            if ($b === '') {
+                continue;
+            }
+            $li = $dom->createElement('li');
+            $li->setAttribute('style', $listyle);
+            $span = $dom->createElement('span');
+            $span->setAttribute('style', 'color: var(--nit-brand-accent);');
+            $span->appendChild($dom->createTextNode('◆'));
+            $li->appendChild($span);
+            $li->appendChild($dom->createTextNode(' ' . $b));
+            $ul->appendChild($li);
+        }
+        return self::inner_html($dom, $xp);
+    }
+
     /** Serialize the children of the data-nitwrap wrapper back to an HTML string. */
     private static function inner_html(\DOMDocument $dom, \DOMXPath $xp): string {
         $wrap = $xp->query("//*[@data-nitwrap='1']")->item(0);
