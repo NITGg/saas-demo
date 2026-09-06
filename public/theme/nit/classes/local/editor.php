@@ -37,11 +37,19 @@ defined('MOODLE_INTERNAL') || die();
 class editor {
 
     /**
-     * Who may inline-edit the front page: a signed-in site admin of THIS academy
-     * (the owner account is a site admin). Never guests.
+     * Who may inline-edit the front page: a signed-in user who can manage the
+     * site-home blocks — site admins AND the academy owner (whose role grants
+     * moodle/site:manageblocks, i.e. the same capability that shows "Add a
+     * block"). Students/teachers don't have it. Never guests.
      */
     public static function can_edit(): bool {
-        return isloggedin() && !isguestuser() && is_siteadmin();
+        if (!isloggedin() || isguestuser()) {
+            return false;
+        }
+        if (is_siteadmin()) {
+            return true;
+        }
+        return has_capability('moodle/site:manageblocks', \context_system::instance());
     }
 
     /**
