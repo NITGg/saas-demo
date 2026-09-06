@@ -81,6 +81,35 @@ try {
             nit_edit_respond(true);
             break;
 
+        // Adjust a section's width/height constraints (hero band size, etc.).
+        // Whitelisted, validated CSS only — never free-form style from the client.
+        case 'section_style':
+            $marker = required_param('section', PARAM_ALPHANUMEXT);
+            $aspect = optional_param('aspect', '', PARAM_RAW_TRIMMED);   // "16/6"
+            $minheight = optional_param('minheight', 0, PARAM_INT);       // px
+            $props = [];
+            if (preg_match('#^\d{1,2}/\d{1,2}$#', $aspect)) {
+                $props['aspect-ratio'] = $aspect;
+            }
+            if ($minheight >= 120 && $minheight <= 1000) {
+                $props['min-height'] = $minheight . 'px';
+            }
+            if (!$props) {
+                nit_edit_respond(false, ['error' => 'noprops']);
+            }
+            $found = editor::find_section($marker);
+            if (!$found) {
+                nit_edit_respond(false, ['error' => 'notfound']);
+            }
+            [$bi, $cfg] = $found;
+            $newhtml = editor::set_marker_style_props(editor::section_html($cfg), $marker, $props);
+            if ($newhtml === null) {
+                nit_edit_respond(false, ['error' => 'notfound']);
+            }
+            editor::save_section_html($bi, $cfg, $newhtml);
+            nit_edit_respond(true);
+            break;
+
         // Replace the site logo (core_admin site file; old file really deleted).
         // One upload drives BOTH the navbar compact logo and the full logo, the
         // same as provisioning's brand applier.

@@ -176,6 +176,48 @@ class editor {
         return self::inner_html($dom, $xp);
     }
 
+    /**
+     * Merge specific CSS declarations into the marker element's inline style
+     * (replacing each property if already present, else appending). Used for the
+     * hero's width/height constraints. Returns new HTML, or null if not found.
+     *
+     * @param string $html
+     * @param string $marker
+     * @param array<string,string> $props CSS property => value (e.g. ['aspect-ratio'=>'16/6'])
+     * @return string|null
+     */
+    public static function set_marker_style_props(string $html, string $marker, array $props): ?string {
+        $dom = new \DOMDocument();
+        $prev = libxml_use_internal_errors(true);
+        $ok = $dom->loadHTML(
+            '<?xml encoding="utf-8"?><div data-nitwrap="1">' . $html . '</div>',
+            LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
+        );
+        libxml_clear_errors();
+        libxml_use_internal_errors($prev);
+        if (!$ok) {
+            return null;
+        }
+        $xp = new \DOMXPath($dom);
+        $nodes = $xp->query('//*[@data-nit-section=' . self::xpath_literal($marker) . ']');
+        if (!$nodes || $nodes->length === 0) {
+            return null;
+        }
+        /** @var \DOMElement $node */
+        $node = $nodes->item(0);
+        $style = $node->getAttribute('style');
+        foreach ($props as $prop => $value) {
+            $q = preg_quote($prop, '/');
+            if (preg_match('/' . $q . '\s*:/i', $style)) {
+                $style = preg_replace('/' . $q . '\s*:[^;]*;?/i', $prop . ':' . $value . ';', $style, 1);
+            } else {
+                $style = rtrim($style, '; ') . ';' . $prop . ':' . $value . ';';
+            }
+        }
+        $node->setAttribute('style', $style);
+        return self::inner_html($dom, $xp);
+    }
+
     /** Serialize the children of the data-nitwrap wrapper back to an HTML string. */
     private static function inner_html(\DOMDocument $dom, \DOMXPath $xp): string {
         $wrap = $xp->query("//*[@data-nitwrap='1']")->item(0);
