@@ -37,7 +37,7 @@
             'font:600 14px system-ui,sans-serif;cursor:pointer;background:#0B2923;color:#00FFB2;' +
             'box-shadow:0 6px 20px -6px rgba(0,0,0,.5)}' +
             '.nit-edit-toggle.nit-on{background:#00FFB2;color:#0B2923}' +
-            'body.nit-editing [data-nit-section]{outline:2px dashed rgba(0,180,140,.7);outline-offset:-2px;position:relative}' +
+            'body.nit-editing [data-nit-section],body.nit-editing [data-nit-edit]{outline:2px dashed rgba(0,180,140,.7);outline-offset:-2px;position:relative}' +
             '.nit-edit-pencil{position:absolute;top:10px;inset-inline-end:10px;z-index:9999;' +
             'display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:none;border-radius:8px;' +
             'font:600 13px system-ui,sans-serif;cursor:pointer;background:#0B2923;color:#00FFB2;' +
@@ -49,8 +49,8 @@
         document.head.appendChild(el);
     }
 
-    // ── save: replace a region's background image ─────────────────────────────
-    function replaceSectionImage(marker, pencil) {
+    // ── save: upload an image for a given action (+ extra form fields) ─────────
+    function uploadImage(action, extra, pencil) {
         var input = document.createElement('input');
         input.type = 'file';
         input.accept = 'image/png,image/jpeg,image/webp,image/gif,image/svg+xml';
@@ -64,10 +64,10 @@
                 return;
             }
             var fd = new FormData();
-            fd.append('action', 'section_bg_image');
-            fd.append('section', marker);
+            fd.append('action', action);
             fd.append('sesskey', CFG.sesskey);
             fd.append('image', file);
+            Object.keys(extra || {}).forEach(function (k) { fd.append(k, extra[k]); });
             pencil.classList.add('nit-edit-busy');
             fetch(CFG.editUrl, { method: 'POST', body: fd, credentials: 'same-origin' })
                 .then(function (r) { return r.json(); })
@@ -88,26 +88,38 @@
     }
 
     // ── pencils ───────────────────────────────────────────────────────────────
+    function attachPencil(el, label, onClick) {
+        if (el.querySelector(':scope > .nit-edit-pencil')) {
+            return;
+        }
+        if (getComputedStyle(el).position === 'static') {
+            el.style.position = 'relative';
+        }
+        var pencil = document.createElement('button');
+        pencil.type = 'button';
+        pencil.className = 'nit-edit-pencil';
+        pencil.textContent = '✏ ' + label;
+        pencil.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            onClick(pencil);
+        });
+        el.appendChild(pencil);
+    }
+
     function addPencils() {
-        var sections = document.querySelectorAll('[data-nit-section]');
-        sections.forEach(function (sec) {
-            if (sec.querySelector(':scope > .nit-edit-pencil')) {
-                return;
-            }
-            if (getComputedStyle(sec).position === 'static') {
-                sec.style.position = 'relative';
-            }
+        // Front-page regions → replace the region's background image.
+        document.querySelectorAll('[data-nit-section]').forEach(function (sec) {
             var marker = sec.getAttribute('data-nit-section');
-            var pencil = document.createElement('button');
-            pencil.type = 'button';
-            pencil.className = 'nit-edit-pencil';
-            pencil.textContent = '✏ ' + t('editimage', 'Edit image');
-            pencil.addEventListener('click', function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-                replaceSectionImage(marker, pencil);
+            attachPencil(sec, t('editimage', 'Edit image'), function (pencil) {
+                uploadImage('section_bg_image', { section: marker }, pencil);
             });
-            sec.appendChild(pencil);
+        });
+        // Logo (navbar brand) → replace the site logo.
+        document.querySelectorAll('[data-nit-edit="logo"]').forEach(function (el) {
+            attachPencil(el, t('editlogo', 'Edit logo'), function (pencil) {
+                uploadImage('logo', {}, pencil);
+            });
         });
     }
 

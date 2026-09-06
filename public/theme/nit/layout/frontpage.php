@@ -262,6 +262,7 @@ if (\theme_nit\local\editor::can_edit()) {
             'editpage'      => get_string('edit_editpage', 'theme_nit'),
             'doneediting'   => get_string('edit_done', 'theme_nit'),
             'editimage'     => get_string('edit_editimage', 'theme_nit'),
+            'editlogo'      => get_string('edit_editlogo', 'theme_nit'),
             'savefailed'    => get_string('edit_savefailed', 'theme_nit'),
             'imagetoolarge' => get_string('edit_imagetoolarge', 'theme_nit'),
         ],

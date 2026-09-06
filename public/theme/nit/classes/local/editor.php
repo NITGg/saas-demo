@@ -243,6 +243,70 @@ class editor {
         return true;
     }
 
+    /**
+     * Replace a CORE site file (logo / logocompact / favicon — stored under the
+     * core_admin component, exactly like theme_nit's brand applier), DELETING the
+     * previous file first so storage isn't leaked. Updates the core_admin config
+     * to '/<filename>' and bumps the theme revision so the new URL is served.
+     *
+     * @param string $filearea core_admin filearea (logo|logocompact|favicon)
+     * @param string $configname core_admin config name (usually == filearea)
+     * @param array $file a single $_FILES[...] entry
+     * @param string|null $error out: error code on failure
+     * @return bool success
+     */
+    public static function replace_site_file(string $filearea, string $configname, array $file, ?string &$error = null): bool {
+        global $CFG;
+        require_once($CFG->libdir . '/filelib.php');
+        $error = null;
+        if (empty($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
+            $error = 'noimage';
+            return false;
+        }
+        if ((int) ($file['size'] ?? 0) > self::max_image_bytes()) {
+            $error = 'toolarge';
+            return false;
+        }
+        $raw = @file_get_contents($file['tmp_name']);
+        $mime = $raw ? ((new \finfo(FILEINFO_MIME_TYPE))->buffer($raw) ?: '') : '';
+        if (!in_array($mime, self::allowed_image_types(), true)) {
+            $head = ltrim(substr((string) $raw, 0, 256));
+            if (stripos($head, '<svg') === false && stripos($head, '<?xml') !== 0) {
+                $error = 'badtype';
+                return false;
+            }
+        }
+        $filename = clean_filename($file['name'] ?? ($filearea . '.img'));
+        if ($filename === '') {
+            $error = 'badname';
+            return false;
+        }
+        $fs = get_file_storage();
+        $ctx = \context_system::instance();
+        $fs->delete_area_files($ctx->id, 'core_admin', $filearea, 0);
+        try {
+            $fs->create_file_from_pathname([
+                'contextid' => $ctx->id, 'component' => 'core_admin', 'filearea' => $filearea,
+                'itemid' => 0, 'filepath' => '/', 'filename' => $filename,
+            ], $file['tmp_name']);
+        } catch (\Throwable $e) {
+            $error = 'savefailed';
+            return false;
+        }
+        set_config($configname, '/' . $filename, 'core_admin');
+        return true;
+    }
+
+    /** Bump theme caches + revision so a new logo/brand URL is served immediately. */
+    public static function bust_theme_caches(): void {
+        global $CFG;
+        require_once($CFG->libdir . '/adminlib.php');
+        if (function_exists('theme_reset_all_caches')) {
+            theme_reset_all_caches();
+        }
+        purge_all_caches();
+    }
+
     /** Delete a theme_nit stored-file setting's files + clear its config. */
     public static function delete_stored_file(string $setting): void {
         $fs = get_file_storage();

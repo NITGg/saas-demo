@@ -81,13 +81,18 @@ try {
             nit_edit_respond(true);
             break;
 
-        // Replace the site logo (theme stored file; old file is really deleted).
-        // Full logo editor UI lands in 3.1; the save path is ready here.
+        // Replace the site logo (core_admin site file; old file really deleted).
+        // One upload drives BOTH the navbar compact logo and the full logo, the
+        // same as provisioning's brand applier.
         case 'logo':
             $err = null;
-            if (!editor::replace_stored_file('logo', $_FILES['image'] ?? [], $err)) {
+            $file = $_FILES['image'] ?? [];
+            if (!editor::replace_site_file('logo', 'logo', $file, $err)) {
                 nit_edit_respond(false, ['error' => $err ?? 'image']);
             }
+            // Best-effort: mirror to the compact logo used in the navbar.
+            editor::replace_site_file('logocompact', 'logocompact', $file, $err);
+            editor::bust_theme_caches();
             nit_edit_respond(true);
             break;
 

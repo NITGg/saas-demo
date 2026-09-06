@@ -149,3 +149,4 @@ $string['edit_done'] = 'Done';
 $string['edit_editimage'] = 'Edit image';
 $string['edit_savefailed'] = 'Could not save';
 $string['edit_imagetoolarge'] = 'Image is too large.';
+$string['edit_editlogo'] = 'Edit logo';

@@ -49,7 +49,7 @@
         </button>
 
         {{! NIT: brand — compact logo AND the site name together. }}
-        <a href="{{{ config.homeurl }}}" class="navbar-brand nit-navbar-brand d-none d-md-flex align-items-center m-0 me-3 p-0 aabtn">
+        <a href="{{{ config.homeurl }}}" data-nit-edit="logo" class="navbar-brand nit-navbar-brand d-none d-md-flex align-items-center m-0 me-3 p-0 aabtn">
             {{# output.should_display_navbar_logo }}
                 <img src="{{output.get_compact_logo_url}}" class="nit-navbar-logo me-2" alt="{{sitename}}">
             {{/ output.should_display_navbar_logo }}

@@ -139,3 +139,4 @@ $string['edit_done'] = 'تم';
 $string['edit_editimage'] = 'تعديل الصورة';
 $string['edit_savefailed'] = 'تعذّر الحفظ';
 $string['edit_imagetoolarge'] = 'حجم الصورة كبير جداً.';
+$string['edit_editlogo'] = 'تعديل الشعار';

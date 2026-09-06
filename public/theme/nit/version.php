@@ -25,11 +25,11 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'theme_nit';
-$plugin->version   = 2026090100;        // YYYYMMDDXX.
+$plugin->version   = 2026090101;        // YYYYMMDDXX.
 $plugin->requires  = 2024100700;        // Moodle 4.5 LTS baseline (pinned per CI matrix).
 $plugin->supported = [405, 502];        // Supported branch range: 4.5 LTS .. 5.2.
 $plugin->maturity  = MATURITY_ALPHA;    // Foundation + rendering + branding (M2–M5); pre-1.0.
-$plugin->release   = '0.3.1';
+$plugin->release   = '0.3.2';
 $plugin->dependencies = [
     'theme_boost'    => ANY_VERSION,    // NIT is a Boost child theme.
     'local_nit_core' => 2026080402,     // Renders SDK view-models &amp; consumes the branding resolver.
