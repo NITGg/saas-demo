@@ -254,10 +254,21 @@ $templatecontext = [
 // pencils that save through theme/nit/edit.php (sesskey-guarded). See editor.php.
 if (\theme_nit\local\editor::can_edit()) {
     $PAGE->requires->js(new moodle_url('/theme/nit/js/editor.js'));
+    // Add-course link → the default category's course-create form. The inline
+    // editor drops this button INSIDE the courses grid (in edit mode) instead of
+    // the floating core one (hidden on the Site home).
+    $nitaddcat = 0;
+    try {
+        $nitaddcat = (int) \core_course_category::get_default()->id;
+    } catch (\Throwable $e) {
+        $nitaddcat = 0;
+    }
+    $nitaddcourseurl = (new moodle_url('/course/edit.php', $nitaddcat ? ['category' => $nitaddcat] : []))->out(false);
     $niteditcfg = [
         'editUrl'       => (new moodle_url('/theme/nit/edit.php'))->out(false),
         'sesskey'       => sesskey(),
         'maxImageBytes' => \theme_nit\local\editor::max_image_bytes(),
+        'addCourseUrl'  => $nitaddcourseurl,
         'str'           => [
             'editpage'      => get_string('edit_editpage', 'theme_nit'),
             'doneediting'   => get_string('edit_done', 'theme_nit'),
@@ -271,6 +282,7 @@ if (\theme_nit\local\editor::can_edit()) {
             'editabout'     => get_string('edit_editabout', 'theme_nit'),
             'aboutpoints'   => get_string('edit_aboutpoints', 'theme_nit'),
             'addpoint'      => get_string('edit_addpoint', 'theme_nit'),
+            'addcourse'     => get_string('edit_addcourse', 'theme_nit'),
             'savefailed'    => get_string('edit_savefailed', 'theme_nit'),
             'imagetoolarge' => get_string('edit_imagetoolarge', 'theme_nit'),
         ],

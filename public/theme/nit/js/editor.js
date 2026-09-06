@@ -53,7 +53,11 @@
             '.nit-edit-card select{padding:8px;border:1px solid #ccc;border-radius:8px;font:inherit;width:100%}' +
             '.nit-edit-btn{padding:8px 14px;border:none;border-radius:8px;font:600 13px system-ui;cursor:pointer;background:#0B2923;color:#00FFB2}' +
             '.nit-edit-btn.sec{background:#eee;color:#0B2923}' +
-            '.nit-edit-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}';
+            '.nit-edit-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}' +
+            '.nit-add-course{display:inline-flex;align-items:center;justify-content:center;gap:8px;' +
+            'min-height:44px;padding:12px 20px;margin:4px;border-radius:12px;text-decoration:none;' +
+            'font:700 15px system-ui,sans-serif;background:#0B2923;color:#00FFB2;' +
+            'border:2px dashed rgba(0,255,178,.4)}';
         var el = document.createElement('style');
         el.id = 'nit-edit-styles';
         el.textContent = css;
@@ -328,13 +332,35 @@
         document.querySelectorAll('.nit-edit-pencil').forEach(function (p) { p.remove(); });
     }
 
+    // Add-course button INSIDE the courses grid (replaces core's floating one,
+    // which the theme hides on the Site home). Edit-mode only.
+    function addCourseButton() {
+        if (!CFG.addCourseUrl) {
+            return;
+        }
+        var grid = document.querySelector('[data-nit-courses]');
+        if (!grid || grid.querySelector(':scope > .nit-add-course')) {
+            return;
+        }
+        var a = document.createElement('a');
+        a.className = 'nit-add-course';
+        a.href = CFG.addCourseUrl;
+        a.textContent = '➕ ' + t('addcourse', 'Add course');
+        grid.insertBefore(a, grid.firstChild);
+    }
+    function removeCourseButton() {
+        document.querySelectorAll('.nit-add-course').forEach(function (e) { e.remove(); });
+    }
+
     function setEditing(on) {
         editing = on;
         document.body.classList.toggle('nit-editing', on);
         if (on) {
             addPencils();
+            addCourseButton();
         } else {
             removePencils();
+            removeCourseButton();
         }
     }
 

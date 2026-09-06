@@ -148,3 +148,4 @@ $string['edit_cancel'] = 'إلغاء';
 $string['edit_editabout'] = 'تعديل نبذة عنا';
 $string['edit_aboutpoints'] = 'النقاط';
 $string['edit_addpoint'] = 'إضافة نقطة';
+$string['edit_addcourse'] = 'إضافة دورة';

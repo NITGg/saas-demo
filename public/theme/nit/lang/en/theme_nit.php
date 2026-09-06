@@ -158,3 +158,4 @@ $string['edit_cancel'] = 'Cancel';
 $string['edit_editabout'] = 'Edit about';
 $string['edit_aboutpoints'] = 'Points';
 $string['edit_addpoint'] = 'Add point';
+$string['edit_addcourse'] = 'Add course';
