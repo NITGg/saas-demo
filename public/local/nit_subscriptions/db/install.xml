@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="local/nit_subscriptions/db" VERSION="20260809" COMMENT="Course-access subscription plans (ported from local_academy)."
+<XMLDB PATH="local/nit_subscriptions/db" VERSION="20260906" COMMENT="Course-access subscription plans (ported from local_academy)."
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd">
   <TABLES>
@@ -84,6 +84,26 @@
       <INDEXES>
         <INDEX NAME="user_status_idx" UNIQUE="false" FIELDS="userid, status"/>
         <INDEX NAME="reference_idx" UNIQUE="false" FIELDS="reference"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="nit_sub_reminder" COMMENT="One row per expiry reminder actually delivered, so a reminder is never sent twice.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="purchaseid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="subscriptionid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="days" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="the configured lead time this reminder was sent for"/>
+        <FIELD NAME="expires_at" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="the deadline it warned about; a renewal moves it, so the new period gets its own reminders"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="purchaseid_fk" TYPE="foreign" FIELDS="purchaseid" REFTABLE="nit_sub_purchase" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="purchase_days_expiry_uk" UNIQUE="true" FIELDS="purchaseid, days, expires_at"/>
+        <INDEX NAME="userid_idx" UNIQUE="false" FIELDS="userid"/>
       </INDEXES>
     </TABLE>
   </TABLES>

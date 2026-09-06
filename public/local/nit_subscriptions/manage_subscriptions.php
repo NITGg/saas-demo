@@ -56,6 +56,11 @@ $STR = local_nit_subscriptions_string_map(array(
     'sstat_active', 'sstat_expired', 'sstat_cancelled', 'sstat_pending', 'sstat_payment_failed',
     'ui_pager_info',
     'ui_search', 'sub_courses_search', 'sub_selectall', 'sub_clear',
+    'tab_plans', 'tab_courses', 'tab_users', 'tab_reminders',
+    'rem_heading', 'rem_desc', 'rem_enabled', 'rem_enabled_help', 'rem_days', 'rem_days_help',
+    'rem_days_add', 'rem_days_none', 'rem_day_unit', 'rem_remove', 'rem_save', 'rem_applied',
+    'rem_preview', 'rem_window_note', 'rem_window_off', 'rem_window_none', 'rem_recalc_note',
+    'rem_col_days', 'rem_onexpiry', 'rem_onexpiry_help',
     'err_sessionexpired', 'err_requestfailed',
 ));
 
@@ -68,6 +73,33 @@ echo html_writer::script('window.ACADEMY_STR = ' . json_encode($STR) . ';');
 ?>
 <div id="academy-sub-app">
     <div id="sub-message" class="alert" style="display:none"></div>
+
+    <!-- ── Tabs ─────────────────────────────────────────────────────────────────────
+         Four screens that were one long scroll. Everything below keeps the ids it had,
+         so the page script is untouched by the split; only the wrappers are new. The
+         chosen tab is remembered in the URL hash, so a reload — and the admin's own
+         bookmark — comes back to the same place. -->
+    <ul class="nav nav-tabs mb-3" id="sub-tabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button type="button" class="nav-link active" role="tab"
+                    data-subtab="plans"><?php echo $STR['tab_plans']; ?></button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button type="button" class="nav-link" role="tab"
+                    data-subtab="courses"><?php echo $STR['tab_courses']; ?></button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button type="button" class="nav-link" role="tab"
+                    data-subtab="users"><?php echo $STR['tab_users']; ?></button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button type="button" class="nav-link" role="tab"
+                    data-subtab="reminders"><?php echo $STR['tab_reminders']; ?></button>
+        </li>
+    </ul>
+
+    <!-- ══ TAB 1: the plans themselves ══════════════════════════════════════════ -->
+    <div data-subtabpane="plans" role="tabpanel">
 
     <!-- ── Subscription plans ── -->
     <h4><?php echo $STR['sub_plans_heading']; ?></h4>
@@ -123,6 +155,11 @@ echo html_writer::script('window.ACADEMY_STR = ' . json_encode($STR) . ';');
             <button id="sub-cancel" class="btn btn-link"><?php echo $STR['ui_cancel']; ?></button>
         </div>
     </div>
+
+    </div><!-- /tab: plans -->
+
+    <!-- ══ TAB 2: which plan unlocks which course ═══════════════════════════════ -->
+    <div data-subtabpane="courses" role="tabpanel" hidden>
 
     <!-- ── Course access ── -->
     <h4 class="mt-4"><?php echo $STR['sub_courseavail_heading']; ?></h4>
@@ -203,6 +240,11 @@ echo html_writer::script('window.ACADEMY_STR = ' . json_encode($STR) . ';');
         <div id="categories-container" class="mb-4"></div>
     </div>
 
+    </div><!-- /tab: courses -->
+
+    <!-- ══ TAB 3: who is subscribed right now ═══════════════════════════════════ -->
+    <div data-subtabpane="users" role="tabpanel" hidden>
+
     <!-- ── User Subscriptions ── -->
     <h4 class="mt-4"><?php echo $STR['sub_usersubs_heading']; ?></h4>
     <p class="text-muted"><?php echo $STR['sub_usersubs_desc']; ?></p>
@@ -221,6 +263,56 @@ echo html_writer::script('window.ACADEMY_STR = ' . json_encode($STR) . ';');
         <tbody><tr><td colspan="6"><?php echo $STR['ui_loading']; ?></td></tr></tbody>
     </table>
     <div id="users-table-pager" class="acad-pager"></div>
+
+    </div><!-- /tab: users -->
+
+    <!-- ══ TAB 4: renewal reminders ═════════════════════════════════════════════
+         When the warning goes out before a plan lapses. Saving re-runs the calculation
+         over every live subscription there and then, which is why the button says so. -->
+    <div data-subtabpane="reminders" role="tabpanel" hidden>
+
+        <h4 class="mt-4"><?php echo $STR['rem_heading']; ?></h4>
+        <p class="text-muted" style="max-width:70ch;"><?php echo $STR['rem_desc']; ?></p>
+
+        <div class="card" style="max-width:640px;">
+            <div class="card-body">
+
+                <div class="form-check mb-3">
+                    <input type="checkbox" class="form-check-input" id="rem-enabled">
+                    <label class="form-check-label" for="rem-enabled"><?php echo $STR['rem_enabled']; ?></label>
+                    <div><small class="text-muted"><?php echo $STR['rem_enabled_help']; ?></small></div>
+                </div>
+
+                <div class="mb-2">
+                    <strong><?php echo $STR['rem_days']; ?></strong>
+                    <div><small class="text-muted" id="rem-days-help"><?php echo $STR['rem_days_help']; ?></small></div>
+                </div>
+
+                <div id="rem-days-list" class="mb-2"></div>
+
+                <button type="button" id="rem-day-add"
+                        class="btn btn-sm btn-outline-primary mb-3"><?php echo $STR['rem_days_add']; ?></button>
+
+                <!-- The day-of message is its own tick rather than a "0" row: it is not a
+                     lead time at all (it goes out AFTER the plan lapses), and typing 0 into
+                     a box labelled "days before expiry" reads like a mistake. -->
+                <div class="form-check mb-3">
+                    <input type="checkbox" class="form-check-input" id="rem-onexpiry">
+                    <label class="form-check-label" for="rem-onexpiry"><?php echo $STR['rem_onexpiry']; ?></label>
+                    <div><small class="text-muted"><?php echo $STR['rem_onexpiry_help']; ?></small></div>
+                </div>
+
+                <div class="alert alert-secondary" id="rem-window" style="display:none;"></div>
+                <div class="alert alert-info" id="rem-preview" style="display:none;"></div>
+                <div class="alert alert-warning" style="max-width:60ch;"><small><?php
+                    echo $STR['rem_recalc_note']; ?></small></div>
+
+                <button type="button" id="rem-save" class="btn btn-primary"><?php echo $STR['rem_save']; ?></button>
+                <button type="button" id="rem-refresh" class="btn btn-link"><?php echo $STR['ui_refresh']; ?></button>
+            </div>
+        </div>
+
+    </div><!-- /tab: reminders -->
 
     <!-- ── Unsubscribe confirmation modal ── -->
     <div id="unsub-modal-backdrop" class="academy-modal-backdrop" style="display:none;">
@@ -631,6 +723,181 @@ echo html_writer::script(<<<'JS'
     });
 
     $('refresh-users').addEventListener('click', loadUsers);
+
+    // ── Tabs ────────────────────────────────────────────────────────────────────
+    // Panes, not separate pages: everything is already loaded, so switching is instant
+    // and no in-progress edit in another pane is thrown away. The choice rides in the
+    // URL hash so a reload lands where the admin left off.
+    var TABS = ['plans', 'courses', 'users', 'reminders'];
+
+    function showTab(name) {
+        if (TABS.indexOf(name) === -1) { name = TABS[0]; }
+        TABS.forEach(function (t) {
+            var pane = document.querySelector('[data-subtabpane="' + t + '"]');
+            var btn = document.querySelector('[data-subtab="' + t + '"]');
+            if (pane) { pane.hidden = (t !== name); }
+            if (btn) {
+                btn.classList.toggle('active', t === name);
+                btn.setAttribute('aria-selected', t === name ? 'true' : 'false');
+            }
+        });
+        if (name === 'reminders') { loadReminders(); }
+    }
+
+    Array.prototype.forEach.call(document.querySelectorAll('[data-subtab]'), function (btn) {
+        btn.addEventListener('click', function () {
+            var name = btn.getAttribute('data-subtab');
+            if (window.history && history.replaceState) {
+                history.replaceState(null, '', '#' + name);
+            } else {
+                location.hash = name;
+            }
+            showTab(name);
+        });
+    });
+
+    // ── Renewal reminders ───────────────────────────────────────────────────────
+    var remLoaded = false;
+    var remMax = 365;
+
+    // One row per lead time. Kept as inputs rather than a comma-separated box so a typo
+    // is visible as its own row and the min/max are enforced by the field itself.
+    function remRow(value) {
+        var row = document.createElement('div');
+        row.className = 'input-group input-group-sm mb-2';
+        row.style.maxWidth = '340px';
+
+        var input = document.createElement('input');
+        input.type = 'number';
+        input.className = 'form-control rem-day';
+        input.min = '1';
+        input.max = String(remMax);
+        input.value = String(value || '');
+
+        var unit = document.createElement('span');
+        unit.className = 'input-group-text';
+        unit.textContent = str('rem_day_unit');
+
+        var remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'btn btn-outline-danger';
+        remove.textContent = str('rem_remove');
+        remove.addEventListener('click', function () {
+            row.parentNode.removeChild(row);
+            remPreview();
+        });
+
+        input.addEventListener('change', remPreview);
+
+        row.appendChild(input);
+        row.appendChild(unit);
+        row.appendChild(remove);
+        return row;
+    }
+
+    // The rows are "days before"; the tick is the day itself, which the server stores as a
+    // lead time of 0. Sorted descending, so 0 lands last exactly as it does server-side.
+    function remDays() {
+        var out = [];
+        Array.prototype.forEach.call(document.querySelectorAll('#rem-days-list .rem-day'), function (el) {
+            var v = parseInt(el.value, 10);
+            if (v >= 1 && v <= remMax && out.indexOf(v) === -1) { out.push(v); }
+        });
+        if ($('rem-onexpiry').checked) { out.push(0); }
+        out.sort(function (a, b) { return b - a; });
+        return out;
+    }
+
+    // What the numbers on screen mean right now: the warning window, and how many people
+    // saving would reach. Asked of the server so the count matches what saving will do.
+    function remPreview() {
+        var days = remDays();
+        var list = $('rem-days-list');
+        var win = $('rem-window');
+
+        if (!list.children.length) {
+            list.innerHTML = '<p class="text-muted mb-2">' + esc(str('rem_days_none')) + '</p>';
+        } else {
+            var placeholder = list.querySelector('p.text-muted');
+            if (placeholder) { list.removeChild(placeholder); }
+        }
+
+        // The window opens at the largest lead time BEFORE expiry — the day-of message goes
+        // out when it is already too late to renew early, so it opens no window of its own.
+        var lead = days.filter(function (d) { return d > 0; })[0] || 0;
+
+        win.style.display = 'block';
+        if (!$('rem-enabled').checked) {
+            win.textContent = str('rem_window_off');
+        } else {
+            win.textContent = lead ? strf('rem_window_note', lead) : str('rem_window_none');
+        }
+
+        if (!days.length) {
+            $('rem-preview').style.display = 'none';
+            return;
+        }
+
+        api('preview_reminder_settings', { days: days.join(',') }).then(function (d) {
+            $('rem-preview').style.display = 'block';
+            $('rem-preview').textContent = strf('rem_preview', { due: d.due, active: d.active });
+        }).catch(function () { $('rem-preview').style.display = 'none'; });
+    }
+
+    function renderReminders(d) {
+        remMax = d.max_days || remMax;
+        $('rem-enabled').checked = !!d.enabled;
+        $('rem-days-help').textContent = strf('rem_days_help', remMax);
+
+        var days = d.days || [];
+        $('rem-onexpiry').checked = days.indexOf(0) !== -1;
+
+        var list = $('rem-days-list');
+        list.innerHTML = '';
+        days.forEach(function (day) {
+            if (day > 0) { list.appendChild(remRow(day)); }
+        });
+
+        remPreview();
+    }
+
+    function loadReminders(force) {
+        if (remLoaded && !force) { return; }
+        remLoaded = true;
+        api('get_reminder_settings').then(renderReminders)
+            .catch(function (e) { remLoaded = false; msg(e.message, 'danger'); });
+    }
+
+    $('rem-day-add').addEventListener('click', function () {
+        var list = $('rem-days-list');
+        var placeholder = list.querySelector('p.text-muted');
+        if (placeholder) { list.removeChild(placeholder); }
+        var row = remRow('');
+        list.appendChild(row);
+        row.querySelector('.rem-day').focus();
+    });
+
+    $('rem-enabled').addEventListener('change', remPreview);
+    $('rem-onexpiry').addEventListener('change', remPreview);
+    $('rem-refresh').addEventListener('click', function () { loadReminders(true); });
+
+    $('rem-save').addEventListener('click', function () {
+        var btn = this;
+        btn.disabled = true;
+        api('save_reminder_settings', {
+            enabled: $('rem-enabled').checked ? 1 : 0,
+            days: remDays().join(',')
+        }, 'POST').then(function (d) {
+            msg(strf('rem_applied', { sent: d.sent, cleared: d.cleared }), 'success');
+            renderReminders({
+                enabled: d.enabled, days: d.days, max_days: remMax
+            });
+        }).catch(function (e) {
+            msg(e.message, 'danger');
+        }).then(function () { btn.disabled = false; });
+    });
+
+    showTab((location.hash || '').replace('#', ''));
 
     loadCategories();
     loadUsers();

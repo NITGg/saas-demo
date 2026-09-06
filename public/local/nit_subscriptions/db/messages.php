@@ -15,7 +15,12 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Plugin version and metadata for NIT Subscriptions (course-access subscription plans).
+ * Message providers for local_nit_subscriptions.
+ *
+ * One provider: the warning that a subscription is about to run out. It is on by default on
+ * every channel because a subscriber who is about to lose their courses without being told is
+ * the failure this feature exists to prevent — but it is a normal Moodle notification, so
+ * anyone who does not want it can turn it off in their own preferences.
  *
  * @package    local_nit_subscriptions
  * @copyright  2026 NIT
@@ -24,12 +29,12 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_nit_subscriptions';
-$plugin->version   = 2026090600;        // Renewal reminders + the tabbed manage-subscriptions page.
-$plugin->requires  = 2024100700;
-$plugin->supported = [405, 502];
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.1.0';
-$plugin->dependencies = [
-    'local_nit_core' => 2026080404,
+$messageproviders = [
+    'subscriptionreminder' => [
+        'defaults' => [
+            'popup' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
+            'email' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
+            'airnotifier' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
+        ],
+    ],
 ];

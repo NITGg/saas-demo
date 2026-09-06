@@ -64,5 +64,32 @@ function xmldb_local_nit_subscriptions_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026080901, 'local', 'nit_subscriptions');
     }
 
+    if ($oldversion < 2026090600) {
+        // Expiry reminders. The row is the receipt: it exists only once a reminder has actually
+        // gone out, which is what stops the hourly task re-sending the same warning every hour.
+        // Keyed on the deadline as well as the lead time, so a renewal — which moves the
+        // deadline — starts a fresh set of reminders rather than inheriting the old one's.
+        $table = new xmldb_table('nit_sub_reminder');
+        if (!$dbman->table_exists($table)) {
+            $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+            $table->add_field('purchaseid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('subscriptionid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            $table->add_field('days', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('expires_at', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+
+            $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+            $table->add_key('purchaseid_fk', XMLDB_KEY_FOREIGN, ['purchaseid'], 'nit_sub_purchase', ['id']);
+
+            $table->add_index('purchase_days_expiry_uk', XMLDB_INDEX_UNIQUE, ['purchaseid', 'days', 'expires_at']);
+            $table->add_index('userid_idx', XMLDB_INDEX_NOTUNIQUE, ['userid']);
+
+            $dbman->create_table($table);
+        }
+
+        upgrade_plugin_savepoint(true, 2026090600, 'local', 'nit_subscriptions');
+    }
+
     return true;
 }

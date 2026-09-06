@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Plugin version and metadata for NIT Subscriptions (course-access subscription plans).
+ * Scheduled tasks for local_nit_subscriptions.
  *
  * @package    local_nit_subscriptions
  * @copyright  2026 NIT
@@ -24,12 +24,17 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_nit_subscriptions';
-$plugin->version   = 2026090600;        // Renewal reminders + the tabbed manage-subscriptions page.
-$plugin->requires  = 2024100700;
-$plugin->supported = [405, 502];
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.1.0';
-$plugin->dependencies = [
-    'local_nit_core' => 2026080404,
+$tasks = [
+    [
+        // Warn subscribers whose plan is about to run out, at the lead times set on the
+        // "Renewal reminders" tab. Hourly, a few minutes past the hour so it does not pile
+        // onto the top-of-hour cron rush.
+        'classname' => 'local_nit_subscriptions\task\send_subscription_reminders',
+        'blocking'  => 0,
+        'minute'    => '22',
+        'hour'      => '*',
+        'day'       => '*',
+        'month'     => '*',
+        'dayofweek' => '*',
+    ],
 ];
