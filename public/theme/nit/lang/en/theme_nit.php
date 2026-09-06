@@ -172,3 +172,7 @@ $string['edit_c_instagram'] = 'Instagram URL';
 $string['edit_c_youtube'] = 'YouTube URL';
 $string['edit_c_tiktok'] = 'TikTok URL';
 $string['edit_c_website'] = 'Website URL';
+$string['edit_editfooter'] = 'Edit footer';
+$string['edit_footername'] = 'Academy name';
+$string['edit_footerdesc'] = 'Description';
+$string['edit_footershowlogo'] = 'Show logo';

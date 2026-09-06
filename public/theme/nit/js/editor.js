@@ -377,6 +377,64 @@
         return body;
     }
 
+    // Footer panel: academy name + description + show-logo, seeded from the DOM.
+    function footerPanel(sec) {
+        var body = document.createElement('div');
+        var head = sec.querySelector('div[style*="font-weight:800"]');
+        var para = sec.querySelector('p');
+        var hasLogo = !!sec.querySelector('img');
+
+        function textRow(labelKey, labelFallback, value) {
+            var row = document.createElement('div');
+            row.className = 'nit-edit-row';
+            var lbl = document.createElement('label');
+            lbl.textContent = t(labelKey, labelFallback);
+            var inp = document.createElement('input');
+            inp.type = 'text';
+            inp.value = value || '';
+            inp.style.cssText = 'padding:8px;border:1px solid #ccc;border-radius:8px;font:inherit';
+            row.appendChild(lbl);
+            row.appendChild(inp);
+            body.appendChild(row);
+            return inp;
+        }
+        var nameInp = textRow('footername', 'Academy name', head ? head.textContent.trim() : '');
+        var descInp = textRow('footerdesc', 'Description', para ? para.textContent.trim() : '');
+
+        var logoRow = document.createElement('label');
+        logoRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:14px;font-weight:600';
+        var logoChk = document.createElement('input');
+        logoChk.type = 'checkbox';
+        logoChk.checked = hasLogo;
+        logoRow.appendChild(logoChk);
+        logoRow.appendChild(document.createTextNode(t('footershowlogo', 'Show logo')));
+        body.appendChild(logoRow);
+
+        var act = document.createElement('div');
+        act.className = 'nit-edit-actions';
+        var cancel = document.createElement('button');
+        cancel.type = 'button';
+        cancel.className = 'nit-edit-btn sec';
+        cancel.textContent = t('cancel', 'Cancel');
+        cancel.addEventListener('click', closePanel);
+        var save = document.createElement('button');
+        save.type = 'button';
+        save.className = 'nit-edit-btn';
+        save.textContent = t('save', 'Save');
+        save.addEventListener('click', function () {
+            postFields({
+                action: 'footer',
+                name: nameInp.value.trim(),
+                desc: descInp.value.trim(),
+                showlogo: logoChk.checked ? '1' : '0'
+            }, save);
+        });
+        act.appendChild(cancel);
+        act.appendChild(save);
+        body.appendChild(act);
+        return body;
+    }
+
     // ── pencils ───────────────────────────────────────────────────────────────
     function attachPencil(el, label, onClick) {
         if (el.querySelector(':scope > .nit-edit-pencil')) {
@@ -417,6 +475,10 @@
             } else if (marker === 'contact') {
                 attachPencil(sec, t('editcontact', 'Edit contact'), function () {
                     openPanel(t('editcontact', 'Edit contact'), contactPanel());
+                });
+            } else if (marker === 'footer') {
+                attachPencil(sec, t('editfooter', 'Edit footer'), function () {
+                    openPanel(t('editfooter', 'Edit footer'), footerPanel(sec));
                 });
             } else {
                 attachPencil(sec, t('editimage', 'Edit image'), function (pencil) {

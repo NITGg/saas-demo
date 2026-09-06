@@ -392,6 +392,66 @@ class editor {
     }
 
     /**
+     * Build the footer block HTML with the given academy name + description and
+     * (optionally) the compact logo. Keeps the standard quick-links (the Log in
+     * link is marked data-nit-guest-only + hidden by CSS for logged-in users) and
+     * contact/copyright columns. Mirrors provisioning/apply_footer.php.
+     */
+    public static function build_footer_html(string $name, string $desc, bool $showlogo): string {
+        global $OUTPUT;
+        $e = fn($s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
+        $namesafe = $e($name);
+        $descsafe = $e($desc);
+        $logo = '';
+        if ($showlogo && isset($OUTPUT)) {
+            try {
+                $url = $OUTPUT->get_compact_logo_url(300, 80);
+                if ($url) {
+                    $logo = '<img src="' . $e($url->out(false)) . '" alt="' . $namesafe
+                        . '" style="height:44px; width:auto; margin-bottom:10px; display:block;">';
+                }
+            } catch (\Throwable $ex) {
+                $logo = '';
+            }
+        }
+        $year = date('Y');
+        return '<div dir="auto" data-nit-section="footer" style="background: var(--nit-brand-secondary); color: var(--nit-brand-textsecondary); border-top:1px solid var(--nit-brand-borderprimary);">'
+            . '<div style="max-width:1140px; margin:0 auto; padding:48px 20px 24px; display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:32px;">'
+            . '<div>' . $logo
+            . '<div style="font-size:18px; font-weight:800; color: var(--nit-brand-textprimary); margin-bottom:10px;">' . $namesafe . '</div>'
+            . '<p style="font-size:13px; line-height:1.8; margin:0;">' . $descsafe . '</p>'
+            . '</div>'
+            . '<div>'
+            . '<div style="font-size:14px; font-weight:bold; color: var(--nit-brand-textprimary); margin-bottom:12px;">{mlang ar}روابط سريعة{mlang}{mlang en}Quick links{mlang}</div>'
+            . '<div style="display:flex; flex-direction:column; gap:8px; font-size:13px;">'
+            . '<a href="/" style="color: var(--nit-brand-textsecondary); text-decoration:none;">{mlang ar}الرئيسية{mlang}{mlang en}Home{mlang}</a>'
+            . '<a href="/course/index.php" style="color: var(--nit-brand-textsecondary); text-decoration:none;">{mlang ar}الكورسات{mlang}{mlang en}Courses{mlang}</a>'
+            . '<a href="/login/index.php" data-nit-guest-only style="color: var(--nit-brand-textsecondary); text-decoration:none;">{mlang ar}تسجيل الدخول{mlang}{mlang en}Log in{mlang}</a>'
+            . '</div>'
+            . '</div>'
+            . '<div>'
+            . '<div style="font-size:14px; font-weight:bold; color: var(--nit-brand-textprimary); margin-bottom:12px;">{mlang ar}تواصل معنا{mlang}{mlang en}Contact{mlang}</div>'
+            . '<p style="font-size:13px; line-height:1.8; margin:0;">{mlang ar}للاستفسار والتسجيل تواصل معنا عبر بيانات التواصل بالأعلى.{mlang}{mlang en}Reach us via the contact details above.{mlang}</p>'
+            . '</div>'
+            . '</div>'
+            . '<div style="border-top:1px solid var(--nit-brand-borderprimary); padding:16px 20px; text-align:center; font-size:12px;">'
+            . '&copy; <span data-nit-year>' . $year . '</span> &mdash; {mlang ar}جميع الحقوق محفوظة{mlang}{mlang en}All rights reserved{mlang}'
+            . '&nbsp;&middot;&nbsp; <a href="https://nitg-eg.com" target="_blank" rel="noopener" style="color: var(--nit-brand-accenttext); text-decoration:none;">N.I.T</a>'
+            . '</div></div>';
+    }
+
+    /** Rebuild + save the footer block. Returns false if no footer block exists. */
+    public static function save_footer(string $name, string $desc, bool $showlogo): bool {
+        $found = self::find_section('footer');
+        if (!$found) {
+            return false;
+        }
+        [$bi, $cfg] = $found;
+        self::save_section_html($bi, $cfg, self::build_footer_html($name, $desc, $showlogo));
+        return true;
+    }
+
+    /**
      * Load a section HTML fragment into a DOMDocument wrapped in data-nitwrap.
      * @return array{0:\DOMDocument,1:\DOMXPath}|null
      */

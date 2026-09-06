@@ -162,3 +162,7 @@ $string['edit_c_instagram'] = 'رابط إنستجرام';
 $string['edit_c_youtube'] = 'رابط يوتيوب';
 $string['edit_c_tiktok'] = 'رابط تيك توك';
 $string['edit_c_website'] = 'رابط الموقع';
+$string['edit_editfooter'] = 'تعديل التذييل';
+$string['edit_footername'] = 'اسم الأكاديمية';
+$string['edit_footerdesc'] = 'وصف';
+$string['edit_footershowlogo'] = 'إظهار الشعار';

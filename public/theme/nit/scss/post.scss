@@ -249,3 +249,10 @@ a:not(.btn):not(.nav-link):not(.navbar-brand):not(.dropdown-item):not(.page-link
         }
     }
 }
+
+// NIT: hide the footer "Log in" link for logged-in visitors (Phase 3.7). Covers
+// both the marked link and any older footer by its href.
+body.nit-auth [data-nit-section="footer"] a[href*="/login/"],
+body.nit-auth [data-nit-guest-only] {
+    display: none !important;
+}

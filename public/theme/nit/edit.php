@@ -217,6 +217,17 @@ try {
             nit_edit_respond(true);
             break;
 
+        // Footer — set academy name + description, optionally show the logo.
+        case 'footer':
+            $name = optional_param('name', '', PARAM_TEXT);
+            $desc = optional_param('desc', '', PARAM_TEXT);
+            $showlogo = optional_param('showlogo', 0, PARAM_BOOL);
+            if (!editor::save_footer($name, $desc, $showlogo)) {
+                nit_edit_respond(false, ['error' => 'notfound']);
+            }
+            nit_edit_respond(true);
+            break;
+
         // Replace the site logo (core_admin site file; old file really deleted).
         // One upload drives BOTH the navbar compact logo and the full logo, the
         // same as provisioning's brand applier.

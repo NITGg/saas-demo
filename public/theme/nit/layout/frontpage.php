@@ -50,6 +50,10 @@ if (defined('BEHAT_SITE_RUNNING') && get_user_preferences('behat_keep_drawer_clo
 }
 
 $extraclasses = ['uses-drawers', 'nit-frontpage'];
+// NIT: mark logged-in visitors so the footer "Log in" link can be hidden for them.
+if (isloggedin() && !isguestuser()) {
+    $extraclasses[] = 'nit-auth';
+}
 if ($courseindexopen) {
     $extraclasses[] = 'drawer-open-index';
 }
@@ -305,6 +309,10 @@ if (\theme_nit\local\editor::can_edit()) {
             'c_youtube'     => get_string('edit_c_youtube', 'theme_nit'),
             'c_tiktok'      => get_string('edit_c_tiktok', 'theme_nit'),
             'c_website'     => get_string('edit_c_website', 'theme_nit'),
+            'editfooter'    => get_string('edit_editfooter', 'theme_nit'),
+            'footername'    => get_string('edit_footername', 'theme_nit'),
+            'footerdesc'    => get_string('edit_footerdesc', 'theme_nit'),
+            'footershowlogo' => get_string('edit_footershowlogo', 'theme_nit'),
             'savefailed'    => get_string('edit_savefailed', 'theme_nit'),
             'imagetoolarge' => get_string('edit_imagetoolarge', 'theme_nit'),
         ],
