@@ -21,6 +21,7 @@
     }
     var S = CFG.str || {};
     var editing = false;
+    var coloursBtn = null;
 
     function t(key, fallback) {
         return (S && S[key]) || fallback;
@@ -37,6 +38,7 @@
             'font:600 14px system-ui,sans-serif;cursor:pointer;background:#0B2923;color:#00FFB2;' +
             'box-shadow:0 6px 20px -6px rgba(0,0,0,.5)}' +
             '.nit-edit-toggle.nit-on{background:#00FFB2;color:#0B2923}' +
+            '.nit-colours-btn{bottom:66px}' +
             'body.nit-editing [data-nit-section],body.nit-editing [data-nit-edit]{outline:2px dashed rgba(0,180,140,.7);outline-offset:-2px;position:relative}' +
             '.nit-edit-pencil{position:absolute;top:10px;inset-inline-end:10px;z-index:9999;' +
             'display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:none;border-radius:8px;' +
@@ -435,6 +437,60 @@
         return body;
     }
 
+    // Palette panel: the 6 brand pickers (rest are derived server-side). Seeded
+    // from NIT_EDIT.palette; saving recompiles the theme CSS.
+    var PALETTE_FIELDS = ['primary', 'accent', 'secondary', 'background', 'surface', 'text'];
+    var PALETTE_DEFAULTS = {
+        primary: '#5488c4', accent: '#5488c4', secondary: '#1c2a3a',
+        background: '#0c141f', surface: '#121e2d', text: '#eef3f9'
+    };
+    function palettePanel() {
+        var pal = CFG.palette || {};
+        var body = document.createElement('div');
+        var inputs = {};
+        PALETTE_FIELDS.forEach(function (key) {
+            var row = document.createElement('div');
+            row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px';
+            var lbl = document.createElement('label');
+            lbl.textContent = t('col_' + key, key);
+            lbl.style.fontWeight = '600';
+            var inp = document.createElement('input');
+            inp.type = 'color';
+            var v = (pal[key] || '').trim();
+            inp.value = /^#[0-9A-Fa-f]{6}$/.test(v) ? v : PALETTE_DEFAULTS[key];
+            inp.style.cssText = 'width:54px;height:34px;border:1px solid #ccc;border-radius:8px;background:none;cursor:pointer;padding:2px';
+            row.appendChild(lbl);
+            row.appendChild(inp);
+            body.appendChild(row);
+            inputs[key] = inp;
+        });
+        var note = document.createElement('p');
+        note.style.cssText = 'font-size:12px;color:#666;margin:2px 0 12px';
+        note.textContent = t('palettenote', 'Text, borders and hover shades are derived automatically.');
+        body.appendChild(note);
+
+        var act = document.createElement('div');
+        act.className = 'nit-edit-actions';
+        var cancel = document.createElement('button');
+        cancel.type = 'button';
+        cancel.className = 'nit-edit-btn sec';
+        cancel.textContent = t('cancel', 'Cancel');
+        cancel.addEventListener('click', closePanel);
+        var save = document.createElement('button');
+        save.type = 'button';
+        save.className = 'nit-edit-btn';
+        save.textContent = t('save', 'Save');
+        save.addEventListener('click', function () {
+            var fields = { action: 'palette' };
+            PALETTE_FIELDS.forEach(function (k) { fields[k] = inputs[k].value; });
+            postFields(fields, save);
+        });
+        act.appendChild(cancel);
+        act.appendChild(save);
+        body.appendChild(act);
+        return body;
+    }
+
     // ── pencils ───────────────────────────────────────────────────────────────
     function attachPencil(el, label, onClick) {
         if (el.querySelector(':scope > .nit-edit-pencil')) {
@@ -521,6 +577,9 @@
     function setEditing(on) {
         editing = on;
         document.body.classList.toggle('nit-editing', on);
+        if (coloursBtn) {
+            coloursBtn.style.display = on ? '' : 'none';
+        }
         if (on) {
             addPencils();
             addCourseButton();
@@ -542,6 +601,16 @@
             toggle.textContent = (editing ? '✓ ' + t('doneediting', 'Done') : '✏ ' + t('editpage', 'Edit page'));
         });
         document.body.appendChild(toggle);
+
+        coloursBtn = document.createElement('button');
+        coloursBtn.type = 'button';
+        coloursBtn.className = 'nit-edit-toggle nit-colours-btn';
+        coloursBtn.textContent = '🎨 ' + t('colours', 'Colours');
+        coloursBtn.style.display = 'none';
+        coloursBtn.addEventListener('click', function () {
+            openPanel(t('colours', 'Colours'), palettePanel());
+        });
+        document.body.appendChild(coloursBtn);
     }
 
     if (document.readyState === 'loading') {

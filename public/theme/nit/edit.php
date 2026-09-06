@@ -228,6 +228,22 @@ try {
             nit_edit_respond(true);
             break;
 
+        // Brand palette — 6 pickers → Group-1 roles + derived roles + recompile.
+        case 'palette':
+            $ok = editor::save_palette([
+                'primary'    => optional_param('primary', '', PARAM_RAW_TRIMMED),
+                'accent'     => optional_param('accent', '', PARAM_RAW_TRIMMED),
+                'secondary'  => optional_param('secondary', '', PARAM_RAW_TRIMMED),
+                'background' => optional_param('background', '', PARAM_RAW_TRIMMED),
+                'surface'    => optional_param('surface', '', PARAM_RAW_TRIMMED),
+                'text'       => optional_param('text', '', PARAM_RAW_TRIMMED),
+            ]);
+            if (!$ok) {
+                nit_edit_respond(false, ['error' => 'badcolor']);
+            }
+            nit_edit_respond(true);
+            break;
+
         // Replace the site logo (core_admin site file; old file really deleted).
         // One upload drives BOTH the navbar compact logo and the full logo, the
         // same as provisioning's brand applier.

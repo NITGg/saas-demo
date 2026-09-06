@@ -640,6 +640,59 @@ class editor {
         return true;
     }
 
+    /** Blend hex colour $a toward $b by ratio $r (0..1). Mirrors create.sh _mix. */
+    private static function mix(string $a, string $b, float $r): string {
+        $a = ltrim($a, '#');
+        $b = ltrim($b, '#');
+        if (strlen($a) !== 6 || strlen($b) !== 6) {
+            return '#' . $a;
+        }
+        $ch = fn($h, $i) => hexdec(substr($h, $i, 2));
+        return sprintf('#%02x%02x%02x',
+            (int) round($ch($a, 0) * (1 - $r) + $ch($b, 0) * $r),
+            (int) round($ch($a, 2) * (1 - $r) + $ch($b, 2) * $r),
+            (int) round($ch($a, 4) * (1 - $r) + $ch($b, 4) * $r));
+    }
+
+    /**
+     * Apply the 6 brand-palette pickers to theme_nit's Group-1 roles and DERIVE
+     * the rest (accent-text, secondary text, borders, hover) — the exact mapping
+     * create.sh uses — then bump theme caches so the CSS recompiles. Returns false
+     * if any of the six isn't a #rrggbb hex.
+     *
+     * @param array<string,string> $c primary, accent, secondary, background, surface, text
+     */
+    public static function save_palette(array $c): bool {
+        $hex = function ($v): ?string {
+            $v = trim((string) $v);
+            return preg_match('/^#[0-9A-Fa-f]{6}$/', $v) ? $v : null;
+        };
+        $p = $hex($c['primary'] ?? '');
+        $acc = $hex($c['accent'] ?? '');
+        $sec = $hex($c['secondary'] ?? '');
+        $bg = $hex($c['background'] ?? '');
+        $surf = $hex($c['surface'] ?? '');
+        $txt = $hex($c['text'] ?? '');
+        if (!$p || !$acc || !$sec || !$bg || !$surf || !$txt) {
+            return false;
+        }
+        $set = fn($role, $val) => set_config('brandcolour_g1_' . $role, $val, 'theme_nit');
+        $set('primary', $p);
+        $set('secondary', $sec);
+        $set('background', $bg);
+        $set('surface', $surf);
+        $set('textprimary', $txt);
+        $set('accent', $acc);
+        $set('accenttext', self::mix($acc, $txt, 0.30));
+        $set('textsecondary', self::mix($txt, $bg, 0.42));
+        $set('borderprimary', self::mix($surf, $txt, 0.12));
+        $set('bordersecondary', self::mix($surf, $txt, 0.24));
+        $set('hoverbackground', self::mix($surf, $p, 0.14));
+        $set('hovertext', $txt);
+        self::bust_theme_caches();
+        return true;
+    }
+
     /** Bump theme caches + revision so a new logo/brand URL is served immediately. */
     public static function bust_theme_caches(): void {
         global $CFG;
