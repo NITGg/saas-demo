@@ -3,6 +3,11 @@ defined('MOODLE_INTERNAL') || die();
 
 $string['pluginname'] = 'Academy licence';
 
+// Renewal banner (final week before expiry / during grace).
+$string['expiry_banner_soon']    = 'Your academy subscription expires in {$a->days} day(s) (on {$a->date}). Renew to avoid interruption.';
+$string['expiry_banner_expired'] = 'Your academy subscription has expired. Renew now before it is paused — your data is safe.';
+$string['expiry_renew']          = 'Renew now';
+
 // Settings.
 $string['enabled']          = 'Enforce licence limits';
 $string['enabled_desc']     = 'Master switch. When off, nothing is limited (the academy runs with all features) — turn it on to apply the tier below. Off by default so installing this plugin changes nothing until you opt in.';

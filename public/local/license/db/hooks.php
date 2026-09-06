@@ -21,4 +21,9 @@ $callbacks = [
         'hook'     => \core\hook\output\before_standard_footer_html_generation::class,
         'callback' => \local_license\local\hook_callbacks::class . '::before_standard_footer',
     ],
+    [
+        // Top-of-body renewal banner in the final week before expiry (owner-facing).
+        'hook'     => \core\hook\output\before_standard_top_of_body_html_generation::class,
+        'callback' => \local_license\local\hook_callbacks::class . '::before_standard_top_of_body_html',
+    ],
 ];

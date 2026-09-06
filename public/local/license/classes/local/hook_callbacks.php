@@ -120,6 +120,69 @@ class hook_callbacks {
     }
 
     /**
+     * Show a renewal banner at the top of every page in the final week before the
+     * subscription expires (and during the grace period once expired, before the
+     * expiry lock kicks in). Only to users who could act on it (owner/managers),
+     * and only when the control plane has pushed an expiry date + renew link.
+     *
+     * @param \core\hook\output\before_standard_top_of_body_html_generation $hook
+     */
+    public static function before_standard_top_of_body_html(
+        \core\hook\output\before_standard_top_of_body_html_generation $hook): void {
+
+        if (CLI_SCRIPT
+                || (defined('AJAX_SCRIPT') && AJAX_SCRIPT)
+                || (defined('WS_SERVER') && WS_SERVER)) {
+            return;
+        }
+        // Suspended shows its own lock page; enforcement must be on for an expiry.
+        if (!license::is_enforced() || license::is_suspended()) {
+            return;
+        }
+        if (license::expiry() <= 0) {
+            return; // no expiry date pushed for this academy.
+        }
+        $days = license::days_left();
+        if ($days > 7) {
+            return; // not in the final-week window yet.
+        }
+        // Only people who can actually renew / manage the academy.
+        if (!isloggedin() || isguestuser()) {
+            return;
+        }
+        if (!is_siteadmin()
+                && !has_capability('moodle/course:create', \context_system::instance())) {
+            return;
+        }
+
+        $renewurl = trim((string) get_config('local_license', 'renewurl'));
+        $datestr  = userdate(license::expiry(), get_string('strftimedate', 'langconfig'));
+        $expired  = $days < 0;
+
+        $msg = $expired
+            ? get_string('expiry_banner_expired', 'local_license')
+            : get_string('expiry_banner_soon', 'local_license',
+                ['days' => max(0, $days), 'date' => $datestr]);
+        $bg = $expired ? '#b00020' : '#b9791f';
+
+        $btn = '';
+        if ($renewurl !== '') {
+            $btn = \html_writer::link($renewurl, get_string('expiry_renew', 'local_license'), [
+                'target' => '_blank', 'rel' => 'noopener',
+                'style'  => 'margin-inline-start:12px;background:#fff;color:' . $bg
+                    . ';padding:4px 14px;border-radius:6px;font-weight:bold;text-decoration:none;white-space:nowrap;',
+            ]);
+        }
+
+        $hook->add_html(\html_writer::div(
+            s($msg) . $btn,
+            'local-license-expiry-banner',
+            ['style' => 'background:' . $bg . ';color:#fff;padding:8px 16px;text-align:center;'
+                . 'font-size:14px;line-height:1.6;']
+        ));
+    }
+
+    /**
      * Redirect back with an "upgrade to add more" message.
      *
      * @param \moodle_url $to
