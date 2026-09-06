@@ -164,6 +164,45 @@ try {
             nit_edit_respond(true);
             break;
 
+        // Gallery — append an uploaded image as a new tile.
+        case 'gallery_add':
+            $found = editor::find_section('gallery');
+            if (!$found) {
+                nit_edit_respond(false, ['error' => 'notfound']);
+            }
+            $err = null;
+            $datauri = editor::uploaded_image_datauri($_FILES['image'] ?? [], $err);
+            if ($datauri === null) {
+                nit_edit_respond(false, ['error' => $err ?? 'image']);
+            }
+            [$bi, $cfg] = $found;
+            $result = editor::gallery_add(editor::section_html($cfg), $datauri);
+            if ($result === 'full') {
+                nit_edit_respond(false, ['error' => 'full']);
+            }
+            if ($result === null) {
+                nit_edit_respond(false, ['error' => 'nogrid']);
+            }
+            editor::save_section_html($bi, $cfg, $result);
+            nit_edit_respond(true);
+            break;
+
+        // Gallery — remove the tile at the given 0-based index.
+        case 'gallery_delete':
+            $found = editor::find_section('gallery');
+            if (!$found) {
+                nit_edit_respond(false, ['error' => 'notfound']);
+            }
+            $index = required_param('index', PARAM_INT);
+            [$bi, $cfg] = $found;
+            $newhtml = editor::gallery_delete(editor::section_html($cfg), $index);
+            if ($newhtml === null) {
+                nit_edit_respond(false, ['error' => 'badindex']);
+            }
+            editor::save_section_html($bi, $cfg, $newhtml);
+            nit_edit_respond(true);
+            break;
+
         // Replace the site logo (core_admin site file; old file really deleted).
         // One upload drives BOTH the navbar compact logo and the full logo, the
         // same as provisioning's brand applier.

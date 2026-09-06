@@ -281,6 +281,59 @@
         return body;
     }
 
+    // Gallery panel: thumbnails of current tiles (each with a delete) + Add image.
+    // Add/delete apply immediately (reload), so the only footer button is Close.
+    function galleryPanel(sec) {
+        var body = document.createElement('div');
+        var grid = sec.querySelector('[data-nit-gallery-grid]');
+        var thumbs = document.createElement('div');
+        thumbs.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px';
+        var tiles = grid ? Array.prototype.slice.call(grid.children) : [];
+        if (!tiles.length) {
+            var empty = document.createElement('p');
+            empty.style.cssText = 'color:#666;margin:0 0 12px';
+            empty.textContent = t('galleryempty', 'No images yet.');
+            body.appendChild(empty);
+        }
+        tiles.forEach(function (tile, idx) {
+            var cell = document.createElement('div');
+            cell.style.cssText = 'position:relative;aspect-ratio:4/3;border-radius:8px;border:1px solid #ddd;'
+                + 'background-size:cover;background-position:center';
+            cell.style.backgroundImage = getComputedStyle(tile).backgroundImage;
+            var del = document.createElement('button');
+            del.type = 'button';
+            del.className = 'nit-edit-btn';
+            del.textContent = '✕';
+            del.style.cssText = 'position:absolute;top:4px;inset-inline-end:4px;padding:2px 9px';
+            del.addEventListener('click', function () {
+                if (window.confirm(t('deleteconfirm', 'Delete this image?'))) {
+                    postFields({ action: 'gallery_delete', index: String(idx) }, del);
+                }
+            });
+            cell.appendChild(del);
+            thumbs.appendChild(cell);
+        });
+        body.appendChild(thumbs);
+
+        var addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.className = 'nit-edit-btn';
+        addBtn.textContent = '➕ ' + t('addimage', 'Add image');
+        addBtn.addEventListener('click', function () { uploadImage('gallery_add', {}, addBtn); });
+        body.appendChild(addBtn);
+
+        var act = document.createElement('div');
+        act.className = 'nit-edit-actions';
+        var close = document.createElement('button');
+        close.type = 'button';
+        close.className = 'nit-edit-btn sec';
+        close.textContent = t('close', 'Close');
+        close.addEventListener('click', closePanel);
+        act.appendChild(close);
+        body.appendChild(act);
+        return body;
+    }
+
     // ── pencils ───────────────────────────────────────────────────────────────
     function attachPencil(el, label, onClick) {
         if (el.querySelector(':scope > .nit-edit-pencil')) {
@@ -313,6 +366,10 @@
             } else if (marker === 'about') {
                 attachPencil(sec, t('editabout', 'Edit about'), function () {
                     openPanel(t('editabout', 'Edit about'), aboutPanel(sec));
+                });
+            } else if (marker === 'gallery') {
+                attachPencil(sec, t('editgallery', 'Edit gallery'), function () {
+                    openPanel(t('editgallery', 'Edit gallery'), galleryPanel(sec));
                 });
             } else {
                 attachPencil(sec, t('editimage', 'Edit image'), function (pencil) {

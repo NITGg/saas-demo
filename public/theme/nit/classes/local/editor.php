@@ -300,6 +300,74 @@ class editor {
         return self::inner_html($dom, $xp);
     }
 
+    /**
+     * Load a section HTML fragment into a DOMDocument wrapped in data-nitwrap.
+     * @return array{0:\DOMDocument,1:\DOMXPath}|null
+     */
+    private static function load_fragment(string $html): ?array {
+        $dom = new \DOMDocument();
+        $prev = libxml_use_internal_errors(true);
+        $ok = $dom->loadHTML(
+            '<?xml encoding="utf-8"?><div data-nitwrap="1">' . $html . '</div>',
+            LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
+        );
+        libxml_clear_errors();
+        libxml_use_internal_errors($prev);
+        return $ok ? [$dom, new \DOMXPath($dom)] : null;
+    }
+
+    /** Element-node children of a node (skips text/whitespace nodes). */
+    private static function element_children(\DOMNode $node): array {
+        $els = [];
+        foreach ($node->childNodes as $c) {
+            if ($c->nodeType === XML_ELEMENT_NODE) {
+                $els[] = $c;
+            }
+        }
+        return $els;
+    }
+
+    /** Append a new gallery tile (data-URI background) to the grid. Returns new
+     *  HTML, null if no grid, or 'full' when the max tile count is reached. */
+    public static function gallery_add(string $html, string $datauri, int $max = 12) {
+        $frag = self::load_fragment($html);
+        if (!$frag) {
+            return null;
+        }
+        [$dom, $xp] = $frag;
+        $grid = $xp->query('//*[@data-nit-gallery-grid]')->item(0);
+        if (!$grid) {
+            return null;
+        }
+        if (count(self::element_children($grid)) >= $max) {
+            return 'full';
+        }
+        $tile = $dom->createElement('div');
+        $tile->setAttribute('style', "aspect-ratio:4/3; border-radius:12px; background:url('"
+            . $datauri . "') center/cover no-repeat; border:1px solid var(--nit-brand-borderprimary);");
+        $grid->appendChild($tile);
+        return self::inner_html($dom, $xp);
+    }
+
+    /** Remove the gallery tile at $index (0-based). Returns new HTML, or null. */
+    public static function gallery_delete(string $html, int $index): ?string {
+        $frag = self::load_fragment($html);
+        if (!$frag) {
+            return null;
+        }
+        [$dom, $xp] = $frag;
+        $grid = $xp->query('//*[@data-nit-gallery-grid]')->item(0);
+        if (!$grid) {
+            return null;
+        }
+        $els = self::element_children($grid);
+        if ($index < 0 || $index >= count($els)) {
+            return null;
+        }
+        $grid->removeChild($els[$index]);
+        return self::inner_html($dom, $xp);
+    }
+
     /** Serialize the children of the data-nitwrap wrapper back to an HTML string. */
     private static function inner_html(\DOMDocument $dom, \DOMXPath $xp): string {
         $wrap = $xp->query("//*[@data-nitwrap='1']")->item(0);
