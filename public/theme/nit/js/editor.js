@@ -334,6 +334,49 @@
         return body;
     }
 
+    // Contact panel: text fields for phone/whatsapp + social URLs, seeded from
+    // the stored config (passed in NIT_EDIT.contact). Saves to the contact action.
+    var CONTACT_FIELDS = ['phone', 'whatsapp', 'facebook', 'instagram', 'youtube', 'tiktok', 'website'];
+    function contactPanel() {
+        var c = CFG.contact || {};
+        var body = document.createElement('div');
+        var inputs = {};
+        CONTACT_FIELDS.forEach(function (key) {
+            var row = document.createElement('div');
+            row.className = 'nit-edit-row';
+            var lbl = document.createElement('label');
+            lbl.textContent = t('c_' + key, key);
+            var inp = document.createElement('input');
+            inp.type = 'text';
+            inp.value = c[key] || '';
+            inp.style.cssText = 'padding:8px;border:1px solid #ccc;border-radius:8px;font:inherit';
+            row.appendChild(lbl);
+            row.appendChild(inp);
+            body.appendChild(row);
+            inputs[key] = inp;
+        });
+        var act = document.createElement('div');
+        act.className = 'nit-edit-actions';
+        var cancel = document.createElement('button');
+        cancel.type = 'button';
+        cancel.className = 'nit-edit-btn sec';
+        cancel.textContent = t('cancel', 'Cancel');
+        cancel.addEventListener('click', closePanel);
+        var save = document.createElement('button');
+        save.type = 'button';
+        save.className = 'nit-edit-btn';
+        save.textContent = t('save', 'Save');
+        save.addEventListener('click', function () {
+            var fields = { action: 'contact' };
+            CONTACT_FIELDS.forEach(function (key) { fields[key] = inputs[key].value.trim(); });
+            postFields(fields, save);
+        });
+        act.appendChild(cancel);
+        act.appendChild(save);
+        body.appendChild(act);
+        return body;
+    }
+
     // ── pencils ───────────────────────────────────────────────────────────────
     function attachPencil(el, label, onClick) {
         if (el.querySelector(':scope > .nit-edit-pencil')) {
@@ -370,6 +413,10 @@
             } else if (marker === 'gallery') {
                 attachPencil(sec, t('editgallery', 'Edit gallery'), function () {
                     openPanel(t('editgallery', 'Edit gallery'), galleryPanel(sec));
+                });
+            } else if (marker === 'contact') {
+                attachPencil(sec, t('editcontact', 'Edit contact'), function () {
+                    openPanel(t('editcontact', 'Edit contact'), contactPanel());
                 });
             } else {
                 attachPencil(sec, t('editimage', 'Edit image'), function (pencil) {

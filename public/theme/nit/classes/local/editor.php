@@ -300,6 +300,97 @@ class editor {
         return self::inner_html($dom, $xp);
     }
 
+    /** SVG glyph bodies (colour sentinel @C@) for the contact icons — mirrors
+     *  provisioning/apply_contact.php so inline edits produce identical markup. */
+    private static function contact_svg_bodies(): array {
+        return [
+            'phone'     => "<path fill='@C@' d='M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.4c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.4 0 .8-.2 1l-2.2 2.2z'/>",
+            'whatsapp'  => "<path fill='@C@' d='M12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.3A10 10 0 1 0 12 2zm0 18a8 8 0 0 1-4.1-1.1l-.3-.2-2.9.8.8-2.8-.2-.3A8 8 0 1 1 12 20zm4.4-6c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.5.1l-.7.8c-.1.2-.3.2-.5.1a6.5 6.5 0 0 1-3.2-2.8c-.1-.2 0-.4.1-.5l.4-.5c.1-.2.1-.3.2-.5 0-.1 0-.3-.1-.4L9 8.4c-.2-.4-.3-.4-.5-.4h-.4c-.2 0-.4.1-.6.3-.7.7-.9 1.6-.6 2.6.4 1.4 1.3 2.6 2.5 3.5 1.5 1.1 2.8 1.5 4.2 1.3.7-.1 1.4-.6 1.6-1.2.1-.3.1-.6.1-.7l-.4-.5z'/>",
+            'facebook'  => "<path fill='@C@' d='M13.5 21v-8h2.7l.4-3h-3.1V8.1c0-.9.3-1.5 1.6-1.5H17V3.9c-.3 0-1.3-.1-2.4-.1-2.4 0-4 1.5-4 4.1V10H8v3h2.6v8h2.9z'/>",
+            'instagram' => "<rect x='3' y='3' width='18' height='18' rx='5' fill='none' stroke='@C@' stroke-width='2'/><circle cx='12' cy='12' r='4' fill='none' stroke='@C@' stroke-width='2'/><circle cx='17.2' cy='6.8' r='1.3' fill='@C@'/>",
+            'youtube'   => "<path fill='@C@' d='M23 7.5a3 3 0 0 0-2.1-2.1C19 5 12 5 12 5s-7 0-8.9.4A3 3 0 0 0 1 7.5 31 31 0 0 0 .6 12 31 31 0 0 0 1 16.5a3 3 0 0 0 2.1 2.1C5 19 12 19 12 19s7 0 8.9-.4a3 3 0 0 0 2.1-2.1A31 31 0 0 0 23.4 12 31 31 0 0 0 23 7.5zM9.8 15.3V8.7l5.7 3.3z'/>",
+            'tiktok'    => "<path fill='@C@' d='M16.5 3c.3 2.1 1.5 3.4 3.5 3.5v2.4c-1.2.1-2.3-.3-3.5-1v5.9c0 3.6-2.9 6.3-6.4 5.4-3.9-.9-4.9-5.8-1.8-8.2.9-.7 2-1 3.2-.9v2.6c-.5-.1-1-.1-1.5.1-1.3.5-1.6 2.2-.6 3.1 1 .9 2.9.5 3-1.2V3h2.6z'/>",
+            'website'   => "<circle cx='12' cy='12' r='9' fill='none' stroke='@C@' stroke-width='2'/><path fill='none' stroke='@C@' stroke-width='2' d='M3 12h18M12 3c2.5 2.5 2.5 15.5 0 18M12 3c-2.5 2.5-2.5 15.5 0 18'/>",
+        ];
+    }
+
+    /** Build the contact section block HTML from the given fields (mirrors
+     *  apply_contact.php: base64 data-URI SVG icons, filter-safe). */
+    public static function build_contact_html(string $phone, string $wa, array $social): string {
+        $bodies = self::contact_svg_bodies();
+        $iconcolor = trim((string) get_config('theme_nit', 'brandcolour_g1_primary'));
+        if (!preg_match('/^#[0-9A-Fa-f]{6}$/', $iconcolor)) {
+            $iconcolor = '#1e7d67';
+        }
+        $bguri = function (string $body) use ($iconcolor): string {
+            $svg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'>"
+                . str_replace('@C@', $iconcolor, $body) . "</svg>";
+            return 'data:image/svg+xml;base64,' . base64_encode($svg);
+        };
+        $e = fn($s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
+        $icon = function (string $href, string $body, bool $blank) use ($e, $bguri): string {
+            $target = $blank ? ' target="_blank" rel="noopener"' : '';
+            $uri = $e($bguri($body));
+            $glyph = "width:22px; height:22px; display:block; background: url('$uri') center/contain no-repeat;";
+            return '<a href="' . $e($href) . '"' . $target . ' style="width:48px; height:48px; display:inline-flex; align-items:center; justify-content:center; border-radius:50%; background: color-mix(in srgb, var(--nit-brand-primary) 12%, transparent); border:1px solid color-mix(in srgb, var(--nit-brand-primary) 30%, transparent); text-decoration:none;">'
+                . '<span aria-hidden="true" style="' . $glyph . '"></span></a>';
+        };
+        $teldigits = preg_replace('/[^0-9+]/', '', $phone);
+        $wadigits = preg_replace('/[^0-9]/', '', $wa);
+        $buttons = '';
+        if ($phone !== '') {
+            $buttons .= $icon('tel:' . $teldigits, $bodies['phone'], false);
+        }
+        if ($wadigits !== '') {
+            $buttons .= $icon('https://wa.me/' . $wadigits, $bodies['whatsapp'], true);
+        }
+        foreach (['facebook', 'instagram', 'youtube', 'tiktok', 'website'] as $net) {
+            $u = trim((string) ($social[$net] ?? ''));
+            if ($u !== '') {
+                $buttons .= $icon($u, $bodies[$net], true);
+            }
+        }
+        return '<div dir="auto" data-nit-section="contact" style="background: color-mix(in srgb, var(--nit-brand-surface) 70%, var(--nit-brand-background)); color: var(--nit-brand-textprimary); padding: 72px 20px; text-align: center;">'
+            . '<div style="max-width: 820px; margin: 0 auto;">'
+            . '<h2 style="font-size: clamp(24px,4vw,36px); font-weight: 800; margin: 0 0 12px;">{mlang ar}انضم إلينا اليوم{mlang}{mlang en}Join us today{mlang}</h2>'
+            . '<p style="font-size: 15px; color: var(--nit-brand-textsecondary); line-height: 1.8; margin: 0 0 24px;">{mlang ar}تواصل معنا للاستفسار أو التسجيل.{mlang}{mlang en}Contact us to enquire or enrol.{mlang}</p>'
+            . '<div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; align-items: center;">' . $buttons . '</div>'
+            . '</div></div>';
+    }
+
+    /**
+     * Persist contact/social fields: to theme_nit config (the app reads these via
+     * design_system.php) AND rebuild the front-page contact block. Social values
+     * are kept only when they look like an http(s) URL.
+     *
+     * @param array<string,string> $f phone, whatsapp, facebook, instagram, youtube, tiktok, website
+     */
+    public static function save_contact(array $f): bool {
+        $phone = trim((string) ($f['phone'] ?? ''));
+        $wa = trim((string) ($f['whatsapp'] ?? ''));
+        if ($wa === '') {
+            $wa = $phone;
+        }
+        $social = [];
+        foreach (['facebook', 'instagram', 'youtube', 'tiktok', 'website'] as $net) {
+            $u = trim((string) ($f[$net] ?? ''));
+            $social[$net] = (stripos($u, 'http') === 0) ? $u : '';
+        }
+        set_config('contact_phone', $phone, 'theme_nit');
+        set_config('support_phone', $wa !== '' ? $wa : $phone, 'theme_nit');
+        foreach ($social as $net => $u) {
+            set_config('social_' . $net, $u, 'theme_nit');
+        }
+        $found = self::find_section('contact');
+        if ($found) {
+            [$bi, $cfg] = $found;
+            self::save_section_html($bi, $cfg, self::build_contact_html($phone, $wa, $social));
+        } else {
+            purge_all_caches();
+        }
+        return true;
+    }
+
     /**
      * Load a section HTML fragment into a DOMDocument wrapped in data-nitwrap.
      * @return array{0:\DOMDocument,1:\DOMXPath}|null

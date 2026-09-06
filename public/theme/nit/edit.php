@@ -203,6 +203,20 @@ try {
             nit_edit_respond(true);
             break;
 
+        // Contact + social — persist to theme_nit config (app) + rebuild the block.
+        case 'contact':
+            editor::save_contact([
+                'phone'     => optional_param('phone', '', PARAM_RAW_TRIMMED),
+                'whatsapp'  => optional_param('whatsapp', '', PARAM_RAW_TRIMMED),
+                'facebook'  => optional_param('facebook', '', PARAM_RAW_TRIMMED),
+                'instagram' => optional_param('instagram', '', PARAM_RAW_TRIMMED),
+                'youtube'   => optional_param('youtube', '', PARAM_RAW_TRIMMED),
+                'tiktok'    => optional_param('tiktok', '', PARAM_RAW_TRIMMED),
+                'website'   => optional_param('website', '', PARAM_RAW_TRIMMED),
+            ]);
+            nit_edit_respond(true);
+            break;
+
         // Replace the site logo (core_admin site file; old file really deleted).
         // One upload drives BOTH the navbar compact logo and the full logo, the
         // same as provisioning's brand applier.
