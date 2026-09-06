@@ -81,6 +81,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Roll academies onto the new image
+        id: roll
+        continue-on-error: true    # let the notify step run even if this fails
         env:
           PROVISION_URL: ${{ vars.PROVISION_URL }}       # e.g. https://saas-provision.academy2026.nitg-eg.com
           PROVISION_SECRET: ${{ secrets.PROVISION_SECRET }}
@@ -88,12 +90,41 @@ jobs:
         run: |
           if [ -z "$PROVISION_URL" ] || [ -z "$PROVISION_SECRET" ]; then
             echo "::warning::PROVISION_URL (variable) / PROVISION_SECRET (secret) not set — skipping auto-rollout."
+            echo "skipped=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           TAG="${REF#v}"   # strip the leading v: v2026.09.11 -> 2026.09.11
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "POST ${PROVISION_URL%/}/update-image  tag=$TAG"
           curl -fsS -X POST "${PROVISION_URL%/}/update-image" \
             -H "X-Provision-Secret: $PROVISION_SECRET" \
             -H "Content-Type: application/json" \
             -d "{\"tag\":\"$TAG\"}" | tee /tmp/rollout.json
           echo
+
+      - name: Notify Telegram
+        if: ${{ always() && steps.roll.outputs.skipped != 'true' }}
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          OUTCOME: ${{ steps.roll.outcome }}
+          TAG: ${{ steps.roll.outputs.tag }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
+            echo "Telegram secrets not set — skipping notice."; exit 0
+          fi
+          if [ "$OUTCOME" = "success" ]; then
+            MSG="✅ SaaS rollout triggered — all academies are updating to image ${TAG}."
+          else
+            MSG="❌ SaaS rollout FAILED to trigger for image ${TAG}. Check the run: ${RUN_URL}"
+          fi
+          curl -fsS "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d chat_id="${TELEGRAM_CHAT_ID}" \
+            --data-urlencode text="${MSG}" >/dev/null || echo "::warning::Telegram notify failed"
+
+      - name: Reflect rollout failure in the run
+        if: ${{ steps.roll.outcome == 'failure' }}
+        run: |
+          echo "::error::Rollout request failed — see the 'Roll academies' step."
+          exit 1
