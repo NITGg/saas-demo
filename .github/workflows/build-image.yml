@@ -71,3 +71,29 @@ jobs:
           # Speed up repeat builds by caching layers in the Actions cache.
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # After the image is published, tell the provisioning server to roll every live
+  # academy onto the new tag (bump-image.sh --all). Runs only for tag pushes and
+  # only when the provisioning URL + secret are configured; otherwise it no-ops.
+  rollout:
+    needs: build
+    if: ${{ github.ref_type == 'tag' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Roll academies onto the new image
+        env:
+          PROVISION_URL: ${{ vars.PROVISION_URL }}       # e.g. https://saas-provision.academy2026.nitg-eg.com
+          PROVISION_SECRET: ${{ secrets.PROVISION_SECRET }}
+          REF: ${{ github.ref_name }}                     # e.g. v2026.09.11
+        run: |
+          if [ -z "$PROVISION_URL" ] || [ -z "$PROVISION_SECRET" ]; then
+            echo "::warning::PROVISION_URL (variable) / PROVISION_SECRET (secret) not set — skipping auto-rollout."
+            exit 0
+          fi
+          TAG="${REF#v}"   # strip the leading v: v2026.09.11 -> 2026.09.11
+          echo "POST ${PROVISION_URL%/}/update-image  tag=$TAG"
+          curl -fsS -X POST "${PROVISION_URL%/}/update-image" \
+            -H "X-Provision-Secret: $PROVISION_SECRET" \
+            -H "Content-Type: application/json" \
+            -d "{\"tag\":\"$TAG\"}" | tee /tmp/rollout.json
+          echo
