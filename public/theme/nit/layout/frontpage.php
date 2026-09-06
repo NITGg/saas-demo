@@ -249,4 +249,24 @@ $templatecontext = [
     // NIT: end.
 ];
 
+// NIT: inline front-page editor — loaded only for site admins of this academy.
+// The editor (theme/nit/js/editor.js) adds an "Edit page" toggle + per-region
+// pencils that save through theme/nit/edit.php (sesskey-guarded). See editor.php.
+if (\theme_nit\local\editor::can_edit()) {
+    $PAGE->requires->js(new moodle_url('/theme/nit/js/editor.js'));
+    $niteditcfg = [
+        'editUrl'       => (new moodle_url('/theme/nit/edit.php'))->out(false),
+        'sesskey'       => sesskey(),
+        'maxImageBytes' => \theme_nit\local\editor::max_image_bytes(),
+        'str'           => [
+            'editpage'      => get_string('edit_editpage', 'theme_nit'),
+            'doneediting'   => get_string('edit_done', 'theme_nit'),
+            'editimage'     => get_string('edit_editimage', 'theme_nit'),
+            'savefailed'    => get_string('edit_savefailed', 'theme_nit'),
+            'imagetoolarge' => get_string('edit_imagetoolarge', 'theme_nit'),
+        ],
+    ];
+    $PAGE->requires->js_init_code('window.NIT_EDIT=' . json_encode($niteditcfg, JSON_UNESCAPED_SLASHES) . ';', true);
+}
+
 echo $OUTPUT->render_from_template('theme_nit/frontpage', $templatecontext);

@@ -132,3 +132,10 @@ $string['acad_nhour'] = 'ساعة واحدة';
 $string['acad_nassessment'] = 'تقييم واحد';
 $string['acad_nitem'] = 'عنصر واحد';
 $string['acad_1modulein'] = 'يحتوي هذا الكورس على وحدة واحدة';
+
+// Inline front-page editor (theme/nit/js/editor.js + edit.php).
+$string['edit_editpage'] = 'تعديل الصفحة';
+$string['edit_done'] = 'تم';
+$string['edit_editimage'] = 'تعديل الصورة';
+$string['edit_savefailed'] = 'تعذّر الحفظ';
+$string['edit_imagetoolarge'] = 'حجم الصورة كبير جداً.';

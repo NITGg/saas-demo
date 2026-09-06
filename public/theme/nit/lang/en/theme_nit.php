@@ -142,3 +142,10 @@ $string['acad_nhour'] = '{$a} hour';
 $string['acad_nassessment'] = '{$a} assessment';
 $string['acad_nitem'] = '{$a} item';
 $string['acad_1modulein'] = 'There is {$a} module in this course';
+
+// Inline front-page editor (theme/nit/js/editor.js + edit.php).
+$string['edit_editpage'] = 'Edit page';
+$string['edit_done'] = 'Done';
+$string['edit_editimage'] = 'Edit image';
+$string['edit_savefailed'] = 'Could not save';
+$string['edit_imagetoolarge'] = 'Image is too large.';
