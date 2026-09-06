@@ -174,12 +174,22 @@ class hook_callbacks {
             ]);
         }
 
-        $hook->add_html(\html_writer::div(
-            s($msg) . $btn,
-            'local-license-expiry-banner',
-            ['style' => 'background:' . $bg . ';color:#fff;padding:8px 16px;text-align:center;'
-                . 'font-size:14px;line-height:1.6;']
-        ));
+        // Pin to the very top. The front-page / full-width layouts render this hook
+        // ABOVE the fixed navbar, so a static banner hides behind it — position it
+        // fixed and push the fixed navbar + page content down by its height so
+        // nothing is covered (works on every layout; height is measured live).
+        $style = 'position:fixed;top:0;left:0;right:0;z-index:1080;background:' . $bg
+            . ';color:#fff;padding:8px 16px;text-align:center;font-size:14px;line-height:1.6;';
+        $banner = \html_writer::div($msg !== '' ? s($msg) . $btn : '', 'local-license-expiry-banner',
+            ['id' => 'local-license-expiry-banner', 'style' => $style]);
+        $js = '<script>(function(){var b=document.getElementById("local-license-expiry-banner");'
+            . 'if(!b){return;}function place(){var h=b.offsetHeight;'
+            . 'document.body.style.paddingTop=h+"px";'
+            . 'document.querySelectorAll(".navbar.fixed-top").forEach(function(n){n.style.top=h+"px";});}'
+            . 'window.addEventListener("resize",place);'
+            . 'if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",place);}else{place();}'
+            . '})();</script>';
+        $hook->add_html($banner . $js);
     }
 
     /**
