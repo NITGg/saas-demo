@@ -86,6 +86,13 @@ class core_renderer extends \theme_boost\output\core_renderer {
         if ($base === '') {
             return '';
         }
+        // Hide when the control plane has marked this academy as not upgradable
+        // (already on the top paid tier, or no higher tier exists). The flag rides
+        // in local_license/definition; an absent flag (legacy) leaves it shown.
+        $def = json_decode((string) get_config('local_license', 'definition'), true);
+        if (is_array($def) && array_key_exists('upgradable', $def) && $def['upgradable'] === false) {
+            return '';
+        }
         $slug = trim((string) get_config('theme_nit', 'academyslug'));
         if ($slug === '') {
             $host = (string) parse_url($CFG->wwwroot, PHP_URL_HOST);
