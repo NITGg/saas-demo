@@ -154,6 +154,7 @@ $string['edit_edithero'] = 'Edit hero';
 $string['edit_replaceimage'] = 'Replace image';
 $string['edit_heroheight'] = 'Height';
 $string['edit_save'] = 'Save';
+$string['edit_saving'] = 'Saving…';
 $string['edit_cancel'] = 'Cancel';
 $string['edit_editabout'] = 'Edit about';
 $string['edit_aboutpoints'] = 'Points';

@@ -318,6 +318,7 @@ if (\theme_nit\local\editor::can_edit()) {
             'replaceimage'  => get_string('edit_replaceimage', 'theme_nit'),
             'heroheight'    => get_string('edit_heroheight', 'theme_nit'),
             'save'          => get_string('edit_save', 'theme_nit'),
+            'saving'        => get_string('edit_saving', 'theme_nit'),
             'cancel'        => get_string('edit_cancel', 'theme_nit'),
             'editabout'     => get_string('edit_editabout', 'theme_nit'),
             'aboutpoints'   => get_string('edit_aboutpoints', 'theme_nit'),

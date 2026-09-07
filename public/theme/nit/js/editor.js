@@ -717,26 +717,33 @@
             fd.append('action', 'palette');
             fd.append('sesskey', CFG.sesskey);
             PALETTE_FIELDS.forEach(function (k) { fd.append(k, inputs[k].value); });
+            var label = save.textContent;
             save.disabled = true;
+            save.textContent = t('saving', 'Saving…');
             fetch(CFG.editUrl, { method: 'POST', body: fd, credentials: 'same-origin' })
                 .then(function (r) { return r.json(); })
                 .then(function (d) {
                     if (d && d.ok) {
-                        // Persisted + themerev bumped. Reload with a cache-buster so the
-                        // RECOMPILED theme CSS loads — core Moodle components (course
-                        // list, cards, buttons) are compiled from the brand, not live
-                        // CSS vars, so only a fresh compiled stylesheet recolours them.
-                        // Edit mode persists (session), so no need to re-toggle.
+                        // Persisted. The live preview already shows the final palette —
+                        // every front-page surface (body, region-main, cards, buttons,
+                        // text) follows the --nit-brand-* custom properties — so just
+                        // keep it and close: no page reload, no flash. The server
+                        // recompiles the theme CSS in the background (returned before
+                        // the compile) for later loads and non-editing visitors.
                         saved = true;
-                        var sep = window.location.search ? '&' : '?';
-                        window.location.assign(window.location.pathname + window.location.search + sep + 'nitv=' + Date.now());
+                        var chosen = current();
+                        if (!CFG.palette) { CFG.palette = {}; }
+                        PALETTE_FIELDS.forEach(function (k) { CFG.palette[k] = chosen[k]; });
+                        closePanel();
                     } else {
                         save.disabled = false;
+                        save.textContent = label;
                         window.alert(t('savefailed', 'Could not save') + (d && d.error ? ' (' + d.error + ')' : ''));
                     }
                 })
                 .catch(function () {
                     save.disabled = false;
+                    save.textContent = label;
                     window.alert(t('savefailed', 'Could not save'));
                 });
         });

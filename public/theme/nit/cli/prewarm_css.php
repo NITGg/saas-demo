@@ -15,22 +15,22 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Plugin version and metadata for the NIT theme.
+ * CLI: recompile the theme_nit CSS (both directions).
+ *
+ * Spawned detached by the inline front-page editor after a palette save
+ * (editor::spawn_prewarm), so the ~7s SCSS build never blocks the Save request:
+ * the browser gets its "ok" immediately while this process warms the compiled
+ * stylesheet for later page loads / non-editing visitors. Also runnable by hand
+ * for diagnostics:  php theme/nit/cli/prewarm_css.php
  *
  * @package    theme_nit
  * @copyright  2026 NIT
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
+define('CLI_SCRIPT', true);
 
-$plugin->component = 'theme_nit';
-$plugin->version   = 2026090121;        // YYYYMMDDXX.
-$plugin->requires  = 2024100700;        // Moodle 4.5 LTS baseline (pinned per CI matrix).
-$plugin->supported = [405, 502];        // Supported branch range: 4.5 LTS .. 5.2.
-$plugin->maturity  = MATURITY_ALPHA;    // Foundation + rendering + branding (M2–M5); pre-1.0.
-$plugin->release   = '0.3.21';
-$plugin->dependencies = [
-    'theme_boost'    => ANY_VERSION,    // NIT is a Boost child theme.
-    'local_nit_core' => 2026080402,     // Renders SDK view-models &amp; consumes the branding resolver.
-];
+require(__DIR__ . '/../../../config.php');
+require_once($CFG->libdir . '/clilib.php');
+
+\theme_nit\local\editor::prewarm_theme_css();

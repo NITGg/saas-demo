@@ -144,6 +144,7 @@ $string['edit_edithero'] = 'تعديل الغلاف';
 $string['edit_replaceimage'] = 'استبدال الصورة';
 $string['edit_heroheight'] = 'الارتفاع';
 $string['edit_save'] = 'حفظ';
+$string['edit_saving'] = 'جارٍ الحفظ…';
 $string['edit_cancel'] = 'إلغاء';
 $string['edit_editabout'] = 'تعديل نبذة عنا';
 $string['edit_aboutpoints'] = 'النقاط';

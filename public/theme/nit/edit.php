@@ -347,6 +347,12 @@ try {
             break;
 
         // Brand palette — 6 pickers → Group-1 roles + derived roles + recompile.
+        // Persist + bump the theme revision synchronously (fast), then kick off
+        // the ~7s SCSS recompile in a DETACHED background process and return ok
+        // immediately, so the Save button never hangs. The live editor already
+        // shows the new palette via CSS custom properties, so the admin sees the
+        // result instantly; the background compile just warms the stylesheet for
+        // later page loads / non-editing visitors.
         case 'palette':
             $ok = editor::save_palette([
                 'primary'    => optional_param('primary', '', PARAM_RAW_TRIMMED),
@@ -355,10 +361,11 @@ try {
                 'background' => optional_param('background', '', PARAM_RAW_TRIMMED),
                 'surface'    => optional_param('surface', '', PARAM_RAW_TRIMMED),
                 'text'       => optional_param('text', '', PARAM_RAW_TRIMMED),
-            ]);
+            ], false); // defer the compile — spawned below
             if (!$ok) {
                 nit_edit_respond(false, ['error' => 'badcolor']);
             }
+            editor::spawn_prewarm();
             nit_edit_respond(true);
             break;
 

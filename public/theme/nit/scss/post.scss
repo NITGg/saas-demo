@@ -276,6 +276,21 @@ body.nit-auth [data-nit-guest-only] {
 body.nit-frontpage {
     color: var(--nit-brand-textprimary);
 
+    // Page + main-content grounds. Boost compiles #region-main and the body/page
+    // background to colour LITERALS (not vars), so during a live palette preview
+    // they stayed the OLD colour while .main-inner (already var-driven) changed —
+    // the mismatched "white box" around Available courses. Point them at the
+    // brand var too so the whole shell recolours together, live and on save.
+    // body carries competing `background:transparent!important` rules, so the
+    // body ground needs !important to win (scoped, front page only).
+    background-color: var(--nit-brand-background) !important;
+
+    #region-main,
+    #region-main-box,
+    #page {
+        background-color: var(--nit-brand-background);
+    }
+
     // Cards = the front-page course boxes and block wrappers. The custom
     // nit_section blocks force `background:transparent!important` (above), so
     // this paints only real cards such as the course list.

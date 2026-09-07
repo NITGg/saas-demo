@@ -778,7 +778,7 @@ class editor {
      *
      * @param array<string,string> $c primary, accent, secondary, background, surface, text
      */
-    public static function save_palette(array $c): bool {
+    public static function save_palette(array $c, bool $prewarm = true): bool {
         $hex = function ($v): ?string {
             $v = trim((string) $v);
             return preg_match('/^#[0-9A-Fa-f]{6}$/', $v) ? $v : null;
@@ -805,33 +805,67 @@ class editor {
         $set('bordersecondary', self::mix($surf, $txt, 0.24));
         $set('hoverbackground', self::mix($surf, $p, 0.14));
         $set('hovertext', $txt);
-        self::bust_theme_caches();
+        self::bust_theme_caches($prewarm);
         return true;
     }
 
     /** Bump theme caches + revision so a new logo/brand URL is served immediately. */
-    public static function bust_theme_caches(): void {
+    public static function bust_theme_caches(bool $prewarm = true): void {
         global $CFG;
         require_once($CFG->libdir . '/adminlib.php');
         if (function_exists('theme_reset_all_caches')) {
             theme_reset_all_caches();
         }
         purge_all_caches();
-        // Pre-warm the compiled theme CSS *now*, inside the request that just
-        // saved the palette — this request already holds the fresh config in
-        // $CFG. Without it the theme CSS is left to be regenerated lazily by
-        // whichever later request wins the race, and that request can pick up a
-        // one-revision-stale config snapshot, so core Moodle components (course
-        // cards, buttons, the page body — all compiled Bootstrap, not live CSS
-        // custom properties) keep the *previous* colours until a manual purge or
-        // a hard refresh. Building both directions keeps RTL (Arabic) correct too.
-        if (function_exists('theme_build_css_for_themes')) {
-            try {
-                theme_build_css_for_themes([\theme_config::load('nit')], ['rtl', 'ltr']);
-            } catch (\Throwable $e) {
-                // Non-fatal: fall back to lazy compile on the next page load.
-                debugging('theme_nit palette prewarm failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
-            }
+        if ($prewarm) {
+            self::prewarm_theme_css();
+        }
+    }
+
+    /**
+     * Recompile the theme CSS in a detached background process, returning at
+     * once. Building both directions takes several seconds; the front-page
+     * editor already shows the new palette live via CSS custom properties, so
+     * the Save request must not block on the SCSS build. Spawns a short CLI
+     * process (theme/nit/cli/prewarm_css.php) that outlives this request. Falls
+     * back to a synchronous compile when a child process can't be started.
+     */
+    public static function spawn_prewarm(): void {
+        global $CFG;
+        $script = $CFG->dirroot . '/theme/nit/cli/prewarm_css.php';
+        $php = PHP_BINDIR . '/php';
+        if (function_exists('exec') && is_readable($script) && is_executable($php)) {
+            // Detach: redirect all fds and background so exec() returns instantly
+            // and the child survives the end of this (mod_php) request.
+            @exec(escapeshellarg($php) . ' ' . escapeshellarg($script) . ' > /dev/null 2>&1 &');
+            return;
+        }
+        self::prewarm_theme_css();
+    }
+
+    /**
+     * Compile the theme CSS now (both directions) in the current request — which
+     * already holds the freshly-saved config in $CFG. Without it the theme CSS is
+     * regenerated lazily by whichever later request wins the race, and that
+     * request can pick up a one-revision-stale config snapshot, so core Moodle
+     * components (course cards, buttons, the page body — compiled Bootstrap, not
+     * live CSS custom properties) keep the *previous* colours until a manual
+     * purge / hard refresh. Building both directions keeps RTL (Arabic) correct.
+     *
+     * Safe to call AFTER the HTTP response has been flushed
+     * (fastcgi_finish_request), so the slow SCSS build never blocks the caller.
+     */
+    public static function prewarm_theme_css(): void {
+        global $CFG;
+        require_once($CFG->libdir . '/adminlib.php');
+        if (!function_exists('theme_build_css_for_themes')) {
+            return;
+        }
+        try {
+            theme_build_css_for_themes([\theme_config::load('nit')], ['rtl', 'ltr']);
+        } catch (\Throwable $e) {
+            // Non-fatal: fall back to lazy compile on the next page load.
+            debugging('theme_nit palette prewarm failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
         }
     }
 
