@@ -575,10 +575,45 @@
         primary: '#5488c4', accent: '#5488c4', secondary: '#1c2a3a',
         background: '#0c141f', surface: '#121e2d', text: '#eef3f9'
     };
+    // Ready-made palettes — identical to the create-academy form (5 dark + 5 light).
+    var PALETTE_PRESETS = [
+        { name: 'Slate', p: PALETTE_DEFAULTS },
+        { name: 'Teal', p: { primary: '#2f9e8f', accent: '#3fb8a6', secondary: '#10221f', background: '#0a1a17', surface: '#102a25', text: '#eafaf6' } },
+        { name: 'Indigo', p: { primary: '#7c6cd6', accent: '#9b8cf0', secondary: '#1a1730', background: '#0d0b1a', surface: '#171334', text: '#eeeaff' } },
+        { name: 'Ruby', p: { primary: '#c2456b', accent: '#e06a8c', secondary: '#2a1420', background: '#170a10', surface: '#241019', text: '#fdeef3' } },
+        { name: 'Amber', p: { primary: '#d4933a', accent: '#e8b45c', secondary: '#2a2012', background: '#17120a', surface: '#241c10', text: '#fdf5e8' } },
+        { name: 'Royal', p: { primary: '#00126c', accent: '#c9a227', secondary: '#eaeef9', background: '#ffffff', surface: '#f3f5fb', text: '#0b1230' } },
+        { name: 'Teal Gold', p: { primary: '#0e504d', accent: '#c7ae72', secondary: '#eaf3f1', background: '#ffffff', surface: '#f2f8f6', text: '#14201f' } },
+        { name: 'Emerald', p: { primary: '#167b44', accent: '#1f9e57', secondary: '#eaf5ee', background: '#ffffff', surface: '#f2f9f4', text: '#12241a' } },
+        { name: 'Brick', p: { primary: '#92251e', accent: '#b23a2e', secondary: '#fbeeec', background: '#ffffff', surface: '#fbf4f3', text: '#183041' } },
+        { name: 'Navy', p: { primary: '#003362', accent: '#1f6fb2', secondary: '#e9eef4', background: '#ffffff', surface: '#f2f6fa', text: '#10233a' } }
+    ];
     function palettePanel() {
         var pal = CFG.palette || {};
         var body = document.createElement('div');
         var inputs = {};
+
+        // Preset swatches (one click fills all six pickers) — same as create form.
+        var presets = document.createElement('div');
+        presets.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px';
+        PALETTE_PRESETS.forEach(function (ps) {
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.title = ps.name;
+            b.style.cssText = 'display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid #ddd;'
+                + 'border-radius:999px;background:#fff;color:#0B2923;cursor:pointer;font:600 12px system-ui';
+            var sw = document.createElement('span');
+            sw.style.cssText = 'width:14px;height:14px;border-radius:50%;border:1px solid rgba(0,0,0,.15);'
+                + 'background:linear-gradient(135deg,' + ps.p.primary + ' 50%,' + ps.p.background + ' 50%)';
+            b.appendChild(sw);
+            b.appendChild(document.createTextNode(ps.name));
+            b.addEventListener('click', function () {
+                PALETTE_FIELDS.forEach(function (k) { inputs[k].value = ps.p[k]; });
+            });
+            presets.appendChild(b);
+        });
+        body.appendChild(presets);
+
         PALETTE_FIELDS.forEach(function (key) {
             var row = document.createElement('div');
             row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px';
