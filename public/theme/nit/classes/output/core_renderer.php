@@ -64,4 +64,39 @@ class core_renderer extends \theme_boost\output\core_renderer {
         }
         return $this->render_from_template('theme_boost/language_menu', $langmenu);
     }
+
+    /**
+     * Owner-facing "Upgrade" link for the gear dropdown → the control-plane
+     * account page, anchored to THIS academy so the client lands on it directly.
+     *
+     * The dashboard origin can't be derived from the academy's own domain, so
+     * the control plane pushes it as theme_nit/accounturl (+ theme_nit/academyslug)
+     * at provision / apply-settings time; the slug falls back to the first label
+     * of $CFG->wwwroot. Returns '' for non-owners or when no base is configured,
+     * so the row simply doesn't render.
+     *
+     * @return string HTML anchor, or '' when it should not show
+     */
+    public function nit_account_link(): string {
+        global $CFG;
+        if (!\theme_nit\local\editor::can_edit()) {
+            return '';
+        }
+        $base = rtrim((string) get_config('theme_nit', 'accounturl'), '/');
+        if ($base === '') {
+            return '';
+        }
+        $slug = trim((string) get_config('theme_nit', 'academyslug'));
+        if ($slug === '') {
+            $host = (string) parse_url($CFG->wwwroot, PHP_URL_HOST);
+            $slug = $host !== '' ? explode('.', $host)[0] : '';
+        }
+        $lang = (current_language() === 'ar') ? 'ar' : 'en';
+        $url = $base . '/' . $lang . '/account' . ($slug !== '' ? '#' . rawurlencode($slug) : '');
+        return \html_writer::link($url, get_string('upgrade_link', 'theme_nit'), [
+            'class'  => 'dropdown-item nit-navmenu-child nit-navmenu-upgrade',
+            'target' => '_blank',
+            'rel'    => 'noopener',
+        ]);
+    }
 }

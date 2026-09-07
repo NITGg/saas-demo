@@ -413,6 +413,17 @@
         thumbs.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px';
         body.appendChild(thumbs);
 
+        var MAX_GALLERY = 10;
+        var addBtn; // created below; render() keeps its label + disabled state in sync.
+        function updateAddBtn() {
+            if (!addBtn) { return; }
+            var full = items.length >= MAX_GALLERY;
+            addBtn.disabled = full;
+            addBtn.textContent = full
+                ? t('gallerymax', 'Maximum {n} images.').replace('{n}', MAX_GALLERY)
+                : '➕ ' + t('addimage', 'Add image') + ' (' + items.length + '/' + MAX_GALLERY + ')';
+        }
+
         var dragFrom = null;
         function render() {
             thumbs.innerHTML = '';
@@ -454,29 +465,34 @@
                 });
                 thumbs.appendChild(cell);
             });
+            updateAddBtn();
         }
         render();
 
-        var addBtn = document.createElement('button');
+        addBtn = document.createElement('button');
         addBtn.type = 'button';
         addBtn.className = 'nit-edit-btn';
-        addBtn.textContent = '➕ ' + t('addimage', 'Add image');
         addBtn.addEventListener('click', function () {
+            if (items.length >= MAX_GALLERY) { return; }
             var input = document.createElement('input');
             input.type = 'file';
+            input.multiple = true; // pick several images at once
             input.accept = 'image/png,image/jpeg,image/webp,image/gif,image/svg+xml';
             input.addEventListener('change', function () {
-                var f = input.files && input.files[0];
-                if (!f) { return; }
-                if (CFG.maxImageBytes && f.size > CFG.maxImageBytes) {
-                    window.alert(t('imagetoolarge', 'Image is too large.'));
-                    return;
-                }
-                items.push({ kind: 'new', file: f, url: URL.createObjectURL(f) });
+                var files = input.files ? Array.prototype.slice.call(input.files) : [];
+                var toobig = 0, overflow = 0;
+                files.forEach(function (f) {
+                    if (items.length >= MAX_GALLERY) { overflow++; return; }
+                    if (CFG.maxImageBytes && f.size > CFG.maxImageBytes) { toobig++; return; }
+                    items.push({ kind: 'new', file: f, url: URL.createObjectURL(f) });
+                });
                 render();
+                if (toobig) { window.alert(t('imagetoolarge', 'Image is too large.')); }
+                if (overflow) { window.alert(t('gallerymax', 'Maximum {n} images.').replace('{n}', MAX_GALLERY)); }
             });
             input.click();
         });
+        updateAddBtn();
         body.appendChild(addBtn);
 
         var act = document.createElement('div');

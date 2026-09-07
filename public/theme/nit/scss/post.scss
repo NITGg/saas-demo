@@ -356,3 +356,43 @@ body.nit-frontpage {
         color: var(--nit-brand-textprimary);
     }
 }
+
+// -----------------------------------------------------------------------------
+// Owner editing on the Site home: OUR affordances only.
+//
+// When the owner turns on edit mode, the home page should show only the NIT
+// editor (section pencils, the Colours button, the in-grid add-course) — never
+// Moodle's native block-editing chrome (per-block action menus, move/drag
+// handles, "Add a block", the region-settings menu). The edit-mode TOGGLE
+// itself stays in the gear dropdown (navbar), and course/activity pages keep
+// full Moodle editing — this is scoped to body.nit-frontpage.editing only.
+// -----------------------------------------------------------------------------
+body.nit-frontpage.editing {
+    .block .block-controls,
+    .block .action-menu,
+    .block [data-drag-type],
+    .block .editing_move,
+    .block .moodle-actionmenu,
+    .nit-addblock-top,
+    .block-add,
+    .addblock,
+    [data-key="addblock"],
+    button[data-action="addblock"],
+    #region-main-settings-menu,
+    .blockmovetarget {
+        display: none !important;
+    }
+
+    // Moodle draws a dashed "editing" affordance / grab cursor on blocks; our
+    // own dashed outline on [data-nit-section] is enough, so neutralise theirs.
+    .block {
+        cursor: default !important;
+    }
+
+    // Empty-region drop zones exist only to receive dragged/added blocks — with
+    // block-adding hidden they're just empty dashed boxes, so drop them too.
+    .nit-region .block-region:empty::after {
+        display: none !important;
+        content: none !important;
+    }
+}

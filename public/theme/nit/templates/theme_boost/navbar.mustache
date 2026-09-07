@@ -99,6 +99,11 @@
                         {{/haschildren}}
                     {{/mobileprimarynav}}
 
+                    {{! NIT: owner "Upgrade" link → the control-plane account page,
+                        anchored to this academy. Renders '' for non-owners or when
+                        no dashboard URL is configured. }}
+                    {{{ output.nit_account_link }}}
+
                     {{! NIT: edit-mode toggle lives here (moved from the bar). The
                         wrapper is `:empty` when core returns no switch — CSS then
                         hides it, so no stray row on pages without editing. }}
