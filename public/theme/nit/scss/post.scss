@@ -308,6 +308,20 @@ body.nit-frontpage {
         --bs-btn-active-border-color: var(--nit-brand-primary);
     }
 
+    // Secondary buttons — core's front-page "Add a new course" is a
+    // single_button (.btn-secondary), plus block/edit-mode actions. The compile
+    // already paints these with the brand secondary; mapping to the runtime var
+    // (with a mixed hover, mirroring --nit-brand-primary-hover) just lets them
+    // follow the live preview too. No change at rest.
+    .btn-secondary {
+        --bs-btn-bg: var(--nit-brand-secondary);
+        --bs-btn-border-color: var(--nit-brand-secondary);
+        --bs-btn-hover-bg: color-mix(in srgb, var(--nit-brand-secondary) 86%, #000);
+        --bs-btn-hover-border-color: color-mix(in srgb, var(--nit-brand-secondary) 86%, #000);
+        --bs-btn-active-bg: color-mix(in srgb, var(--nit-brand-secondary) 86%, #000);
+        --bs-btn-active-border-color: color-mix(in srgb, var(--nit-brand-secondary) 86%, #000);
+    }
+
     // Content links (not buttons). `--nit-brand-accenttext-hover` is a
     // translucent overlay, so use the vivid variant for the hover colour.
     #region-main a:not(.btn):not(.nav-link) {
