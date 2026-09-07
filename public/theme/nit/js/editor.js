@@ -319,43 +319,94 @@
 
     // About panel: replace the photo + edit the bullet points (seeded from the
     // live DOM, so no extra fetch). Points save as a JSON array to about_points.
+    // A text input, optionally tagged EN/AR (bilingual academies get one per
+    // language). Returns { wrap, input }.
+    function langInput(val, tag) {
+        var wrap = document.createElement('div');
+        wrap.style.cssText = 'display:flex;align-items:center;gap:6px;flex:1';
+        if (tag) {
+            var badge = document.createElement('span');
+            badge.textContent = tag;
+            badge.style.cssText = 'font:700 10px system-ui;color:#888;min-width:22px;text-align:center';
+            wrap.appendChild(badge);
+        }
+        var inp = document.createElement('input');
+        inp.type = 'text';
+        inp.maxLength = 200;
+        inp.value = val || '';
+        inp.style.cssText = 'flex:1;padding:8px;border:1px solid #ccc;border-radius:8px;font:inherit';
+        if (tag === 'AR') { inp.dir = 'rtl'; }
+        wrap.appendChild(inp);
+        return { wrap: wrap, input: inp };
+    }
+
     function aboutPanel(sec) {
         var body = document.createElement('div');
+        var bi = !!CFG.bilingual;                       // both EN + AR installed?
+        var data = CFG.about || { subheader: { en: '', ar: '' }, bullets: [] };
+        var sub = data.subheader || { en: '', ar: '' };
 
         var pick = imagePicker();
         body.appendChild(pick.row);
 
+        // ── Subheader (the <h3> under "About") ──────────────────────────────
+        var subLbl = document.createElement('label');
+        subLbl.textContent = t('aboutsubheader', 'Subheader');
+        subLbl.style.cssText = 'font-weight:600;display:block;margin-bottom:6px';
+        body.appendChild(subLbl);
+        var subWrap = document.createElement('div');
+        subWrap.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:16px';
+        var subEn, subAr = null;
+        if (bi) {
+            var se = langInput(sub.en, 'EN'), sa = langInput(sub.ar, 'AR');
+            subEn = se.input; subAr = sa.input;
+            subWrap.appendChild(se.wrap); subWrap.appendChild(sa.wrap);
+        } else {
+            var s1 = langInput(sub.en || sub.ar);
+            subEn = s1.input;
+            subWrap.appendChild(s1.wrap);
+        }
+        body.appendChild(subWrap);
+
+        // ── Bullet points ───────────────────────────────────────────────────
         var lbl = document.createElement('label');
         lbl.textContent = t('aboutpoints', 'Points');
+        lbl.style.cssText = 'font-weight:600;display:block;margin-bottom:6px';
         body.appendChild(lbl);
         var list = document.createElement('div');
         list.style.margin = '6px 0 10px';
 
-        function addRow(val) {
-            if (list.querySelectorAll('.nit-point-input').length >= 8) {
+        function addRow(pair) {
+            if (list.querySelectorAll('.nit-point-row').length >= 8) {
                 return;
             }
+            pair = pair || { en: '', ar: '' };
             var row = document.createElement('div');
-            row.style.cssText = 'display:flex;gap:6px;margin-bottom:6px';
-            var inp = document.createElement('input');
-            inp.type = 'text';
-            inp.className = 'nit-point-input';
-            inp.maxLength = 200;
-            inp.value = val || '';
-            inp.style.cssText = 'flex:1;padding:8px;border:1px solid #ccc;border-radius:8px;font:inherit';
+            row.className = 'nit-point-row';
+            row.style.cssText = 'display:flex;gap:6px;margin-bottom:8px;align-items:flex-start';
+            var col = document.createElement('div');
+            col.style.cssText = 'display:flex;flex-direction:column;gap:4px;flex:1';
+            if (bi) {
+                var e = langInput(pair.en, 'EN'), a = langInput(pair.ar, 'AR');
+                row._en = e.input; row._ar = a.input;
+                col.appendChild(e.wrap); col.appendChild(a.wrap);
+            } else {
+                var o = langInput(pair.en || pair.ar);
+                row._en = o.input; row._ar = null;
+                col.appendChild(o.wrap);
+            }
             var del = document.createElement('button');
             del.type = 'button';
             del.className = 'nit-edit-btn sec';
             del.textContent = '✕';
             del.addEventListener('click', function () { row.remove(); });
-            row.appendChild(inp);
+            row.appendChild(col);
             row.appendChild(del);
             list.appendChild(row);
         }
 
-        Array.prototype.slice.call(sec.querySelectorAll('ul li')).forEach(function (li) {
-            addRow(li.textContent.replace(/^[\s◆]+/, '').trim());
-        });
+        (data.bullets || []).forEach(function (b) { addRow(b); });
+        if (!list.querySelector('.nit-point-row')) { addRow(null); }
         body.appendChild(list);
 
         var addBtn = document.createElement('button');
@@ -363,7 +414,7 @@
         addBtn.className = 'nit-edit-btn sec';
         addBtn.textContent = '+ ' + t('addpoint', 'Add point');
         addBtn.style.marginBottom = '14px';
-        addBtn.addEventListener('click', function () { addRow(''); });
+        addBtn.addEventListener('click', function () { addRow(null); });
         body.appendChild(addBtn);
 
         var act = document.createElement('div');
@@ -378,10 +429,17 @@
         save.className = 'nit-edit-btn';
         save.textContent = t('save', 'Save');
         save.addEventListener('click', function () {
-            var bullets = Array.prototype.slice.call(list.querySelectorAll('.nit-point-input'))
-                .map(function (i) { return i.value.trim(); })
-                .filter(function (v) { return v !== ''; });
-            submitPanel('about', { bullets: JSON.stringify(bullets) }, pick.file(), save);
+            var subheader = { en: (subEn.value || '').trim(), ar: subAr ? (subAr.value || '').trim() : '' };
+            var bullets = [];
+            Array.prototype.slice.call(list.querySelectorAll('.nit-point-row')).forEach(function (row) {
+                var en = (row._en.value || '').trim();
+                var ar = row._ar ? (row._ar.value || '').trim() : '';
+                if (en !== '' || ar !== '') { bullets.push({ en: en, ar: ar }); }
+            });
+            submitPanel('about', {
+                subheader: JSON.stringify(subheader),
+                bullets: JSON.stringify(bullets)
+            }, pick.file(), save);
         });
         act.appendChild(cancel);
         act.appendChild(save);

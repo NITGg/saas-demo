@@ -138,13 +138,12 @@ a:not(.btn):not(.nav-link):not(.navbar-brand):not(.dropdown-item):not(.page-link
 
     // The marketing sections (incl. the footer) live in the full-width regions
     // above; the normal content shell (#topofscroll .main-inner) only holds the
-    // empty page-header (site name, already hidden) + an empty region-main on the
-    // Site home. When NOT editing, HIDE it entirely — zeroing padding wasn't
-    // enough because the header/region boxes still rendered a ~230px empty band
-    // BELOW the footer. Hidden only for guests/viewers; edit mode keeps it so
-    // admins can still reach the content region. (#page-footer is the fixed
-    // "?" popover button — it doesn't take layout space.)
-    &:not(.editing) #topofscroll.main-inner {
+    // empty page-header (site name, already hidden) + the native "Available
+    // courses" list + "Add a new course" on the Site home. That's all redundant
+    // with our marketing sections (the courses carousel + in-grid add-course),
+    // so HIDE it entirely — in edit mode too, so the owner sees only our editor.
+    // (#page-footer is the fixed "?" popover button — it takes no layout space.)
+    #topofscroll.main-inner {
         display: none;
     }
 

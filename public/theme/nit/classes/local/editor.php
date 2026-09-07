@@ -349,6 +349,123 @@ class editor {
         return self::inner_html($dom, $xp);
     }
 
+    /**
+     * Build a Moodle multilang2 string from an EN/AR pair — mirrors the build
+     * form's makeBullet(): both sides present → {mlang en}…{mlang}{mlang ar}…{mlang};
+     * one side only → that side as plain text. Trims each side.
+     *
+     * @param string $en English text
+     * @param string $ar Arabic text
+     * @return string
+     */
+    public static function mlang_build(string $en, string $ar): string {
+        $en = trim($en);
+        $ar = trim($ar);
+        if ($en !== '' && $ar !== '') {
+            return '{mlang en}' . $en . '{mlang}{mlang ar}' . $ar . '{mlang}';
+        }
+        return $en !== '' ? $en : $ar;
+    }
+
+    /**
+     * Split a (possibly multilang) raw string back into an EN/AR pair for editing.
+     * No {mlang} tags → treat as a single value and seed BOTH sides with it (so a
+     * bilingual academy can start from the existing text), leaving single-language
+     * academies to just use 'en'.
+     *
+     * @param string $raw
+     * @return array{en:string,ar:string}
+     */
+    public static function mlang_parse(string $raw): array {
+        $en = '';
+        $ar = '';
+        if (preg_match('/\{mlang\s+en\}([\s\S]*?)\{mlang\}/i', $raw, $m)) {
+            $en = trim($m[1]);
+        }
+        if (preg_match('/\{mlang\s+ar\}([\s\S]*?)\{mlang\}/i', $raw, $m)) {
+            $ar = trim($m[1]);
+        }
+        if ($en === '' && $ar === '') {
+            $plain = trim($raw);
+            return ['en' => $plain, 'ar' => $plain];
+        }
+        return ['en' => $en, 'ar' => $ar];
+    }
+
+    /**
+     * Replace the about section's subheader (the <h3> under the "About" heading).
+     * Targets [data-nit-about-subheader], else the first <h3>; stamps the marker
+     * so later reads/writes are unambiguous. Raw is set as a text node, so any
+     * {mlang} tags survive verbatim for the multilang filter while HTML is escaped.
+     *
+     * @param string $html
+     * @param string $raw subheader text (may carry {mlang} tags)
+     * @return string|null new HTML, or null when no subheader node is found
+     */
+    public static function set_about_subheader(string $html, string $raw): ?string {
+        $dom = new \DOMDocument();
+        $prev = libxml_use_internal_errors(true);
+        $ok = $dom->loadHTML(
+            '<?xml encoding="utf-8"?><div data-nitwrap="1">' . $html . '</div>',
+            LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
+        );
+        libxml_clear_errors();
+        libxml_use_internal_errors($prev);
+        if (!$ok) {
+            return null;
+        }
+        $xp = new \DOMXPath($dom);
+        $node = $xp->query('//*[@data-nit-about-subheader]')->item(0) ?: $xp->query('(//h3)[1]')->item(0);
+        if (!$node) {
+            return null;
+        }
+        $node->setAttribute('data-nit-about-subheader', '1');
+        while ($node->firstChild) {
+            $node->removeChild($node->firstChild);
+        }
+        $node->appendChild($dom->createTextNode(trim($raw)));
+        return self::inner_html($dom, $xp);
+    }
+
+    /**
+     * Read the about section's editable text back out of its RAW html (with
+     * {mlang} tags intact), for the inline editor to prefill. Returns the
+     * subheader + bullets each already split into an EN/AR pair.
+     *
+     * @param string $html raw about-section html (block htmltext)
+     * @return array{subheader:array{en:string,ar:string},bullets:array<int,array{en:string,ar:string}>}
+     */
+    public static function about_fields(string $html): array {
+        $out = ['subheader' => ['en' => '', 'ar' => ''], 'bullets' => []];
+        $dom = new \DOMDocument();
+        $prev = libxml_use_internal_errors(true);
+        $ok = $dom->loadHTML(
+            '<?xml encoding="utf-8"?><div data-nitwrap="1">' . $html . '</div>',
+            LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
+        );
+        libxml_clear_errors();
+        libxml_use_internal_errors($prev);
+        if (!$ok) {
+            return $out;
+        }
+        $xp = new \DOMXPath($dom);
+        $sub = $xp->query('//*[@data-nit-about-subheader]')->item(0) ?: $xp->query('(//h3)[1]')->item(0);
+        if ($sub) {
+            $out['subheader'] = self::mlang_parse(trim($sub->textContent));
+        }
+        $ul = $xp->query('(//ul)[1]')->item(0);
+        if ($ul) {
+            foreach ($xp->query('.//li', $ul) as $li) {
+                // textContent includes the ◆ bullet glyph prefix — strip it.
+                $raw = preg_replace('/^[\s◆]+/u', '', trim($li->textContent));
+                if ($raw !== '') {
+                    $out['bullets'][] = self::mlang_parse($raw);
+                }
+            }
+        }
+        return $out;
+    }
+
     /** SVG glyph bodies (colour sentinel @C@) for the contact icons — mirrors
      *  provisioning/apply_contact.php so inline edits produce identical markup. */
     private static function contact_svg_bodies(): array {

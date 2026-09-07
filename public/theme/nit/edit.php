@@ -120,15 +120,35 @@ try {
                     $html = $h;
                 }
             }
+            // Subheader (the <h3>) — a JSON {en,ar} pair (bilingual academies) or a
+            // plain string; built into a {mlang} string when both sides are given.
+            $rawsub = optional_param('subheader', '', PARAM_RAW);
+            if ($rawsub !== '') {
+                $s = json_decode($rawsub, true);
+                $sub = is_array($s)
+                    ? editor::mlang_build((string) ($s['en'] ?? ''), (string) ($s['ar'] ?? ''))
+                    : trim((string) $rawsub);
+                $sub = \core_text::substr($sub, 0, 400);
+                if ($sub !== '') {
+                    $h = editor::set_about_subheader($html, $sub);
+                    if ($h !== null) {
+                        $html = $h;
+                    }
+                }
+            }
+            // Bullets — a JSON array of {en,ar} pairs (bilingual) or plain strings.
             $rawb = optional_param('bullets', '', PARAM_RAW);
             if ($rawb !== '') {
                 $decoded = json_decode($rawb, true);
                 if (is_array($decoded)) {
                     $bullets = [];
                     foreach ($decoded as $b) {
-                        $b = trim((string) $b);
-                        if ($b !== '') {
-                            $bullets[] = \core_text::substr($b, 0, 200);
+                        $raw = is_array($b)
+                            ? editor::mlang_build((string) ($b['en'] ?? ''), (string) ($b['ar'] ?? ''))
+                            : trim((string) $b);
+                        $raw = \core_text::substr($raw, 0, 400);
+                        if ($raw !== '') {
+                            $bullets[] = $raw;
                         }
                         if (count($bullets) >= 8) {
                             break;

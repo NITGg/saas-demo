@@ -287,11 +287,26 @@ if (\theme_nit\local\editor::can_edit()) {
         $nitaddcat = 0;
     }
     $nitaddcourseurl = (new moodle_url('/course/edit.php', $nitaddcat ? ['category' => $nitaddcat] : []))->out(false);
+    // About section: parse the raw block html (with {mlang} intact) so the inline
+    // editor can prefill the subheader + bullets per language — the rendered DOM
+    // only carries the current language, so it can't drive bilingual editing.
+    $nitabout = ['subheader' => ['en' => '', 'ar' => ''], 'bullets' => []];
+    $nitaboutsec = \theme_nit\local\editor::find_section('about');
+    if ($nitaboutsec) {
+        $nitabout = \theme_nit\local\editor::about_fields(
+            \theme_nit\local\editor::section_html($nitaboutsec[1])
+        );
+    }
+    // Bilingual academy = both EN and AR installed → offer per-language inputs.
+    $nitlangs = array_keys(get_string_manager()->get_list_of_translations());
+    $nitbilingual = in_array('en', $nitlangs, true) && in_array('ar', $nitlangs, true);
     $niteditcfg = [
         'editUrl'       => (new moodle_url('/theme/nit/edit.php'))->out(false),
         'sesskey'       => sesskey(),
         'maxImageBytes' => \theme_nit\local\editor::max_image_bytes(),
         'addCourseUrl'  => $nitaddcourseurl,
+        'bilingual'     => $nitbilingual,
+        'about'         => $nitabout,
         'palette'       => [
             'primary'    => (string) get_config('theme_nit', 'brandcolour_g1_primary'),
             'accent'     => (string) get_config('theme_nit', 'brandcolour_g1_accent'),
@@ -321,6 +336,7 @@ if (\theme_nit\local\editor::can_edit()) {
             'saving'        => get_string('edit_saving', 'theme_nit'),
             'cancel'        => get_string('edit_cancel', 'theme_nit'),
             'editabout'     => get_string('edit_editabout', 'theme_nit'),
+            'aboutsubheader' => get_string('edit_aboutsubheader', 'theme_nit'),
             'aboutpoints'   => get_string('edit_aboutpoints', 'theme_nit'),
             'addpoint'      => get_string('edit_addpoint', 'theme_nit'),
             'addcourse'     => get_string('edit_addcourse', 'theme_nit'),
