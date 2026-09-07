@@ -817,6 +817,22 @@ class editor {
             theme_reset_all_caches();
         }
         purge_all_caches();
+        // Pre-warm the compiled theme CSS *now*, inside the request that just
+        // saved the palette — this request already holds the fresh config in
+        // $CFG. Without it the theme CSS is left to be regenerated lazily by
+        // whichever later request wins the race, and that request can pick up a
+        // one-revision-stale config snapshot, so core Moodle components (course
+        // cards, buttons, the page body — all compiled Bootstrap, not live CSS
+        // custom properties) keep the *previous* colours until a manual purge or
+        // a hard refresh. Building both directions keeps RTL (Arabic) correct too.
+        if (function_exists('theme_build_css_for_themes')) {
+            try {
+                theme_build_css_for_themes([\theme_config::load('nit')], ['rtl', 'ltr']);
+            } catch (\Throwable $e) {
+                // Non-fatal: fall back to lazy compile on the next page load.
+                debugging('theme_nit palette prewarm failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
+            }
+        }
     }
 
     /** Delete a theme_nit stored-file setting's files + clear its config. */
