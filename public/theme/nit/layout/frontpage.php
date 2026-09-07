@@ -253,6 +253,25 @@ $templatecontext = [
     // NIT: end.
 ];
 
+// NIT: publish the CURRENT brand palette as an inline <head> style for EVERY
+// visitor, so a just-saved palette shows immediately on the front page — even if
+// the compiled theme CSS is still cached at the old revision (which is why a
+// plain refresh could otherwise show the old colours). Overrides the g1 source
+// vars; the compiled CSS remains the fallback for other pages.
+$nitbrandroles = ['primary', 'secondary', 'accent', 'accenttext', 'background', 'surface',
+    'textprimary', 'textsecondary', 'borderprimary', 'bordersecondary', 'hoverbackground', 'hovertext'];
+$nitbrandcss = '';
+foreach ($nitbrandroles as $nitrole) {
+    $nitval = (string) get_config('theme_nit', 'brandcolour_g1_' . $nitrole);
+    if (preg_match('/^#[0-9A-Fa-f]{6}$/', $nitval)) {
+        $nitbrandcss .= '--nit-brand-g1-' . $nitrole . ':' . $nitval . ';--nit-brand-' . $nitrole . ':' . $nitval . ';';
+    }
+}
+if ($nitbrandcss !== '') {
+    $CFG->additionalhtmlhead = ($CFG->additionalhtmlhead ?? '')
+        . "\n<style id=\"nit-brand-live\">:root{" . $nitbrandcss . "}</style>\n";
+}
+
 // NIT: inline front-page editor — loaded only for site admins of this academy.
 // The editor (theme/nit/js/editor.js) adds an "Edit page" toggle + per-region
 // pencils that save through theme/nit/edit.php (sesskey-guarded). See editor.php.

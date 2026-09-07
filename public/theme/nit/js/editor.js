@@ -44,10 +44,12 @@
     var BRAND_VARS = ['primary', 'accent', 'secondary', 'background', 'surface', 'textprimary',
         'accenttext', 'textsecondary', 'borderprimary', 'bordersecondary', 'hoverbackground', 'hovertext'];
 
-    // Live-preview a palette by setting the brand CSS variables on <html>+<body>
-    // (inline, so they win over the compiled stylesheet). c has the 6 picked roles.
-    function applyPalettePreview(c) {
-        var v = {
+    // Live-preview a palette. The active --nit-brand-<role> resolves to
+    // --nit-brand-g1-<role>, and every derived shade / legacy alias references
+    // those via live color-mix — so overriding the g1 SOURCE vars (on :root)
+    // updates the WHOLE page, including the page background (fixes dark↔light).
+    function paletteVars(c) {
+        return {
             primary: c.primary, accent: c.accent, secondary: c.secondary,
             background: c.background, surface: c.surface, textprimary: c.text,
             accenttext: mixHex(c.accent, c.text, 0.30),
@@ -57,13 +59,20 @@
             hoverbackground: mixHex(c.surface, c.primary, 0.14),
             hovertext: c.text
         };
-        [document.documentElement, document.body].forEach(function (el) {
-            BRAND_VARS.forEach(function (k) { el.style.setProperty('--nit-brand-' + k, v[k]); });
+    }
+    function applyPalettePreview(c) {
+        var v = paletteVars(c);
+        var el = document.documentElement;
+        BRAND_VARS.forEach(function (k) {
+            el.style.setProperty('--nit-brand-g1-' + k, v[k]);
+            el.style.setProperty('--nit-brand-' + k, v[k]);
         });
     }
     function clearPalettePreview() {
-        [document.documentElement, document.body].forEach(function (el) {
-            BRAND_VARS.forEach(function (k) { el.style.removeProperty('--nit-brand-' + k); });
+        var el = document.documentElement;
+        BRAND_VARS.forEach(function (k) {
+            el.style.removeProperty('--nit-brand-g1-' + k);
+            el.style.removeProperty('--nit-brand-' + k);
         });
     }
 
