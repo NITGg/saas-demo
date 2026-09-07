@@ -256,3 +256,74 @@ body.nit-auth [data-nit-section="footer"] a[href*="/login/"],
 body.nit-auth [data-nit-guest-only] {
     display: none !important;
 }
+
+// -----------------------------------------------------------------------------
+// Live-preview bridge for core Moodle (Bootstrap) components on the front page.
+//
+// Bootstrap bakes each component's colours into per-component custom properties
+// at compile time — e.g. `.btn-primary{--bs-btn-bg:#5488c4}`,
+// `.card{--bs-card-bg:#121e2d}`. Those literals are why the inline editor's JS
+// palette preview (which only updates our runtime `--nit-brand-*` custom
+// properties) could recolour the page background and main content — already
+// mapped to `var(--nit-brand-background)` — but NOT the course cards or the
+// "Add a new course" button while editing.
+//
+// Re-pointing those component variables at the runtime brand vars closes the
+// gap: the front page's core components now recolour live during preview, and
+// stay correct on load / refresh / save (the vars equal the brand at rest).
+// Scoped to `body.nit-frontpage` so only the editable front page is affected;
+// every other page keeps Bootstrap's compiled per-component literals.
+body.nit-frontpage {
+    color: var(--nit-brand-textprimary);
+
+    // Cards = the front-page course boxes and block wrappers. The custom
+    // nit_section blocks force `background:transparent!important` (above), so
+    // this paints only real cards such as the course list.
+    .card {
+        --bs-card-bg: var(--nit-brand-surface);
+        --bs-card-color: var(--nit-brand-textprimary);
+        --bs-card-cap-color: var(--nit-brand-textprimary);
+        --bs-card-border-color: var(--nit-brand-borderprimary);
+    }
+
+    // Primary buttons ("Add a new course", enrol, submit, …).
+    .btn-primary {
+        --bs-btn-bg: var(--nit-brand-primary);
+        --bs-btn-border-color: var(--nit-brand-primary);
+        --bs-btn-hover-bg: var(--nit-brand-primary-hover);
+        --bs-btn-hover-border-color: var(--nit-brand-primary-hover);
+        --bs-btn-active-bg: var(--nit-brand-primary-hover);
+        --bs-btn-active-border-color: var(--nit-brand-primary-hover);
+        --bs-btn-disabled-bg: var(--nit-brand-primary);
+        --bs-btn-disabled-border-color: var(--nit-brand-primary);
+    }
+
+    // Outline-primary buttons (secondary actions).
+    .btn-outline-primary {
+        --bs-btn-color: var(--nit-brand-accenttext);
+        --bs-btn-border-color: var(--nit-brand-primary);
+        --bs-btn-hover-bg: var(--nit-brand-primary);
+        --bs-btn-hover-border-color: var(--nit-brand-primary);
+        --bs-btn-active-bg: var(--nit-brand-primary);
+        --bs-btn-active-border-color: var(--nit-brand-primary);
+    }
+
+    // Content links (not buttons). `--nit-brand-accenttext-hover` is a
+    // translucent overlay, so use the vivid variant for the hover colour.
+    #region-main a:not(.btn):not(.nav-link) {
+        color: var(--nit-brand-accenttext);
+
+        &:hover,
+        &:focus {
+            color: var(--nit-brand-accenttext-vivid);
+        }
+    }
+
+    // Text on the (transparent) course region sits on the page background.
+    #region-main,
+    .coursebox,
+    .course-info-container,
+    .course_category_tree {
+        color: var(--nit-brand-textprimary);
+    }
+}
