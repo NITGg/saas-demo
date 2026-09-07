@@ -250,6 +250,38 @@ try {
             nit_edit_respond(true);
             break;
 
+        // Gallery — full staged rebuild: reorder + delete + add, in one save.
+        // `order` is a JSON list of tokens (e:<i> keep existing i / n:<k> new file
+        // image<k>); new files arrive as image0, image1, …
+        case 'gallery':
+            $found = editor::find_section('gallery');
+            if (!$found) {
+                nit_edit_respond(false, ['error' => 'notfound']);
+            }
+            $order = json_decode(optional_param('order', '[]', PARAM_RAW), true);
+            if (!is_array($order)) {
+                nit_edit_respond(false, ['error' => 'badorder']);
+            }
+            $newuris = [];
+            for ($k = 0; $k < 24; $k++) {
+                if (!empty($_FILES['image' . $k]['tmp_name'])) {
+                    $err = null;
+                    $d = editor::uploaded_image_datauri($_FILES['image' . $k], $err);
+                    if ($d === null) {
+                        nit_edit_respond(false, ['error' => $err ?? 'image']);
+                    }
+                    $newuris[$k] = $d;
+                }
+            }
+            [$bi, $cfg] = $found;
+            $h = editor::gallery_rebuild(editor::section_html($cfg), $order, $newuris);
+            if ($h === null) {
+                nit_edit_respond(false, ['error' => 'nogrid']);
+            }
+            editor::save_section_html($bi, $cfg, $h);
+            nit_edit_respond(true);
+            break;
+
         // Gallery — append an uploaded image as a new tile.
         case 'gallery_add':
             $found = editor::find_section('gallery');

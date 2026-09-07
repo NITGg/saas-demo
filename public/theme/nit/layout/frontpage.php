@@ -307,6 +307,8 @@ if (\theme_nit\local\editor::can_edit()) {
             'editgallery'   => get_string('edit_editgallery', 'theme_nit'),
             'addimage'      => get_string('edit_addimage', 'theme_nit'),
             'galleryempty'  => get_string('edit_galleryempty', 'theme_nit'),
+            'gallerydraghint' => get_string('edit_gallerydraghint', 'theme_nit'),
+            'new'           => get_string('edit_new', 'theme_nit'),
             'deleteconfirm' => get_string('edit_deleteconfirm', 'theme_nit'),
             'close'         => get_string('edit_close', 'theme_nit'),
             'editcontact'   => get_string('edit_editcontact', 'theme_nit'),

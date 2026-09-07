@@ -340,50 +340,129 @@
     function galleryPanel(sec) {
         var body = document.createElement('div');
         var grid = sec.querySelector('[data-nit-gallery-grid]');
+
+        // Working list — existing tiles (by original index) + staged new files.
+        // Nothing is saved until Save; add / delete / drag-reorder all just edit it.
+        var items = [];
+        if (grid) {
+            Array.prototype.slice.call(grid.children).forEach(function (tile, i) {
+                items.push({ kind: 'existing', origIndex: i, bg: getComputedStyle(tile).backgroundImage });
+            });
+        }
+
+        var hint = document.createElement('p');
+        hint.style.cssText = 'font-size:12px;color:#666;margin:0 0 10px';
+        hint.textContent = t('gallerydraghint', 'Drag to reorder. Changes apply when you press Save.');
+        body.appendChild(hint);
+
         var thumbs = document.createElement('div');
         thumbs.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px';
-        var tiles = grid ? Array.prototype.slice.call(grid.children) : [];
-        if (!tiles.length) {
-            var empty = document.createElement('p');
-            empty.style.cssText = 'color:#666;margin:0 0 12px';
-            empty.textContent = t('galleryempty', 'No images yet.');
-            body.appendChild(empty);
-        }
-        tiles.forEach(function (tile, idx) {
-            var cell = document.createElement('div');
-            cell.style.cssText = 'position:relative;aspect-ratio:4/3;border-radius:8px;border:1px solid #ddd;'
-                + 'background-size:cover;background-position:center';
-            cell.style.backgroundImage = getComputedStyle(tile).backgroundImage;
-            var del = document.createElement('button');
-            del.type = 'button';
-            del.className = 'nit-edit-btn';
-            del.textContent = '✕';
-            del.style.cssText = 'position:absolute;top:4px;inset-inline-end:4px;padding:2px 9px';
-            del.addEventListener('click', function () {
-                if (window.confirm(t('deleteconfirm', 'Delete this image?'))) {
-                    postFields({ action: 'gallery_delete', index: String(idx) }, del);
-                }
-            });
-            cell.appendChild(del);
-            thumbs.appendChild(cell);
-        });
         body.appendChild(thumbs);
+
+        var dragFrom = null;
+        function render() {
+            thumbs.innerHTML = '';
+            if (!items.length) {
+                var empty = document.createElement('p');
+                empty.style.cssText = 'color:#888;grid-column:1/-1;margin:0';
+                empty.textContent = t('galleryempty', 'No images yet.');
+                thumbs.appendChild(empty);
+                return;
+            }
+            items.forEach(function (it, idx) {
+                var cell = document.createElement('div');
+                cell.draggable = true;
+                cell.style.cssText = 'position:relative;aspect-ratio:4/3;border-radius:8px;border:1px solid #ddd;'
+                    + 'background-size:cover;background-position:center;cursor:grab';
+                cell.style.backgroundImage = it.kind === 'existing' ? it.bg : "url('" + it.url + "')";
+                if (it.kind === 'new') {
+                    var badge = document.createElement('span');
+                    badge.textContent = t('new', 'new');
+                    badge.style.cssText = 'position:absolute;bottom:4px;inset-inline-start:4px;background:#0B2923;color:#00FFB2;font:600 10px system-ui;padding:1px 6px;border-radius:6px';
+                    cell.appendChild(badge);
+                }
+                var del = document.createElement('button');
+                del.type = 'button';
+                del.className = 'nit-edit-btn';
+                del.textContent = '✕';
+                del.style.cssText = 'position:absolute;top:4px;inset-inline-end:4px;padding:2px 9px';
+                del.addEventListener('click', function () { items.splice(idx, 1); render(); });
+                cell.appendChild(del);
+                cell.addEventListener('dragstart', function () { dragFrom = idx; });
+                cell.addEventListener('dragover', function (e) { e.preventDefault(); });
+                cell.addEventListener('drop', function (e) {
+                    e.preventDefault();
+                    if (dragFrom === null || dragFrom === idx) { return; }
+                    var moved = items.splice(dragFrom, 1)[0];
+                    items.splice(idx, 0, moved);
+                    dragFrom = null;
+                    render();
+                });
+                thumbs.appendChild(cell);
+            });
+        }
+        render();
 
         var addBtn = document.createElement('button');
         addBtn.type = 'button';
         addBtn.className = 'nit-edit-btn';
         addBtn.textContent = '➕ ' + t('addimage', 'Add image');
-        addBtn.addEventListener('click', function () { uploadImage('gallery_add', {}, addBtn); });
+        addBtn.addEventListener('click', function () {
+            var input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/png,image/jpeg,image/webp,image/gif,image/svg+xml';
+            input.addEventListener('change', function () {
+                var f = input.files && input.files[0];
+                if (!f) { return; }
+                if (CFG.maxImageBytes && f.size > CFG.maxImageBytes) {
+                    window.alert(t('imagetoolarge', 'Image is too large.'));
+                    return;
+                }
+                items.push({ kind: 'new', file: f, url: URL.createObjectURL(f) });
+                render();
+            });
+            input.click();
+        });
         body.appendChild(addBtn);
 
         var act = document.createElement('div');
         act.className = 'nit-edit-actions';
-        var close = document.createElement('button');
-        close.type = 'button';
-        close.className = 'nit-edit-btn sec';
-        close.textContent = t('close', 'Close');
-        close.addEventListener('click', closePanel);
-        act.appendChild(close);
+        var cancel = document.createElement('button');
+        cancel.type = 'button';
+        cancel.className = 'nit-edit-btn sec';
+        cancel.textContent = t('cancel', 'Cancel');
+        cancel.addEventListener('click', closePanel);
+        var save = document.createElement('button');
+        save.type = 'button';
+        save.className = 'nit-edit-btn';
+        save.textContent = t('save', 'Save');
+        save.addEventListener('click', function () {
+            var fd = new FormData();
+            fd.append('action', 'gallery');
+            fd.append('sesskey', CFG.sesskey);
+            var order = [];
+            var fileIdx = 0;
+            items.forEach(function (it) {
+                if (it.kind === 'existing') {
+                    order.push('e:' + it.origIndex);
+                } else {
+                    order.push('n:' + fileIdx);
+                    fd.append('image' + fileIdx, it.file);
+                    fileIdx++;
+                }
+            });
+            fd.append('order', JSON.stringify(order));
+            save.disabled = true;
+            fetch(CFG.editUrl, { method: 'POST', body: fd, credentials: 'same-origin' })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (d && d.ok) { window.location.reload(); }
+                    else { save.disabled = false; window.alert(t('savefailed', 'Could not save') + (d && d.error ? ' (' + d.error + ')' : '')); }
+                })
+                .catch(function () { save.disabled = false; window.alert(t('savefailed', 'Could not save')); });
+        });
+        act.appendChild(cancel);
+        act.appendChild(save);
         body.appendChild(act);
         return body;
     }

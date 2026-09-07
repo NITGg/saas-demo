@@ -184,3 +184,5 @@ $string['edit_col_secondary'] = 'Secondary';
 $string['edit_col_background'] = 'Background';
 $string['edit_col_surface'] = 'Surface';
 $string['edit_col_text'] = 'Text';
+$string['edit_gallerydraghint'] = 'Drag to reorder. Changes apply when you press Save.';
+$string['edit_new'] = 'new';

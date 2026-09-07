@@ -496,8 +496,23 @@ class editor {
             return false;
         }
         [$bi, $cfg] = $found;
+        self::footer_to_bottom($bi);
         self::save_section_html($bi, $cfg, self::build_footer_html($name, $desc, $showlogo));
         return true;
+    }
+
+    /**
+     * Move the footer block into the LAST region (fullwidth-bottom) so it renders
+     * below the course list, not above it. Idempotent.
+     */
+    public static function footer_to_bottom(\stdClass $bi): void {
+        global $DB;
+        if (($bi->defaultregion ?? '') !== 'fullwidth-bottom') {
+            $DB->set_field('block_instances', 'defaultregion', 'fullwidth-bottom', ['id' => $bi->id]);
+            $bi->defaultregion = 'fullwidth-bottom';
+            // Drop any explicit position override that would pin it to the old region.
+            $DB->delete_records('block_positions', ['blockinstanceid' => $bi->id]);
+        }
     }
 
     /**
@@ -546,6 +561,58 @@ class editor {
         $tile->setAttribute('style', "aspect-ratio:4/3; border-radius:12px; background:url('"
             . $datauri . "') center/cover no-repeat; border:1px solid var(--nit-brand-borderprimary);");
         $grid->appendChild($tile);
+        return self::inner_html($dom, $xp);
+    }
+
+    /**
+     * Rebuild the gallery grid from an ordered token list. Each token is
+     * "e:<i>" (keep existing tile i, in this new position) or "n:<k>" (a newly
+     * uploaded image, $newdatauris[$k]). This does staged add + delete + REORDER
+     * in one save. Returns new HTML, or null if no grid.
+     *
+     * @param string $html
+     * @param string[] $order tokens e.g. ['e:2','n:0','e:0']
+     * @param array<int,string> $newdatauris new-image data URIs keyed by k
+     * @param int $max
+     * @return string|null
+     */
+    public static function gallery_rebuild(string $html, array $order, array $newdatauris, int $max = 12): ?string {
+        $frag = self::load_fragment($html);
+        if (!$frag) {
+            return null;
+        }
+        [$dom, $xp] = $frag;
+        $grid = $xp->query('//*[@data-nit-gallery-grid]')->item(0);
+        if (!$grid) {
+            return null;
+        }
+        $existing = self::element_children($grid);
+        $newnodes = [];
+        foreach ($order as $tok) {
+            if (count($newnodes) >= $max) {
+                break;
+            }
+            if (preg_match('/^e:(\d+)$/', (string) $tok, $m)) {
+                $i = (int) $m[1];
+                if (isset($existing[$i])) {
+                    $newnodes[] = $existing[$i];
+                }
+            } else if (preg_match('/^n:(\d+)$/', (string) $tok, $m)) {
+                $k = (int) $m[1];
+                if (isset($newdatauris[$k])) {
+                    $tile = $dom->createElement('div');
+                    $tile->setAttribute('style', "aspect-ratio:4/3; border-radius:12px; background:url('"
+                        . $newdatauris[$k] . "') center/cover no-repeat; border:1px solid var(--nit-brand-borderprimary);");
+                    $newnodes[] = $tile;
+                }
+            }
+        }
+        while ($grid->firstChild) {
+            $grid->removeChild($grid->firstChild);
+        }
+        foreach ($newnodes as $n) {
+            $grid->appendChild($n);
+        }
         return self::inner_html($dom, $xp);
     }
 

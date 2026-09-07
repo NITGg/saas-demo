@@ -174,3 +174,5 @@ $string['edit_col_secondary'] = 'الثانوي';
 $string['edit_col_background'] = 'الخلفية';
 $string['edit_col_surface'] = 'البطاقات';
 $string['edit_col_text'] = 'النص';
+$string['edit_gallerydraghint'] = 'اسحب لإعادة الترتيب. تُحفظ التغييرات عند الضغط على حفظ.';
+$string['edit_new'] = 'جديد';
