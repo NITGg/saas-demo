@@ -22,9 +22,49 @@
     var S = CFG.str || {};
     var editing = false;
     var coloursBtn = null;
+    var panelCleanup = null; // run when the current panel closes (e.g. revert preview)
 
     function t(key, fallback) {
         return (S && S[key]) || fallback;
+    }
+
+    // Blend hex a→b by ratio r (0..1) — mirrors the server's _mix so the live
+    // preview matches what Save will compile.
+    function mixHex(a, b, r) {
+        a = String(a).replace('#', '');
+        b = String(b).replace('#', '');
+        if (a.length !== 6 || b.length !== 6) { return '#' + a; }
+        var ch = function (h, i) { return parseInt(h.substr(i, 2), 16); };
+        var to = function (x) { return ('0' + Math.round(x).toString(16)).slice(-2); };
+        return '#' + to(ch(a, 0) * (1 - r) + ch(b, 0) * r)
+            + to(ch(a, 2) * (1 - r) + ch(b, 2) * r)
+            + to(ch(a, 4) * (1 - r) + ch(b, 4) * r);
+    }
+
+    var BRAND_VARS = ['primary', 'accent', 'secondary', 'background', 'surface', 'textprimary',
+        'accenttext', 'textsecondary', 'borderprimary', 'bordersecondary', 'hoverbackground', 'hovertext'];
+
+    // Live-preview a palette by setting the brand CSS variables on <html>+<body>
+    // (inline, so they win over the compiled stylesheet). c has the 6 picked roles.
+    function applyPalettePreview(c) {
+        var v = {
+            primary: c.primary, accent: c.accent, secondary: c.secondary,
+            background: c.background, surface: c.surface, textprimary: c.text,
+            accenttext: mixHex(c.accent, c.text, 0.30),
+            textsecondary: mixHex(c.text, c.background, 0.42),
+            borderprimary: mixHex(c.surface, c.text, 0.12),
+            bordersecondary: mixHex(c.surface, c.text, 0.24),
+            hoverbackground: mixHex(c.surface, c.primary, 0.14),
+            hovertext: c.text
+        };
+        [document.documentElement, document.body].forEach(function (el) {
+            BRAND_VARS.forEach(function (k) { el.style.setProperty('--nit-brand-' + k, v[k]); });
+        });
+    }
+    function clearPalettePreview() {
+        [document.documentElement, document.body].forEach(function (el) {
+            BRAND_VARS.forEach(function (k) { el.style.removeProperty('--nit-brand-' + k); });
+        });
     }
 
     // ── styles ───────────────────────────────────────────────────────────────
@@ -108,6 +148,11 @@
 
     // ── modal panel ───────────────────────────────────────────────────────────
     function closePanel() {
+        if (panelCleanup) {
+            var fn = panelCleanup;
+            panelCleanup = null;
+            try { fn(); } catch (e) { /* ignore */ }
+        }
         var ov = document.getElementById('nit-edit-overlay');
         if (ov) { ov.remove(); }
     }
@@ -592,6 +637,16 @@
         var pal = CFG.palette || {};
         var body = document.createElement('div');
         var inputs = {};
+        var saved = false;
+
+        var current = function () {
+            var c = {};
+            PALETTE_FIELDS.forEach(function (k) { c[k] = inputs[k].value; });
+            return c;
+        };
+        var preview = function () { applyPalettePreview(current()); };
+        // Closing the panel by any means reverts the preview unless we saved.
+        panelCleanup = function () { if (!saved) { clearPalettePreview(); } };
 
         // Preset swatches (one click fills all six pickers) — same as create form.
         var presets = document.createElement('div');
@@ -609,6 +664,7 @@
             b.appendChild(document.createTextNode(ps.name));
             b.addEventListener('click', function () {
                 PALETTE_FIELDS.forEach(function (k) { inputs[k].value = ps.p[k]; });
+                preview();
             });
             presets.appendChild(b);
         });
@@ -625,6 +681,7 @@
             var v = (pal[key] || '').trim();
             inp.value = /^#[0-9A-Fa-f]{6}$/.test(v) ? v : PALETTE_DEFAULTS[key];
             inp.style.cssText = 'width:54px;height:34px;border:1px solid #ccc;border-radius:8px;background:none;cursor:pointer;padding:2px';
+            inp.addEventListener('input', preview);
             row.appendChild(lbl);
             row.appendChild(inp);
             body.appendChild(row);
@@ -647,9 +704,30 @@
         save.className = 'nit-edit-btn';
         save.textContent = t('save', 'Save');
         save.addEventListener('click', function () {
-            var fields = { action: 'palette' };
-            PALETTE_FIELDS.forEach(function (k) { fields[k] = inputs[k].value; });
-            postFields(fields, save);
+            var fd = new FormData();
+            fd.append('action', 'palette');
+            fd.append('sesskey', CFG.sesskey);
+            PALETTE_FIELDS.forEach(function (k) { fd.append(k, inputs[k].value); });
+            save.disabled = true;
+            fetch(CFG.editUrl, { method: 'POST', body: fd, credentials: 'same-origin' })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (d && d.ok) {
+                        // Persisted server-side (CSS recompiled for next load). Keep the
+                        // live preview so the new colours show NOW — no reload, edit mode
+                        // stays on. Next navigation loads the matching compiled CSS.
+                        saved = true;
+                        applyPalettePreview(current());
+                        closePanel();
+                    } else {
+                        save.disabled = false;
+                        window.alert(t('savefailed', 'Could not save') + (d && d.error ? ' (' + d.error + ')' : ''));
+                    }
+                })
+                .catch(function () {
+                    save.disabled = false;
+                    window.alert(t('savefailed', 'Could not save'));
+                });
         });
         act.appendChild(cancel);
         act.appendChild(save);
