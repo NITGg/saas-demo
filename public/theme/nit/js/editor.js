@@ -722,12 +722,14 @@
                 .then(function (r) { return r.json(); })
                 .then(function (d) {
                     if (d && d.ok) {
-                        // Persisted server-side (CSS recompiled for next load). Keep the
-                        // live preview so the new colours show NOW — no reload, edit mode
-                        // stays on. Next navigation loads the matching compiled CSS.
+                        // Persisted + themerev bumped. Reload with a cache-buster so the
+                        // RECOMPILED theme CSS loads — core Moodle components (course
+                        // list, cards, buttons) are compiled from the brand, not live
+                        // CSS vars, so only a fresh compiled stylesheet recolours them.
+                        // Edit mode persists (session), so no need to re-toggle.
                         saved = true;
-                        applyPalettePreview(current());
-                        closePanel();
+                        var sep = window.location.search ? '&' : '?';
+                        window.location.assign(window.location.pathname + window.location.search + sep + 'nitv=' + Date.now());
                     } else {
                         save.disabled = false;
                         window.alert(t('savefailed', 'Could not save') + (d && d.error ? ' (' + d.error + ')' : ''));
