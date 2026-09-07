@@ -249,7 +249,16 @@ class editor {
             return null;
         }
         /** @var \DOMElement $node */
+        // Clear any placeholder content inside the box (e.g. a "Instructor photo"
+        // caption) so the new image isn't overlaid by the old placeholder.
+        while ($node->firstChild) {
+            $node->removeChild($node->firstChild);
+        }
+        // Ensure the box crops the image nicely even if the stored style had none.
         $style = $node->getAttribute('style');
+        if (!preg_match('/aspect-ratio\s*:/i', $style)) {
+            $style = rtrim($style, '; ') . ';aspect-ratio:4/3;';
+        }
         $bg = "background:#000 url('" . $datauri . "') center/cover no-repeat";
         if (preg_match('/background\s*:/i', $style)) {
             $style = preg_replace('/background\s*:[^;]*;?/i', $bg . ';', $style, 1);
@@ -258,6 +267,38 @@ class editor {
         }
         $node->setAttribute('style', $style);
         return self::inner_html($dom, $xp);
+    }
+
+    /**
+     * Remove the placeholder "Get in touch" heading + its social-icon row from the
+     * about section (contacts live in their own section). Idempotent — returns the
+     * HTML unchanged if not present. Matches the h4 by its text (en/ar) and drops
+     * it plus the element immediately after it.
+     */
+    public static function remove_about_getintouch(string $html): string {
+        $frag = self::load_fragment($html);
+        if (!$frag) {
+            return $html;
+        }
+        [$dom, $xp] = $frag;
+        $changed = false;
+        foreach (iterator_to_array($xp->query('//h4')) as $h4) {
+            $txt = $h4->textContent;
+            if (stripos($txt, 'Get in touch') === false && strpos($txt, 'للتواصل') === false) {
+                continue;
+            }
+            // Drop the next element sibling (the social-icon row) first, then the h4.
+            $next = $h4->nextSibling;
+            while ($next && $next->nodeType !== XML_ELEMENT_NODE) {
+                $next = $next->nextSibling;
+            }
+            if ($next) {
+                $next->parentNode->removeChild($next);
+            }
+            $h4->parentNode->removeChild($h4);
+            $changed = true;
+        }
+        return $changed ? self::inner_html($dom, $xp) : $html;
     }
 
     /**

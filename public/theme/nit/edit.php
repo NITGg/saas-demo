@@ -59,6 +59,92 @@ try {
             nit_edit_respond(true, ['maximagebytes' => editor::max_image_bytes()]);
             break;
 
+        // Hero — optional new image + height constraints, saved together (one POST).
+        case 'hero':
+            $found = editor::find_section('hero');
+            if (!$found) {
+                nit_edit_respond(false, ['error' => 'notfound']);
+            }
+            [$bi, $cfg] = $found;
+            $html = editor::section_html($cfg);
+            if (!empty($_FILES['image']['tmp_name'])) {
+                $err = null;
+                $datauri = editor::uploaded_image_datauri($_FILES['image'], $err);
+                if ($datauri === null) {
+                    nit_edit_respond(false, ['error' => $err ?? 'image']);
+                }
+                $h = editor::set_marker_background($html, 'hero', $datauri);
+                if ($h !== null) {
+                    $html = $h;
+                }
+            }
+            $aspect = optional_param('aspect', '', PARAM_RAW_TRIMMED);
+            $minheight = optional_param('minheight', 0, PARAM_INT);
+            $props = [];
+            if (preg_match('#^\d{1,2}/\d{1,2}$#', $aspect)) {
+                $props['aspect-ratio'] = $aspect;
+            }
+            if ($minheight >= 120 && $minheight <= 1000) {
+                $props['min-height'] = $minheight . 'px';
+            }
+            if ($props) {
+                $h = editor::set_marker_style_props($html, 'hero', $props);
+                if ($h !== null) {
+                    $html = $h;
+                }
+            }
+            editor::save_section_html($bi, $cfg, $html);
+            nit_edit_respond(true);
+            break;
+
+        // About — optional new photo + bullet points, saved together (one POST).
+        // Always drops the placeholder "Get in touch" block from the about column.
+        case 'about':
+            $found = editor::find_section('about');
+            if (!$found) {
+                nit_edit_respond(false, ['error' => 'notfound']);
+            }
+            [$bi, $cfg] = $found;
+            $html = editor::section_html($cfg);
+            if (!empty($_FILES['image']['tmp_name'])) {
+                $err = null;
+                $datauri = editor::uploaded_image_datauri($_FILES['image'], $err);
+                if ($datauri === null) {
+                    nit_edit_respond(false, ['error' => $err ?? 'image']);
+                }
+                $h = editor::set_about_image($html, $datauri);
+                if ($h === null) {
+                    $h = editor::set_marker_background($html, 'about', $datauri);
+                }
+                if ($h !== null) {
+                    $html = $h;
+                }
+            }
+            $rawb = optional_param('bullets', '', PARAM_RAW);
+            if ($rawb !== '') {
+                $decoded = json_decode($rawb, true);
+                if (is_array($decoded)) {
+                    $bullets = [];
+                    foreach ($decoded as $b) {
+                        $b = trim((string) $b);
+                        if ($b !== '') {
+                            $bullets[] = \core_text::substr($b, 0, 200);
+                        }
+                        if (count($bullets) >= 8) {
+                            break;
+                        }
+                    }
+                    $h = editor::set_about_points($html, $bullets);
+                    if ($h !== null) {
+                        $html = $h;
+                    }
+                }
+            }
+            $html = editor::remove_about_getintouch($html);
+            editor::save_section_html($bi, $cfg, $html);
+            nit_edit_respond(true);
+            break;
+
         // Replace a section's background image (hero cover, about photo box, …).
         // Reused by the hero (3.2) and about-image (3.3) editors.
         case 'section_bg_image':

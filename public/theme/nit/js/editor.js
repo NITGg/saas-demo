@@ -38,8 +38,10 @@
             'font:600 14px system-ui,sans-serif;cursor:pointer;background:#0B2923;color:#00FFB2;' +
             'box-shadow:0 6px 20px -6px rgba(0,0,0,.5)}' +
             '.nit-edit-toggle.nit-on{background:#00FFB2;color:#0B2923}' +
-            '.nit-colours-btn{bottom:66px}' +
-            'body.nit-editing [data-nit-section],body.nit-editing [data-nit-edit]{outline:2px dashed rgba(0,180,140,.7);outline-offset:-2px;position:relative}' +
+            '.nit-colours-btn{bottom:18px}' +
+            '.nit-img-pick{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}' +
+            '.nit-img-thumb{height:64px;width:96px;border-radius:8px;border:1px solid #ccc;background-size:cover;background-position:center}' +
+            'body.editing [data-nit-section],body.editing [data-nit-edit]{outline:2px dashed rgba(0,180,140,.7);outline-offset:-2px;position:relative}' +
             '.nit-edit-pencil{position:absolute;top:10px;inset-inline-end:10px;z-index:9999;' +
             'display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:none;border-radius:8px;' +
             'font:600 13px system-ui,sans-serif;cursor:pointer;background:#0B2923;color:#00FFB2;' +
@@ -147,6 +149,70 @@
             });
     }
 
+    // Submit a panel: FormData with action + sesskey + fields + an optional staged
+    // image file, in ONE request. Reloads on success.
+    function submitPanel(action, fields, file, btn) {
+        var fd = new FormData();
+        fd.append('action', action);
+        fd.append('sesskey', CFG.sesskey);
+        Object.keys(fields || {}).forEach(function (k) { fd.append(k, fields[k]); });
+        if (file) {
+            fd.append('image', file);
+        }
+        if (btn) { btn.disabled = true; }
+        fetch(CFG.editUrl, { method: 'POST', body: fd, credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (d && d.ok) {
+                    window.location.reload();
+                } else {
+                    if (btn) { btn.disabled = false; }
+                    window.alert(t('savefailed', 'Could not save') + (d && d.error ? ' (' + d.error + ')' : ''));
+                }
+            })
+            .catch(function () {
+                if (btn) { btn.disabled = false; }
+                window.alert(t('savefailed', 'Could not save'));
+            });
+    }
+
+    // A "Replace image" control that STAGES the pick (preview) without saving.
+    // Returns { row, file() } — file() gives the chosen File (or null) at Save time.
+    function imagePicker() {
+        var staged = null;
+        var row = document.createElement('div');
+        row.className = 'nit-img-pick';
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'nit-edit-btn';
+        btn.textContent = '🖼 ' + t('replaceimage', 'Replace image');
+        var thumb = document.createElement('div');
+        thumb.className = 'nit-img-thumb';
+        thumb.hidden = true;
+        var input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/png,image/jpeg,image/webp,image/gif,image/svg+xml';
+        input.style.display = 'none';
+        input.addEventListener('change', function () {
+            var f = input.files && input.files[0];
+            if (!f) { return; }
+            if (CFG.maxImageBytes && f.size > CFG.maxImageBytes) {
+                window.alert(t('imagetoolarge', 'Image is too large.'));
+                input.value = '';
+                return;
+            }
+            staged = f;
+            btn.textContent = '✓ ' + (f.name || t('replaceimage', 'Replace image'));
+            thumb.hidden = false;
+            thumb.style.backgroundImage = "url('" + URL.createObjectURL(f) + "')";
+        });
+        btn.addEventListener('click', function () { input.click(); });
+        row.appendChild(btn);
+        row.appendChild(thumb);
+        row.appendChild(input);
+        return { row: row, file: function () { return staged; } };
+    }
+
     // Hero size presets — keep the image looking good at any upload dimensions
     // (background is center/cover, so the band's aspect + height is the knob).
     var HERO_SIZES = [
@@ -157,15 +223,8 @@
     function heroPanel(marker) {
         var body = document.createElement('div');
 
-        var imgRow = document.createElement('div');
-        imgRow.className = 'nit-edit-row';
-        var imgBtn = document.createElement('button');
-        imgBtn.type = 'button';
-        imgBtn.className = 'nit-edit-btn';
-        imgBtn.textContent = '🖼 ' + t('replaceimage', 'Replace image');
-        imgBtn.addEventListener('click', function () { uploadImage('section_bg_image', { section: marker }, imgBtn); });
-        imgRow.appendChild(imgBtn);
-        body.appendChild(imgRow);
+        var pick = imagePicker();
+        body.appendChild(pick.row);
 
         var hRow = document.createElement('div');
         hRow.className = 'nit-edit-row';
@@ -196,7 +255,7 @@
         save.textContent = t('save', 'Save');
         save.addEventListener('click', function () {
             var s = HERO_SIZES.filter(function (x) { return x.key === sel.value; })[0] || HERO_SIZES[1];
-            postFields({ action: 'section_style', section: marker, aspect: s.aspect, minheight: String(s.minheight) }, save);
+            submitPanel('hero', { aspect: s.aspect, minheight: String(s.minheight) }, pick.file(), save);
         });
         act.appendChild(cancel);
         act.appendChild(save);
@@ -209,15 +268,8 @@
     function aboutPanel(sec) {
         var body = document.createElement('div');
 
-        var imgRow = document.createElement('div');
-        imgRow.className = 'nit-edit-row';
-        var imgBtn = document.createElement('button');
-        imgBtn.type = 'button';
-        imgBtn.className = 'nit-edit-btn';
-        imgBtn.textContent = '🖼 ' + t('replaceimage', 'Replace image');
-        imgBtn.addEventListener('click', function () { uploadImage('about_image', {}, imgBtn); });
-        imgRow.appendChild(imgBtn);
-        body.appendChild(imgRow);
+        var pick = imagePicker();
+        body.appendChild(pick.row);
 
         var lbl = document.createElement('label');
         lbl.textContent = t('aboutpoints', 'Points');
@@ -275,7 +327,7 @@
             var bullets = Array.prototype.slice.call(list.querySelectorAll('.nit-point-input'))
                 .map(function (i) { return i.value.trim(); })
                 .filter(function (v) { return v !== ''; });
-            postFields({ action: 'about_points', bullets: JSON.stringify(bullets) }, save);
+            submitPanel('about', { bullets: JSON.stringify(bullets) }, pick.file(), save);
         });
         act.appendChild(cancel);
         act.appendChild(save);
@@ -574,9 +626,14 @@
         document.querySelectorAll('.nit-add-course').forEach(function (e) { e.remove(); });
     }
 
+    // Editing is driven by Moodle's NATIVE edit mode (body.editing) — one toggle,
+    // and our pencils only touch our own regions.
     function setEditing(on) {
+        if (on === editing) {
+            if (on) { addPencils(); addCourseButton(); } // re-ensure after DOM changes
+            return;
+        }
         editing = on;
-        document.body.classList.toggle('nit-editing', on);
         if (coloursBtn) {
             coloursBtn.style.display = on ? '' : 'none';
         }
@@ -591,16 +648,6 @@
 
     function init() {
         injectStyles();
-        var toggle = document.createElement('button');
-        toggle.type = 'button';
-        toggle.className = 'nit-edit-toggle';
-        toggle.textContent = '✏ ' + t('editpage', 'Edit page');
-        toggle.addEventListener('click', function () {
-            setEditing(!editing);
-            toggle.classList.toggle('nit-on', editing);
-            toggle.textContent = (editing ? '✓ ' + t('doneediting', 'Done') : '✏ ' + t('editpage', 'Edit page'));
-        });
-        document.body.appendChild(toggle);
 
         coloursBtn = document.createElement('button');
         coloursBtn.type = 'button';
@@ -611,6 +658,15 @@
             openPanel(t('colours', 'Colours'), palettePanel());
         });
         document.body.appendChild(coloursBtn);
+
+        // Activate with Moodle's native "Edit mode" toggle (body.editing) — no
+        // separate button. React live if the user flips it without a reload.
+        var isEditing = function () { return document.body.classList.contains('editing'); };
+        setEditing(isEditing());
+        try {
+            new MutationObserver(function () { setEditing(isEditing()); })
+                .observe(document.body, { attributes: true, attributeFilter: ['class'] });
+        } catch (e) { /* older browsers: initial state is enough */ }
     }
 
     if (document.readyState === 'loading') {
