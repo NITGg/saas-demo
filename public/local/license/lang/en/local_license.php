@@ -7,6 +7,7 @@ $string['pluginname'] = 'Academy licence';
 $string['expiry_banner_soon']    = 'Your academy subscription expires in {$a->days} day(s) (on {$a->date}). Renew to avoid interruption.';
 $string['expiry_banner_expired'] = 'Your academy subscription has expired. Renew now before it is paused — your data is safe.';
 $string['expiry_renew']          = 'Renew now';
+$string['expiry_banner_autorenew'] = 'Your academy renews automatically on {$a->date} — no action needed.';
 
 // Settings.
 $string['enabled']          = 'Enforce licence limits';

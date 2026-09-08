@@ -158,7 +158,18 @@ class hook_callbacks {
         $renewurl = trim((string) get_config('local_license', 'renewurl'));
         $datestr  = userdate(license::expiry(), get_string('strftimedate', 'langconfig'));
         $expired  = $days < 0;
+        // Auto-renew academies get a reassuring "renews automatically on <date>"
+        // banner (green, no renew button) instead of the "renew now" nudge — the
+        // control plane sets local_license/autorenew=1 while a subscription is
+        // active. An already-expired term still shows the renew nudge (the auto
+        // charge must have failed if it lapsed).
+        $autorenew = get_config('local_license', 'autorenew') === '1';
 
+        if ($autorenew && !$expired) {
+            $msg = get_string('expiry_banner_autorenew', 'local_license', ['date' => $datestr]);
+            $bg  = '#1E7D67';
+            $btn = '';
+        } else {
         $msg = $expired
             ? get_string('expiry_banner_expired', 'local_license')
             : get_string('expiry_banner_soon', 'local_license',
@@ -172,6 +183,7 @@ class hook_callbacks {
                 'style'  => 'margin-inline-start:12px;background:#fff;color:' . $bg
                     . ';padding:4px 14px;border-radius:6px;font-weight:bold;text-decoration:none;white-space:nowrap;',
             ]);
+        }
         }
 
         // Pin to the very top. The front-page / full-width layouts render this hook
