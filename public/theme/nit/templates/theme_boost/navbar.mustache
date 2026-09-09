@@ -69,8 +69,13 @@
                 <div class="divider border-start h-75 align-self-center mx-1"></div>
             {{/output.search_box}}
 
-            {{! NIT: the edit-mode switch was moved OUT of the bar and INTO the
-                gear/navigation dropdown below (matches the legacy clean bar). }}
+            {{! NIT: edit-mode switch lives in the BAR (not the gear menu); the
+                inline editor (editor.js) adds a 🎨 Colours button beside it while
+                editing. The wrapper is :empty on pages without editing, so CSS
+                hides it — no stray control on non-editable pages. }}
+            <div class="nit-navbar-tools d-none d-md-flex align-items-center me-1">
+                <div class="nit-navbar-editswitch d-flex align-items-center">{{{ output.edit_switch }}}</div>
+            </div>
 
             {{! NIT: notifications / messaging (the bell) — kept as-is. }}
             {{# output.navbar_plugin_output }}
@@ -104,10 +109,8 @@
                         no dashboard URL is configured. }}
                     {{{ output.nit_account_link }}}
 
-                    {{! NIT: edit-mode toggle lives here (moved from the bar). The
-                        wrapper is `:empty` when core returns no switch — CSS then
-                        hides it, so no stray row on pages without editing. }}
-                    <div class="nit-navmenu-editswitch">{{{ output.edit_switch }}}</div>
+                    {{! NIT: the edit-mode switch now lives in the bar
+                        (.nit-navbar-tools), not here. }}
                 </div>
             </div>
 

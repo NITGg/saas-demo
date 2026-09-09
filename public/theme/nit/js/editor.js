@@ -82,12 +82,10 @@
             return;
         }
         var css =
-            '.nit-edit-toggle{position:fixed;inset-inline-end:18px;bottom:18px;z-index:99999;' +
-            'display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border:none;border-radius:999px;' +
-            'font:600 14px system-ui,sans-serif;cursor:pointer;background:#0B2923;color:#00FFB2;' +
-            'box-shadow:0 6px 20px -6px rgba(0,0,0,.5)}' +
-            '.nit-edit-toggle.nit-on{background:#00FFB2;color:#0B2923}' +
-            '.nit-colours-btn{bottom:18px}' +
+            // Colours button — docked in the navbar beside the edit switch (not floating).
+            '.nit-colours-navbtn{display:inline-flex;align-items:center;gap:6px;margin-inline-start:8px;' +
+            'padding:6px 14px;border:none;border-radius:999px;font:600 13px system-ui,sans-serif;cursor:pointer;' +
+            'background:#00FFB2;color:#0B2923;white-space:nowrap}' +
             '.nit-img-pick{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}' +
             '.nit-img-thumb{height:64px;width:96px;border-radius:8px;border:1px solid #ccc;background-size:cover;background-position:center}' +
             'body.editing [data-nit-section],body.editing [data-nit-edit]{outline:2px dashed rgba(0,180,140,.7);outline-offset:-2px;position:relative}' +
@@ -997,13 +995,15 @@
 
         coloursBtn = document.createElement('button');
         coloursBtn.type = 'button';
-        coloursBtn.className = 'nit-edit-toggle nit-colours-btn';
+        coloursBtn.className = 'nit-colours-navbtn';
         coloursBtn.textContent = '🎨 ' + t('colours', 'Colours');
         coloursBtn.style.display = 'none';
         coloursBtn.addEventListener('click', function () {
             openPanel(t('colours', 'Colours'), palettePanel());
         });
-        document.body.appendChild(coloursBtn);
+        // Dock the Colours button beside the edit switch in the navbar (not floating).
+        var navtools = document.querySelector('.nit-navbar-tools') || document.querySelector('.nit-navbar-editswitch');
+        (navtools || document.body).appendChild(coloursBtn);
 
         // Activate with Moodle's native "Edit mode" toggle (body.editing) — no
         // separate button. React live if the user flips it without a reload.

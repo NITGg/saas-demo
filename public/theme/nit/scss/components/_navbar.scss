@@ -541,3 +541,28 @@ $nit-navpanel-divider: var(--nit-navbarpanelborder, #dedede); // light row divid
 // rtlcss rewrote it to "bleft" in the RTL build, so the var went undefined and
 // the navbar hover fell back to its legacy gold literal. Fixed by renaming the
 // variable to `--nit-brand-accent-vivid` (see foundation/_brand.scss).
+
+// ── Edit-mode switch relocated into the BAR (US #1) ──────────────────────────
+// The switch + the inline editor's 🎨 Colours button sit together in the top bar
+// (not the gear menu, and not floating). The wrapper collapses on pages without
+// editing (the switch renders empty there).
+.nit-navbar-tools {
+    gap: 4px;
+
+    .nit-navbar-editswitch {
+        &:empty { display: none; }
+
+        .editmode-switch-form { margin: 0 !important; }
+
+        label,
+        .form-check-label {
+            color: $nit-navpanel-item !important;
+            font-size: .9rem;
+            margin: 0;
+            white-space: nowrap;
+        }
+    }
+
+    // Nothing to show (not an editor / non-editable page) → hide the whole wrapper.
+    &:has(.nit-navbar-editswitch:empty) { display: none !important; }
+}
