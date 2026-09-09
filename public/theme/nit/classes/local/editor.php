@@ -820,6 +820,26 @@ class editor {
     }
 
     /**
+     * Rename the academy — sets the site (front-page course) full name. The short
+     * name is left alone (it's a stable identifier and must stay unique). Caches
+     * are purged so the new name shows everywhere ($SITE, title, footer) at once.
+     *
+     * @param string $name the new display name
+     * @return bool false on an empty / over-long name
+     */
+    public static function set_site_name(string $name): bool {
+        global $DB;
+        $name = trim($name);
+        if ($name === '' || \core_text::strlen($name) > 254) {
+            return false;
+        }
+        $DB->set_field('course', 'fullname', $name, ['id' => SITEID]);
+        rebuild_course_cache(SITEID, true);
+        purge_all_caches();
+        return true;
+    }
+
+    /**
      * Replace a CORE site file (logo / logocompact / favicon — stored under the
      * core_admin component, exactly like theme_nit's brand applier), DELETING the
      * previous file first so storage isn't leaked. Updates the core_admin config

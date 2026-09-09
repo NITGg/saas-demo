@@ -716,6 +716,68 @@
         { name: 'Brick', p: { primary: '#92251e', accent: '#b23a2e', secondary: '#fbeeec', background: '#ffffff', surface: '#fbf4f3', text: '#183041' } },
         { name: 'Navy', p: { primary: '#003362', accent: '#1f6fb2', secondary: '#e9eef4', background: '#ffffff', surface: '#f2f6fa', text: '#10233a' } }
     ];
+    // Branding panel — academy name, logo, and login-page background in one place.
+    function brandingPanel() {
+        var body = document.createElement('div');
+        var label = function (text, mb) {
+            var l = document.createElement('label');
+            l.textContent = text;
+            l.style.cssText = 'display:block;font-weight:600;margin-bottom:' + (mb || 6) + 'px';
+            return l;
+        };
+        var divider = function () {
+            var d = document.createElement('div');
+            d.style.cssText = 'height:1px;background:#eee;margin:16px 0';
+            return d;
+        };
+        var pillBtn = function (text) {
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.textContent = text;
+            b.style.cssText = 'padding:8px 16px;border:1px solid #ccc;border-radius:8px;background:#fff;color:#0B2923;font-weight:600;cursor:pointer';
+            return b;
+        };
+
+        // Academy name + Save
+        body.appendChild(label(t('academyname', 'Academy name')));
+        var nameInp = document.createElement('input');
+        nameInp.type = 'text';
+        nameInp.value = CFG.sitename || '';
+        nameInp.maxLength = 200;
+        nameInp.style.cssText = 'width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid #ccc;border-radius:8px;font:14px system-ui';
+        body.appendChild(nameInp);
+        var nameBtn = document.createElement('button');
+        nameBtn.type = 'button';
+        nameBtn.textContent = t('save', 'Save');
+        nameBtn.style.cssText = 'margin-top:8px;padding:8px 18px;border:0;border-radius:8px;background:#0B2923;color:#00FFB2;font-weight:700;cursor:pointer';
+        nameBtn.addEventListener('click', function () {
+            var v = nameInp.value.trim();
+            if (v === '') { return; }
+            submitPanel('sitename', { name: v }, null, nameBtn);
+        });
+        body.appendChild(nameBtn);
+
+        // Logo
+        body.appendChild(divider());
+        body.appendChild(label(t('editlogo', 'Edit logo')));
+        var logoBtn = pillBtn('🖼 ' + t('replacelogo', 'Replace logo'));
+        logoBtn.addEventListener('click', function () { uploadImage('logo', {}, logoBtn); });
+        body.appendChild(logoBtn);
+
+        // Login-page background
+        body.appendChild(divider());
+        body.appendChild(label(t('loginbg', 'Login page background'), 4));
+        var hint = document.createElement('p');
+        hint.textContent = t('loginbghint', '');
+        hint.style.cssText = 'margin:0 0 8px;font-size:12px;color:#666';
+        body.appendChild(hint);
+        var lbBtn = pillBtn('🖼 ' + t('replaceimage', 'Replace image'));
+        lbBtn.addEventListener('click', function () { uploadImage('login_bg', {}, lbBtn); });
+        body.appendChild(lbBtn);
+
+        return body;
+    }
+
     function palettePanel() {
         var pal = CFG.palette || {};
         var body = document.createElement('div');
@@ -878,10 +940,10 @@
                 });
             }
         });
-        // Logo (navbar brand) → replace the site logo.
+        // Logo (navbar brand) → open the Branding panel (name + logo + login bg).
         document.querySelectorAll('[data-nit-edit="logo"]').forEach(function (el) {
-            attachPencil(el, t('editlogo', 'Edit logo'), function (pencil) {
-                uploadImage('logo', {}, pencil);
+            attachPencil(el, t('editbrand', 'Edit branding'), function () {
+                openPanel(t('editbrand', 'Edit branding'), brandingPanel());
             });
         });
     }

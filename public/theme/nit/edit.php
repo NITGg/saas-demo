@@ -404,6 +404,25 @@ try {
             nit_edit_respond(true);
             break;
 
+        // Rename the academy (site full name).
+        case 'sitename':
+            $name = optional_param('name', '', PARAM_TEXT);
+            if (!editor::set_site_name($name)) {
+                nit_edit_respond(false, ['error' => 'badname']);
+            }
+            nit_edit_respond(true);
+            break;
+
+        // Login / signup page background image → theme_nit loginbackgroundimage.
+        case 'login_bg':
+            $err = null;
+            if (!editor::replace_stored_file('loginbackgroundimage', $_FILES['image'] ?? [], $err)) {
+                nit_edit_respond(false, ['error' => $err ?? 'image']);
+            }
+            editor::bust_theme_caches();
+            nit_edit_respond(true);
+            break;
+
         default:
             nit_edit_respond(false, ['error' => 'unknownaction']);
     }
