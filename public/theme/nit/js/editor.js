@@ -103,13 +103,18 @@
             '.nit-img-pick{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}' +
             '.nit-img-thumb{height:64px;width:96px;border-radius:8px;border:1px solid #ccc;background-size:cover;background-position:center}' +
             'body.editing [data-nit-section],body.editing [data-nit-edit]{outline:2px dashed rgba(0,180,140,.7);outline-offset:-2px;position:relative}' +
-            '.nit-edit-pencil{position:absolute;top:10px;inset-inline-end:10px;z-index:9999;' +
+            // z-index 1020 is BELOW the fixed navbar (Bootstrap .fixed-top = 1030) but
+            // above page content — so a section pencil slides BEHIND the navbar as its
+            // section scrolls up under the bar (instead of floating over it), and shows
+            // normally while the section is in view.
+            '.nit-edit-pencil{position:absolute;top:10px;inset-inline-end:10px;z-index:1020;' +
             'display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:none;border-radius:8px;' +
             'font:600 13px system-ui,sans-serif;cursor:pointer;background:#0B2923;color:#00FFB2;' +
             'box-shadow:0 2px 8px rgba(0,0,0,.35)}' +
-            // The fixed navbar is 100px tall. The hero (pulled up under the bar) and
-            // the branding pencil (which lives ON the navbar logo) would otherwise
-            // float over the bar / its edit toolbar. Drop both clear of the navbar.
+            // The hero is pulled UP under the 100px navbar, so its pencil at top:10px
+            // would always hide behind the bar — drop it to 56px so it clears the bar
+            // and stays clickable. The branding pencil lives ON the navbar logo; pin it
+            // just BELOW the bar (above it in z so it isn't clipped) instead of over it.
             '[data-nit-section="hero"] > .nit-edit-pencil{top:56px}' +
             '.nit-navbar-brand > .nit-edit-pencil{position:fixed;top:108px;inset-inline-start:12px;' +
             'inset-inline-end:auto;z-index:1031}' +
@@ -727,6 +732,58 @@
         return body;
     }
 
+    // Download-apps panel: override the Google Play / App Store links shown in the
+    // download band. Empty = use the auto per-academy Play link + the platform iOS
+    // URL. Saves to the 'apps' action.
+    function appsPanel() {
+        var a = CFG.apps || {};
+        var body = document.createElement('div');
+        var hint = document.createElement('p');
+        hint.style.cssText = 'font-size:12px;color:#666;margin:0 0 12px';
+        hint.textContent = t('appshint', 'Leave empty to use the default NIT Academy app link for this academy.');
+        body.appendChild(hint);
+        function urlRow(labelKey, labelFallback, value) {
+            var row = document.createElement('div');
+            row.className = 'nit-edit-row';
+            var lbl = document.createElement('label');
+            lbl.textContent = t(labelKey, labelFallback);
+            var inp = document.createElement('input');
+            inp.type = 'url';
+            inp.value = value || '';
+            inp.placeholder = 'https://…';
+            inp.style.cssText = 'padding:8px;border:1px solid #ccc;border-radius:8px;font:inherit';
+            inp.dir = 'ltr';
+            row.appendChild(lbl);
+            row.appendChild(inp);
+            body.appendChild(row);
+            return inp;
+        }
+        var androidInp = urlRow('appsandroid', 'Google Play URL', a.android);
+        var iosInp = urlRow('appsios', 'App Store URL', a.ios);
+        var act = document.createElement('div');
+        act.className = 'nit-edit-actions';
+        var cancel = document.createElement('button');
+        cancel.type = 'button';
+        cancel.className = 'nit-edit-btn sec';
+        cancel.textContent = t('cancel', 'Cancel');
+        cancel.addEventListener('click', closePanel);
+        var save = document.createElement('button');
+        save.type = 'button';
+        save.className = 'nit-edit-btn';
+        save.textContent = t('save', 'Save');
+        save.addEventListener('click', function () {
+            postFields({
+                action: 'apps',
+                android: androidInp.value.trim(),
+                ios: iosInp.value.trim()
+            }, save);
+        });
+        act.appendChild(cancel);
+        act.appendChild(save);
+        body.appendChild(act);
+        return body;
+    }
+
     // Palette panel: the 6 brand pickers (rest are derived server-side). Seeded
     // from NIT_EDIT.palette; saving recompiles the theme CSS.
     var PALETTE_FIELDS = ['primary', 'accent', 'secondary', 'background', 'surface', 'text'];
@@ -996,6 +1053,12 @@
         document.querySelectorAll('[data-nit-edit="logo"]').forEach(function (el) {
             attachPencil(el, t('editbrand', 'Edit branding'), function () {
                 openPanel(t('editbrand', 'Edit branding'), brandingPanel());
+            });
+        });
+        // Download-apps band → edit the Google Play / App Store links.
+        document.querySelectorAll('[data-nit-edit="apps"]').forEach(function (el) {
+            attachPencil(el, t('editapps', 'Edit app links'), function () {
+                openPanel(t('editapps', 'Edit app links'), appsPanel());
             });
         });
     }

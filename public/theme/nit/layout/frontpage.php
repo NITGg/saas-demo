@@ -320,6 +320,12 @@ if (\theme_nit\local\editor::can_edit()) {
             'surface'    => (string) get_config('theme_nit', 'brandcolour_g1_surface'),
             'text'       => (string) get_config('theme_nit', 'brandcolour_g1_textprimary'),
         ],
+        // Download-apps links: the owner's overrides (empty => the auto Play link /
+        // the platform iOS URL are used). Edited via the download band's pencil.
+        'apps'          => [
+            'android' => (string) get_config('theme_nit', 'download_android'),
+            'ios'     => (string) get_config('theme_nit', 'download_ios'),
+        ],
         'contact'       => [
             'phone'     => (string) get_config('theme_nit', 'contact_phone'),
             'whatsapp'  => (string) get_config('theme_nit', 'support_phone'),
@@ -361,6 +367,10 @@ if (\theme_nit\local\editor::can_edit()) {
             'new'           => get_string('edit_new', 'theme_nit'),
             'deleteconfirm' => get_string('edit_deleteconfirm', 'theme_nit'),
             'close'         => get_string('edit_close', 'theme_nit'),
+            'editapps'      => get_string('edit_editapps', 'theme_nit'),
+            'appsandroid'   => get_string('edit_appsandroid', 'theme_nit'),
+            'appsios'       => get_string('edit_appsios', 'theme_nit'),
+            'appshint'      => get_string('edit_appshint', 'theme_nit'),
             'editcontact'   => get_string('edit_editcontact', 'theme_nit'),
             'c_phone'       => get_string('edit_c_phone', 'theme_nit'),
             'c_whatsapp'    => get_string('edit_c_whatsapp', 'theme_nit'),
@@ -395,13 +405,26 @@ if (\theme_nit\local\editor::can_edit()) {
 }
 
 // NIT: download-apps band (Google Play + App Store), shown before the footer.
-// Store URLs are the platform's shared NIT Academy app links, pushed to every
-// academy as local_multitopics/{android_url,ios_url}. The band ALWAYS renders
-// (US: "show the download section even if the links are empty") — a store button
-// with no configured URL is shown disabled (href="#", muted) so the section is
-// always visible and fills in once the platform sets the links.
-$nitandroid = trim((string) get_config('local_multitopics', 'android_url'));
-$nitios     = trim((string) get_config('local_multitopics', 'ios_url'));
+// The Google Play button uses the SAME per-academy install-referrer link the
+// owner's nit2 account page shows (connectLinks.ts): the NIT app opens already
+// pointed at THIS academy. It is derived from the academy's own URL, so it always
+// works. An owner can override either store URL from the inline editor (the
+// theme_nit/download_android|download_ios overrides); the App Store falls back to
+// the platform's shared local_multitopics/ios_url. The band ALWAYS renders — a
+// button with no URL shows disabled.
+$nitsite   = (new moodle_url('/'))->out(false);
+$nitappid  = trim((string) get_config('local_multitopics', 'android_app_id'));
+if ($nitappid === '') {
+    $nitappid = 'com.nit.academy';                       // ANDROID_APP_ID (connectLinks.ts)
+}
+$nitenc      = rawurlencode($nitsite);
+$nitreferrer = rawurlencode('base=' . $nitenc);          // base=<enc>, encoded again for the URL
+$nitplayauto = 'https://play.google.com/store/apps/details?id=' . $nitappid . '&referrer=' . $nitreferrer;
+// Overrides (owner-set) win; else the auto Play link / the platform iOS URL.
+$nitandroidov = trim((string) get_config('theme_nit', 'download_android'));
+$nitiosov     = trim((string) get_config('theme_nit', 'download_ios'));
+$nitandroid = $nitandroidov !== '' ? $nitandroidov : $nitplayauto;
+$nitios     = $nitiosov !== '' ? $nitiosov : trim((string) get_config('local_multitopics', 'ios_url'));
 $nitstore = function (string $href, string $icon, string $store): string {
     $has = ($href !== '');
     $attrs = $has
@@ -419,7 +442,7 @@ $nitstore = function (string $href, string $icon, string $store): string {
 $nitbtns = $nitstore($nitandroid, 'fa-google-play', 'Google Play')
     . $nitstore($nitios, 'fa-apple', 'App Store');
 $nitdownloadband =
-    '<div class="nit-download-band" style="background:color-mix(in srgb, var(--nit-brand-surface) 70%, var(--nit-brand-background));'
+    '<div class="nit-download-band" data-nit-edit="apps" style="background:color-mix(in srgb, var(--nit-brand-surface) 70%, var(--nit-brand-background));'
     . 'padding:64px 20px;text-align:center;">'
     . '<h2 style="font-size:30px;font-weight:800;color:var(--nit-brand-textprimary);margin:0 0 8px;">'
     . s(get_string('download_title', 'theme_nit')) . '</h2>'

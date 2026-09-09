@@ -415,6 +415,21 @@ try {
             nit_edit_respond(true);
             break;
 
+        // Download-apps link overrides (Google Play / App Store). Empty clears the
+        // override (band falls back to the auto per-academy Play link + platform iOS).
+        case 'apps':
+            $android = trim(optional_param('android', '', PARAM_RAW_TRIMMED));
+            $ios = trim(optional_param('ios', '', PARAM_RAW_TRIMMED));
+            $okurl = fn($u) => $u === '' || preg_match('#^https?://#i', $u);
+            if (!$okurl($android) || !$okurl($ios)) {
+                nit_edit_respond(false, ['error' => 'badurl']);
+            }
+            set_config('download_android', $android, 'theme_nit');
+            set_config('download_ios', $ios, 'theme_nit');
+            purge_all_caches();
+            nit_edit_respond(true);
+            break;
+
         // Rename the academy (site full name).
         case 'sitename':
             $name = optional_param('name', '', PARAM_TEXT);
