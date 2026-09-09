@@ -254,12 +254,16 @@ class editor {
         while ($node->firstChild) {
             $node->removeChild($node->firstChild);
         }
-        // Ensure the box crops the image nicely even if the stored style had none.
+        // Show the WHOLE image (no crop). A taller 3/4 box + `contain` fits typical
+        // instructor/portrait photos full-height; the surface colour fills any gap.
         $style = $node->getAttribute('style');
-        if (!preg_match('/aspect-ratio\s*:/i', $style)) {
-            $style = rtrim($style, '; ') . ';aspect-ratio:4/3;';
+        // Replace an old 4/3 aspect with 3/4; add one if none is present.
+        if (preg_match('/aspect-ratio\s*:/i', $style)) {
+            $style = preg_replace('/aspect-ratio\s*:[^;]*;?/i', 'aspect-ratio:3/4;', $style, 1);
+        } else {
+            $style = rtrim($style, '; ') . ';aspect-ratio:3/4;';
         }
-        $bg = "background:#000 url('" . $datauri . "') center/cover no-repeat";
+        $bg = "background:var(--nit-brand-surface,#f2f2f2) url('" . $datauri . "') center/contain no-repeat";
         if (preg_match('/background\s*:/i', $style)) {
             $style = preg_replace('/background\s*:[^;]*;?/i', $bg . ';', $style, 1);
         } else {
