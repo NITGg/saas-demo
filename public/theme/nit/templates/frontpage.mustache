@@ -471,6 +471,12 @@ window.NIT_CATEGORIES = {{{ nitcategoriesjson }}};
             {{/hasbelowcontent}}
             {{! NIT: end below-content. }}
         </div>
+        {{! NIT: download-apps band (Google Play + App Store) — before the footer. }}
+        {{#hasnitdownload}}
+            <div class="nit-region nit-download-band" data-region="download-apps">
+                {{{ nitdownload }}}
+            </div>
+        {{/hasnitdownload}}
         {{! NIT: full-width closing region — edge-to-edge, below the content shell. }}
         {{#hasfullwidthbottom}}
             <div class="nit-region nit-region-fullwidth-bottom" data-region="fullwidth-bottom">

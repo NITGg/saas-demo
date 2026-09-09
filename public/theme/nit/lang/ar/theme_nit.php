@@ -185,3 +185,8 @@ $string['edit_col_surface'] = 'البطاقات';
 $string['edit_col_text'] = 'النص';
 $string['edit_gallerydraghint'] = 'اسحب لإعادة الترتيب. تُحفظ التغييرات عند الضغط على حفظ.';
 $string['edit_new'] = 'جديد';
+
+// شريط تحميل التطبيقات (الصفحة الرئيسية، قبل التذييل).
+$string['download_title'] = 'حمّل التطبيق';
+$string['download_sub'] = 'تعلّم في أي وقت — حمّل تطبيق NIT Academy لأندرويد أو iOS.';
+$string['download_geton'] = 'حمّله من';
