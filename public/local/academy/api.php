@@ -300,6 +300,7 @@ try {
                     'name'        => \local_license\license::tiername(),
                     'videosource' => \local_license\license::video_source(),
                     'features'    => array_values((array) ($ldef['features'] ?? [])),
+                    'storagegb'   => (int) (\local_license\license::tierdef()['storagegb'] ?? -1), // GB moodledata quota
                     'limits'      => [ // -1 = unlimited
                         'maxcourses'  => \local_license\license::max_courses(),
                         'maxteachers' => \local_license\license::max_teachers(),
@@ -307,6 +308,12 @@ try {
                         'video'       => \local_license\license::bucket_limit('video'),
                         'pdf'         => \local_license\license::bucket_limit('pdf'),
                     ],
+                    // price + "subscribed at" are billing values held in nit2, not
+                    // enforced in Moodle. For the FULL billing view (price, purchase
+                    // date, invoices) + upgrade/renew, the app calls nit2:
+                    //   GET  /api/academies/<slug>/plan   (full details)
+                    //   POST /api/payments/kashier/create {purpose:"upgrade"|"renew"}
+                    'billing_in_nit2' => true,
                 ],
                 'usage' => [
                     'courses'  => \local_license\enforcer::count_courses(),

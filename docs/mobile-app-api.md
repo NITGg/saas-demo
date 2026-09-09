@@ -148,7 +148,9 @@ comes from `local_license`; *payments* are what students paid in this academy.
     "enforced": true, "tier": "basic", "name": "Basic",
     "videosource": "vimeo",
     "features": ["coupons","subscriptions", …],
-    "limits": { "maxcourses": 3, "maxteachers": 1, "quiz": -1, "video": -1, "pdf": -1 }  // -1 = unlimited
+    "storagegb": 5,                                                    // GB moodledata quota
+    "limits": { "maxcourses": 3, "maxteachers": 1, "quiz": -1, "video": -1, "pdf": -1 },  // -1 = unlimited
+    "billing_in_nit2": true          // price + purchase date + upgrade/renew are in nit2 (below)
   },
   "usage": { "courses": 2, "teachers": 1, "quiz": 5, "video": 12, "pdf": 3 },   // live counts vs limits
   "subscription": {                  // the current term
@@ -163,10 +165,17 @@ comes from `local_license`; *payments* are what students paid in this academy.
   student UI; `get_license_status` adds the **numeric limits, live usage, and the
   subscription term** that only an admin/owner needs.
 
-> The academy's **purchase** subscription + purchase invoices (what the *owner
-> paid NIT* for the academy) live in **nit2**, not here — see the nit2 guide
-> (`GET /api/academies/<slug>/plan`, `/api/subscriptions`, `/api/payments`).
-> This academy-side endpoint is the academy's own licence term + student revenue.
+> **Price, purchase date, and upgrade/renew are NOT here** — the academy's Moodle
+> can't take payment for its own plan. For the full billing view + actions, the
+> app calls **nit2** (the owner's platform account):
+> - `GET /api/academies/<slug>/plan` — full package (incl. **price**), subscription
+>   (`subscribedAt`, `validUntil`, auto-renew, card), payments, and an `actions` block.
+> - **Renew:** `POST /api/payments/kashier/create {purpose:"renew", slug, tier, cycle}`.
+> - **Upgrade:** `POST /api/payments/kashier/create {purpose:"upgrade", slug, tier:<new>, cycle}` (prorated).
+> - **Auto-renew:** `PATCH /api/subscriptions/<slug> {autoRenew}`.
+>
+> So: this academy endpoint = in-app **enforcement view** (limits, GB, usage,
+> expiry) for the admin/owner; nit2 = **billing + upgrade/renew**.
 
 ## 6. Courses & content
 
