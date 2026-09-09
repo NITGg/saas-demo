@@ -1010,19 +1010,12 @@ function theme_nit_before_standard_html_head(): string {
     }
     // Sanitise for a CSS url('…') context (the value is a pluginfile URL we built).
     $safe = str_replace(["\\", "'", "\r", "\n", '"'], ['\\5c ', '\\27 ', '', '', ''], $url);
-    $img = "linear-gradient(rgba(0,0,0,.45),rgba(0,0,0,.6)),url('" . $safe . "')";
-    // Two targets: the branded LEFT panel (desktop two-column login) AND the whole
-    // login page. The left panel is `d-none` below 992px, so on a narrow window the
-    // uploaded image would never show — painting the page background as well means
-    // it is always visible (the form sits on its own card above it).
+    // Paint the LEFT panel only (the branded side of the two-column login) — never
+    // the whole page, or the image bleeds across the right column behind the form.
     $css = '.login-layout-left{'
-        . 'background-image:' . $img . '!important;'
+        . "background-image:linear-gradient(rgba(0,0,0,.45),rgba(0,0,0,.6)),url('" . $safe . "')!important;"
         . 'background-size:cover!important;background-position:center center!important;'
-        . 'background-repeat:no-repeat!important;}'
-        . 'body.pagelayout-login,body.pagelayout-login #page{'
-        . 'background-image:' . $img . ';'
-        . 'background-size:cover;background-position:center center;'
-        . 'background-repeat:no-repeat;background-attachment:fixed;}';
+        . 'background-repeat:no-repeat!important;}';
     return '<style id="nit-login-bg-live">' . $css . '</style>' . "\n";
 }
 

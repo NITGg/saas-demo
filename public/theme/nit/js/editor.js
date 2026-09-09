@@ -107,6 +107,12 @@
             'display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:none;border-radius:8px;' +
             'font:600 13px system-ui,sans-serif;cursor:pointer;background:#0B2923;color:#00FFB2;' +
             'box-shadow:0 2px 8px rgba(0,0,0,.35)}' +
+            // The fixed navbar is 100px tall. The hero (pulled up under the bar) and
+            // the branding pencil (which lives ON the navbar logo) would otherwise
+            // float over the bar / its edit toolbar. Drop both clear of the navbar.
+            '[data-nit-section="hero"] > .nit-edit-pencil{top:56px}' +
+            '.nit-navbar-brand > .nit-edit-pencil{position:fixed;top:108px;inset-inline-start:12px;' +
+            'inset-inline-end:auto;z-index:1031}' +
             '.nit-edit-busy{opacity:.6;pointer-events:none}' +
             '.nit-edit-overlay{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.5);' +
             'display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto}' +
