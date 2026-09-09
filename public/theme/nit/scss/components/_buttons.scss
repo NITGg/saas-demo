@@ -32,10 +32,24 @@
 // per fill with Bootstrap's color-contrast(), which returns black or white for
 // the academy's actual Group-1 colour (each academy compiles its own CSS, so
 // $nit-b-g1-* already carry that academy's palette).
+// Bootstrap's $primary is a STATIC blue ($nit-blue-600), so a plain .btn-primary
+// ignored the academy palette AND its label contrast was computed for the brand
+// primary — a fill/label mismatch (the washed-out "Create course" on the dark
+// dashboard). Drive the whole button from the live brand vars so the fill IS the
+// academy primary and the label is the matching AA-safe on-primary, in any palette.
 .btn-primary {
-    --bs-btn-color: #{color-contrast($nit-b-g1-primary)};
-    --bs-btn-hover-color: #{color-contrast($nit-b-g1-primary)};
-    --bs-btn-active-color: #{color-contrast($nit-b-g1-primary)};
+    --bs-btn-bg: var(--nit-brand-primary);
+    --bs-btn-border-color: var(--nit-brand-primary);
+    --bs-btn-color: var(--nit-brand-on-primary);
+    --bs-btn-hover-bg: #{"color-mix(in srgb, var(--nit-brand-primary) 88%, #000)"};
+    --bs-btn-hover-border-color: #{"color-mix(in srgb, var(--nit-brand-primary) 88%, #000)"};
+    --bs-btn-hover-color: var(--nit-brand-on-primary);
+    --bs-btn-active-bg: #{"color-mix(in srgb, var(--nit-brand-primary) 80%, #000)"};
+    --bs-btn-active-border-color: #{"color-mix(in srgb, var(--nit-brand-primary) 80%, #000)"};
+    --bs-btn-active-color: var(--nit-brand-on-primary);
+    --bs-btn-disabled-bg: var(--nit-brand-primary);
+    --bs-btn-disabled-border-color: var(--nit-brand-primary);
+    --bs-btn-disabled-color: var(--nit-brand-on-primary);
 }
 
 .btn-danger {

@@ -415,14 +415,43 @@ $nitstore = function (string $href, string $icon, string $store): string {
 };
 $nitbtns = $nitstore($nitandroid, 'fa-google-play', 'Google Play')
     . $nitstore($nitios, 'fa-apple', 'App Store');
-$templatecontext['nitdownload'] =
-    '<div style="background:color-mix(in srgb, var(--nit-brand-surface) 70%, var(--nit-brand-background));'
+$nitdownloadband =
+    '<div class="nit-download-band" style="background:color-mix(in srgb, var(--nit-brand-surface) 70%, var(--nit-brand-background));'
     . 'padding:64px 20px;text-align:center;">'
     . '<h2 style="font-size:30px;font-weight:800;color:var(--nit-brand-textprimary);margin:0 0 8px;">'
     . s(get_string('download_title', 'theme_nit')) . '</h2>'
     . '<p style="font-size:16px;color:var(--nit-brand-textsecondary);margin:0 0 28px;">'
     . s(get_string('download_sub', 'theme_nit')) . '</p>'
     . '<div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">' . $nitbtns . '</div></div>';
-$templatecontext['hasnitdownload'] = true;
+
+// The footer is seeded as the LAST block in the fullwidth-top region (see
+// seed_homepage.php — every section shares that region), so a band rendered from
+// the template's own slot lands BELOW the footer. Inject it into the region HTML
+// right before the footer block instead, so it sits just above the footer wherever
+// the footer lives. Falls back to appending to fullwidth-top when there is no
+// footer marker. The separate template slot is left empty.
+$nitinject = function (string &$region) use ($nitdownloadband): bool {
+    $mpos = strpos($region, 'data-nit-section="footer"');
+    if ($mpos === false) {
+        return false;
+    }
+    $divpos = strrpos(substr($region, 0, $mpos), '<div');
+    if ($divpos === false) {
+        return false;
+    }
+    $region = substr($region, 0, $divpos) . $nitdownloadband . substr($region, $divpos);
+    return true;
+};
+if ($nitinject($fullwidthtop)) {
+    $templatecontext['fullwidthtop'] = $fullwidthtop;
+    $templatecontext['hasfullwidthtop'] = true;
+} else if ($nitinject($fullwidthbottom)) {
+    $templatecontext['fullwidthbottom'] = $fullwidthbottom;
+    $templatecontext['hasfullwidthbottom'] = true;
+} else {
+    // No footer section anywhere — show the band via its own slot (end of page).
+    $templatecontext['nitdownload'] = $nitdownloadband;
+    $templatecontext['hasnitdownload'] = true;
+}
 
 echo $OUTPUT->render_from_template('theme_nit/frontpage', $templatecontext);

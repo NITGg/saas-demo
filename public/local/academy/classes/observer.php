@@ -54,8 +54,11 @@ class observer {
         }
         $startdate = (int) $DB->get_field('course', 'startdate', ['id' => $courseid]);
         $now = time();
-        if ($startdate > $now) {
-            // Today at 00:00 — <= now, so content is visible right away.
+        // Core defaults a new course's start date to TOMORROW. Pull only that
+        // default back to today (start <= now, so content is visible now) — but do
+        // NOT touch a deliberately scheduled future date (more than ~2 days out),
+        // so an academy can still launch a course later on purpose.
+        if ($startdate > $now && $startdate <= $now + 2 * DAYSECS) {
             $DB->set_field('course', 'startdate', usergetmidnight($now), ['id' => $courseid]);
             rebuild_course_cache($courseid, true);
         }
@@ -66,6 +69,16 @@ class observer {
         // admin-like, so Moodle skips it and their dashboard stays empty even
         // though they own every course. Enrol them explicitly here.
         self::enrol_course_creator($courseid, (int) $event->userid);
+
+        // Purge the theme's front-page cache so the new course appears on the home
+        // courses grid immediately. theme_nit_get_courses() caches its assembled
+        // list for ~5 min keyed by user+country; without this a just-created course
+        // is invisible on the Site home until that TTL expires.
+        try {
+            \cache_helper::purge_by_definition('theme_nit', 'frontpage');
+        } catch (\Throwable $e) {
+            // Theme not installed / cache undefined — nothing to purge.
+        }
     }
 
     /**
