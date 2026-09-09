@@ -44,15 +44,6 @@
     var BRAND_VARS = ['primary', 'accent', 'secondary', 'background', 'surface', 'textprimary',
         'accenttext', 'textsecondary', 'borderprimary', 'bordersecondary', 'hoverbackground', 'hovertext'];
 
-    // Relative luminance (WCAG) → pick a readable text colour on a coloured button.
-    function luminance(hex) {
-        var lin = function (i) {
-            var x = ch(hex, i) / 255;
-            return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
-        };
-        return 0.2126 * lin(0) + 0.7152 * lin(2) + 0.0722 * lin(4);
-    }
-
     // Live-preview a palette. The active --nit-brand-<role> resolves to
     // --nit-brand-g1-<role>, and every derived shade / legacy alias references
     // those via live color-mix — so overriding the g1 SOURCE vars (on :root)
@@ -61,10 +52,11 @@
         return {
             primary: c.primary, accent: c.accent, secondary: c.secondary,
             background: c.background, surface: c.surface, textprimary: c.text,
-            // Text ON primary/accent buttons — must CONTRAST with the button, not
-            // tint toward it (a dark-gold on navy was unreadable). White on a dark
-            // primary, near-black on a light one.
-            accenttext: luminance(c.primary) < 0.5 ? '#ffffff' : '#171b22',
+            // Accent Text = the LINK / navbar-title / footer-link colour. It sits on
+            // the page BACKGROUND, so it must read there — a tint of accent toward
+            // text (NOT a contrast-with-primary value, which turned the navbar title
+            // dark-on-dark). Button labels use --nit-brand-on-primary instead.
+            accenttext: mixHex(c.accent, c.text, 0.30),
             textsecondary: mixHex(c.text, c.background, 0.42),
             borderprimary: mixHex(c.surface, c.text, 0.12),
             bordersecondary: mixHex(c.surface, c.text, 0.24),

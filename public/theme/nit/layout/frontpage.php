@@ -398,7 +398,7 @@ if ($nitandroid !== '' || $nitios !== '') {
     $nitstore = function (string $href, string $icon, string $store): string {
         return '<a href="' . s($href) . '" target="_blank" rel="noopener" '
             . 'style="display:inline-flex;align-items:center;gap:12px;padding:12px 22px;border-radius:12px;'
-            . 'background:var(--nit-brand-primary);color:var(--nit-brand-accenttext);text-decoration:none;min-width:190px;">'
+            . 'background:var(--nit-brand-primary);color:var(--nit-brand-on-primary);text-decoration:none;min-width:190px;">'
             . '<i class="fa-brands ' . $icon . '" style="font-size:30px;line-height:1;" aria-hidden="true"></i>'
             . '<span style="text-align:start;line-height:1.15;">'
             . '<span style="display:block;font-size:11px;opacity:.85;">' . s(get_string('download_geton', 'theme_nit')) . '</span>'

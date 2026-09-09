@@ -254,22 +254,40 @@ class editor {
         while ($node->firstChild) {
             $node->removeChild($node->firstChild);
         }
-        // Show the WHOLE image (no crop). A taller 3/4 box + `contain` fits typical
-        // instructor/portrait photos full-height; the surface colour fills any gap.
+        // Full-height, half-width, NO FRAME (issue #2): the photo fills its whole
+        // column `cover`, matching the text column's height. Drop the old
+        // aspect-ratio + the bordered "frame"; force height:100% (+ a sensible
+        // min-height so it still has presence on a short text column).
         $style = $node->getAttribute('style');
-        // Replace an old 4/3 aspect with 3/4; add one if none is present.
-        if (preg_match('/aspect-ratio\s*:/i', $style)) {
-            $style = preg_replace('/aspect-ratio\s*:[^;]*;?/i', 'aspect-ratio:3/4;', $style, 1);
-        } else {
-            $style = rtrim($style, '; ') . ';aspect-ratio:3/4;';
-        }
-        $bg = "background:var(--nit-brand-surface,#f2f2f2) url('" . $datauri . "') center/contain no-repeat";
+        $style = preg_replace('/aspect-ratio\s*:[^;]*;?/i', '', $style);   // no fixed aspect
+        $style = preg_replace('/\bborder\s*:[^;]*;?/i', '', $style);       // remove the frame
+        $style = preg_replace('/\bheight\s*:[^;]*;?/i', '', $style);
+        $style = preg_replace('/min-height\s*:[^;]*;?/i', '', $style);
+        $bg = "background:var(--nit-brand-surface,#f2f2f2) url('" . $datauri . "') center/cover no-repeat";
         if (preg_match('/background\s*:/i', $style)) {
             $style = preg_replace('/background\s*:[^;]*;?/i', $bg . ';', $style, 1);
         } else {
             $style = rtrim($style, '; ') . ';' . $bg . ';';
         }
+        $style = rtrim($style, '; ') . ';width:100%;height:100%;min-height:360px;overflow:hidden;';
         $node->setAttribute('style', $style);
+        // The photo can only be full-height if the grid row stretches its cells —
+        // older about blocks were seeded with `align-items:center`. Flip the
+        // nearest ancestor grid to `stretch` so the image column fills the row.
+        $grid = $node->parentNode;
+        while ($grid instanceof \DOMElement) {
+            $gs = $grid->getAttribute('style');
+            if (stripos($gs, 'display:grid') !== false || stripos($gs, 'display: grid') !== false) {
+                if (preg_match('/align-items\s*:/i', $gs)) {
+                    $gs = preg_replace('/align-items\s*:[^;]*;?/i', 'align-items:stretch;', $gs, 1);
+                } else {
+                    $gs = rtrim($gs, '; ') . ';align-items:stretch;';
+                }
+                $grid->setAttribute('style', $gs);
+                break;
+            }
+            $grid = $grid->parentNode;
+        }
         return self::inner_html($dom, $xp);
     }
 
@@ -824,9 +842,12 @@ class editor {
     }
 
     /**
-     * Rename the academy — sets the site (front-page course) full name. The short
-     * name is left alone (it's a stable identifier and must stay unique). Caches
-     * are purged so the new name shows everywhere ($SITE, title, footer) at once.
+     * Rename the academy — sets BOTH the site full name (used on the login page,
+     * "<title>", etc.) AND the site short name (which the front-page navbar brand
+     * shows — see frontpage.php `sitename => $SITE->shortname`). Setting only the
+     * full name left the navbar wordmark unchanged. The footer academy-name block
+     * is rebuilt too (preserving its description + logo) so every surface reads the
+     * same name. Caches are purged so it shows everywhere at once.
      *
      * @param string $name the new display name
      * @return bool false on an empty / over-long name
@@ -838,9 +859,45 @@ class editor {
             return false;
         }
         $DB->set_field('course', 'fullname', $name, ['id' => SITEID]);
+        // The navbar brand reads the SHORT name — keep the two in lockstep so the
+        // wordmark updates with the login/title. (Site shortname has no cross-site
+        // uniqueness requirement; it is just this academy's display identifier.)
+        $DB->set_field('course', 'shortname', $name, ['id' => SITEID]);
+        // Keep the footer academy-name in sync (issue: "make the Academy name the
+        // same we update on the logo in the navbar"). Rebuild the footer block with
+        // the new name, preserving the existing description + show-logo choice.
+        self::sync_footer_name($name);
         rebuild_course_cache(SITEID, true);
         purge_all_caches();
         return true;
+    }
+
+    /**
+     * Rebuild the footer block's academy name to $name while preserving the current
+     * description and show-logo state (read back from the existing footer HTML).
+     * No-op when there is no footer block.
+     */
+    private static function sync_footer_name(string $name): void {
+        $found = self::find_section('footer');
+        if (!$found) {
+            return;
+        }
+        [$bi, $cfg] = $found;
+        $html = self::section_html($cfg);
+        $desc = '';
+        $showlogo = false;
+        $frag = self::load_fragment($html);
+        if ($frag) {
+            [, $xp] = $frag;
+            // Description = the first <p> in the footer; show-logo = an <img> present.
+            $p = $xp->query('//p')->item(0);
+            if ($p) {
+                $desc = trim($p->textContent);
+            }
+            $showlogo = $xp->query('//img')->length > 0;
+        }
+        self::footer_to_bottom($bi);
+        self::save_section_html($bi, $cfg, self::build_footer_html($name, $desc, $showlogo));
     }
 
     /**
@@ -940,10 +997,12 @@ class editor {
         $set('surface', $surf);
         $set('textprimary', $txt);
         $set('accent', $acc);
-        // Button text must CONTRAST with the primary button, not tint toward the
-        // accent (a dark-gold accent on a navy primary was unreadable). Pick the
-        // AA-safe foreground (white or dark ink) for the primary colour.
-        $set('accenttext', \local_nit_core\branding\contrast::safe_foreground($p));
+        // Accent Text = the LINK / navbar-title / footer-link colour (see lib.php
+        // g1_accenttext -> link-color). It sits on the page BACKGROUND, so it must
+        // read there: a tint of accent toward the text colour. (Button LABELS use
+        // --nit-brand-on-primary, a compile-time color-contrast on the primary, so
+        // they stay AA-safe on the fill without dragging the link colour with them.)
+        $set('accenttext', self::mix($acc, $txt, 0.30));
         $set('textsecondary', self::mix($txt, $bg, 0.42));
         $set('borderprimary', self::mix($surf, $txt, 0.12));
         $set('bordersecondary', self::mix($surf, $txt, 0.24));

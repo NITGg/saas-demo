@@ -395,3 +395,19 @@ body.nit-frontpage.editing {
         content: none !important;
     }
 }
+
+// ── Front-page courses carousel: keep cards a FIXED width and centre a short row
+// (US #4). The row is an inline-styled flex track (`[data-nit-courses]`), so when
+// only one or two courses exist the cards used to sprawl / sit lonely on the left.
+// `justify-content: safe center` centres a row that fits and falls back to the
+// start edge when the track overflows (so a long list never clips its first card);
+// the fixed flex-basis stops a single card from stretching. Applies to every
+// academy (existing seeded blocks included) since it lands in the compiled CSS.
+[data-nit-courses] {
+    justify-content: safe center;
+}
+
+[data-nit-courses] > [data-nit-course-card] {
+    flex: 0 0 260px !important;
+    max-width: 260px;
+}

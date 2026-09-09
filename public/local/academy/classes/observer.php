@@ -59,6 +59,58 @@ class observer {
             $DB->set_field('course', 'startdate', usergetmidnight($now), ['id' => $courseid]);
             rebuild_course_cache($courseid, true);
         }
+
+        // Enrol the creator as an editing teacher so the course shows on THEIR
+        // dashboard ("Course overview" is enrolment-based). Core auto-assigns the
+        // creator role only for non-admin course creators; the academy owner is
+        // admin-like, so Moodle skips it and their dashboard stays empty even
+        // though they own every course. Enrol them explicitly here.
+        self::enrol_course_creator($courseid, (int) $event->userid);
+    }
+
+    /**
+     * Enrol $userid into $courseid as an editing teacher via the manual plugin
+     * (creating a manual instance if the course has none). No-op for the guest /
+     * system user, or when they are already enrolled.
+     *
+     * @param int $courseid
+     * @param int $userid the course creator (event->userid)
+     */
+    private static function enrol_course_creator(int $courseid, int $userid): void {
+        global $DB, $CFG;
+        require_once($CFG->libdir . '/enrollib.php');
+        if ($userid <= 0 || isguestuser($userid)) {
+            return;
+        }
+        if (!$DB->record_exists('user', ['id' => $userid, 'deleted' => 0])) {
+            return;
+        }
+        $context = \context_course::instance($courseid);
+        // Already has a role / enrolment here? Leave it alone.
+        if (is_enrolled($context, $userid)) {
+            return;
+        }
+        $roleid = (int) $DB->get_field('role', 'id', ['shortname' => 'editingteacher']);
+        if (!$roleid) {
+            return;
+        }
+        $plugin = enrol_get_plugin('manual');
+        if (!$plugin) {
+            return;
+        }
+        $instance = $DB->get_record('enrol', ['courseid' => $courseid, 'enrol' => 'manual'], '*', IGNORE_MULTIPLE);
+        if (!$instance) {
+            $course = $DB->get_record('course', ['id' => $courseid]);
+            $instanceid = $plugin->add_default_instance($course);
+            if (!$instanceid) {
+                $instanceid = $plugin->add_instance($course);
+            }
+            $instance = $instanceid ? $DB->get_record('enrol', ['id' => $instanceid]) : null;
+        }
+        if (!$instance) {
+            return;
+        }
+        $plugin->enrol_user($instance, $userid, $roleid, 0, 0, ENROL_USER_ACTIVE);
     }
 
     /** Build and send the welcome notification (in-app + email). */
