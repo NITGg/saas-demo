@@ -411,3 +411,30 @@ body.nit-frontpage.editing {
     flex: 0 0 260px !important;
     max-width: 260px;
 }
+
+// ── About section: photo fills the FULL SCREEN HEIGHT, half width, no frame
+// (US #2). Existing academies were seeded with a short, bordered, `align-items:
+// center` photo box; force the row to stretch and the photo box to ~full-viewport
+// height with a `cover` fill so the image is the hero of the section. `!important`
+// beats the block's inline styles, so it fixes already-seeded academies too (their
+// block HTML is frozen at create time and never re-seeded on image update).
+[data-nit-section="about"] > div {
+    align-items: stretch !important;
+}
+
+[data-nit-about-image] {
+    min-height: 85vh !important;
+    height: auto !important;
+    border: 0 !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+}
+
+// On a narrow (stacked) layout a full-screen photo is too much — cap it so the
+// text below stays reachable without a long scroll.
+@media (max-width: 767px) {
+    [data-nit-about-image] {
+        min-height: 60vh !important;
+    }
+}

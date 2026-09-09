@@ -269,7 +269,7 @@ class editor {
         } else {
             $style = rtrim($style, '; ') . ';' . $bg . ';';
         }
-        $style = rtrim($style, '; ') . ';width:100%;height:100%;min-height:360px;overflow:hidden;';
+        $style = rtrim($style, '; ') . ';width:100%;height:100%;min-height:85vh;overflow:hidden;';
         $node->setAttribute('style', $style);
         // The photo can only be full-height if the grid row stretches its cells —
         // older about blocks were seeded with `align-items:center`. Flip the
@@ -626,6 +626,39 @@ class editor {
             . '&copy; <span data-nit-year>' . $year . '</span> &mdash; {mlang ar}جميع الحقوق محفوظة{mlang}{mlang en}All rights reserved{mlang}'
             . '&nbsp;&middot;&nbsp; <a href="https://nitg-eg.com" target="_blank" rel="noopener" style="color: var(--nit-brand-accenttext); text-decoration:none;">N.I.T</a>'
             . '</div></div>';
+    }
+
+    /**
+     * Read the footer's editable text (academy name + description) back out of the
+     * block HTML with {mlang} tags intact, each split into an EN/AR pair — so the
+     * inline editor can prefill both languages. Also returns the show-logo state.
+     *
+     * @return array{name:array{en:string,ar:string},desc:array{en:string,ar:string},showlogo:bool}
+     */
+    public static function footer_fields(): array {
+        $out = ['name' => ['en' => '', 'ar' => ''], 'desc' => ['en' => '', 'ar' => ''], 'showlogo' => false];
+        $found = self::find_section('footer');
+        if (!$found) {
+            return $out;
+        }
+        $frag = self::load_fragment(self::section_html($found[1]));
+        if (!$frag) {
+            return $out;
+        }
+        [, $xp] = $frag;
+        // Name = the bold brand div; description = the first <p> (the Contact column
+        // <p> comes later in the DOM).
+        $namenode = $xp->query("//div[contains(@style,'font-weight:800')]")->item(0)
+            ?: $xp->query("//div[contains(@style,'font-weight: 800')]")->item(0);
+        if ($namenode) {
+            $out['name'] = self::mlang_parse(trim($namenode->textContent));
+        }
+        $p = $xp->query('//p')->item(0);
+        if ($p) {
+            $out['desc'] = self::mlang_parse(trim($p->textContent));
+        }
+        $out['showlogo'] = $xp->query('//img')->length > 0;
+        return $out;
     }
 
     /** Rebuild + save the footer block. Returns false if no footer block exists. */

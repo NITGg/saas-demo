@@ -28,6 +28,16 @@
         return (S && S[key]) || fallback;
     }
 
+    // Build a Moodle multilang2 string from an EN/AR pair — mirrors editor.php
+    // mlang_build(): both sides → {mlang en}…{mlang}{mlang ar}…{mlang}; one side →
+    // that side as plain text.
+    function mlangBuild(en, ar) {
+        en = (en || '').trim();
+        ar = (ar || '').trim();
+        if (en && ar) { return '{mlang en}' + en + '{mlang}{mlang ar}' + ar + '{mlang}'; }
+        return en || ar;
+    }
+
     // Blend hex a→b by ratio r (0..1) — mirrors the server's _mix so the live
     // preview matches what Save will compile.
     function mixHex(a, b, r) {
@@ -640,29 +650,42 @@
         return body;
     }
 
-    // Footer panel: academy name + description + show-logo, seeded from the DOM.
+    // Footer panel: academy name + description + show-logo. Bilingual academies
+    // get an EN + AR field for the name AND description (stored as {mlang} so the
+    // footer renders in the visitor's language — US #5); single-language academies
+    // get one field each. Seeded from the RAW block text (NIT_EDIT.footer, with
+    // {mlang} intact) so both languages prefill; falls back to the rendered DOM.
     function footerPanel(sec) {
         var body = document.createElement('div');
         var head = sec.querySelector('div[style*="font-weight:800"]');
         var para = sec.querySelector('p');
         var hasLogo = !!sec.querySelector('img');
+        var bi = !!CFG.bilingual;
+        var f = CFG.footer || {};
+        var namePart = f.name || { en: head ? head.textContent.trim() : '', ar: '' };
+        var descPart = f.desc || { en: para ? para.textContent.trim() : '', ar: '' };
 
-        function textRow(labelKey, labelFallback, value) {
-            var row = document.createElement('div');
-            row.className = 'nit-edit-row';
+        // A labelled field that is bilingual (EN+AR) or single, returning value().
+        function field(labelKey, labelFallback, part) {
             var lbl = document.createElement('label');
             lbl.textContent = t(labelKey, labelFallback);
-            var inp = document.createElement('input');
-            inp.type = 'text';
-            inp.value = value || '';
-            inp.style.cssText = 'padding:8px;border:1px solid #ccc;border-radius:8px;font:inherit';
-            row.appendChild(lbl);
-            row.appendChild(inp);
-            body.appendChild(row);
-            return inp;
+            lbl.style.cssText = 'font-weight:600;font-size:13px;display:block;margin-bottom:6px';
+            body.appendChild(lbl);
+            if (bi) {
+                var e = langInput(part.en, 'EN'), a = langInput(part.ar, 'AR');
+                e.wrap.style.marginBottom = '6px';
+                a.wrap.style.marginBottom = '14px';
+                body.appendChild(e.wrap);
+                body.appendChild(a.wrap);
+                return function () { return mlangBuild(e.input.value, a.input.value); };
+            }
+            var s = langInput(part.en || part.ar || '');
+            s.wrap.style.marginBottom = '14px';
+            body.appendChild(s.wrap);
+            return function () { return s.input.value.trim(); };
         }
-        var nameInp = textRow('footername', 'Academy name', head ? head.textContent.trim() : '');
-        var descInp = textRow('footerdesc', 'Description', para ? para.textContent.trim() : '');
+        var nameVal = field('footername', 'Academy name', namePart);
+        var descVal = field('footerdesc', 'Description', descPart);
 
         var logoRow = document.createElement('label');
         logoRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:14px;font-weight:600';
@@ -687,8 +710,8 @@
         save.addEventListener('click', function () {
             postFields({
                 action: 'footer',
-                name: nameInp.value.trim(),
-                desc: descInp.value.trim(),
+                name: nameVal(),
+                desc: descVal(),
                 showlogo: logoChk.checked ? '1' : '0'
             }, save);
         });
@@ -740,20 +763,30 @@
             return b;
         };
 
-        // Academy name + Save
+        // Academy name + Save. Bilingual academies get an EN + AR field (the name
+        // is stored as a {mlang} string so the navbar / login / footer each show it
+        // in the visitor's language); single-language academies get one field.
         body.appendChild(label(t('academyname', 'Academy name')));
-        var nameInp = document.createElement('input');
-        nameInp.type = 'text';
-        nameInp.value = CFG.sitename || '';
-        nameInp.maxLength = 200;
-        nameInp.style.cssText = 'width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid #ccc;border-radius:8px;font:14px system-ui';
-        body.appendChild(nameInp);
+        var bi = !!CFG.bilingual;
+        var parts = CFG.sitenameParts || { en: CFG.sitename || '', ar: CFG.sitename || '' };
+        var nameEn, nameAr = null;
+        if (bi) {
+            var ne = langInput(parts.en, 'EN'), na = langInput(parts.ar, 'AR');
+            nameEn = ne.input; nameAr = na.input;
+            ne.wrap.style.marginBottom = '6px';
+            body.appendChild(ne.wrap);
+            body.appendChild(na.wrap);
+        } else {
+            var single = langInput(parts.en || CFG.sitename || '');
+            nameEn = single.input;
+            body.appendChild(single.wrap);
+        }
         var nameBtn = document.createElement('button');
         nameBtn.type = 'button';
         nameBtn.textContent = t('save', 'Save');
         nameBtn.style.cssText = 'margin-top:8px;padding:8px 18px;border:0;border-radius:8px;background:#0B2923;color:#00FFB2;font-weight:700;cursor:pointer';
         nameBtn.addEventListener('click', function () {
-            var v = nameInp.value.trim();
+            var v = bi ? mlangBuild(nameEn.value, nameAr.value) : nameEn.value.trim();
             if (v === '') { return; }
             submitPanel('sitename', { name: v }, null, nameBtn);
         });

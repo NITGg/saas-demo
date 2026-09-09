@@ -308,6 +308,10 @@ if (\theme_nit\local\editor::can_edit()) {
         'bilingual'     => $nitbilingual,
         'about'         => $nitabout,
         'sitename'      => format_string($SITE->fullname),
+        // Raw name/footer text split per language ({mlang} intact) so the branding
+        // + footer editors can prefill EN and AR fields on bilingual academies.
+        'sitenameParts' => \theme_nit\local\editor::mlang_parse((string) $SITE->fullname),
+        'footer'        => \theme_nit\local\editor::footer_fields(),
         'palette'       => [
             'primary'    => (string) get_config('theme_nit', 'brandcolour_g1_primary'),
             'accent'     => (string) get_config('theme_nit', 'brandcolour_g1_accent'),
@@ -389,33 +393,36 @@ if (\theme_nit\local\editor::can_edit()) {
 
 // NIT: download-apps band (Google Play + App Store), shown before the footer.
 // Store URLs are the platform's shared NIT Academy app links, pushed to every
-// academy as local_multitopics/{android_url,ios_url}. Renders nothing if unset.
+// academy as local_multitopics/{android_url,ios_url}. The band ALWAYS renders
+// (US: "show the download section even if the links are empty") — a store button
+// with no configured URL is shown disabled (href="#", muted) so the section is
+// always visible and fills in once the platform sets the links.
 $nitandroid = trim((string) get_config('local_multitopics', 'android_url'));
 $nitios     = trim((string) get_config('local_multitopics', 'ios_url'));
-$templatecontext['hasnitdownload'] = false;
-$templatecontext['nitdownload'] = '';
-if ($nitandroid !== '' || $nitios !== '') {
-    $nitstore = function (string $href, string $icon, string $store): string {
-        return '<a href="' . s($href) . '" target="_blank" rel="noopener" '
-            . 'style="display:inline-flex;align-items:center;gap:12px;padding:12px 22px;border-radius:12px;'
-            . 'background:var(--nit-brand-primary);color:var(--nit-brand-on-primary);text-decoration:none;min-width:190px;">'
-            . '<i class="fa-brands ' . $icon . '" style="font-size:30px;line-height:1;" aria-hidden="true"></i>'
-            . '<span style="text-align:start;line-height:1.15;">'
-            . '<span style="display:block;font-size:11px;opacity:.85;">' . s(get_string('download_geton', 'theme_nit')) . '</span>'
-            . '<span style="font-size:17px;font-weight:700;">' . s($store) . '</span></span></a>';
-    };
-    $nitbtns = '';
-    if ($nitandroid !== '') { $nitbtns .= $nitstore($nitandroid, 'fa-google-play', 'Google Play'); }
-    if ($nitios !== '')     { $nitbtns .= $nitstore($nitios, 'fa-apple', 'App Store'); }
-    $templatecontext['nitdownload'] =
-        '<div style="background:color-mix(in srgb, var(--nit-brand-surface) 70%, var(--nit-brand-background));'
-        . 'padding:64px 20px;text-align:center;">'
-        . '<h2 style="font-size:30px;font-weight:800;color:var(--nit-brand-textprimary);margin:0 0 8px;">'
-        . s(get_string('download_title', 'theme_nit')) . '</h2>'
-        . '<p style="font-size:16px;color:var(--nit-brand-textsecondary);margin:0 0 28px;">'
-        . s(get_string('download_sub', 'theme_nit')) . '</p>'
-        . '<div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">' . $nitbtns . '</div></div>';
-    $templatecontext['hasnitdownload'] = true;
-}
+$nitstore = function (string $href, string $icon, string $store): string {
+    $has = ($href !== '');
+    $attrs = $has
+        ? 'href="' . s($href) . '" target="_blank" rel="noopener"'
+        : 'href="#" aria-disabled="true" onclick="return false;"';
+    $extra = $has ? '' : 'opacity:.5;cursor:default;';
+    return '<a ' . $attrs . ' '
+        . 'style="display:inline-flex;align-items:center;gap:12px;padding:12px 22px;border-radius:12px;'
+        . 'background:var(--nit-brand-primary);color:var(--nit-brand-on-primary);text-decoration:none;min-width:190px;' . $extra . '">'
+        . '<i class="fa-brands ' . $icon . '" style="font-size:30px;line-height:1;" aria-hidden="true"></i>'
+        . '<span style="text-align:start;line-height:1.15;">'
+        . '<span style="display:block;font-size:11px;opacity:.85;">' . s(get_string('download_geton', 'theme_nit')) . '</span>'
+        . '<span style="font-size:17px;font-weight:700;">' . s($store) . '</span></span></a>';
+};
+$nitbtns = $nitstore($nitandroid, 'fa-google-play', 'Google Play')
+    . $nitstore($nitios, 'fa-apple', 'App Store');
+$templatecontext['nitdownload'] =
+    '<div style="background:color-mix(in srgb, var(--nit-brand-surface) 70%, var(--nit-brand-background));'
+    . 'padding:64px 20px;text-align:center;">'
+    . '<h2 style="font-size:30px;font-weight:800;color:var(--nit-brand-textprimary);margin:0 0 8px;">'
+    . s(get_string('download_title', 'theme_nit')) . '</h2>'
+    . '<p style="font-size:16px;color:var(--nit-brand-textsecondary);margin:0 0 28px;">'
+    . s(get_string('download_sub', 'theme_nit')) . '</p>'
+    . '<div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">' . $nitbtns . '</div></div>';
+$templatecontext['hasnitdownload'] = true;
 
 echo $OUTPUT->render_from_template('theme_nit/frontpage', $templatecontext);

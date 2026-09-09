@@ -955,6 +955,48 @@ function theme_nit_login_bg_scss($theme): string {
 }
 
 /**
+ * Inject the login / signup page background INLINE in the head, computed fresh
+ * from the current stored file every request. The same rule is also baked into
+ * the compiled theme CSS (theme_nit_login_bg_scss), but that URL carries the
+ * filename that was current WHEN the CSS last compiled — so after the owner
+ * replaces the login image (old file deleted, new file has a different name) the
+ * compiled CSS keeps pointing at the deleted file until a full recompile lands,
+ * and the panel shows nothing ("removed the old one, new not shown"). This inline
+ * copy always references the CURRENT file, so the new image appears immediately.
+ *
+ * Legacy `before_standard_html_head` plugin callback (still honoured in Moodle
+ * 5.x): returns a string appended to <head>. Only emits on the login/signup
+ * pages, and only when a login background file exists.
+ *
+ * @return string
+ */
+function theme_nit_before_standard_html_head(): string {
+    global $PAGE;
+    $pagetype = $PAGE->pagetype ?? '';
+    // login-index, login-signup, login-forgot_password, … all start with "login".
+    if (strpos($pagetype, 'login') !== 0) {
+        return '';
+    }
+    $url = '';
+    try {
+        $url = (string) theme_config::load('nit')
+            ->setting_file_url('loginbackgroundimage', 'loginbackgroundimage');
+    } catch (\Throwable $e) {
+        return '';
+    }
+    if ($url === '') {
+        return '';
+    }
+    // Sanitise for a CSS url('…') context (the value is a pluginfile URL we built).
+    $safe = str_replace(["\\", "'", "\r", "\n", '"'], ['\\5c ', '\\27 ', '', '', ''], $url);
+    $css = '.login-layout-left{'
+        . "background-image:linear-gradient(rgba(0,0,0,.35),rgba(0,0,0,.55)),url('" . $safe . "')!important;"
+        . 'background-size:cover!important;background-position:center center!important;'
+        . 'background-repeat:no-repeat!important;}';
+    return '<style id="nit-login-bg-live">' . $css . '</style>' . "\n";
+}
+
+/**
  * How long (seconds) the front-page data helpers cache their result.
  *
  * Read from the theme setting `frontpagecachettl` (edited under Site admin →
