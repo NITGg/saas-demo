@@ -274,6 +274,58 @@ try {
             academy_respond(['status' => 'success', 'data' => \local_academy\teacher_manager::get_teacher_courses($teacherid)]);
             break;
 
+        // ── Licence / subscription (admin or owner) ─────────────────────────────
+        // The academy's own plan for the mobile app: package resources (caps +
+        // features), live usage vs those caps, and the current subscription term
+        // (expiry / days-left / status). Mirrors the web page /local/license/status.php.
+        // Admin/owner only — students don't need it.
+        case 'get_license_status':
+            if (!has_capability('local/academy:manageplatform', context_system::instance())) {
+                academy_respond(['status' => 'fail', 'errorcode' => 'nopermissions',
+                    'error' => get_string('err_nopermission', 'local_academy')]);
+            }
+            if (!class_exists('\local_license\license')) {
+                academy_respond(['status' => 'fail', 'errorcode' => 'notinstalled',
+                    'error' => 'The licence plugin is not installed on this academy.']);
+            }
+            $lexpiry   = \local_license\license::expiry();
+            $lenforced = \local_license\license::is_enforced();
+            $ldef      = \local_license\license::tierdef();
+            $lsusp     = \local_license\license::is_suspended();
+            $lexp      = \local_license\license::is_expired();
+            academy_respond(['status' => 'success', 'data' => [
+                'package' => [
+                    'enforced'    => $lenforced,
+                    'tier'        => \local_license\license::tier(),
+                    'name'        => \local_license\license::tiername(),
+                    'videosource' => \local_license\license::video_source(),
+                    'features'    => array_values((array) ($ldef['features'] ?? [])),
+                    'limits'      => [ // -1 = unlimited
+                        'maxcourses'  => \local_license\license::max_courses(),
+                        'maxteachers' => \local_license\license::max_teachers(),
+                        'quiz'        => \local_license\license::bucket_limit('quiz'),
+                        'video'       => \local_license\license::bucket_limit('video'),
+                        'pdf'         => \local_license\license::bucket_limit('pdf'),
+                    ],
+                ],
+                'usage' => [
+                    'courses'  => \local_license\enforcer::count_courses(),
+                    'teachers' => \local_license\enforcer::count_teachers(),
+                    'quiz'     => \local_license\enforcer::count_bucket('quiz'),
+                    'video'    => \local_license\enforcer::count_bucket('video'),
+                    'pdf'      => \local_license\enforcer::count_bucket('pdf'),
+                ],
+                'subscription' => [
+                    'expiry'       => $lexpiry ?: null,                        // unix ts; null = never expires
+                    'expirydate'   => $lexpiry ? date('c', $lexpiry) : null,   // ISO-8601
+                    'daysleft'     => ($lexpiry && $lenforced) ? max(0, \local_license\license::days_left()) : null,
+                    'is_expired'   => $lexp,
+                    'is_suspended' => $lsusp,
+                    'status'       => $lsusp ? 'suspended' : ($lexp ? 'expired' : 'active'),
+                ],
+            ]]);
+            break;
+
         default:
             academy_respond(['status' => 'fail', 'error' => get_string('err_unknownfunction', 'local_academy')]);
     }

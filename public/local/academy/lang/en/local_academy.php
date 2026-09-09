@@ -21,6 +21,7 @@ $string['err_invalidtoken']     = 'Invalid token';
 $string['err_permissiondenied'] = 'Permission denied';
 $string['err_unknownfunction']  = 'Unknown function';
 $string['err_internal']         = 'An internal error occurred. Please try again later.';
+$string['err_nopermission']     = 'You do not have permission to view this.';
 $string['err_teachernotfound']  = 'Teacher not found.';
 
 // Password reset (OTP).
