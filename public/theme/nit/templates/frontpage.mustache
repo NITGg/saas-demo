@@ -271,7 +271,21 @@ window.NIT_CATEGORIES = {{{ nitcategoriesjson }}};
         });
     }
 
-    function init() { fillStats(); renderCourses(); renderMyCourses(); renderCategories(); wireSliders(); }
+    // Move the download-apps band to sit right BEFORE the footer section. The
+    // footer block's region varies per academy, so its rendered position relative
+    // to the band (which comes from a fixed template slot) isn't stable; relocate
+    // it in the DOM so it always lands just above the footer.
+    function placeDownloadBand() {
+        var band = document.querySelector('[data-region="download-apps"]');
+        var footer = document.querySelector('[data-nit-section="footer"]');
+        // Move the band to sit right before the footer section (its own div), so it
+        // renders just above the footer wherever the footer's block region lives.
+        if (band && footer && footer.parentNode && band !== footer) {
+            footer.parentNode.insertBefore(band, footer);
+        }
+    }
+
+    function init() { fillStats(); renderCourses(); renderMyCourses(); renderCategories(); wireSliders(); placeDownloadBand(); }
     if (document.readyState !== 'loading') { init(); }
     else { document.addEventListener('DOMContentLoaded', init); }
 })();

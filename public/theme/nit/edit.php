@@ -404,6 +404,17 @@ try {
             nit_edit_respond(true);
             break;
 
+        // Favicon (browser-tab icon) → core_admin favicon file.
+        case 'favicon':
+            $err = null;
+            $file = $_FILES['image'] ?? [];
+            if (!editor::replace_site_file('favicon', 'favicon', $file, $err)) {
+                nit_edit_respond(false, ['error' => $err ?? 'image']);
+            }
+            editor::bust_theme_caches();
+            nit_edit_respond(true);
+            break;
+
         // Rename the academy (site full name).
         case 'sitename':
             $name = optional_param('name', '', PARAM_TEXT);

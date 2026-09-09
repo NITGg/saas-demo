@@ -566,3 +566,45 @@ $nit-navpanel-divider: var(--nit-navbarpanelborder, #dedede); // light row divid
     // Nothing to show (not an editor / non-editable page) → hide the whole wrapper.
     &:has(.nit-navbar-editswitch:empty) { display: none !important; }
 }
+
+// ── Edit mode: keep the (busier) right cluster from overflowing the bar ───────
+// In edit mode the bar gains the edit-switch + 🎨 Colours button on top of the
+// bell / gear / avatar. On smaller screens they used to overflow / overlap the
+// navbar. Let the top bar WRAP to a second row instead of colliding, let the
+// clusters shrink, and make the Colours button compact.
+.nit-navbar {
+    .nit-colours-navbtn {
+        flex: 0 0 auto;
+        padding: 5px 12px;
+        font-size: 12px;
+    }
+}
+
+body.editing .nit-navbar {
+    // navbar-expand forces nowrap; allow a graceful second row under crowding.
+    .container-fluid {
+        flex-wrap: wrap;
+        row-gap: 6px;
+    }
+
+    // Both clusters may shrink; the right one keeps its items on one line but can
+    // wrap as a whole to the next row.
+    .nit-navbar-brand,
+    #usernavigation {
+        min-width: 0;
+    }
+
+    #usernavigation {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 0.4rem;
+    }
+
+    // The edit-switch label is the easiest thing to drop first on tight widths.
+    @media (max-width: 992px) {
+        .nit-navbar-tools .nit-navbar-editswitch label,
+        .nit-navbar-tools .nit-navbar-editswitch .form-check-label {
+            display: none;
+        }
+    }
+}

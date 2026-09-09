@@ -936,8 +936,30 @@ function theme_nit_font_scss($theme): string {
  * @param theme_config $theme the theme config object
  * @return string CSS (valid SCSS)
  */
+/**
+ * The login background image URL, with the stored filename normalised to a
+ * leading-slash filepath first. Older uploads stored the value without the slash,
+ * which made setting_file_url() emit ".../<rev><filename>" (no separator) → 404;
+ * patch the in-memory setting so the URL is ".../<rev>/<filename>". Works for
+ * existing academies with no re-upload and no DB write.
+ *
+ * @param theme_config $theme
+ * @return string the URL, or '' when no login background is set
+ */
+function theme_nit_loginbg_url($theme): string {
+    $fn = (string) ($theme->settings->loginbackgroundimage ?? '');
+    if ($fn === '') {
+        return '';
+    }
+    if ($fn[0] !== '/') {
+        // Normalise in-memory only; replace_stored_file() stores it correctly now.
+        $theme->settings->loginbackgroundimage = '/' . ltrim($fn, '/');
+    }
+    return (string) $theme->setting_file_url('loginbackgroundimage', 'loginbackgroundimage');
+}
+
 function theme_nit_login_bg_scss($theme): string {
-    $url = $theme->setting_file_url('loginbackgroundimage', 'loginbackgroundimage');
+    $url = theme_nit_loginbg_url($theme);
     if (empty($url)) {
         return '';
     }
@@ -979,8 +1001,7 @@ function theme_nit_before_standard_html_head(): string {
     }
     $url = '';
     try {
-        $url = (string) theme_config::load('nit')
-            ->setting_file_url('loginbackgroundimage', 'loginbackgroundimage');
+        $url = theme_nit_loginbg_url(theme_config::load('nit'));
     } catch (\Throwable $e) {
         return '';
     }

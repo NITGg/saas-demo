@@ -869,7 +869,11 @@ class editor {
             $error = 'savefailed';
             return false;
         }
-        set_config($setting, $filename, 'theme_nit');
+        // Store the filepath WITH a leading slash — setting_file_url() builds the
+        // pluginfile URL as ".../<itemid>" . <this value>, so a value without the
+        // slash fuses the revision and filename into a 404 ("<rev>logo.png" instead
+        // of "<rev>/logo.png"). This matches replace_site_file()'s convention.
+        set_config($setting, '/' . ltrim($filename, '/'), 'theme_nit');
         purge_all_caches();
         return true;
     }

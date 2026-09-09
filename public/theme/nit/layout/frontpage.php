@@ -337,6 +337,9 @@ if (\theme_nit\local\editor::can_edit()) {
             'editbrand'     => get_string('edit_editbrand', 'theme_nit'),
             'academyname'   => get_string('edit_academyname', 'theme_nit'),
             'replacelogo'   => get_string('edit_replacelogo', 'theme_nit'),
+            'favicon'       => get_string('edit_favicon', 'theme_nit'),
+            'faviconhint'   => get_string('edit_faviconhint', 'theme_nit'),
+            'replacefavicon' => get_string('edit_replacefavicon', 'theme_nit'),
             'loginbg'       => get_string('edit_loginbg', 'theme_nit'),
             'loginbghint'   => get_string('edit_loginbghint', 'theme_nit'),
             'edithero'      => get_string('edit_edithero', 'theme_nit'),
@@ -424,34 +427,11 @@ $nitdownloadband =
     . s(get_string('download_sub', 'theme_nit')) . '</p>'
     . '<div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">' . $nitbtns . '</div></div>';
 
-// The footer is seeded as the LAST block in the fullwidth-top region (see
-// seed_homepage.php — every section shares that region), so a band rendered from
-// the template's own slot lands BELOW the footer. Inject it into the region HTML
-// right before the footer block instead, so it sits just above the footer wherever
-// the footer lives. Falls back to appending to fullwidth-top when there is no
-// footer marker. The separate template slot is left empty.
-$nitinject = function (string &$region) use ($nitdownloadband): bool {
-    $mpos = strpos($region, 'data-nit-section="footer"');
-    if ($mpos === false) {
-        return false;
-    }
-    $divpos = strrpos(substr($region, 0, $mpos), '<div');
-    if ($divpos === false) {
-        return false;
-    }
-    $region = substr($region, 0, $divpos) . $nitdownloadband . substr($region, $divpos);
-    return true;
-};
-if ($nitinject($fullwidthtop)) {
-    $templatecontext['fullwidthtop'] = $fullwidthtop;
-    $templatecontext['hasfullwidthtop'] = true;
-} else if ($nitinject($fullwidthbottom)) {
-    $templatecontext['fullwidthbottom'] = $fullwidthbottom;
-    $templatecontext['hasfullwidthbottom'] = true;
-} else {
-    // No footer section anywhere — show the band via its own slot (end of page).
-    $templatecontext['nitdownload'] = $nitdownloadband;
-    $templatecontext['hasnitdownload'] = true;
-}
+// Render the band via its own template slot; the front-page JS then relocates it
+// to just before the footer section (the footer's block region varies per academy
+// — main / below-content / fullwidth-top — so a server-side string insert into one
+// region is unreliable; the DOM move always lands it right above the footer).
+$templatecontext['nitdownload'] = $nitdownloadband;
+$templatecontext['hasnitdownload'] = true;
 
 echo $OUTPUT->render_from_template('theme_nit/frontpage', $templatecontext);

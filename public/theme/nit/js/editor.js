@@ -799,6 +799,17 @@
         logoBtn.addEventListener('click', function () { uploadImage('logo', {}, logoBtn); });
         body.appendChild(logoBtn);
 
+        // Favicon (browser-tab icon). Small square image / .ico.
+        body.appendChild(divider());
+        body.appendChild(label(t('favicon', 'Favicon'), 4));
+        var favHint = document.createElement('p');
+        favHint.textContent = t('faviconhint', 'The small icon shown in the browser tab. A square PNG or .ico works best.');
+        favHint.style.cssText = 'margin:0 0 8px;font-size:12px;color:#666';
+        body.appendChild(favHint);
+        var favBtn = pillBtn('🖼 ' + t('replacefavicon', 'Replace favicon'));
+        favBtn.addEventListener('click', function () { uploadImage('favicon', {}, favBtn); });
+        body.appendChild(favBtn);
+
         // Login-page background
         body.appendChild(divider());
         body.appendChild(label(t('loginbg', 'Login page background'), 4));
