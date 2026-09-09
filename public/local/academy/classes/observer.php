@@ -37,6 +37,30 @@ class observer {
         set_user_preference('local_academy_welcomed', 1, $user);
     }
 
+    /**
+     * Make a newly-created course available IMMEDIATELY. Core defaults a new
+     * course's start date to TOMORROW (course/edit_form.php), which gates its
+     * content (and the course's own visibility, via show_started_courses_task)
+     * until then. Academies enrol learners now, so a just-created course starts
+     * today. Only touches CREATE — a later edit can still schedule a future date.
+     *
+     * @param \core\event\course_created $event
+     */
+    public static function course_created(\core\event\course_created $event): void {
+        global $DB;
+        $courseid = (int) $event->objectid;
+        if ($courseid <= (int) SITEID) {
+            return;
+        }
+        $startdate = (int) $DB->get_field('course', 'startdate', ['id' => $courseid]);
+        $now = time();
+        if ($startdate > $now) {
+            // Today at 00:00 — <= now, so content is visible right away.
+            $DB->set_field('course', 'startdate', usergetmidnight($now), ['id' => $courseid]);
+            rebuild_course_cache($courseid, true);
+        }
+    }
+
     /** Build and send the welcome notification (in-app + email). */
     private static function send_welcome(\stdClass $user): void {
         $sitename = format_string(get_site()->fullname);

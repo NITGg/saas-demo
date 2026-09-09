@@ -12,4 +12,10 @@ $observers = [
         'eventname' => '\core\event\user_loggedin',
         'callback'  => '\local_academy\observer::user_loggedin',
     ],
+    // New courses default to a TOMORROW start date (core), which hides their
+    // content until then — reset it to today so the course is usable immediately.
+    [
+        'eventname' => '\core\event\course_created',
+        'callback'  => '\local_academy\observer::course_created',
+    ],
 ];
