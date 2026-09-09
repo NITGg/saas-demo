@@ -247,6 +247,26 @@ class license {
         return $ts ?: 0;
     }
 
+    /**
+     * Subscription start as a unix timestamp, or 0 when unknown. A mirror of nit2's
+     * Academy.subscribedAt, pushed to local_license/subscribedat at create / renewal
+     * / plan change. Purely informational (never enforced) — the control plane
+     * (nit2) remains the source of truth for billing.
+     *
+     * @return int
+     */
+    public static function subscribed_at(): int {
+        $raw = trim((string) get_config('local_license', 'subscribedat'));
+        if ($raw === '') {
+            return 0;
+        }
+        if (ctype_digit($raw)) {
+            return (int) $raw;
+        }
+        $ts = strtotime($raw);
+        return $ts ?: 0;
+    }
+
     /** @return int grace period in days after expiry before locking. */
     public static function grace_days(): int {
         return (int) get_config('local_license', 'gracedays');

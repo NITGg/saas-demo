@@ -289,6 +289,7 @@ try {
                     'error' => 'The licence plugin is not installed on this academy.']);
             }
             $lexpiry   = \local_license\license::expiry();
+            $lsubat    = \local_license\license::subscribed_at();
             $lenforced = \local_license\license::is_enforced();
             $ldef      = \local_license\license::tierdef();
             $lsusp     = \local_license\license::is_suspended();
@@ -323,12 +324,16 @@ try {
                     'pdf'      => \local_license\enforcer::count_bucket('pdf'),
                 ],
                 'subscription' => [
-                    'expiry'       => $lexpiry ?: null,                        // unix ts; null = never expires
-                    'expirydate'   => $lexpiry ? date('c', $lexpiry) : null,   // ISO-8601
-                    'daysleft'     => ($lexpiry && $lenforced) ? max(0, \local_license\license::days_left()) : null,
-                    'is_expired'   => $lexp,
-                    'is_suspended' => $lsusp,
-                    'status'       => $lsusp ? 'suspended' : ($lexp ? 'expired' : 'active'),
+                    // "subscribed at" — mirror of nit2's Academy.subscribedAt (pushed
+                    // at create / renewal / plan change). null when unknown.
+                    'subscribedat'   => $lsubat ?: null,                        // unix ts
+                    'subscribeddate' => $lsubat ? date('c', $lsubat) : null,    // ISO-8601
+                    'expiry'         => $lexpiry ?: null,                        // unix ts; null = never expires
+                    'expirydate'     => $lexpiry ? date('c', $lexpiry) : null,   // ISO-8601
+                    'daysleft'       => ($lexpiry && $lenforced) ? max(0, \local_license\license::days_left()) : null,
+                    'is_expired'     => $lexp,
+                    'is_suspended'   => $lsusp,
+                    'status'         => $lsusp ? 'suspended' : ($lexp ? 'expired' : 'active'),
                 ],
             ]]);
             break;

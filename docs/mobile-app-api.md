@@ -154,11 +154,16 @@ comes from `local_license`; *payments* are what students paid in this academy.
   },
   "usage": { "courses": 2, "teachers": 1, "quiz": 5, "video": 12, "pdf": 3 },   // live counts vs limits
   "subscription": {                  // the current term
+    "subscribedat": 1785000000, "subscribeddate": "2026-07-01T…",     // when the term started
     "expiry": 1790000000, "expirydate": "2026-09-01T…", "daysleft": 42,
     "is_expired": false, "is_suspended": false, "status": "active"   // active | expired | suspended
   }
 } }
 ```
+- `subscribedat` / `expiry` are mirrors of nit2's `Academy.subscribedAt` / `validUntil`,
+  pushed to the academy at create / renewal / plan change. Any is `null` on a
+  no-expiry (free/demo) tier or before the first push — nit2's `/plan` stays the
+  source of truth for billing.
 - Non-admin/owner tokens get `{ "status":"fail", "errorcode":"nopermissions" }`
   (HTTP 200 — do **not** log out; just hide the screen).
 - `features` and `package.code/name` are *also* in `design_system.php` for the
