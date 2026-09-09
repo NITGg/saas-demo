@@ -41,6 +41,29 @@ $string['usage_quiz']       = 'Quizzes';
 $string['usage_video']      = 'Videos';
 $string['usage_pdf']        = 'Files / PDFs';
 
+// My plan & subscription page (owner/admin-facing; linked from the nav).
+$string['myplan_nav']       = 'My plan';
+$string['myplan_heading']   = 'My plan & subscription';
+$string['pkg_heading']      = 'Your plan';
+$string['pkg_storage']      = 'Storage';
+$string['pkg_gb']           = '{$a} GB';
+$string['pkg_unlimited']    = 'Unlimited';
+$string['sub_heading']      = 'Subscription';
+$string['sub_subscribed']   = 'Subscribed on';
+$string['sub_expires']      = 'Expires on';
+$string['sub_daysleft']     = 'Days left';
+$string['sub_status']       = 'Status';
+$string['sub_autorenew']    = 'Auto-renew';
+$string['sub_status_active']    = 'Active';
+$string['sub_status_expired']   = 'Expired';
+$string['sub_status_suspended'] = 'Suspended';
+$string['sub_unknown']      = 'Unknown';
+$string['billing_heading']  = 'Billing & upgrades';
+$string['billing_note']     = 'Price, invoices, upgrades and renewals are managed in your NIT account.';
+$string['billing_manage']   = 'Manage subscription · upgrade · renew';
+$string['yes']              = 'Yes';
+$string['no']               = 'No';
+
 // Enforcement messages.
 $string['limit_course']     = 'Your {$a} plan has reached its course limit. Upgrade to add more courses.';
 $string['limit_activity']   = 'Your {$a->tier} plan has reached its per-course limit for this activity type ({$a->type}). Upgrade to add more.';
