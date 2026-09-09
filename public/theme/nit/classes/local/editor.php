@@ -940,7 +940,10 @@ class editor {
         $set('surface', $surf);
         $set('textprimary', $txt);
         $set('accent', $acc);
-        $set('accenttext', self::mix($acc, $txt, 0.30));
+        // Button text must CONTRAST with the primary button, not tint toward the
+        // accent (a dark-gold accent on a navy primary was unreadable). Pick the
+        // AA-safe foreground (white or dark ink) for the primary colour.
+        $set('accenttext', \local_nit_core\branding\contrast::safe_foreground($p));
         $set('textsecondary', self::mix($txt, $bg, 0.42));
         $set('borderprimary', self::mix($surf, $txt, 0.12));
         $set('bordersecondary', self::mix($surf, $txt, 0.24));
