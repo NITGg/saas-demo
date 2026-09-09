@@ -407,9 +407,23 @@ body.nit-frontpage.editing {
     justify-content: safe center;
 }
 
-[data-nit-courses] > [data-nit-course-card] {
+// Pin EVERY direct child of the track (the course cards AND the editor's "Add
+// course" tile) to a fixed 260px — target `> *`, not just `[data-nit-course-card]`,
+// because older seeded academies used a different card structure whose flex item
+// carried `flex:1` and stretched. The prev/next arrows live OUTSIDE the track, so
+// they are untouched. `!important` beats the block's inline flex.
+[data-nit-courses] > * {
     flex: 0 0 260px !important;
-    max-width: 260px;
+    max-width: 260px !important;
+    min-width: 0;
+}
+
+// Any background image inside a card must fill the fixed card, never tile — older
+// seeds set a repeating background that streaked across the stretched card.
+[data-nit-courses] > * [data-nit-course-image],
+[data-nit-courses] [style*="background"][style*="url"] {
+    background-repeat: no-repeat !important;
+    background-size: cover !important;
 }
 
 // ── About section: photo fills the FULL SCREEN HEIGHT, half width, no frame
