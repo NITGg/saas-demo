@@ -294,7 +294,9 @@ echo $OUTPUT->header();
 // Load Jitsi External API as a static <script> tag.
 echo '<script src="' . s($jitsi_scheme . '://' . $jitsi_host . '/external_api.js') . '"></script>' . "\n";
 
-echo $OUTPUT->heading(format_string($jitsi->name));
+// NOTE: no explicit $OUTPUT->heading() here — the theme's activity header
+// (full_header) already renders the activity name; echoing it again showed the
+// title twice ("jitsi test / jitsi test").
 
 if (!empty($jitsi->intro)) {
     echo $OUTPUT->box(format_module_intro('jitsi', $jitsi, $cm->id), 'generalbox mod_introbox');
