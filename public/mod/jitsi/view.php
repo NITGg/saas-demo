@@ -656,7 +656,7 @@ function jitsi_print_recordings($session, $context, $is_teacher, $cmid = null) {
         return;
     }
     // Recordings for this activity (linked by cmid) OR by the session, that have a
-    // VdoCipher video id. Newest first.
+    // Vimeo video id. Newest first.
     $params = ['cmid' => $cmid];
     $where  = 'cmid = :cmid';
     if ($session) {
@@ -664,7 +664,7 @@ function jitsi_print_recordings($session, $context, $is_teacher, $cmid = null) {
         $params['sid'] = $session->id;
     }
     $rows = $DB->get_records_select('academy_session_recordings',
-        "($where) AND vdocipher_videoid IS NOT NULL AND vdocipher_videoid <> ''",
+        "($where) AND vimeo_videoid IS NOT NULL AND vimeo_videoid <> ''",
         $params, 'timecreated DESC');
 
     echo '<div class="jitsi-recordings" style="margin-top:24px;">';
@@ -675,32 +675,17 @@ function jitsi_print_recordings($session, $context, $is_teacher, $cmid = null) {
         return;
     }
 
-    $canplay = class_exists('\local_vdocipher\playback_service');
     foreach ($rows as $rec) {
         $title = format_string($rec->title ?: get_string('recording', 'jitsi'));
         echo '<div class="jitsi-recording" style="margin:0 0 20px;">';
         echo '<div style="font-weight:600;margin:0 0 6px;">' . $title . '</div>';
 
-        $embedded = false;
-        if ($canplay) {
-            try {
-                $data = \local_vdocipher\playback_service::mint($rec->vdocipher_videoid, $USER);
-                if (!empty($data['otp']) && !empty($data['playbackInfo'])) {
-                    $src = 'https://player.vdocipher.com/v2/?otp=' . rawurlencode($data['otp'])
-                        . '&playbackInfo=' . rawurlencode($data['playbackInfo']);
-                    echo '<div style="position:relative;padding-top:56.25%;border-radius:8px;overflow:hidden;">'
-                        . '<iframe src="' . s($src) . '" style="position:absolute;inset:0;width:100%;height:100%;border:0;" '
-                        . 'allow="encrypted-media" allowfullscreen></iframe></div>';
-                    $embedded = true;
-                }
-            } catch (\Throwable $e) {
-                $embedded = false;
-            }
-        }
-        if (!$embedded) {
-            // Still transcoding (VdoCipher not ready) or playback unavailable.
-            echo '<p class="text-muted">' . get_string('recordingprocessing', 'jitsi') . '</p>';
-        }
+        // Vimeo player. The recording's Vimeo video is private with THIS academy's
+        // domain whitelisted (record_notify.php), so the plain player URL embeds here.
+        $src = 'https://player.vimeo.com/video/' . rawurlencode($rec->vimeo_videoid);
+        echo '<div style="position:relative;padding-top:56.25%;border-radius:8px;overflow:hidden;">'
+            . '<iframe src="' . s($src) . '" style="position:absolute;inset:0;width:100%;height:100%;border:0;" '
+            . 'allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe></div>';
         echo '</div>';
     }
     echo '</div>';

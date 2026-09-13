@@ -51,7 +51,7 @@ class license {
             'durationdays' => 365,
             'maxcourses'   => -1,
             'maxteachers'  => -1,
-            'videosource'  => 'vdocipher',
+            'videosource'  => 'vimeo',
             'features'     => ['drm', 'coupons', 'offers', 'subscriptions', 'packages', 'jitsi'],
             'limits'       => ['quiz' => -1, 'video' => -1, 'pdf' => -1, 'default' => -1],
         ],

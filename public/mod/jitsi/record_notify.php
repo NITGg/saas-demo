@@ -7,15 +7,18 @@
 // version. See <http://www.gnu.org/licenses/>.
 
 /**
- * Server-to-server notification, called by the Jibri finalize script after it
- * uploads a finished recording to VdoCipher. Stores the VdoCipher video id
- * against the Jitsi activity (cmid) so view.php can show the recording.
+ * Server-to-server endpoint, called by the Jibri finalize script after a session
+ * recording finishes. Receives the finished .mp4, uploads it to Vimeo (via
+ * local_vimeo — reusing its tus upload + domain whitelist), and stores the Vimeo
+ * video id against the Jitsi activity so view.php can play it.
  *
- * POST /mod/jitsi/record_notify.php
+ * POST /mod/jitsi/record_notify.php   (multipart/form-data)
  *   header X-Notify-Key: <local_academysessions/jibri_notify_key>
- *   body   cmid=<int>&vdocipher_videoid=<id>&title=<text>
+ *   fields cmid=<int>  title=<text>  file=@recording.mp4
  *
  * No Moodle session — background call, authenticated by the shared notify key.
+ * NOTE: for large recordings the academy's PHP upload_max_filesize / post_max_size
+ * must be large enough (Jibri POSTs the file server-to-server on the same host).
  *
  * @package   mod_jitsi
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -24,8 +27,6 @@
 define('AJAX_SCRIPT', true);
 define('NO_MOODLE_COOKIES', true);
 
-// finalize.sh reaches us over the academy's public HTTPS host; make setup.php
-// see a valid HTTPS request even if a proxy/user-agent differs.
 $_wwwroot = getenv('MOODLE_WWWROOT') ?: '';
 if ($_wwwroot !== '' && ($_p = parse_url($_wwwroot)) && !empty($_p['host'])) {
     $_SERVER['HTTP_HOST']   = $_p['host'];
@@ -35,6 +36,7 @@ if ($_wwwroot !== '' && ($_p = parse_url($_wwwroot)) && !empty($_p['host'])) {
 unset($_wwwroot, $_p);
 
 require(__DIR__ . '/../../config.php');
+global $CFG, $DB;
 
 header('Content-Type: application/json');
 
@@ -48,12 +50,10 @@ if (!is_string($provided_key) || !hash_equals($notify_key, $provided_key)) {
 }
 
 // ── Params ──────────────────────────────────────────────────────────────────
-$videoid = required_param('vdocipher_videoid', PARAM_ALPHANUMEXT);
-$cmid    = required_param('cmid', PARAM_INT);
-$title   = optional_param('title', '', PARAM_TEXT);
+$cmid  = required_param('cmid', PARAM_INT);
+$title = optional_param('title', '', PARAM_TEXT);
 
-// Validate the activity exists.
-$cm = $DB->get_record('course_modules', ['id' => $cmid], 'id, instance', IGNORE_MISSING);
+$cm = $DB->get_record('course_modules', ['id' => $cmid], 'id, course, instance', IGNORE_MISSING);
 if (!$cm) {
     http_response_code(404);
     echo json_encode(['error' => 'unknown cmid']);
@@ -63,7 +63,39 @@ if ($title === '') {
     $title = get_string('recording', 'jitsi') . ' ' . userdate(time(), '%Y-%m-%d %H:%M');
 }
 
-// Link to an academy_live_session if this activity has one (optional).
+// ── The uploaded recording file ─────────────────────────────────────────────
+if (empty($_FILES['file']['tmp_name']) || !is_uploaded_file($_FILES['file']['tmp_name'])) {
+    http_response_code(400);
+    echo json_encode(['error' => 'no file']);
+    exit;
+}
+$tmpfile = $_FILES['file']['tmp_name'];
+
+// ── Upload to Vimeo (reuses local_vimeo's tus upload + domain whitelist) ─────
+if (!class_exists('\local_vimeo\api_client') || !\local_vimeo\api_client::is_configured()) {
+    http_response_code(503);
+    echo json_encode(['error' => 'vimeo not configured']);
+    exit;
+}
+try {
+    $client  = new \local_vimeo\api_client();
+    $videoid = $client->upload($tmpfile, $title);   // server-side tus, returns the Vimeo id
+    // Whitelist THIS academy's domain so the private embed plays here.
+    $domain = (string) parse_url($CFG->wwwroot, PHP_URL_HOST);
+    if ($domain !== '') {
+        try {
+            $client->whitelist_domain($videoid, $domain);
+        } catch (\Throwable $e) {
+            // Non-fatal: autowhitelist may already cover it, or admin sets it later.
+        }
+    }
+} catch (\Throwable $e) {
+    http_response_code(502);
+    echo json_encode(['error' => 'vimeo upload failed', 'detail' => $e->getMessage()]);
+    exit;
+}
+
+// ── Link to a live session if this activity has one (optional) ───────────────
 $sessionid = null;
 $jitsi = $DB->get_record('jitsi', ['id' => $cm->instance], 'id');
 if ($jitsi) {
@@ -73,8 +105,8 @@ if ($jitsi) {
     }
 }
 
-// ── Upsert by VdoCipher video id ────────────────────────────────────────────
-$existing = $DB->get_record('academy_session_recordings', ['vdocipher_videoid' => $videoid], 'id');
+// ── Store the recording row ─────────────────────────────────────────────────
+$existing = $DB->get_record('academy_session_recordings', ['vimeo_videoid' => $videoid], 'id');
 if ($existing) {
     $DB->update_record('academy_session_recordings', (object) [
         'id' => $existing->id, 'status' => 'ready', 'title' => $title,
@@ -83,14 +115,14 @@ if ($existing) {
     $recid = $existing->id;
 } else {
     $recid = $DB->insert_record('academy_session_recordings', (object) [
-        'vdocipher_videoid' => $videoid,
-        'cmid'         => $cmid,
-        'sessionid'    => $sessionid,
-        'title'        => $title,
-        'status'       => 'ready',
-        'timecreated'  => time(),
-        'timemodified' => time(),
+        'vimeo_videoid' => $videoid,
+        'cmid'          => $cmid,
+        'sessionid'     => $sessionid,
+        'title'         => $title,
+        'status'        => 'ready',
+        'timecreated'   => time(),
+        'timemodified'  => time(),
     ]);
 }
 
-echo json_encode(['success' => true, 'id' => $recid]);
+echo json_encode(['success' => true, 'id' => $recid, 'vimeo_videoid' => $videoid]);
