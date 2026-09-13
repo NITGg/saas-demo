@@ -626,7 +626,7 @@ echo $OUTPUT->footer();
 // Helper: render this activity's recordings, played from VdoCipher.
 // -------------------------------------------------------------------------
 function jitsi_print_recordings($session, $context, $is_teacher, $cmid = null) {
-    global $DB, $USER, $cm;
+    global $DB, $OUTPUT, $USER, $cm;
 
     $cmid = $cmid ?: ($cm->id ?? 0);
     if (!$cmid) {
