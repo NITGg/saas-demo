@@ -37,13 +37,24 @@ class jitsi_jwt {
                 'user' => [
                     'name'      => $name,
                     'email'     => $email,
-                    'moderator' => $moderator,
+                    // `moderator` is read by Jitsi core; `affiliation` is read by the
+                    // prosody `token_affiliation` module (enabled on this server, see
+                    // XMPP_MUC_MODULES). WITHOUT affiliation that module can make every
+                    // participant an owner/moderator — which is why students were joining
+                    // with full host controls. Set it explicitly: teachers = owner,
+                    // students = member (limited: no kick / mute-all / recording).
+                    'moderator'   => $moderator,
+                    'affiliation' => $moderator ? 'owner' : 'member',
                 ],
                 'features' => [
-                    'recording'     => $moderator,
-                    'livestreaming' => $moderator,
-                    'screen-sharing' => true,
-                    'outbound-call'  => false,
+                    // Only moderators get the powerful features; students get none of
+                    // them, so their toolbar stays limited even if the client would
+                    // otherwise show them.
+                    'recording'      => $moderator ? 'true' : 'false',
+                    'livestreaming'  => $moderator ? 'true' : 'false',
+                    'transcription'  => $moderator ? 'true' : 'false',
+                    'screen-sharing' => 'true',
+                    'outbound-call'  => 'false',
                 ],
             ],
         ]));

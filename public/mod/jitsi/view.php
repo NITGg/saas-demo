@@ -226,12 +226,6 @@ $jitsi_jwt = \local_academysessions\jitsi_jwt::generate(
     $jitsi_room, $display_name, $user_email, $is_teacher
 );
 
-// Jibri recording is not wired in this phase (recording moves to VdoCipher later),
-// so the JS record hooks are disabled — empty URLs make the guards below skip them.
-$jibri_auto_record_url = '';
-$jibri_auto_record_cmid = $cm->id;
-$jibri_auto_record_token = sesskey();
-
 // Map Moodle lang codes to Jitsi / i18n codes.
 $lang_map = [
     'ar'    => 'ar',
@@ -356,11 +350,12 @@ $js_config = json_encode([
     'jwt'             => $jitsi_jwt,
     'roomPassword'    => $room_password,
     'lobbyEnabled'    => $lobby_enabled,
+    'cmid'              => (int)$cm->id,
     'teacherPresentUrl' => $CFG->wwwroot . '/mod/jitsi/teacher_present.php',
-    'autoRecordUrl'     => $jibri_auto_record_url,
-    'autoRecordStopUrl' => '',
-    'autoRecordCmid'    => (int)$jibri_auto_record_cmid,
-    'autoRecordToken'   => $jibri_auto_record_token,
+    // Auto-start the recording when the host joins (Jibri records -> finalize.sh ->
+    // Vimeo). Per-academy toggle: theme_nit/jitsi_autorecord (default ON), so an
+    // academy can turn it off site-wide.
+    'autoRecord'        => (get_config('theme_nit', 'jitsi_autorecord') !== '0'),
 ]);
 
 echo <<<HTML
@@ -449,7 +444,7 @@ echo <<<HTML
             fetch(CFG.teacherPresentUrl, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body: 'cmid=' + CFG.autoRecordCmid + '&sesskey=' + CFG.autoRecordToken + '&present=' + (present ? 1 : 0),
+                body: 'cmid=' + CFG.cmid + '&sesskey=' + CFG.sesskey + '&present=' + (present ? 1 : 0),
                 keepalive: true
             }).catch(function() {});
         }
@@ -463,31 +458,28 @@ echo <<<HTML
                 if (CFG.lobbyEnabled) {
                     api.executeCommand('toggleLobby', true);
                 }
-                // Jibri auto-recording is disabled in this phase (CFG.autoRecordUrl
-                // is empty); teacher presence is still tracked above for student gating.
-                if (CFG.autoRecordUrl) {
-                    fetch(CFG.autoRecordUrl, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                        body: 'cmid=' + CFG.autoRecordCmid + '&sesskey=' + CFG.autoRecordToken
-                    }).catch(function() {});
+                // Auto-start the recording a few seconds after the host joins (like the
+                // old academy). Uses the Jitsi API — Jibri records the file, then
+                // finalize.sh ships it to Vimeo. No direct Jibri call needed; the host's
+                // JWT grants recording. Guarded so it only fires once and only when
+                // auto-record is enabled for this activity.
+                if (CFG.autoRecord) {
+                    setTimeout(function () {
+                        try { api.executeCommand('startRecording', { mode: 'file' }); }
+                        catch (e) { /* Jibri busy / unavailable — teacher can start manually */ }
+                    }, 4000);
                 }
             });
 
-            // Re-gate students when the teacher leaves or ends the meeting (and stop
-            // Jibri if it was ever enabled).
-            function stopJibriRecording() {
+            // Stop recording + re-gate students when the host leaves or ends the meeting.
+            function onHostLeave() {
                 setTeacherPresent(false);
-                if (CFG.autoRecordStopUrl) {
-                    fetch(CFG.autoRecordStopUrl, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                        body: 'cmid=' + CFG.autoRecordCmid + '&sesskey=' + CFG.autoRecordToken
-                    }).catch(function() {});
+                if (CFG.autoRecord) {
+                    try { api.executeCommand('stopRecording', 'file'); } catch (e) {}
                 }
             }
-            api.addEventListener('videoConferenceLeft', stopJibriRecording);
-            api.addEventListener('readyToClose', stopJibriRecording);
+            api.addEventListener('videoConferenceLeft', onHostLeave);
+            api.addEventListener('readyToClose', onHostLeave);
         }
     }
 
@@ -496,21 +488,6 @@ echo <<<HTML
     } else {
         initJitsiAPI();
     }
-
-    // Called by the Stop Recording button in the Moodle tab bar.
-    window.jitsiStopRecording = function() {
-        var btn = document.getElementById('btn-stop-rec');
-        if (btn) { btn.disabled = true; btn.textContent = 'Stopping…'; }
-        fetch(CFG.autoRecordStopUrl, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: 'cmid=' + CFG.autoRecordCmid + '&sesskey=' + CFG.autoRecordToken
-        }).then(function() {
-            if (btn) btn.style.display = 'none';
-        }).catch(function() {
-            if (btn) { btn.disabled = false; btn.textContent = '⏹ Stop Recording'; }
-        });
-    };
 
     var _sessionEndCalled = false;
 
