@@ -217,6 +217,11 @@ class license {
             // Vimeo video is on when the licence's video source is Vimeo (mod_vimeo
             // + local_vimeo). Lets the app know this academy plays Vimeo embeds.
             'vimeo'          => self::video_source() === 'vimeo',
+            // Live sessions (mod_jitsi + local_academysessions). Professional only.
+            // Recording ships together with the Jitsi feature (Jibri → Vimeo), so
+            // both flags follow the same tier gate.
+            'jitsi'          => $has('jitsi'),
+            'live_recording' => $has('jitsi'),
             // Extras.
             'jobform'        => $has('packages'),
             // Social login (Apple/Facebook not built yet — off by default).
