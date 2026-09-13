@@ -16,7 +16,7 @@ name: Agent tests
 on:
   pull_request:
   push:
-    branches: [master, moodle-new-version]
+    branches: [main]
 
 jobs:
   php-lint:
