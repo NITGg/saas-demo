@@ -646,11 +646,62 @@ if ($session) {
 echo $OUTPUT->footer();
 
 // -------------------------------------------------------------------------
-// Helper: render recordings for this session.
+// Helper: render this activity's recordings, played from VdoCipher.
 // -------------------------------------------------------------------------
 function jitsi_print_recordings($session, $context, $is_teacher, $cmid = null) {
-    // Recording playback (Bunny/MinIO) was removed for the SaaS. Session recording
-    // will be re-added on VdoCipher (local_vdocipher) in a later phase; until then
-    // there is nothing to render. Kept as a no-op so existing callers stay valid.
-    return;
+    global $DB, $USER, $cm;
+
+    $cmid = $cmid ?: ($cm->id ?? 0);
+    if (!$cmid) {
+        return;
+    }
+    // Recordings for this activity (linked by cmid) OR by the session, that have a
+    // VdoCipher video id. Newest first.
+    $params = ['cmid' => $cmid];
+    $where  = 'cmid = :cmid';
+    if ($session) {
+        $where .= ' OR sessionid = :sid';
+        $params['sid'] = $session->id;
+    }
+    $rows = $DB->get_records_select('academy_session_recordings',
+        "($where) AND vdocipher_videoid IS NOT NULL AND vdocipher_videoid <> ''",
+        $params, 'timecreated DESC');
+
+    echo '<div class="jitsi-recordings" style="margin-top:24px;">';
+    echo $OUTPUT->heading(get_string('recordings', 'jitsi'), 4);
+
+    if (!$rows) {
+        echo '<p class="text-muted">' . get_string('norecordings', 'jitsi') . '</p></div>';
+        return;
+    }
+
+    $canplay = class_exists('\local_vdocipher\playback_service');
+    foreach ($rows as $rec) {
+        $title = format_string($rec->title ?: get_string('recording', 'jitsi'));
+        echo '<div class="jitsi-recording" style="margin:0 0 20px;">';
+        echo '<div style="font-weight:600;margin:0 0 6px;">' . $title . '</div>';
+
+        $embedded = false;
+        if ($canplay) {
+            try {
+                $data = \local_vdocipher\playback_service::mint($rec->vdocipher_videoid, $USER);
+                if (!empty($data['otp']) && !empty($data['playbackInfo'])) {
+                    $src = 'https://player.vdocipher.com/v2/?otp=' . rawurlencode($data['otp'])
+                        . '&playbackInfo=' . rawurlencode($data['playbackInfo']);
+                    echo '<div style="position:relative;padding-top:56.25%;border-radius:8px;overflow:hidden;">'
+                        . '<iframe src="' . s($src) . '" style="position:absolute;inset:0;width:100%;height:100%;border:0;" '
+                        . 'allow="encrypted-media" allowfullscreen></iframe></div>';
+                    $embedded = true;
+                }
+            } catch (\Throwable $e) {
+                $embedded = false;
+            }
+        }
+        if (!$embedded) {
+            // Still transcoding (VdoCipher not ready) or playback unavailable.
+            echo '<p class="text-muted">' . get_string('recordingprocessing', 'jitsi') . '</p>';
+        }
+        echo '</div>';
+    }
+    echo '</div>';
 }

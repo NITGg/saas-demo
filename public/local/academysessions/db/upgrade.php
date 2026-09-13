@@ -56,5 +56,17 @@ function xmldb_local_academysessions_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026063000, 'local', 'academysessions');
     }
 
+    if ($oldversion < 2026091302) {
+        // VdoCipher recording storage (SaaS): the video id returned by VdoCipher
+        // after Jibri's finalize uploads the recording. Replaces Bunny/MinIO.
+        $table = new xmldb_table('academy_session_recordings');
+        $field = new xmldb_field('vdocipher_videoid', XMLDB_TYPE_CHAR, '64', null, null, null, null, 'bunny_video_url');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_plugin_savepoint(true, 2026091302, 'local', 'academysessions');
+    }
+
     return true;
 }

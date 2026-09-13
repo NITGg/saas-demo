@@ -69,6 +69,7 @@
         <FIELD NAME="cmid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="bunny_video_id" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="bunny_video_url" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="vdocipher_videoid" TYPE="char" LENGTH="64" NOTNULL="false" SEQUENCE="false" COMMENT="VdoCipher video id (SaaS recording storage)."/>
         <FIELD NAME="title" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="duration" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="syncing" SEQUENCE="false"/>

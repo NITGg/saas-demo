@@ -13,8 +13,19 @@ defined('MOODLE_INTERNAL') || die();
  */
 function jitsi_room_name($jitsi, $cm): string {
     global $CFG;
-    $salt = parse_url($CFG->wwwroot, PHP_URL_HOST) ?: $CFG->wwwroot;
-    return 'academy_jitsi_' . $cm->id . '_' . substr(md5($salt . '|' . $jitsi->id . '|' . $cm->id), 0, 10);
+    $host = parse_url($CFG->wwwroot, PHP_URL_HOST) ?: $CFG->wwwroot;
+    // Recoverable academy slug: the Jibri finalize script parses it out of the room
+    // name to notify THIS academy's record_notify.php (rooms are shared across
+    // tenants on one Jitsi server). Prefer the provisioned slug; else the first
+    // label of the host (test.academy2026.nitg-eg.com -> test). Slugs are
+    // [a-z0-9-] (no underscore), so "_" stays a safe field separator.
+    $slug = (string) get_config('theme_nit', 'academyslug');
+    if ($slug === '') {
+        $slug = explode('.', $host)[0];
+    }
+    $slug = preg_replace('/[^a-z0-9-]/', '', strtolower($slug)) ?: 'academy';
+    $hash = substr(md5($host . '|' . $jitsi->id . '|' . $cm->id), 0, 8);
+    return 'nit_' . $slug . '_' . $cm->id . '_' . $hash;
 }
 
 /**

@@ -45,6 +45,13 @@ if ($hassiteconfig) {
         'meet.jitsi'
     ));
 
+    $settings->add(new admin_setting_configpasswordunmask(
+        'local_academysessions/jibri_notify_key',
+        'Jibri Recording Notify Key',
+        'Shared secret the Jibri finalize script sends (X-Notify-Key) to record_notify.php after uploading a recording to VdoCipher. Must match the finalize script\'s MOODLE_NOTIFY_KEY.',
+        'academy-cron-2024'
+    ));
+
     $settings->add(new admin_setting_heading(
         'local_academysessions/excalidraw_heading',
         'Excalidraw Whiteboard Settings',
