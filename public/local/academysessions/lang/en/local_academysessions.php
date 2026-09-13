@@ -1,0 +1,27 @@
+<?php
+$string['pluginname'] = 'Academy Sessions';
+$string['managesessions'] = 'Manage live sessions';
+$string['createsession'] = 'Create live session';
+$string['editsession'] = 'Edit session';
+$string['deletesession'] = 'Delete session';
+$string['sessiontitle'] = 'Session title';
+$string['starttime'] = 'Start date/time';
+$string['duration'] = 'Duration (minutes)';
+$string['selectstudents'] = 'Select students';
+$string['status_scheduled'] = 'Scheduled';
+$string['status_live'] = 'Live';
+$string['status_ended'] = 'Ended';
+$string['status_cancelled'] = 'Cancelled';
+$string['attendancereport'] = 'Attendance report';
+$string['noattendance'] = 'No attendance recorded';
+$string['sessionlink'] = 'Join session';
+$string['sessionnotstarted'] = 'Session has not started yet';
+$string['sessionended'] = 'Session has ended';
+$string['notallowed'] = 'You are not allowed to attend this session';
+$string['linkavailablein'] = 'Link available {$a} minutes before start';
+$string['academysessions:managesessions'] = 'Manage live sessions';
+$string['academysessions:viewsessions'] = 'View live sessions';
+$string['academysessions:viewattendance'] = 'View attendance reports';
+$string['lifecycle_task'] = 'Session lifecycle management';
+$string['cleanup_task'] = 'Cleanup expired recordings';
+$string['meetinglink'] = 'Meeting link (Google Meet)';
