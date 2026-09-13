@@ -38,6 +38,13 @@ if ($hassiteconfig) {
         'academy_jitsi_secret_2024_change_in_prod'
     ));
 
+    $settings->add(new admin_setting_configtext(
+        'local_academysessions/jitsi_xmpp_domain',
+        'Jitsi XMPP Domain (JWT sub)',
+        'The Jitsi server\'s internal XMPP domain (prosody muc_mapper_domain_base) — used as the JWT "sub". Must be this exact value or the server rejects the token. For the standard Docker setup it is "meet.jitsi".',
+        'meet.jitsi'
+    ));
+
     $settings->add(new admin_setting_heading(
         'local_academysessions/excalidraw_heading',
         'Excalidraw Whiteboard Settings',

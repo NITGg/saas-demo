@@ -94,4 +94,40 @@ class hook_callbacks {
 
         $PAGE->set_pagelayout('embedded');
     }
+
+    /**
+     * Inject the login/signup page background inline in <head>, computed fresh from
+     * the current stored file each request (theme_nit_loginbg_url()). Replaces the
+     * deprecated `before_standard_html_head` plugin callback, which — with developer
+     * debugging on — printed a migration notice mid-<head> and corrupted the page.
+     *
+     * @param \core\hook\output\before_standard_head_html_generation $hook
+     */
+    public static function before_standard_head_html_generation(
+        \core\hook\output\before_standard_head_html_generation $hook
+    ): void {
+        global $PAGE, $CFG;
+        $pagetype = $PAGE->pagetype ?? '';
+        // login-index, login-signup, login-forgot_password, … all start with "login".
+        if (strpos($pagetype, 'login') !== 0) {
+            return;
+        }
+        require_once($CFG->dirroot . '/theme/nit/lib.php');
+        try {
+            $url = theme_nit_loginbg_url(\theme_config::load('nit'));
+        } catch (\Throwable $e) {
+            return;
+        }
+        if ($url === '') {
+            return;
+        }
+        $safe = str_replace(["\\", "'", "\r", "\n", '"'], ['\\5c ', '\\27 ', '', '', ''], $url);
+        // Paint the LEFT panel only (the branded side of the two-column login) —
+        // never the whole page, or the image bleeds behind the form.
+        $css = '.login-layout-left{'
+            . "background-image:linear-gradient(rgba(0,0,0,.45),rgba(0,0,0,.6)),url('" . $safe . "')!important;"
+            . 'background-size:cover!important;background-position:center center!important;'
+            . 'background-repeat:no-repeat!important;}';
+        $hook->add_html('<style id="nit-login-bg-live">' . $css . '</style>');
+    }
 }

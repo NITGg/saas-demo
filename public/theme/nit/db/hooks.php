@@ -30,4 +30,10 @@ $callbacks = [
         'hook'     => \core\hook\output\before_http_headers::class,
         'callback' => \theme_nit\local\hook_callbacks::class . '::before_http_headers',
     ],
+    [
+        // Inject the login-page background inline (replaces the deprecated
+        // before_standard_html_head plugin callback).
+        'hook'     => \core\hook\output\before_standard_head_html_generation::class,
+        'callback' => \theme_nit\local\hook_callbacks::class . '::before_standard_head_html_generation',
+    ],
 ];
