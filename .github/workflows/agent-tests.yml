@@ -1,0 +1,50 @@
+name: Agent tests
+
+# Lightweight, zero-infrastructure gate for OUR code (plugins + theme), per
+# AGENT_TESTING.md §10. It runs `php -l` over everything under public/local,
+# public/theme/nit and public/blocks — catching syntax errors on every PR without
+# a database.
+#
+# Full DB-backed PHPUnit already exists in this repo (composed.yml / push.yml /
+# onebyone.yml) but is workflow_dispatch-only: it needs a configured test DB +
+# phpunit secrets this deployment fork doesn't provide. Run it on demand from the
+# Actions tab; the per-plugin unit tests you add live under each plugin's tests/
+# dir and are picked up there.
+#
+# Triggers are scoped to PRs + the integration branches on purpose — this repo has
+# many client/* academy branches and we don't want a run on every one of them.
+on:
+  pull_request:
+  push:
+    branches: [master, moodle-new-version]
+
+jobs:
+  php-lint:
+    name: PHP syntax lint (our plugins + theme)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Lint our PHP (php -l)
+        run: |
+          set -uo pipefail
+          fail=0
+          count=0
+          while IFS= read -r -d '' f; do
+            count=$((count+1))
+            if ! php -l "$f" >/dev/null 2>&1; then
+              echo "::error file=$f::PHP syntax error"
+              php -l "$f" || true
+              fail=1
+            fi
+          done < <(find public/local public/theme/nit public/blocks \
+                     -type f -name '*.php' \
+                     -not -path '*/vendor/*' -not -path '*/node_modules/*' -print0)
+          echo "Checked $count PHP file(s) under our plugins/theme."
+          exit $fail

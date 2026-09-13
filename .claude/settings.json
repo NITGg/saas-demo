@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(vendor/bin/phpunit:*)",
+      "Bash(php vendor/bin/phpunit:*)",
+      "Bash(php admin/tool/phpunit/cli/init.php:*)",
+      "Bash(php -l:*)"
+    ]
+  }
+}
