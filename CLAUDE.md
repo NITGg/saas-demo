@@ -2,6 +2,18 @@
 
 This repo is a full **Moodle 5.2** codebase with our academy customizations layered on top.
 
+## Testing
+
+Always follow the testing rules in `AGENT_TESTING.md`. Before finishing any task,
+verify every applicable rule has been satisfied. If a rule cannot be satisfied,
+say so explicitly instead of skipping it silently.
+
+Tests here run on **Moodle PHPUnit** (`phpunit.xml.dist` is already present). A test
+lives under its plugin, e.g. `public/local/license/tests/…_test.php`, and runs with
+`vendor/bin/phpunit public/local/license/tests/foo_test.php` (init once with
+`php admin/tool/phpunit/cli/init.php`). Cover our plugins/theme only — never write tests
+for Moodle core. Provisioning shell/PHP under nit2's `provisioning/` is tested in that repo.
+
 ## Golden rule: never modify Moodle core
 
 All customization MUST live in our own plugins and theme. **Do not edit Moodle
