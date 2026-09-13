@@ -288,54 +288,9 @@ try {
                 academy_respond(['status' => 'fail', 'errorcode' => 'notinstalled',
                     'error' => 'The licence plugin is not installed on this academy.']);
             }
-            $lexpiry   = \local_license\license::expiry();
-            $lsubat    = \local_license\license::subscribed_at();
-            $lenforced = \local_license\license::is_enforced();
-            $ldef      = \local_license\license::tierdef();
-            $lsusp     = \local_license\license::is_suspended();
-            $lexp      = \local_license\license::is_expired();
-            academy_respond(['status' => 'success', 'data' => [
-                'package' => [
-                    'enforced'    => $lenforced,
-                    'tier'        => \local_license\license::tier(),
-                    'name'        => \local_license\license::tiername(),
-                    'videosource' => \local_license\license::video_source(),
-                    'features'    => array_values((array) ($ldef['features'] ?? [])),
-                    'storagegb'   => (int) (\local_license\license::tierdef()['storagegb'] ?? -1), // GB moodledata quota
-                    'limits'      => [ // -1 = unlimited
-                        'maxcourses'  => \local_license\license::max_courses(),
-                        'maxteachers' => \local_license\license::max_teachers(),
-                        'quiz'        => \local_license\license::bucket_limit('quiz'),
-                        'video'       => \local_license\license::bucket_limit('video'),
-                        'pdf'         => \local_license\license::bucket_limit('pdf'),
-                    ],
-                    // price + "subscribed at" are billing values held in nit2, not
-                    // enforced in Moodle. For the FULL billing view (price, purchase
-                    // date, invoices) + upgrade/renew, the app calls nit2:
-                    //   GET  /api/academies/<slug>/plan   (full details)
-                    //   POST /api/payments/kashier/create {purpose:"upgrade"|"renew"}
-                    'billing_in_nit2' => true,
-                ],
-                'usage' => [
-                    'courses'  => \local_license\enforcer::count_courses(),
-                    'teachers' => \local_license\enforcer::count_teachers(),
-                    'quiz'     => \local_license\enforcer::count_bucket('quiz'),
-                    'video'    => \local_license\enforcer::count_bucket('video'),
-                    'pdf'      => \local_license\enforcer::count_bucket('pdf'),
-                ],
-                'subscription' => [
-                    // "subscribed at" — mirror of nit2's Academy.subscribedAt (pushed
-                    // at create / renewal / plan change). null when unknown.
-                    'subscribedat'   => $lsubat ?: null,                        // unix ts
-                    'subscribeddate' => $lsubat ? date('c', $lsubat) : null,    // ISO-8601
-                    'expiry'         => $lexpiry ?: null,                        // unix ts; null = never expires
-                    'expirydate'     => $lexpiry ? date('c', $lexpiry) : null,   // ISO-8601
-                    'daysleft'       => ($lexpiry && $lenforced) ? max(0, \local_license\license::days_left()) : null,
-                    'is_expired'     => $lexp,
-                    'is_suspended'   => $lsusp,
-                    'status'         => $lsusp ? 'suspended' : ($lexp ? 'expired' : 'active'),
-                ],
-            ]]);
+            // Data assembly lives in a pure, unit-testable builder; this dispatcher
+            // owns the token/capability gate and the success envelope.
+            academy_respond(['status' => 'success', 'data' => \local_academy\license_status::build()]);
             break;
 
         default:
