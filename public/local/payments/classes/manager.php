@@ -729,6 +729,11 @@ class manager {
 
         // Subscriptions are fulfilled differently (no course enrolment / course invoice / course event).
         $meta = json_decode($transaction->metadata ?? '{}');
+
+        // Mirror to the platform revenue ledger (idempotent, non-blocking) — covers
+        // both course and subscription payments before the subscription early-return.
+        self::mirror_revenue($transaction, $meta);
+
         if (($meta->item_type ?? 'course') === 'subscription') {
             self::fulfil_subscription($transaction, $meta);
             return true;
@@ -885,6 +890,9 @@ class manager {
                 self::audit_log($transaction->id, $transaction->userid, 'status_changed',
                     $transaction->status, status_machine::COMPLETED);
 
+                // Mirror to the platform revenue ledger (idempotent with the webhook path).
+                self::mirror_revenue($transaction, $meta);
+
                 if ($issubscription) {
                     // Subscription: create the purchase (grants live course access); no course enrolment.
                     self::fulfil_subscription($transaction, $meta);
@@ -1000,6 +1008,57 @@ class manager {
         // transactions identifiable in the Kashier dashboard.
         return 'PAY-' . strtoupper(self::academy_tag()) . '-' . date('Y') . '-'
             . str_pad((string) random_int(1, 99999999), 8, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Mirror one COMPLETED payment to the platform (nit2) revenue ledger, so the
+     * control plane can categorise per-academy revenue it otherwise cannot see.
+     *
+     * Best-effort and NON-BLOCKING: short timeout, never throws — reporting must never
+     * break fulfilment. Idempotent on the platform side (keyed by academy slug + order
+     * id), so calling it from BOTH the webhook and the redirect callback for the same
+     * order is safe. No-op until the ingest URL + secret are configured (set by the
+     * nit2 provisioner via apply-integrations.sh).
+     *
+     * @param \stdClass $transaction the local_payments_transactions row (completed)
+     * @param \stdClass|null $meta decoded transaction metadata
+     */
+    protected static function mirror_revenue(\stdClass $transaction, ?\stdClass $meta = null): void {
+        global $CFG, $DB;
+        try {
+            $url = trim((string) get_config('local_payments', 'revenue_ingest_url'));
+            $secret = trim((string) get_config('local_payments', 'revenue_ingest_secret'));
+            if ($url === '' || $secret === '') {
+                return; // Not configured → mirroring disabled.
+            }
+            $itemtype = $meta->item_type ?? 'course';
+            $provider = $DB->get_field('local_payments_providers', 'name', ['id' => $transaction->provider_id]) ?: 'unknown';
+            $payload = [
+                'academySlug' => self::academy_tag(),
+                'orderId'     => (string) $transaction->order_id,
+                'amount'      => (int) round((float) $transaction->amount),
+                'currency'    => (string) $transaction->currency,
+                'provider'    => (string) $provider,
+                'status'      => 'paid',
+                'kind'        => ($itemtype === 'subscription') ? 'subscription' : 'course',
+                'courseId'    => ((int) $transaction->courseid) ?: null,
+                'userRef'     => (string) $transaction->userid,
+                'paidAt'      => date('c'),
+            ];
+            require_once($CFG->libdir . '/filelib.php');
+            $curl = new \curl();
+            $curl->setopt(['CURLOPT_TIMEOUT' => 5, 'CURLOPT_CONNECTTIMEOUT' => 3, 'CURLOPT_RETURNTRANSFER' => true]);
+            $curl->setHeader('Content-Type: application/json');
+            $curl->setHeader('x-revenue-secret: ' . $secret);
+            $curl->post($url, json_encode($payload));
+            if ($curl->get_errno()) {
+                self::log_entry($transaction->provider_id, $transaction->id, 'warning',
+                    'Revenue mirror failed: ' . $curl->error);
+            }
+        } catch (\Throwable $e) {
+            // Reporting must never break the payment flow.
+            debugging('mirror_revenue failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
+        }
     }
 
     private static function generate_idempotency_key(int $userid, int $courseid): string {

@@ -45,6 +45,23 @@ if ($hassiteconfig) {
         PARAM_ALPHANUMEXT
     ));
 
+    // Platform revenue ledger: each completed payment is mirrored to nit2 for
+    // per-academy revenue reporting. Both are set automatically by the provisioner;
+    // leave blank to disable mirroring. Reporting only — never moves money.
+    $settings->add(new admin_setting_configtext(
+        'local_payments/revenue_ingest_url',
+        get_string('revenue_ingest_url', 'local_payments'),
+        get_string('revenue_ingest_url_desc', 'local_payments'),
+        '',
+        PARAM_URL
+    ));
+    $settings->add(new admin_setting_configpasswordunmask(
+        'local_payments/revenue_ingest_secret',
+        get_string('revenue_ingest_secret', 'local_payments'),
+        get_string('revenue_ingest_secret_desc', 'local_payments'),
+        ''
+    ));
+
     $settings->add(new admin_setting_configcheckbox(
         'local_payments/show_sale_badge',
         get_string('show_sale_badge', 'local_payments'),
