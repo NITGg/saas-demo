@@ -54,7 +54,10 @@ if ($lang !== 'ar' && $lang !== 'en') {
     $lang = (strpos(current_language(), 'ar') === 0) ? 'ar' : 'en';
 }
 $isar = ($lang === 'ar');
-$sitename = format_string($SITE->fullname ?? 'Academy');
+// Pass an explicit context so format_string() doesn't trigger the "PAGE->context
+// was not set" debug notice — this runs before $PAGE is set up (and the embedded
+// path never sets it at all).
+$sitename = format_string($SITE->fullname ?? 'Academy', true, ['context' => context_system::instance()]);
 $support  = trim((string) ($CFG->supportemail ?? ''));
 // The app + developer name shown on the store listing (one published app). Set
 // platform-wide via local_multitopics/app_name; falls back to the site name.
