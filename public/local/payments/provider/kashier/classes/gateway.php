@@ -60,6 +60,8 @@ class gateway extends base_provider {
                 'transaction_id' => $request->transaction_id,
                 'courseid' => $request->courseid,
                 'moodle_order_id' => $request->order_id,
+                // Which academy this payment belongs to, on the shared Kashier account.
+                'academy' => \local_payments\manager::academy_tag(),
             ]),
         ];
 

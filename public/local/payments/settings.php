@@ -33,6 +33,18 @@ if ($hassiteconfig) {
         PARAM_ALPHA
     ));
 
+    // Short tag identifying this academy on the SHARED Kashier merchant account.
+    // Normally set automatically by the nit2 provisioner (the academy slug); if
+    // blank the plugin derives one from the site URL. Used to prefix order ids and
+    // tag payment metadata so academies can be told apart in the Kashier dashboard.
+    $settings->add(new admin_setting_configtext(
+        'local_payments/academy_slug',
+        get_string('academy_slug', 'local_payments'),
+        get_string('academy_slug_desc', 'local_payments'),
+        '',
+        PARAM_ALPHANUMEXT
+    ));
+
     $settings->add(new admin_setting_configcheckbox(
         'local_payments/show_sale_badge',
         get_string('show_sale_badge', 'local_payments'),

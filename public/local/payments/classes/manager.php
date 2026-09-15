@@ -972,8 +972,34 @@ class manager {
 
     // ─── Helpers ───────────────────────────────────────────────────
 
+    /**
+     * A short, stable tag identifying THIS academy — used to tag payments on the
+     * shared Kashier merchant account so transactions from different academies can
+     * be told apart (order-id prefix + metaData). Prefers the explicit
+     * local_payments/academy_slug config (pushed by the nit2 provisioner); falls
+     * back to the first label of the site URL so every academy is tagged even
+     * before that config is set. Lowercase alphanumerics only, max 24 chars.
+     *
+     * @return string
+     */
+    public static function academy_tag(): string {
+        $explicit = preg_replace('/[^a-z0-9]/', '', strtolower((string) get_config('local_payments', 'academy_slug')));
+        if ($explicit !== '') {
+            return substr($explicit, 0, 24);
+        }
+        global $CFG;
+        $host = (string) parse_url($CFG->wwwroot, PHP_URL_HOST);
+        $label = preg_replace('/[^a-z0-9]/', '', strtolower((string) strtok($host, '.')));
+        return substr($label !== '' ? $label : 'site', 0, 24);
+    }
+
     private static function generate_order_id(): string {
-        return 'PAY-' . date('Y') . '-' . str_pad(random_int(1, 99999999), 8, '0', STR_PAD_LEFT);
+        // Tenant-tagged and globally unique: on the SHARED Kashier merchant account
+        // this prevents order-id collisions between academies (the old PAY-YYYY-NNN
+        // form was only unique within one academy's DB) and makes each academy's
+        // transactions identifiable in the Kashier dashboard.
+        return 'PAY-' . strtoupper(self::academy_tag()) . '-' . date('Y') . '-'
+            . str_pad((string) random_int(1, 99999999), 8, '0', STR_PAD_LEFT);
     }
 
     private static function generate_idempotency_key(int $userid, int $courseid): string {
