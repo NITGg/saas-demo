@@ -1033,12 +1033,17 @@ class manager {
             }
             $itemtype = $meta->item_type ?? 'course';
             $provider = $DB->get_field('local_payments_providers', 'name', ['id' => $transaction->provider_id]) ?: 'unknown';
+            // Live vs test/sandbox, from the provider's own sandbox flag (value '1' = test),
+            // so test payments are never counted as real revenue on the platform side.
+            $sandbox = get_config('paymentprovider_' . $provider, 'sandbox_mode');
+            $mode = ($sandbox !== false && (string) $sandbox === '1') ? 'test' : 'live';
             $payload = [
                 'academySlug' => self::academy_tag(),
                 'orderId'     => (string) $transaction->order_id,
                 'amount'      => (int) round((float) $transaction->amount),
                 'currency'    => (string) $transaction->currency,
                 'provider'    => (string) $provider,
+                'mode'        => $mode,
                 'status'      => 'paid',
                 'kind'        => ($itemtype === 'subscription') ? 'subscription' : 'course',
                 'courseId'    => ((int) $transaction->courseid) ?: null,
