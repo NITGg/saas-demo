@@ -4,49 +4,59 @@ defined('MOODLE_INTERNAL') || die();
 if ($hassiteconfig) {
     $settings = new admin_settingpage('paymentprovider_kashier', get_string('pluginname', 'paymentprovider_kashier'));
 
-    // Sandbox mode.
-    $settings->add(new admin_setting_configcheckbox(
-        'paymentprovider_kashier/sandbox_mode',
-        get_string('sandbox_mode', 'paymentprovider_kashier'),
-        get_string('sandbox_mode_desc', 'paymentprovider_kashier'),
-        1
-    ));
-
-    // Merchant ID.
-    $settings->add(new admin_setting_configtext(
-        'paymentprovider_kashier/merchant_id',
-        get_string('merchant_id', 'paymentprovider_kashier'),
-        get_string('merchant_id_desc', 'paymentprovider_kashier'),
+    // ── Payment mode (owner toggle) ──────────────────────────────────────────
+    // Empty = use the platform default (set by NIT's provisioner). The academy owner
+    // can force live or test here.
+    $settings->add(new admin_setting_configselect(
+        'paymentprovider_kashier/payment_mode',
+        get_string('payment_mode', 'paymentprovider_kashier'),
+        get_string('payment_mode_desc', 'paymentprovider_kashier'),
         '',
-        PARAM_TEXT
+        [
+            '' => get_string('mode_default', 'paymentprovider_kashier'),
+            'test' => get_string('mode_test', 'paymentprovider_kashier'),
+            'live' => get_string('mode_live', 'paymentprovider_kashier'),
+        ]
     ));
 
-    // API Key (used for HMAC signature + header).
-    $settings->add(new admin_setting_configpasswordunmask(
-        'paymentprovider_kashier/api_key',
-        get_string('api_key', 'paymentprovider_kashier'),
-        get_string('api_key_desc', 'paymentprovider_kashier'),
-        ''
+    // Platform default mode — normally set by the provisioner; shown for visibility.
+    $settings->add(new admin_setting_configselect(
+        'paymentprovider_kashier/default_payment_mode',
+        get_string('default_payment_mode', 'paymentprovider_kashier'),
+        get_string('default_payment_mode_desc', 'paymentprovider_kashier'),
+        'test',
+        [
+            'test' => get_string('mode_test', 'paymentprovider_kashier'),
+            'live' => get_string('mode_live', 'paymentprovider_kashier'),
+        ]
     ));
 
-    // Secret Key (Authorization header).
-    $settings->add(new admin_setting_configpasswordunmask(
-        'paymentprovider_kashier/secret_key',
-        get_string('secret_key', 'paymentprovider_kashier'),
-        get_string('secret_key_desc', 'paymentprovider_kashier'),
-        ''
-    ));
+    // ── LIVE credentials ─────────────────────────────────────────────────────
+    $settings->add(new admin_setting_heading('paymentprovider_kashier/heading_live',
+        get_string('heading_live', 'paymentprovider_kashier'), ''));
+    $settings->add(new admin_setting_configtext('paymentprovider_kashier/live_merchant_id',
+        get_string('merchant_id', 'paymentprovider_kashier'), '', '', PARAM_TEXT));
+    $settings->add(new admin_setting_configpasswordunmask('paymentprovider_kashier/live_api_key',
+        get_string('api_key', 'paymentprovider_kashier'), '', ''));
+    $settings->add(new admin_setting_configpasswordunmask('paymentprovider_kashier/live_secret_key',
+        get_string('secret_key', 'paymentprovider_kashier'), '', ''));
+    $settings->add(new admin_setting_configtext('paymentprovider_kashier/live_base_url',
+        get_string('base_url', 'paymentprovider_kashier'), '', 'https://api.kashier.io', PARAM_URL));
 
-    // Base URL.
-    $settings->add(new admin_setting_configtext(
-        'paymentprovider_kashier/base_url',
-        get_string('base_url', 'paymentprovider_kashier'),
-        get_string('base_url_desc', 'paymentprovider_kashier'),
-        'https://api.kashier.io',
-        PARAM_URL
-    ));
+    // ── TEST / sandbox credentials ───────────────────────────────────────────
+    $settings->add(new admin_setting_heading('paymentprovider_kashier/heading_test',
+        get_string('heading_test', 'paymentprovider_kashier'), ''));
+    $settings->add(new admin_setting_configtext('paymentprovider_kashier/test_merchant_id',
+        get_string('merchant_id', 'paymentprovider_kashier'), '', '', PARAM_TEXT));
+    $settings->add(new admin_setting_configpasswordunmask('paymentprovider_kashier/test_api_key',
+        get_string('api_key', 'paymentprovider_kashier'), '', ''));
+    $settings->add(new admin_setting_configpasswordunmask('paymentprovider_kashier/test_secret_key',
+        get_string('secret_key', 'paymentprovider_kashier'), '', ''));
+    $settings->add(new admin_setting_configtext('paymentprovider_kashier/test_base_url',
+        get_string('base_url', 'paymentprovider_kashier'), '', 'https://test-api.kashier.io', PARAM_URL));
 
-    // Refund base URL (different host).
+    // ── Other ────────────────────────────────────────────────────────────────
+    $settings->add(new admin_setting_heading('paymentprovider_kashier/heading_other', '', ''));
     $settings->add(new admin_setting_configtext(
         'paymentprovider_kashier/refund_base_url',
         get_string('refund_base_url', 'paymentprovider_kashier'),
@@ -54,8 +64,6 @@ if ($hassiteconfig) {
         'https://fep.kashier.io',
         PARAM_URL
     ));
-
-    // Allowed payment methods.
     $settings->add(new admin_setting_configtext(
         'paymentprovider_kashier/allowed_methods',
         get_string('allowed_methods', 'paymentprovider_kashier'),
@@ -63,16 +71,12 @@ if ($hassiteconfig) {
         'card,wallet',
         PARAM_TEXT
     ));
-
-    // Enable 3D Secure.
     $settings->add(new admin_setting_configcheckbox(
         'paymentprovider_kashier/enable_3ds',
         get_string('enable_3ds', 'paymentprovider_kashier'),
         get_string('enable_3ds_desc', 'paymentprovider_kashier'),
         1
     ));
-
-    // Max failure attempts.
     $settings->add(new admin_setting_configtext(
         'paymentprovider_kashier/max_failure_attempts',
         get_string('max_failure_attempts', 'paymentprovider_kashier'),

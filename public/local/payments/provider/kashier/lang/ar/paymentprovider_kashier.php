@@ -20,3 +20,14 @@ $string['enable_3ds'] = 'تفعيل التحقق الثلاثي الأبعاد';
 $string['enable_3ds_desc'] = 'طلب مصادقة 3D Secure لمدفوعات البطاقات.';
 $string['max_failure_attempts'] = 'الحد الأقصى لمحاولات الفشل';
 $string['max_failure_attempts_desc'] = 'الحد الأقصى لعدد محاولات الدفع الفاشلة قبل انتهاء الجلسة.';
+
+// تبديل الوضع (مباشر/تجريبي) + بيانات الاعتماد.
+$string['payment_mode'] = 'وضع الدفع';
+$string['payment_mode_desc'] = 'اختر إذا كانت هذه الأكاديمية تستقبل مدفوعات مباشرة (حقيقية) أو تجريبية (Sandbox). اترك الإعداد الافتراضي للمنصة إلا إذا احتجت لتغييره.';
+$string['default_payment_mode'] = 'الوضع الافتراضي للمنصة (مُدار)';
+$string['default_payment_mode_desc'] = 'الوضع الافتراضي الذي تحدده المنصة. يُستخدم عندما يكون "وضع الدفع" أعلاه على الإعداد الافتراضي للمنصة.';
+$string['mode_default'] = 'استخدام الإعداد الافتراضي للمنصة';
+$string['mode_test'] = 'تجريبي / Sandbox';
+$string['mode_live'] = 'مباشر';
+$string['heading_live'] = 'بيانات الاعتماد (مباشر)';
+$string['heading_test'] = 'بيانات الاعتماد (تجريبي / Sandbox)';

@@ -13,16 +13,59 @@ defined('MOODLE_INTERNAL') || die();
 
 class gateway extends base_provider {
 
+    /**
+     * The active payment mode: the academy owner's toggle (payment_mode) if set,
+     * else the platform default (default_payment_mode) from the provisioner, else
+     * derived from the legacy sandbox flag. One of 'live' | 'test'.
+     */
+    public function get_mode(): string {
+        $mode = (string) $this->get_setting('payment_mode', '');
+        if ($mode !== 'live' && $mode !== 'test') {
+            $mode = (string) $this->get_setting('default_payment_mode', '');
+        }
+        if ($mode !== 'live' && $mode !== 'test') {
+            // Legacy single-credential academies: infer from the old sandbox checkbox.
+            $mode = ((string) $this->get_setting('sandbox_mode', '1') === '1') ? 'test' : 'live';
+        }
+        return $mode;
+    }
+
+    /**
+     * A credential for the active mode (e.g. live_api_key), falling back to the
+     * legacy single-set key so academies not yet re-provisioned keep working.
+     */
+    private function cred(string $name): string {
+        $mode = $this->get_mode();
+        $v = (string) $this->get_setting($mode . '_' . $name, '');
+        if ($v === '') {
+            $v = (string) $this->get_setting($name, ''); // legacy (pre live/test split)
+        }
+        return $v;
+    }
+
     private function get_api_key(): string {
-        return $this->get_setting('api_key', '');
+        return $this->cred('api_key');
     }
 
     private function get_secret_key(): string {
-        return $this->get_setting('secret_key', '');
+        return $this->cred('secret_key');
     }
 
     private function get_merchant_id(): string {
-        return $this->get_setting('merchant_id', '');
+        return $this->cred('merchant_id');
+    }
+
+    // Mode-aware API base: mode-specific, else legacy, else Kashier's default host.
+    protected function get_base_url(): string {
+        $mode = $this->get_mode();
+        $v = (string) $this->get_setting($mode . '_base_url', '');
+        if ($v === '') {
+            $v = (string) $this->get_setting('base_url', '');
+        }
+        if ($v === '') {
+            $v = ($mode === 'test') ? 'https://test-api.kashier.io' : 'https://api.kashier.io';
+        }
+        return rtrim($v, '/');
     }
 
     private function get_refund_base_url(): string {

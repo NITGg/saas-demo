@@ -20,3 +20,14 @@ $string['enable_3ds'] = 'Enable 3D Secure';
 $string['enable_3ds_desc'] = 'Require 3D Secure authentication for card payments.';
 $string['max_failure_attempts'] = 'Max failure attempts';
 $string['max_failure_attempts_desc'] = 'Maximum number of failed payment attempts before the session expires.';
+
+// Live/test mode toggle + credential sets.
+$string['payment_mode'] = 'Payment mode';
+$string['payment_mode_desc'] = 'Choose whether this academy takes LIVE (real) or TEST (sandbox) payments. Leave on the platform default unless you need to override it.';
+$string['default_payment_mode'] = 'Platform default mode (managed)';
+$string['default_payment_mode_desc'] = 'The default set by the platform. Used when "Payment mode" above is left on the platform default.';
+$string['mode_default'] = 'Use platform default';
+$string['mode_test'] = 'Test / Sandbox';
+$string['mode_live'] = 'Live';
+$string['heading_live'] = 'LIVE credentials';
+$string['heading_test'] = 'TEST / sandbox credentials';
