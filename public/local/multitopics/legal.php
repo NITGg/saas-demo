@@ -59,6 +59,16 @@ $support  = trim((string) ($CFG->supportemail ?? ''));
 // The app + developer name shown on the store listing (one published app). Set
 // platform-wide via local_multitopics/app_name; falls back to the site name.
 $appname = trim((string) (get_config('local_multitopics', 'app_name') ?: $sitename));
+if ($appname === '') {
+    $appname = 'Academy';   // never leave the policy without an app name.
+}
+// Publisher / legal entity behind the one published app. Google Play requires the
+// privacy policy to clearly identify the app AND its developer/legal entity, and to
+// match the store listing. Set platform-wide via local_multitopics/app_developer;
+// falls back to the app name so a publisher is always named.
+$developer = trim((string) (get_config('local_multitopics', 'app_developer') ?: $appname));
+// Official website shown for identification (helps Google match the listing).
+$website   = trim((string) (get_config('local_multitopics', 'app_website') ?: $CFG->wwwroot));
 
 // ── Titles ───────────────────────────────────────────────────────────────────
 $titles = [
@@ -73,7 +83,7 @@ $override = get_config('local_multitopics', $doc . '_' . $lang);
 if (is_string($override) && trim($override) !== '') {
     $body = $override;   // trusted admin-authored HTML.
 } else {
-    $body = local_multitopics_legal_default($doc, $isar, $appname, $support);
+    $body = local_multitopics_legal_default($doc, $isar, $appname, $support, $developer, $website);
 }
 
 // ── Render ────────────────────────────────────────────────────────────────────
@@ -121,12 +131,29 @@ echo $OUTPUT->footer();
  *
  * @param string $doc 'terms' | 'privacy'
  * @param bool $isar Arabic?
- * @param string $name academy name
+ * @param string $name app name
  * @param string $support support email ('' if none)
+ * @param string $developer developer / legal entity behind the published app
+ * @param string $website official website URL
  * @return string HTML
  */
-function local_multitopics_legal_default(string $doc, bool $isar, string $name, string $support): string {
-    $n = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
+function local_multitopics_legal_default(string $doc, bool $isar, string $name, string $support,
+        string $developer = '', string $website = ''): string {
+    $n   = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
+    $dev = htmlspecialchars($developer !== '' ? $developer : $name, ENT_QUOTES, 'UTF-8');
+    $web = htmlspecialchars($website, ENT_QUOTES, 'UTF-8');
+    // Identifier line appended to every document so the app, its developer/legal
+    // entity and website are always stated — this is what Google Play checks the
+    // privacy policy for ("app or developer details don't match").
+    if ($web !== '') {
+        $identity = $isar
+            ? "<p style=\"color:#6b7280;font-size:13px;margin-top:24px\">التطبيق: «$n» · المطوّر: $dev · الموقع: <a href=\"$web\">$web</a></p>"
+            : "<p style=\"color:#6b7280;font-size:13px;margin-top:24px\">App: “$n” · Developer: $dev · Website: <a href=\"$web\">$web</a></p>";
+    } else {
+        $identity = $isar
+            ? "<p style=\"color:#6b7280;font-size:13px;margin-top:24px\">التطبيق: «$n» · المطوّر: $dev</p>"
+            : "<p style=\"color:#6b7280;font-size:13px;margin-top:24px\">App: “$n” · Developer: $dev</p>";
+    }
     $contact = $support !== ''
         ? ($isar ? "راسلنا على <a href=\"mailto:$support\">$support</a>." : "Contact us at <a href=\"mailto:$support\">$support</a>.")
         : ($isar ? 'تواصل معنا عبر بيانات التواصل داخل التطبيق.' : 'Reach us through the contact details in the app.');
@@ -144,7 +171,8 @@ function local_multitopics_legal_default(string $doc, bool $isar, string $name, 
                 . "<li>الاشتراكات والكورسات المدفوعة تُتاح بعد إتمام الدفع، وتخضع لسياسة الاسترداد المعلنة عند الشراء.</li></ul>"
                 . "<h2>إيقاف الخدمة</h2>"
                 . "<p>يحق للمنصة إيقاف أو إنهاء الحساب عند مخالفة هذه الشروط.</p>"
-                . "<h2>التواصل</h2><p>$contact</p>";
+                . "<h2>التواصل</h2><p>$contact</p>"
+                . $identity;
         }
         return "<p>Welcome to “$n”. By using this platform and app you agree to the following terms.</p>"
             . "<h2>Your account</h2><ul>"
@@ -157,7 +185,8 @@ function local_multitopics_legal_default(string $doc, bool $isar, string $name, 
             . "<li>Paid subscriptions and courses are unlocked after payment and are subject to the refund policy shown at purchase.</li></ul>"
             . "<h2>Suspension</h2>"
             . "<p>We may suspend or terminate an account that breaches these terms.</p>"
-            . "<h2>Contact</h2><p>$contact</p>";
+            . "<h2>Contact</h2><p>$contact</p>"
+            . $identity;
     }
 
     if ($doc === 'delete') {
@@ -179,7 +208,8 @@ function local_multitopics_legal_default(string $doc, bool $isar, string $name, 
                 . "<h2>البيانات التي يتم الاحتفاظ بها ومدّتها</h2><ul>"
                 . "<li><b>سجلات الدفع والفواتير</b> يُحتفظ بها حتى <b>5 سنوات</b> حسبما تقتضيه قوانين المحاسبة والضرائب، ثم تُحذف، ولا تُستخدم لأي غرض آخر.</li>"
                 . "<li><b>النسخ الاحتياطية</b> التي تحتوي على بياناتك تُمحى ضمن دورتها المعتادة خلال <b>30 يومًا</b> من الحذف.</li></ul>"
-                . "<p>تُنفَّذ جميع الطلبات خلال 30 يومًا. $contact</p>";
+                . "<p>تُنفَّذ جميع الطلبات خلال 30 يومًا. $contact</p>"
+                . $identity;
         }
         return "<p>This page explains how to request deletion of your account and associated data in the “$n” app.</p>"
             . "<h2>How to request deletion</h2><ol>"
@@ -193,12 +223,13 @@ function local_multitopics_legal_default(string $doc, bool $isar, string $name, 
             . "<h2>What is kept, and for how long</h2><ul>"
             . "<li><b>Payment &amp; invoice records</b> are retained for up to <b>5 years</b> where required by applicable tax/accounting law, then deleted. They are not used for any other purpose.</li>"
             . "<li><b>Backups</b> containing your data are purged on their normal rotation, within <b>30 days</b> of the deletion request.</li></ul>"
-            . "<p>Requests are completed within 30 days. $contact</p>";
+            . "<p>Requests are completed within 30 days. $contact</p>"
+            . $identity;
     }
 
     // Privacy.
     if ($isar) {
-        return "<p>تحترم «$n» خصوصيتك. توضّح هذه السياسة البيانات التي نجمعها وكيفية استخدامها.</p>"
+        return "<p>«$n» تطبيق منشور بواسطة <b>$dev</b>. تنطبق سياسة الخصوصية هذه على تطبيق «$n» وتوضّح البيانات التي يجمعها وكيفية استخدامها.</p>"
             . "<h2>البيانات التي نجمعها</h2><ul>"
             . "<li>بيانات الحساب: الاسم والبريد الإلكتروني ورقم الهاتف.</li>"
             . "<li>بيانات الاستخدام: تقدّمك في الكورسات ونتائج الاختبارات.</li>"
@@ -211,9 +242,10 @@ function local_multitopics_legal_default(string $doc, bool $isar, string $name, 
             . "<p>لا نبيع بياناتك. نشاركها فقط مع مزوّدي الخدمة اللازمين لتشغيل المنصة (مثل بوابات الدفع) وبالقدر المطلوب.</p>"
             . "<h2>حقوقك</h2>"
             . "<p>يمكنك طلب تعديل بياناتك أو حذف حسابك في أي وقت.</p>"
-            . "<h2>التواصل</h2><p>$contact</p>";
+            . "<h2>التواصل</h2><p>$contact</p>"
+            . $identity;
     }
-    return "<p>“$n” respects your privacy. This policy explains what we collect and how we use it.</p>"
+    return "<p><b>“$n”</b> is a mobile application published by <b>$dev</b>. This Privacy Policy applies to the “$n” app and explains what “$n” collects and how it is used.</p>"
         . "<h2>What we collect</h2><ul>"
         . "<li>Account data: your name, email and phone number.</li>"
         . "<li>Usage data: your course progress and quiz results.</li>"
@@ -226,5 +258,6 @@ function local_multitopics_legal_default(string $doc, bool $isar, string $name, 
         . "<p>We do not sell your data. We share it only with the service providers needed to run the platform (e.g. payment gateways), and only as required.</p>"
         . "<h2>Your rights</h2>"
         . "<p>You can ask us to correct your data or delete your account at any time.</p>"
-        . "<h2>Contact</h2><p>$contact</p>";
+        . "<h2>Contact</h2><p>$contact</p>"
+        . $identity;
 }
