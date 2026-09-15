@@ -6,17 +6,11 @@ function local_payments_extend_navigation(global_navigation $navigation) {
 }
 
 function local_payments_extend_navigation_course(\navigation_node $navigation, \stdClass $course, \context_course $context) {
-    if (has_capability('local/payments:managecoursepricing', $context)) {
-        $url = new \moodle_url('/local/payments/course_pricing.php', ['courseid' => $course->id]);
-        $navigation->add(
-            get_string('coursepricing', 'local_payments'),
-            $url,
-            \navigation_node::TYPE_SETTING,
-            null,
-            'local_payments_pricing',
-            new \pix_icon('i/payment', '')
-        );
-    }
+    // Course pricing now lives inside the course settings form as a two-price
+    // accordion (see local_payments\local\hooks\course_form) — no separate nav
+    // node needed. The standalone /local/payments/course_pricing.php CRUD page is
+    // kept (reachable by URL) for advanced multi-country setups, but the settings
+    // form is the primary, "two prices only" UI.
 }
 
 /**

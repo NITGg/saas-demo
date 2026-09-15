@@ -161,3 +161,11 @@ $string['payments:managerefunds'] = 'Manage refunds';
 $string['payments:manageproviders'] = 'Manage payment providers';
 $string['payments:viewalltransactions'] = 'View all transactions';
 $string['payments:viewauditlogs'] = 'View audit logs';
+
+// Two-price course pricing (embedded in the course settings form).
+$string['pricing_section_desc'] = 'Set two prices: one for buyers in your default country and one for everyone else. Leave "This is a paid course" unticked to keep the course free.';
+$string['paidcourse'] = 'This is a paid course';
+$string['price_home'] = 'Price for {$a} (default country)';
+$string['currency_home'] = 'Currency for {$a}';
+$string['price_other'] = 'Price for other countries';
+$string['currency_other'] = 'Currency for other countries';

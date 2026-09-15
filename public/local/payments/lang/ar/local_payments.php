@@ -153,3 +153,11 @@ $string['payments:managerefunds'] = 'إدارة المبالغ المستردة'
 $string['payments:manageproviders'] = 'إدارة مزودي الدفع';
 $string['payments:viewalltransactions'] = 'عرض جميع المعاملات';
 $string['payments:viewauditlogs'] = 'عرض سجل التدقيق';
+
+// تسعير الدورة بسعرين (داخل نموذج إعدادات الدورة).
+$string['pricing_section_desc'] = 'حدّد سعرين: سعر للمشترين في دولتك الافتراضية وسعر لباقي الدول. اترك خيار "دورة مدفوعة" بدون تحديد لإبقاء الدورة مجانية.';
+$string['paidcourse'] = 'دورة مدفوعة';
+$string['price_home'] = 'السعر في {$a} (الدولة الافتراضية)';
+$string['currency_home'] = 'العملة في {$a}';
+$string['price_other'] = 'السعر لباقي الدول';
+$string['currency_other'] = 'العملة لباقي الدول';

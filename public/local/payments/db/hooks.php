@@ -33,4 +33,21 @@ $callbacks = [
         'hook' => \core\hook\output\before_standard_head_html_generation::class,
         'callback' => [\local_payments\local\hooks\output::class, 'before_standard_head_html_generation'],
     ],
+    // Two-price pricing accordion embedded in the course create/edit settings form.
+    [
+        'hook' => \core_course\hook\after_form_definition::class,
+        'callback' => [\local_payments\local\hooks\course_form::class, 'after_form_definition'],
+    ],
+    [
+        'hook' => \core_course\hook\after_form_definition_after_data::class,
+        'callback' => [\local_payments\local\hooks\course_form::class, 'after_form_definition_after_data'],
+    ],
+    [
+        'hook' => \core_course\hook\after_form_validation::class,
+        'callback' => [\local_payments\local\hooks\course_form::class, 'after_form_validation'],
+    ],
+    [
+        'hook' => \core_course\hook\after_form_submission::class,
+        'callback' => [\local_payments\local\hooks\course_form::class, 'after_form_submission'],
+    ],
 ];
