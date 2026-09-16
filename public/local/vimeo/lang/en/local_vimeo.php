@@ -39,3 +39,4 @@ $string['err_noaccess']       = 'You do not have access to this video.';
 
 // Privacy (no personal data stored beyond the standard usermodified/timestamps).
 $string['privacy:metadata']   = 'The Vimeo plugin stores a mapping between course activities and Vimeo video ids; it does not store personal data about video viewers. Videos and their metadata are held by Vimeo.';
+$string['task_cleanup_orphans'] = 'Clean up orphaned (never-attached) videos';

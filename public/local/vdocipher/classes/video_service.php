@@ -32,6 +32,12 @@ class video_service {
 
         self::require_manage(self::context_for($courseid));
 
+        // Per-academy video limit: refuse BEFORE contacting the provider, so nothing
+        // is ever uploaded past the licence limit.
+        if (class_exists('\local_license\license') && !\local_license\license::can_upload_video()) {
+            throw new \moodle_exception('videolimitreached', 'local_license');
+        }
+
         $title = trim($title) !== '' ? trim($title) : 'Untitled video';
 
         $client = new api_client();

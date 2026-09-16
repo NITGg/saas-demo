@@ -32,6 +32,12 @@ class video_service {
 
         self::require_manage(self::context_for($courseid));
 
+        // Per-academy video limit: refuse BEFORE contacting the provider, so nothing
+        // is ever uploaded past the licence limit.
+        if (class_exists('\local_license\license') && !\local_license\license::can_upload_video()) {
+            throw new \moodle_exception('videolimitreached', 'local_license');
+        }
+
         if ($size <= 0) {
             throw new api_exception('A positive file size (bytes) is required to start a Vimeo upload.');
         }

@@ -81,3 +81,4 @@ $string['suspended_heading'] = 'This academy is suspended';
 $string['suspended_body']    = 'Access to this academy has been temporarily suspended. Your content is safe — contact us to restore it.';
 $string['contact_btn']      = 'Contact us';
 $string['backtosite']       = 'Back to site';
+$string['videolimitreached'] = 'Video limit reached — this academy has used all the videos in its plan. Delete a video or upgrade to add more.';

@@ -65,6 +65,7 @@ class license {
     const BUCKETS = [
         'quiz'      => 'quiz',
         'vdocipher' => 'video',
+        'vimeo'     => 'video',   // provider-hosted video (was miscounted as 'default')
         'url'       => 'video',   // YouTube/Vimeo links
         'resource'  => 'pdf',     // uploaded files (mostly PDFs)
         'testnew'   => 'pdf',
@@ -320,6 +321,48 @@ class license {
         }
         $limits = self::tierdef()['limits'];
         return $limits[$bucket] ?? ($limits['default'] ?? -1);
+    }
+
+    /**
+     * Videos this academy has uploaded to OUR providers — the count that consumes
+     * VdoCipher/Vimeo quota. Counted PER-ACADEMY (site-wide, every course), including
+     * uploads not yet attached to an activity, since those still cost provider quota.
+     * External links (mod_url / YouTube) are NOT counted — they aren't our uploads.
+     *
+     * @return int
+     */
+    public static function academy_video_count(): int {
+        global $DB;
+        $n = 0;
+        $dbman = $DB->get_manager();
+        if ($dbman->table_exists('local_vdocipher_videos')) {
+            $n += $DB->count_records('local_vdocipher_videos');
+        }
+        if ($dbman->table_exists('local_vimeo_videos')) {
+            $n += $DB->count_records('local_vimeo_videos');
+        }
+        return $n;
+    }
+
+    /** The per-academy video limit (definition 'video' bucket). -1 = unlimited. */
+    public static function video_limit(): int {
+        return self::bucket_limit('video');
+    }
+
+    /**
+     * May this academy upload ANOTHER video to a provider right now? False once the
+     * per-academy video count reaches the licence limit. Unlimited (-1) or
+     * enforcement-off always allows. This is the single gate the upload chokepoints
+     * consult so no bytes ever reach the provider past the limit.
+     *
+     * @return bool
+     */
+    public static function can_upload_video(): bool {
+        $limit = self::video_limit();
+        if ($limit < 0) {
+            return true; // unlimited (or enforcement off → bucket_limit returns -1)
+        }
+        return self::academy_video_count() < $limit;
     }
 
     /**

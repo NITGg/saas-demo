@@ -128,6 +128,12 @@ class enforcer {
      */
     public static function can_add_activity(string $modname, ?int $courseid = null): bool {
         $bucket = license::bucket_for($modname);
+        // Video is now a PER-ACADEMY limit enforced at UPLOAD time (a provider video
+        // is already uploaded by the time its activity is added), so don't also gate
+        // it per-course here — that would wrongly block attaching an uploaded video.
+        if ($bucket === 'video') {
+            return true;
+        }
         $limit  = license::bucket_limit($bucket);
         if ($limit < 0) {
             return true;
