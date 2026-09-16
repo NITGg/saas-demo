@@ -31,3 +31,6 @@ $string['mode_test'] = 'Test / Sandbox';
 $string['mode_live'] = 'Live';
 $string['heading_live'] = 'LIVE credentials';
 $string['heading_test'] = 'TEST / sandbox credentials';
+
+$string['fep_url'] = 'FEP / payment API base URL';
+$string['fep_url_desc'] = 'Host for refunds, voids, tokens and transfers (Kashier FEP). Live: https://fep.kashier.io — Test: https://test-fep.kashier.io. Different from the sessions API base above.';

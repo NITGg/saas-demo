@@ -31,6 +31,9 @@ if ($hassiteconfig) {
         get_string('secret_key', 'paymentprovider_kashier'), '', ''));
     $settings->add(new admin_setting_configtext('paymentprovider_kashier/live_base_url',
         get_string('base_url', 'paymentprovider_kashier'), '', 'https://api.kashier.io', PARAM_URL));
+    $settings->add(new admin_setting_configtext('paymentprovider_kashier/live_fep_url',
+        get_string('fep_url', 'paymentprovider_kashier'), get_string('fep_url_desc', 'paymentprovider_kashier'),
+        'https://fep.kashier.io', PARAM_URL));
 
     // ── TEST / sandbox credentials ───────────────────────────────────────────
     $settings->add(new admin_setting_heading('paymentprovider_kashier/heading_test',
@@ -43,16 +46,12 @@ if ($hassiteconfig) {
         get_string('secret_key', 'paymentprovider_kashier'), '', ''));
     $settings->add(new admin_setting_configtext('paymentprovider_kashier/test_base_url',
         get_string('base_url', 'paymentprovider_kashier'), '', 'https://test-api.kashier.io', PARAM_URL));
+    $settings->add(new admin_setting_configtext('paymentprovider_kashier/test_fep_url',
+        get_string('fep_url', 'paymentprovider_kashier'), get_string('fep_url_desc', 'paymentprovider_kashier'),
+        'https://test-fep.kashier.io', PARAM_URL));
 
     // ── Other ────────────────────────────────────────────────────────────────
     $settings->add(new admin_setting_heading('paymentprovider_kashier/heading_other', '', ''));
-    $settings->add(new admin_setting_configtext(
-        'paymentprovider_kashier/refund_base_url',
-        get_string('refund_base_url', 'paymentprovider_kashier'),
-        get_string('refund_base_url_desc', 'paymentprovider_kashier'),
-        'https://fep.kashier.io',
-        PARAM_URL
-    ));
     $settings->add(new admin_setting_configtext(
         'paymentprovider_kashier/allowed_methods',
         get_string('allowed_methods', 'paymentprovider_kashier'),

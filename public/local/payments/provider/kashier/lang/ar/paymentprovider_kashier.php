@@ -31,3 +31,6 @@ $string['mode_test'] = 'تجريبي / Sandbox';
 $string['mode_live'] = 'مباشر';
 $string['heading_live'] = 'بيانات الاعتماد (مباشر)';
 $string['heading_test'] = 'بيانات الاعتماد (تجريبي / Sandbox)';
+
+$string['fep_url'] = 'رابط واجهة الدفع (FEP)';
+$string['fep_url_desc'] = 'مضيف عمليات الاسترداد والإلغاء والتوكنز والتحويلات (Kashier FEP). مباشر: https://fep.kashier.io — تجريبي: https://test-fep.kashier.io. يختلف عن رابط واجهة الجلسات أعلاه.';

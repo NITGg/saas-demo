@@ -66,8 +66,24 @@ class gateway extends base_provider {
         return rtrim($v, '/');
     }
 
+    // FEP base — pay / capture / void / refund / tokens / transfers. A DIFFERENT host
+    // family from the sessions API, and mode-specific: live = fep.kashier.io,
+    // test = test-fep.kashier.io. Optional per-mode override (live_fep_url/test_fep_url),
+    // else the legacy single refund_base_url, else the standard host for the mode.
     private function get_refund_base_url(): string {
-        return rtrim($this->get_setting('refund_base_url', 'https://fep.kashier.io'), '/');
+        $mode = $this->get_mode();
+        $v = (string) $this->get_setting($mode . '_fep_url', '');
+        if ($v === '') {
+            // Only honour the legacy single override if it isn't the wrong-mode default.
+            $legacy = (string) $this->get_setting('refund_base_url', '');
+            if ($legacy !== '' && $legacy !== 'https://fep.kashier.io' && $legacy !== 'https://test-fep.kashier.io') {
+                $v = $legacy;
+            }
+        }
+        if ($v === '') {
+            $v = ($mode === 'test') ? 'https://test-fep.kashier.io' : 'https://fep.kashier.io';
+        }
+        return rtrim($v, '/');
     }
 
     private function get_auth_headers(): array {
