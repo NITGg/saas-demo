@@ -4,26 +4,15 @@ defined('MOODLE_INTERNAL') || die();
 if ($hassiteconfig) {
     $settings = new admin_settingpage('paymentprovider_kashier', get_string('pluginname', 'paymentprovider_kashier'));
 
-    // ── Payment mode (owner toggle) ──────────────────────────────────────────
-    // Empty = use the platform default (set by NIT's provisioner). The academy owner
-    // can force live or test here.
+    // ── Payment mode ─────────────────────────────────────────────────────────
+    // The single source of truth for this academy: LIVE (real) or TEST (sandbox).
+    // New academies are seeded from the platform default at provisioning; after that
+    // NIT (from the platform dashboard) or the owner (here) can change it, and NIT's
+    // dashboard writes THIS same field.
     $settings->add(new admin_setting_configselect(
         'paymentprovider_kashier/payment_mode',
         get_string('payment_mode', 'paymentprovider_kashier'),
         get_string('payment_mode_desc', 'paymentprovider_kashier'),
-        '',
-        [
-            '' => get_string('mode_default', 'paymentprovider_kashier'),
-            'test' => get_string('mode_test', 'paymentprovider_kashier'),
-            'live' => get_string('mode_live', 'paymentprovider_kashier'),
-        ]
-    ));
-
-    // Platform default mode — normally set by the provisioner; shown for visibility.
-    $settings->add(new admin_setting_configselect(
-        'paymentprovider_kashier/default_payment_mode',
-        get_string('default_payment_mode', 'paymentprovider_kashier'),
-        get_string('default_payment_mode_desc', 'paymentprovider_kashier'),
         'test',
         [
             'test' => get_string('mode_test', 'paymentprovider_kashier'),

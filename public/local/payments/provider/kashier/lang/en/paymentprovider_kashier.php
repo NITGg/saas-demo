@@ -23,7 +23,7 @@ $string['max_failure_attempts_desc'] = 'Maximum number of failed payment attempt
 
 // Live/test mode toggle + credential sets.
 $string['payment_mode'] = 'Payment mode';
-$string['payment_mode_desc'] = 'Choose whether this academy takes LIVE (real) or TEST (sandbox) payments. Leave on the platform default unless you need to override it.';
+$string['payment_mode_desc'] = 'Whether this academy takes LIVE (real) or TEST (sandbox) payments. New academies start from the platform default; the platform (NIT) and the owner both change it here.';
 $string['default_payment_mode'] = 'Platform default mode (managed)';
 $string['default_payment_mode_desc'] = 'The default set by the platform. Used when "Payment mode" above is left on the platform default.';
 $string['mode_default'] = 'Use platform default';

@@ -1033,13 +1033,10 @@ class manager {
             }
             $itemtype = $meta->item_type ?? 'course';
             $provider = $DB->get_field('local_payments_providers', 'name', ['id' => $transaction->provider_id]) ?: 'unknown';
-            // Live vs test — the academy's active payment mode (owner toggle, else the
-            // platform default, else the legacy sandbox flag), so test payments are
-            // never counted as real revenue on the platform side. Mirrors gateway::get_mode().
+            // Live vs test — the academy's single payment_mode setting, else the legacy
+            // sandbox flag. So test payments are never counted as real revenue on the
+            // platform side. Mirrors gateway::get_mode().
             $mode = (string) get_config('paymentprovider_' . $provider, 'payment_mode');
-            if ($mode !== 'live' && $mode !== 'test') {
-                $mode = (string) get_config('paymentprovider_' . $provider, 'default_payment_mode');
-            }
             if ($mode !== 'live' && $mode !== 'test') {
                 $sandbox = get_config('paymentprovider_' . $provider, 'sandbox_mode');
                 $mode = ($sandbox !== false && (string) $sandbox === '1') ? 'test' : 'live';

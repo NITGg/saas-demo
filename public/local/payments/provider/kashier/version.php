@@ -2,7 +2,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'paymentprovider_kashier';
-$plugin->version   = 2026091500;
+$plugin->version   = 2026091600;
 $plugin->requires  = 2024100700;
 $plugin->supported = [405, 502];
 $plugin->maturity  = MATURITY_STABLE;

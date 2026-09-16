@@ -14,15 +14,13 @@ defined('MOODLE_INTERNAL') || die();
 class gateway extends base_provider {
 
     /**
-     * The active payment mode: the academy owner's toggle (payment_mode) if set,
-     * else the platform default (default_payment_mode) from the provisioner, else
-     * derived from the legacy sandbox flag. One of 'live' | 'test'.
+     * The active payment mode — a single setting (payment_mode: live | test). New
+     * academies are seeded from the platform default at provisioning; NIT's dashboard
+     * and the owner both write this same field. Falls back to the legacy sandbox flag
+     * for academies not yet re-provisioned. One of 'live' | 'test'.
      */
     public function get_mode(): string {
         $mode = (string) $this->get_setting('payment_mode', '');
-        if ($mode !== 'live' && $mode !== 'test') {
-            $mode = (string) $this->get_setting('default_payment_mode', '');
-        }
         if ($mode !== 'live' && $mode !== 'test') {
             // Legacy single-credential academies: infer from the old sandbox checkbox.
             $mode = ((string) $this->get_setting('sandbox_mode', '1') === '1') ? 'test' : 'live';
