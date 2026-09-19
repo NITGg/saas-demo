@@ -1,0 +1,48 @@
+<!-- NIT homepage template T7 · Corporate Trust — CATEGORIES strip.
+     theme_nit's engine clones the INNER html of [data-nit-category-card] once per
+     top-level category from window.NIT_CATEGORIES, substituting {{url}} {{name}}
+     {{coursecount}} and setting [data-nit-category-image] as a background. The
+     hidden wrapper stays; each clone's inner card becomes a direct grid child. -->
+<div dir="auto"
+  style="--t-accent: var(--nit-brand-primary); --t-accent-soft: color-mix(in srgb, var(--nit-brand-primary) 10%, transparent); --t-ink: #2A2140; --t-bg: #FFFDF7; --t-surface: #FFFFFF; --t-muted2: #6C86A6; --t-border: #DCE5F0; font-family: 'Baloo Bhaijaan 2','IBM Plex Sans Arabic',system-ui,sans-serif; background: var(--t-bg); border-bottom: 1px solid var(--t-border); color: var(--t-ink);">
+  <div style="max-width: 1240px; margin: 0 auto; padding: clamp(44px,5vw,68px) 20px;">
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 28px;">
+      <div>
+        <div style="font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--t-accent); font-weight: 700;">{mlang en}Browse{mlang}{mlang ar}تصفّح{mlang}</div>
+        <h2 style="margin: 12px 0 0; font-size: clamp(26px,3vw,36px); font-weight: 800; letter-spacing: -0.02em;">{mlang en}Explore by specialty{mlang}{mlang ar}استعرض حسب التخصص{mlang}</h2>
+      </div>
+      <a href="/course/index.php" style="font-size: 14px; color: var(--t-accent); text-decoration: none; font-weight: 700;">{mlang en}See all →{mlang}{mlang ar}كل التصنيفات ←{mlang}</a>
+    </div>
+    <div data-nit-categories="" data-limit="12"
+      style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 16px;">
+      <!-- CARD TEMPLATE (hidden wrapper; its inner <a> is cloned per category) -->
+      <div data-nit-category-card="" style="display: none;">
+        <a href="{{url}}"
+          style="display: flex; flex-direction: column; gap: 12px; padding: 18px; border-radius: 10px; background: var(--t-surface); border: 1px solid var(--t-border); text-decoration: none; color: var(--t-ink); height: 100%; box-sizing: border-box;">
+          <span data-nit-category-image=""
+            style="width: 34px; height: 34px; border-radius: 8px; background: var(--t-accent-soft) center/contain no-repeat; display: block; flex: 0 0 auto;"></span>
+          <span style="font-size: 14px; font-weight: 700;">{{name}}</span>
+          <span style="font-size: 11px; color: var(--t-muted2); font-weight: 500;">{{coursecount}} {mlang en}courses{mlang}{mlang ar}دورة{mlang}</span>
+        </a>
+      </div>
+    </div>
+  </div>
+  <script>
+    /* Shared hover effects (T7 flavour). Idempotent via id. */
+    (function () {
+      if (document.getElementById('nit-hoverfx-style')) { return; }
+      var css =
+        '.nit-btn-solid,.nit-btn-ghost,[data-nit-copy],[data-nit-scroll],[data-nit-coupons-scroll],[data-nit-categories]>a,[data-nit-my-courses]>div,[data-nit-about-card]{transition:background-color .2s ease,background .2s ease,color .2s ease,border-color .2s ease,transform .2s ease,box-shadow .2s ease}' +
+        '.nit-btn-solid:not(:disabled):hover{filter:brightness(1.06);transform:translateY(-2px);box-shadow:0 16px 34px rgba(20,24,28,.22)}' +
+        '.nit-btn-ghost:not(:disabled):hover{border-color:var(--nit-brand-primary)!important;transform:translateY(-2px);box-shadow:0 12px 26px rgba(20,24,28,.12)}' +
+        '[data-nit-copy]:hover{border-color:var(--nit-brand-primary)!important;transform:translateY(-2px)}' +
+        '[data-nit-scroll]:hover,[data-nit-coupons-scroll]:hover{transform:translateY(-50%) scale(1.08)!important}' +
+        '[data-nit-categories]>a:hover,[data-nit-my-courses]>div:not([data-nit-my-course-card]):not([data-nit-my-courses-empty]):hover{transform:translateY(-6px);box-shadow:0 22px 48px rgba(20,24,28,.16)}' +
+        '[data-nit-about-card]:hover{transform:translateY(-4px);border-color:var(--nit-brand-primary)!important}';
+      var st = document.createElement('style');
+      st.id = 'nit-hoverfx-style';
+      st.textContent = css;
+      (document.head || document.documentElement).appendChild(st);
+    })();
+  </script>
+</div>

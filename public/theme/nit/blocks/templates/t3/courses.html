@@ -1,0 +1,57 @@
+<!-- NIT homepage template T3 · Academic Classic — COURSES grid.
+     theme_nit's engine clones the INNER html of [data-nit-course-card] once per
+     course from window.NIT_COURSES, substituting {{url}} {{fullname}} {{teacher}}
+     {{summary}} {{pricebadge}} {{cta}} and setting [data-nit-course-image] as a
+     background. Only real course fields are bound — the design's fake rating,
+     week-count and per-course category label are dropped (see README rule 4). -->
+<div dir="auto" data-nit-section="courses"
+  style="--t-accent: var(--nit-brand-primary); --t-accent-soft: color-mix(in srgb, var(--nit-brand-primary) 14%, transparent); --t-ink: #0B2545; --t-bg: #FBF9F4; --t-surface: #FFFFFF; --t-muted: #33475F; --t-muted2: #6A7789; --t-border: #DED6C6; --t-border2: #EFE9DB; font-family: 'Almarai','IBM Plex Sans Arabic',system-ui,sans-serif; background: var(--t-bg); color: var(--t-ink);">
+  <div style="max-width: 1220px; margin: 0 auto; padding: clamp(56px,7vw,96px) 20px;">
+    <div style="text-align: center; max-width: 620px; margin: 0 auto;">
+      <div style="font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--t-accent); font-weight: 700;">{mlang en}Our courses{mlang}{mlang ar}دوراتنا{mlang}</div>
+      <h2 style="margin: 16px 0 0; font-family: 'Libre Baskerville','Amiri','Almarai',Georgia,serif; font-size: clamp(30px,3.6vw,42px); font-weight: 700; line-height: 1.25;">{mlang en}Certificates &amp; diplomas{mlang}{mlang ar}الشهادات والدبلومات{mlang}</h2>
+      <div style="width: 56px; height: 2px; background: var(--t-accent); margin: 24px auto 0;"></div>
+    </div>
+    <div data-nit-courses="" data-limit="6" data-cta-label="→" data-free-label="Free" data-continue-label="→" data-enrolled-label="Enrolled"
+      style="margin-top: 48px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 28px;">
+      <!-- CARD TEMPLATE (hidden wrapper; its inner card is cloned per course) -->
+      <div data-nit-course-card="" style="display: none;">
+        <a href="{{url}}"
+          style="display: flex; flex-direction: column; background: var(--t-surface); border: 1px solid var(--t-border); text-decoration: none; color: var(--t-ink); height: 100%; box-sizing: border-box;">
+          <div data-nit-course-image=""
+            style="aspect-ratio: 3/2; background: repeating-linear-gradient(135deg, #E7E2D6 0 11px, #F1ECE1 11px 22px) center/cover no-repeat; display: grid; place-items: center; color: #6E6A5C; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 700;"></div>
+          <div style="padding: 26px; display: flex; flex-direction: column; flex: 1; min-height: 0;">
+            <h3 style="margin: 0; font-family: 'Libre Baskerville','Amiri','Almarai',Georgia,serif; font-size: 21px; font-weight: 700; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">{{fullname}}</h3>
+            <p style="margin: 12px 0 0; font-size: 13px; line-height: 1.8; color: var(--t-muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">{{summary}}</p>
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 18px; font-size: 12px; color: var(--t-muted2);">
+              <span style="color: var(--t-accent);">◆</span>
+              <span>{{teacher}}</span>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--t-border2);">
+              <span style="font-size: 15px; font-weight: 700;">{{pricebadge}}</span>
+              <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--t-ink); border-bottom: 2px solid var(--t-accent); padding-bottom: 3px;">{mlang en}Details{mlang}{mlang ar}التفاصيل{mlang} {{cta}}</span>
+            </div>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+  <script>
+    /* Shared hover effects for .nit-btn-solid / .nit-btn-ghost / cards. Idempotent. */
+    (function () {
+      if (document.getElementById('nit-hoverfx-style')) { return; }
+      var css =
+        '.nit-btn-solid,.nit-btn-ghost,[data-nit-copy],[data-nit-scroll],[data-nit-coupons-scroll],[data-nit-categories]>a,[data-nit-my-courses]>div,[data-nit-about-card]{transition:background-color .2s ease,background .2s ease,color .2s ease,border-color .2s ease,transform .2s ease,box-shadow .2s ease}' +
+        '.nit-btn-solid:not(:disabled):hover{filter:brightness(1.06);transform:translateY(-2px);box-shadow:0 16px 34px rgba(11,37,69,.22)}' +
+        '.nit-btn-ghost:not(:disabled):hover{border-color:var(--nit-brand-primary)!important;transform:translateY(-2px);box-shadow:0 12px 26px rgba(11,37,69,.12)}' +
+        '[data-nit-copy]:hover{border-color:var(--nit-brand-primary)!important;transform:translateY(-2px)}' +
+        '[data-nit-scroll]:hover,[data-nit-coupons-scroll]:hover{transform:translateY(-50%) scale(1.08)!important}' +
+        '[data-nit-categories]>a:hover,[data-nit-my-courses]>div:not([data-nit-my-course-card]):not([data-nit-my-courses-empty]):hover{transform:translateY(-4px);box-shadow:0 22px 48px rgba(11,37,69,.16)}' +
+        '[data-nit-about-card]:hover{transform:translateY(-4px);border-color:var(--nit-brand-primary)!important}';
+      var st = document.createElement('style');
+      st.id = 'nit-hoverfx-style';
+      st.textContent = css;
+      (document.head || document.documentElement).appendChild(st);
+    })();
+  </script>
+</div>

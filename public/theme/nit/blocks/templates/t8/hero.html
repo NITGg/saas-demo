@@ -1,0 +1,91 @@
+<!-- NIT homepage template T8 · Playful Rounded — HERO section.
+     Paste into an HTML nit_section block on the FRONT PAGE (Site home).
+     data-nit-stat counters are filled by theme_nit's front-page engine.
+     HYBRID PALETTE: structure = template's own playful neutrals/pastels; accent/CTA
+     = brand palette (--nit-brand-primary / --nit-brand-accent) so the academy's
+     brand colour flows through the chunky CTAs. Bilingual via mlang tags. -->
+<div dir="auto" data-nit-section="hero"
+  style="--t-accent: var(--nit-brand-primary); --t-accent-2: var(--nit-brand-accent); --t-on-accent: var(--nit-brand-on-primary, #fff); --t-accent-soft: color-mix(in srgb, var(--nit-brand-primary) 12%, transparent); --t-accent-shadow: color-mix(in srgb, var(--nit-brand-primary) 62%, #000); --t-ink: #2A2140; --t-bg: #FFFDF7; --t-surface: #FFFFFF; --t-muted: #5A4E78; --t-muted2: #8A8A82; --t-yellow: #FFE08A; --t-mint: #BFE9D6; --t-pink: #FFC9DE; --t-lav: #C9BCFB; font-family: 'Archivo','IBM Plex Sans Arabic',system-ui,sans-serif; background: var(--t-bg); color: var(--t-ink); position: relative; overflow: hidden;">
+  <!-- playful background blobs -->
+  <div style="position: absolute; top: -90px; inset-inline-end: 6%; width: clamp(180px,22vw,320px); height: clamp(180px,22vw,320px); border-radius: 50%; background: var(--t-yellow); z-index: 0;"></div>
+  <div style="position: absolute; bottom: -120px; inset-inline-start: -60px; width: clamp(200px,24vw,340px); height: clamp(200px,24vw,340px); border-radius: 50%; background: var(--t-mint); z-index: 0;"></div>
+  <div style="position: absolute; top: 240px; inset-inline-start: 44%; width: 120px; height: 120px; border-radius: 40px; background: var(--t-pink); transform: rotate(18deg); z-index: 0;"></div>
+  <div style="position: relative; z-index: 1; max-width: 1260px; margin: 0 auto; padding: clamp(56px,7vw,96px) 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: clamp(40px,5vw,60px); align-items: center;">
+    <div>
+      <div style="display: inline-flex; align-items: center; gap: 10px; background: var(--t-surface); border: 3px solid var(--t-yellow); border-radius: 999px; padding: 9px 18px; font-size: 14px; font-weight: 700; color: var(--t-ink);">
+        <span style="width: 10px; height: 10px; border-radius: 50%; background: var(--t-accent); display: block;"></span>
+        {mlang en}New term · enrolment open{mlang}{mlang ar}فصل جديد · التسجيل مفتوح{mlang}
+      </div>
+      <h1 style="margin: 24px 0 0; font-size: clamp(40px,6.5vw,70px); line-height: 1.06; letter-spacing: -0.02em; font-weight: 800;">
+        {mlang en}Where learning<br>feels like <span style="color: var(--t-accent-2);">play</span>{mlang}{mlang ar}حيث يصبح التعلّم<br><span style="color: var(--t-accent-2);">لعباً ممتعاً</span>{mlang}
+      </h1>
+      <p style="margin: 20px 0 0; font-size: 18px; line-height: 1.75; color: var(--t-muted); max-width: 470px; font-weight: 500;">
+        {mlang en}Short, structured courses taught by working professionals. Study at your own pace and finish with a certificate you can show.{mlang}{mlang ar}دورات قصيرة ومنظّمة يقدّمها مختصون في مجالهم. تعلّم بالوتيرة التي تناسبك واحصل على شهادة معتمدة.{mlang}
+      </p>
+      <div style="display: flex; gap: 14px; margin-top: 32px; flex-wrap: wrap;">
+        <a class="nit-btn-solid" href="/course/index.php" data-nit-btn=""
+          style="font-size: 16px; font-weight: 700; background: var(--t-accent); color: var(--t-on-accent); padding: 16px 32px; border-radius: 999px; text-decoration: none; box-shadow: 0 6px 0 var(--t-accent-shadow);">{mlang en}Browse courses{mlang}{mlang ar}استعرض الدورات{mlang}</a>
+        <a class="nit-btn-ghost" href="#nit-about" data-nit-btn=""
+          style="font-size: 16px; font-weight: 700; background: var(--t-surface); border: 3px solid var(--t-ink); color: var(--t-ink); padding: 14px 30px; border-radius: 999px; text-decoration: none;">{mlang en}How it works{mlang}{mlang ar}كيف تعمل المنصة{mlang}</a>
+      </div>
+      <div style="display: flex; gap: 16px; margin-top: 44px; flex-wrap: wrap;">
+        <div style="background: var(--t-surface); border: 3px solid var(--t-mint); border-radius: 22px; padding: 16px 20px;">
+          <div style="font-size: 26px; font-weight: 800; color: var(--t-accent);"><span data-nit-stat="courses">0</span>+</div>
+          <div style="font-size: 12px; color: var(--t-muted); font-weight: 600; margin-top: 2px;">{mlang en}Courses{mlang}{mlang ar}دورة{mlang}</div>
+        </div>
+        <div style="background: var(--t-surface); border: 3px solid var(--t-pink); border-radius: 22px; padding: 16px 20px;">
+          <div style="font-size: 26px; font-weight: 800; color: var(--t-accent-2);"><span data-nit-stat="categories">0</span></div>
+          <div style="font-size: 12px; color: var(--t-muted); font-weight: 600; margin-top: 2px;">{mlang en}Specialities{mlang}{mlang ar}تخصص{mlang}</div>
+        </div>
+        <div style="background: var(--t-surface); border: 3px solid var(--t-lav); border-radius: 22px; padding: 16px 20px;">
+          <div style="font-size: 26px; font-weight: 800; color: var(--t-accent-2);"><span data-nit-stat="topcategories">0</span></div>
+          <div style="font-size: 12px; color: var(--t-muted); font-weight: 600; margin-top: 2px;">{mlang en}Programs{mlang}{mlang ar}برنامج{mlang}</div>
+        </div>
+      </div>
+    </div>
+    <div style="position: relative;">
+      <div style="aspect-ratio: 4/4.2; border-radius: 48px; background: repeating-linear-gradient(135deg, #FFEFD4 0 13px, #FFF7E9 13px 26px); border: 4px solid var(--t-ink); display: grid; place-items: center; color: #A8917A; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 700; box-shadow: 12px 12px 0 var(--t-yellow); text-align: center;">
+        <div>
+          <div>{mlang en}Hero photo{mlang}{mlang ar}صورة رئيسية{mlang}</div>
+          <div style="font-size: 11px; margin-top: 6px; text-transform: none; letter-spacing: 0;">{mlang en}Replace via the editor{mlang}{mlang ar}استبدلها من المحرّر{mlang}</div>
+        </div>
+      </div>
+      <div style="position: absolute; inset-inline-start: -30px; bottom: 64px; background: var(--t-surface); border: 4px solid var(--t-ink); border-radius: 26px; padding: 16px 20px; display: flex; align-items: center; gap: 13px; box-shadow: 6px 6px 0 var(--t-mint);">
+        <span style="width: 42px; height: 42px; border-radius: 16px; background: var(--t-yellow); display: grid; place-items: center; font-size: 20px;">★</span>
+        <div>
+          <div style="font-size: 15px; font-weight: 800;">4.9 / 5</div>
+          <div style="font-size: 12px; color: var(--t-muted); font-weight: 600; margin-top: 2px;">{mlang en}learner rating{mlang}{mlang ar}تقييم المتعلمين{mlang}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    /* Load the T8 signature font once (Archivo). Guarded so it runs a single time. */
+    (function () {
+      if (document.getElementById('nit-tpl-font-t8')) { return; }
+      var l = document.createElement('link');
+      l.id = 'nit-tpl-font-t8';
+      l.rel = 'stylesheet';
+      l.href = 'https://fonts.googleapis.com/css2?family=Archivo:wght@400..800&display=swap';
+      (document.head || document.documentElement).appendChild(l);
+    })();
+  </script>
+  <script>
+    /* Shared hover effects for .nit-btn-solid / .nit-btn-ghost / cards. Idempotent. */
+    (function () {
+      if (document.getElementById('nit-hoverfx-style')) { return; }
+      var css =
+        '.nit-btn-solid,.nit-btn-ghost,[data-nit-copy],[data-nit-scroll],[data-nit-coupons-scroll],[data-nit-categories]>a,[data-nit-my-courses]>div,[data-nit-about-card]{transition:background-color .2s ease,background .2s ease,color .2s ease,border-color .2s ease,transform .2s ease,box-shadow .2s ease}' +
+        '.nit-btn-solid:not(:disabled):hover{filter:brightness(1.06);transform:translateY(-2px);box-shadow:0 16px 34px rgba(20,24,28,.22)}' +
+        '.nit-btn-ghost:not(:disabled):hover{border-color:var(--nit-brand-primary)!important;transform:translateY(-2px);box-shadow:0 12px 26px rgba(20,24,28,.12)}' +
+        '[data-nit-copy]:hover{border-color:var(--nit-brand-primary)!important;transform:translateY(-2px)}' +
+        '[data-nit-scroll]:hover,[data-nit-coupons-scroll]:hover{transform:translateY(-50%) scale(1.08)!important}' +
+        '[data-nit-categories]>a:hover,[data-nit-my-courses]>div:not([data-nit-my-course-card]):not([data-nit-my-courses-empty]):hover{transform:translateY(-6px);box-shadow:0 22px 48px rgba(20,24,28,.16)}' +
+        '[data-nit-about-card]:hover{transform:translateY(-4px);border-color:var(--nit-brand-primary)!important}';
+      var st = document.createElement('style');
+      st.id = 'nit-hoverfx-style';
+      st.textContent = css;
+      (document.head || document.documentElement).appendChild(st);
+    })();
+  </script>
+</div>

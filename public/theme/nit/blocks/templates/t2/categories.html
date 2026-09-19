@@ -1,0 +1,45 @@
+<!-- NIT homepage template T2 · Bold Gradient — CATEGORIES strip (pills).
+     theme_nit's engine clones the INNER html of [data-nit-category-card] once per
+     top-level category from window.NIT_CATEGORIES, substituting {{url}} {{name}}
+     {{coursecount}} {{id}} and setting [data-nit-category-image] as a background.
+     The hidden wrapper stays; each clone's inner pill becomes a direct flex child. -->
+<div dir="auto"
+  style="--t-accent: var(--nit-brand-primary); --t-accent-2: var(--nit-brand-accent); --t-accent-soft: color-mix(in srgb, var(--nit-brand-primary) 8%, transparent); --t-grad: linear-gradient(135deg, var(--t-accent), var(--t-accent-2)); --t-ink: #1B1035; --t-bg: #FFFFFF; --t-muted2: #6B6386; --t-border2: color-mix(in srgb, var(--nit-brand-primary) 22%, transparent); font-family: 'Plus Jakarta Sans','IBM Plex Sans Arabic',system-ui,sans-serif; background: var(--t-bg); color: var(--t-ink);">
+  <div style="max-width: 1280px; margin: 0 auto; padding: clamp(44px,5vw,64px) 20px 0;">
+    <div style="text-align: center; margin-bottom: 28px;">
+      <div style="font-size: 13px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; background: var(--t-grad); -webkit-background-clip: text; background-clip: text; color: transparent;">{mlang en}Browse{mlang}{mlang ar}تصفّح{mlang}</div>
+      <h2 style="margin: 12px 0 0; font-size: clamp(28px,3.4vw,40px); font-weight: 800; letter-spacing: -0.035em;">{mlang en}Explore by category{mlang}{mlang ar}استعرض حسب التخصص{mlang}</h2>
+    </div>
+    <div data-nit-categories="" data-limit="12"
+      style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center;">
+      <!-- CARD TEMPLATE (hidden wrapper; its inner <a> is cloned per category) -->
+      <div data-nit-category-card="" style="display: none;">
+        <a href="{{url}}"
+          style="display: inline-flex; align-items: center; gap: 10px; background: var(--t-accent-soft); border: 1.5px solid var(--t-border2); border-radius: 999px; padding: 11px 20px; font-size: 14px; font-weight: 700; color: var(--t-accent); text-decoration: none;">
+          <span data-nit-category-image=""
+            style="width: 20px; height: 20px; border-radius: 50%; background: var(--t-grad) center/contain no-repeat; display: block; flex: 0 0 auto;"></span>
+          <span>{{name}}</span>
+          <span style="font-size: 12px; font-weight: 600; color: var(--t-muted2);">· {{coursecount}}</span>
+        </a>
+      </div>
+    </div>
+  </div>
+  <script>
+    /* Shared hover effects (T2 flavour). Idempotent via id. */
+    (function () {
+      if (document.getElementById('nit-hoverfx-style')) { return; }
+      var css =
+        '.nit-btn-solid,.nit-btn-ghost,[data-nit-copy],[data-nit-scroll],[data-nit-coupons-scroll],[data-nit-categories]>a,[data-nit-my-courses]>div,[data-nit-about-card]{transition:background-color .2s ease,background .2s ease,color .2s ease,border-color .2s ease,transform .2s ease,box-shadow .2s ease}' +
+        '.nit-btn-solid:not(:disabled):hover{filter:brightness(1.06);transform:translateY(-2px);box-shadow:0 16px 34px rgba(27,16,53,.28)}' +
+        '.nit-btn-ghost:not(:disabled):hover{border-color:var(--nit-brand-primary)!important;transform:translateY(-2px);box-shadow:0 12px 26px rgba(27,16,53,.16)}' +
+        '[data-nit-copy]:hover{border-color:var(--nit-brand-primary)!important;transform:translateY(-2px)}' +
+        '[data-nit-scroll]:hover,[data-nit-coupons-scroll]:hover{transform:translateY(-50%) scale(1.08)!important}' +
+        '[data-nit-categories]>a:hover,[data-nit-my-courses]>div:not([data-nit-my-course-card]):not([data-nit-my-courses-empty]):hover{transform:translateY(-6px);box-shadow:0 22px 48px rgba(27,16,53,.16)}' +
+        '[data-nit-about-card]:hover{transform:translateY(-4px);border-color:var(--nit-brand-primary)!important}';
+      var st = document.createElement('style');
+      st.id = 'nit-hoverfx-style';
+      st.textContent = css;
+      (document.head || document.documentElement).appendChild(st);
+    })();
+  </script>
+</div>

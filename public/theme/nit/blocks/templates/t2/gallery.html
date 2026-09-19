@@ -1,0 +1,101 @@
+<!-- NIT homepage template T2 · Bold Gradient — GALLERY + testimonials + FAQ.
+     Static, owner-editable. Photos are placeholders; replace them from the editor.
+     The FAQ uses native <details> so it toggles without extra script. -->
+<div dir="auto" data-nit-section="gallery"
+  style="--t-accent: var(--nit-brand-primary); --t-accent-2: var(--nit-brand-accent); --t-grad: linear-gradient(135deg, var(--t-accent), var(--t-accent-2)); --t-ink: #1B1035; --t-bg: #FFFFFF; --t-bg-alt: #F9F7FF; --t-muted: #5A5177; --t-muted2: #6B6386; --t-border: #EFE9FB; --t-hi: #FDE047; font-family: 'Plus Jakarta Sans','IBM Plex Sans Arabic',system-ui,sans-serif; background: var(--t-bg); color: var(--t-ink);">
+  <!-- gallery grid -->
+  <div style="background: var(--t-bg-alt);">
+    <div style="max-width: 1280px; margin: 0 auto; padding: clamp(56px,7vw,88px) 20px;">
+      <h2 style="margin: 0; font-size: clamp(28px,3.6vw,44px); font-weight: 800; letter-spacing: -0.035em; text-align: center;">{mlang en}Life at the academy{mlang}{mlang ar}الحياة في الأكاديمية{mlang}</h2>
+      <div style="margin-top: 40px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px;">
+        <div style="min-height: 230px; border-radius: 26px; background: var(--t-grad); opacity: 0.92; display: grid; place-items: center; color: #fff; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 800;">{mlang en}Photo · demo day{mlang}{mlang ar}صورة · يوم العرض{mlang}</div>
+        <div style="min-height: 230px; border-radius: 26px; background: linear-gradient(135deg, color-mix(in srgb, var(--t-accent-2) 88%, #fff), var(--t-accent-2)); display: grid; place-items: center; color: #fff; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 800;">{mlang en}Photo · workshop{mlang}{mlang ar}صورة · ورشة{mlang}</div>
+        <div style="min-height: 230px; border-radius: 26px; background: linear-gradient(135deg, color-mix(in srgb, var(--t-accent) 70%, #fff), color-mix(in srgb, var(--t-accent-2) 70%, #fff)); display: grid; place-items: center; color: var(--t-accent); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 800;">{mlang en}Photo · team{mlang}{mlang ar}صورة · الفريق{mlang}</div>
+        <div style="min-height: 200px; border-radius: 26px; background: repeating-linear-gradient(135deg, #EDE7FA 0 12px, #F6F2FF 12px 24px);"></div>
+        <div style="min-height: 200px; border-radius: 26px; background: repeating-linear-gradient(135deg, #EDE7FA 0 12px, #F6F2FF 12px 24px);"></div>
+        <div style="min-height: 200px; border-radius: 26px; background: repeating-linear-gradient(135deg, #EDE7FA 0 12px, #F6F2FF 12px 24px);"></div>
+      </div>
+    </div>
+  </div>
+  <!-- testimonials -->
+  <div style="max-width: 1280px; margin: 0 auto; padding: clamp(56px,7vw,96px) 20px;">
+    <h2 style="margin: 0; font-size: clamp(28px,3.6vw,44px); font-weight: 800; letter-spacing: -0.035em; text-align: center;">{mlang en}Learners say it works{mlang}{mlang ar}تجارب متعلمينا{mlang}</h2>
+    <div style="margin-top: 44px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+      <div style="background: var(--t-bg); border: 1.5px solid var(--t-border); border-radius: 26px; padding: 28px; box-shadow: 0 16px 40px rgba(27,16,53,0.08);">
+        <div style="font-size: 44px; line-height: 0.6; background: var(--t-grad); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 800;">“</div>
+        <p style="margin: 16px 0 0; font-size: 15px; line-height: 1.75; color: #3E3558; font-weight: 500;">{mlang en}Placeholder review about the cohort, the mentors and the outcome it led to.{mlang}{mlang ar}نص بديل لمراجعة عن الدفعة والمدربين والنتيجة التي وصل إليها المتعلم.{mlang}</p>
+        <div style="display: flex; align-items: center; gap: 12px; margin-top: 22px;">
+          <span style="width: 40px; height: 40px; border-radius: 999px; background: var(--t-grad); display: block;"></span>
+          <div>
+            <div style="font-size: 13px; font-weight: 800;">{mlang en}Learner name{mlang}{mlang ar}اسم المتعلم{mlang}</div>
+            <div style="font-size: 11px; color: var(--t-muted2); font-weight: 600; margin-top: 2px;">{mlang en}Cohort 12{mlang}{mlang ar}الدفعة ١٢{mlang}</div>
+          </div>
+        </div>
+      </div>
+      <div style="background: var(--t-grad); color: #fff; border-radius: 26px; padding: 28px; box-shadow: 0 20px 48px color-mix(in srgb, var(--t-accent) 32%, transparent);">
+        <div style="font-size: 44px; line-height: 0.6; color: var(--t-hi); font-weight: 800;">“</div>
+        <p style="margin: 16px 0 0; font-size: 15px; line-height: 1.75; color: rgba(255,255,255,0.94); font-weight: 500;">{mlang en}Placeholder review about the cohort, the mentors and the outcome it led to.{mlang}{mlang ar}نص بديل لمراجعة عن الدفعة والمدربين والنتيجة التي وصل إليها المتعلم.{mlang}</p>
+        <div style="display: flex; align-items: center; gap: 12px; margin-top: 22px;">
+          <span style="width: 40px; height: 40px; border-radius: 999px; background: rgba(255,255,255,0.28); display: block;"></span>
+          <div>
+            <div style="font-size: 13px; font-weight: 800;">{mlang en}Learner name{mlang}{mlang ar}اسم المتعلم{mlang}</div>
+            <div style="font-size: 11px; color: rgba(255,255,255,0.78); font-weight: 600; margin-top: 2px;">{mlang en}Cohort 11{mlang}{mlang ar}الدفعة ١١{mlang}</div>
+          </div>
+        </div>
+      </div>
+      <div style="background: var(--t-bg); border: 1.5px solid var(--t-border); border-radius: 26px; padding: 28px; box-shadow: 0 16px 40px rgba(27,16,53,0.08);">
+        <div style="font-size: 44px; line-height: 0.6; background: var(--t-grad); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 800;">“</div>
+        <p style="margin: 16px 0 0; font-size: 15px; line-height: 1.75; color: #3E3558; font-weight: 500;">{mlang en}Placeholder review about the cohort, the mentors and the outcome it led to.{mlang}{mlang ar}نص بديل لمراجعة عن الدفعة والمدربين والنتيجة التي وصل إليها المتعلم.{mlang}</p>
+        <div style="display: flex; align-items: center; gap: 12px; margin-top: 22px;">
+          <span style="width: 40px; height: 40px; border-radius: 999px; background: var(--t-grad); display: block;"></span>
+          <div>
+            <div style="font-size: 13px; font-weight: 800;">{mlang en}Learner name{mlang}{mlang ar}اسم المتعلم{mlang}</div>
+            <div style="font-size: 11px; color: var(--t-muted2); font-weight: 600; margin-top: 2px;">{mlang en}Cohort 10{mlang}{mlang ar}الدفعة ١٠{mlang}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- faq -->
+  <div style="background: var(--t-bg-alt);">
+    <div style="max-width: 940px; margin: 0 auto; padding: clamp(56px,7vw,88px) 20px;">
+      <h2 style="margin: 0 0 34px; font-size: clamp(28px,3.6vw,44px); font-weight: 800; letter-spacing: -0.035em; text-align: center;">{mlang en}Questions, answered{mlang}{mlang ar}أسئلة وأجوبة{mlang}</h2>
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <details style="background: var(--t-bg); border-radius: 22px; padding: 24px 28px; box-shadow: 0 10px 26px rgba(27,16,53,0.07);" open>
+          <summary style="font-size: 17px; font-weight: 800; cursor: pointer; list-style: none;">{mlang en}Do I need experience to join a bootcamp?{mlang}{mlang ar}هل أحتاج خبرة سابقة للانضمام؟{mlang}</summary>
+          <p style="margin: 14px 0 0; font-size: 14px; line-height: 1.8; color: var(--t-muted); font-weight: 500;">{mlang en}Placeholder answer text. Replace with the academy's own policy.{mlang}{mlang ar}نص إجابة بديل. استبدله بسياسة الأكاديمية.{mlang}</p>
+        </details>
+        <details style="background: var(--t-bg); border-radius: 22px; padding: 24px 28px; box-shadow: 0 10px 26px rgba(27,16,53,0.05);">
+          <summary style="font-size: 17px; font-weight: 800; cursor: pointer; list-style: none;">{mlang en}Can I pay in instalments?{mlang}{mlang ar}هل يمكن الدفع على أقساط؟{mlang}</summary>
+          <p style="margin: 14px 0 0; font-size: 14px; line-height: 1.8; color: var(--t-muted); font-weight: 500;">{mlang en}Placeholder answer text.{mlang}{mlang ar}نص إجابة بديل.{mlang}</p>
+        </details>
+        <details style="background: var(--t-bg); border-radius: 22px; padding: 24px 28px; box-shadow: 0 10px 26px rgba(27,16,53,0.05);">
+          <summary style="font-size: 17px; font-weight: 800; cursor: pointer; list-style: none;">{mlang en}How much time per week?{mlang}{mlang ar}كم وقت الدراسة أسبوعياً؟{mlang}</summary>
+          <p style="margin: 14px 0 0; font-size: 14px; line-height: 1.8; color: var(--t-muted); font-weight: 500;">{mlang en}Placeholder answer text.{mlang}{mlang ar}نص إجابة بديل.{mlang}</p>
+        </details>
+        <details style="background: var(--t-bg); border-radius: 22px; padding: 24px 28px; box-shadow: 0 10px 26px rgba(27,16,53,0.05);">
+          <summary style="font-size: 17px; font-weight: 800; cursor: pointer; list-style: none;">{mlang en}Is there a job guarantee?{mlang}{mlang ar}هل هناك ضمان توظيف؟{mlang}</summary>
+          <p style="margin: 14px 0 0; font-size: 14px; line-height: 1.8; color: var(--t-muted); font-weight: 500;">{mlang en}Placeholder answer text.{mlang}{mlang ar}نص إجابة بديل.{mlang}</p>
+        </details>
+      </div>
+    </div>
+  </div>
+  <script>
+    /* Shared hover effects (T2 flavour). Idempotent via id. */
+    (function () {
+      if (document.getElementById('nit-hoverfx-style')) { return; }
+      var css =
+        '.nit-btn-solid,.nit-btn-ghost,[data-nit-copy],[data-nit-scroll],[data-nit-coupons-scroll],[data-nit-categories]>a,[data-nit-my-courses]>div,[data-nit-about-card]{transition:background-color .2s ease,background .2s ease,color .2s ease,border-color .2s ease,transform .2s ease,box-shadow .2s ease}' +
+        '.nit-btn-solid:not(:disabled):hover{filter:brightness(1.06);transform:translateY(-2px);box-shadow:0 16px 34px rgba(27,16,53,.28)}' +
+        '.nit-btn-ghost:not(:disabled):hover{border-color:var(--nit-brand-primary)!important;transform:translateY(-2px);box-shadow:0 12px 26px rgba(27,16,53,.16)}' +
+        '[data-nit-copy]:hover{border-color:var(--nit-brand-primary)!important;transform:translateY(-2px)}' +
+        '[data-nit-scroll]:hover,[data-nit-coupons-scroll]:hover{transform:translateY(-50%) scale(1.08)!important}' +
+        '[data-nit-categories]>a:hover,[data-nit-my-courses]>div:not([data-nit-my-course-card]):not([data-nit-my-courses-empty]):hover{transform:translateY(-6px);box-shadow:0 22px 48px rgba(27,16,53,.16)}' +
+        '[data-nit-about-card]:hover{transform:translateY(-4px);border-color:var(--nit-brand-primary)!important}';
+      var st = document.createElement('style');
+      st.id = 'nit-hoverfx-style';
+      st.textContent = css;
+      (document.head || document.documentElement).appendChild(st);
+    })();
+  </script>
+</div>

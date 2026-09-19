@@ -1,0 +1,71 @@
+<!-- NIT homepage template T7 · Corporate Trust — ABOUT + stats strip.
+     Static, owner-editable copy. The dark stats strip reuses data-nit-stat so the
+     numbers count up to the real site totals. -->
+<div dir="auto" data-nit-section="about" id="nit-about"
+  style="--t-accent: var(--nit-brand-primary); --t-accent-soft: color-mix(in srgb, var(--nit-brand-primary) 10%, transparent); --t-on-accent: var(--nit-brand-on-primary, #fff); --t-ink: #2A2140; --t-bg: #FFFDF7; --t-surface: #FFFFFF; --t-bg-alt: #F5F9FE; --t-muted: #45618A; --t-muted2: #6C86A6; --t-border: #DCE5F0; --t-dark: #10243E; font-family: 'Baloo Bhaijaan 2','IBM Plex Sans Arabic',system-ui,sans-serif; background: var(--t-bg-alt); border-block: 1px solid var(--t-border); color: var(--t-ink);">
+  <div style="max-width: 1240px; margin: 0 auto; padding: clamp(56px,7vw,88px) 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: clamp(40px,5vw,64px); align-items: center;">
+    <div>
+      <div style="font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--t-accent); font-weight: 700;">{mlang en}About the institute{mlang}{mlang ar}عن المعهد{mlang}</div>
+      <h2 style="margin: 12px 0 0; font-size: clamp(28px,3.4vw,38px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.2;">{mlang en}Corporate training you can trust{mlang}{mlang ar}تدريب مؤسسي يمكنك الوثوق به{mlang}</h2>
+      <p style="margin: 18px 0 0; font-size: 16px; line-height: 1.85; color: var(--t-muted); max-width: 560px;">{mlang en}Placeholder paragraph about the institute, its accreditation and how corporate programmes are delivered. Replace with your own copy from the page editor.{mlang}{mlang ar}نص بديل عن المعهد واعتماداته وطريقة تنفيذ البرامج المؤسسية. استبدله بمحتواك من محرّر الصفحة.{mlang}</p>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-top: 30px;">
+        <div data-nit-about-card="" style="background: var(--t-surface); border: 1px solid var(--t-border); border-radius: 10px; padding: 22px;">
+          <div style="width: 34px; height: 34px; border-radius: 8px; background: var(--t-accent-soft); color: var(--t-accent); display: grid; place-items: center; font-weight: 700;">✓</div>
+          <div style="font-size: 15px; font-weight: 700; margin-top: 14px;">{mlang en}On-site or online{mlang}{mlang ar}حضورياً أو عن بُعد{mlang}</div>
+          <div style="font-size: 13px; color: var(--t-muted2); line-height: 1.7; margin-top: 6px;">{mlang en}Delivered how your team prefers.{mlang}{mlang ar}يُنفّذ بالطريقة التي تناسب فريقك.{mlang}</div>
+        </div>
+        <div data-nit-about-card="" style="background: var(--t-surface); border: 1px solid var(--t-border); border-radius: 10px; padding: 22px;">
+          <div style="width: 34px; height: 34px; border-radius: 8px; background: var(--t-accent-soft); color: var(--t-accent); display: grid; place-items: center; font-weight: 700;">✓</div>
+          <div style="font-size: 15px; font-weight: 700; margin-top: 14px;">{mlang en}Reporting for managers{mlang}{mlang ar}تقارير للمديرين{mlang}</div>
+          <div style="font-size: 13px; color: var(--t-muted2); line-height: 1.7; margin-top: 6px;">{mlang en}Track progress across your cohort.{mlang}{mlang ar}تابع تقدّم فريقك بالكامل.{mlang}</div>
+        </div>
+      </div>
+    </div>
+    <div style="position: relative;">
+      <div style="aspect-ratio: 4/3.6; border-radius: 12px; background: repeating-linear-gradient(135deg, #E3EBF5 0 12px, #EFF4FA 12px 24px); display: grid; place-items: center; color: #7A93B2; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 700; box-shadow: 0 20px 48px rgba(16,36,62,0.1);">{mlang en}Trainer photo{mlang}{mlang ar}صورة المدرب{mlang}</div>
+      <div style="position: absolute; inset-inline-start: 24px; bottom: -26px; background: var(--t-accent); color: var(--t-on-accent); border-radius: 10px; padding: 18px 22px; box-shadow: 0 16px 36px color-mix(in srgb, var(--t-accent) 32%, transparent);">
+        <div style="font-size: 26px; font-weight: 800;">96%</div>
+        <div style="font-size: 11px; opacity: 0.9; margin-top: 3px; letter-spacing: 0.04em;">{mlang en}exam pass rate{mlang}{mlang ar}نسبة النجاح{mlang}</div>
+      </div>
+    </div>
+  </div>
+  <!-- stats strip (dark structural band) -->
+  <div style="background: var(--t-dark); color: #fff;">
+    <div style="max-width: 1240px; margin: 0 auto; padding: clamp(40px,4vw,52px) 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 30px;">
+      <div>
+        <div style="font-size: clamp(30px,4vw,38px); font-weight: 800; letter-spacing: -0.03em;"><span data-nit-stat="courses">0</span>+</div>
+        <div style="font-size: 12px; color: #A9BBD1; margin-top: 6px; letter-spacing: 0.06em;">{mlang en}Accredited courses{mlang}{mlang ar}دورة معتمدة{mlang}</div>
+      </div>
+      <div>
+        <div style="font-size: clamp(30px,4vw,38px); font-weight: 800; letter-spacing: -0.03em;"><span data-nit-stat="students">0</span>+</div>
+        <div style="font-size: 12px; color: #A9BBD1; margin-top: 6px; letter-spacing: 0.06em;">{mlang en}Enrolled learners{mlang}{mlang ar}متعلم مسجّل{mlang}</div>
+      </div>
+      <div>
+        <div style="font-size: clamp(30px,4vw,38px); font-weight: 800; letter-spacing: -0.03em;"><span data-nit-stat="categories">0</span></div>
+        <div style="font-size: 12px; color: #A9BBD1; margin-top: 6px; letter-spacing: 0.06em;">{mlang en}Specialities{mlang}{mlang ar}تخصص{mlang}</div>
+      </div>
+      <div>
+        <div style="font-size: clamp(30px,4vw,38px); font-weight: 800; letter-spacing: -0.03em;">96%</div>
+        <div style="font-size: 12px; color: #A9BBD1; margin-top: 6px; letter-spacing: 0.06em;">{mlang en}Exam pass rate{mlang}{mlang ar}نسبة النجاح{mlang}</div>
+      </div>
+    </div>
+  </div>
+  <script>
+    /* Shared hover effects (T7 flavour). Idempotent via id. */
+    (function () {
+      if (document.getElementById('nit-hoverfx-style')) { return; }
+      var css =
+        '.nit-btn-solid,.nit-btn-ghost,[data-nit-copy],[data-nit-scroll],[data-nit-coupons-scroll],[data-nit-categories]>a,[data-nit-my-courses]>div,[data-nit-about-card]{transition:background-color .2s ease,background .2s ease,color .2s ease,border-color .2s ease,transform .2s ease,box-shadow .2s ease}' +
+        '.nit-btn-solid:not(:disabled):hover{filter:brightness(1.06);transform:translateY(-2px);box-shadow:0 16px 34px rgba(20,24,28,.22)}' +
+        '.nit-btn-ghost:not(:disabled):hover{border-color:var(--nit-brand-primary)!important;transform:translateY(-2px);box-shadow:0 12px 26px rgba(20,24,28,.12)}' +
+        '[data-nit-copy]:hover{border-color:var(--nit-brand-primary)!important;transform:translateY(-2px)}' +
+        '[data-nit-scroll]:hover,[data-nit-coupons-scroll]:hover{transform:translateY(-50%) scale(1.08)!important}' +
+        '[data-nit-categories]>a:hover,[data-nit-my-courses]>div:not([data-nit-my-course-card]):not([data-nit-my-courses-empty]):hover{transform:translateY(-6px);box-shadow:0 22px 48px rgba(20,24,28,.16)}' +
+        '[data-nit-about-card]:hover{transform:translateY(-4px);border-color:var(--nit-brand-primary)!important}';
+      var st = document.createElement('style');
+      st.id = 'nit-hoverfx-style';
+      st.textContent = css;
+      (document.head || document.documentElement).appendChild(st);
+    })();
+  </script>
+</div>

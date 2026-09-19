@@ -1,0 +1,80 @@
+<!-- NIT homepage template T4 · Dark Premium — GALLERY + testimonials + FAQ.
+     Static, owner-editable. Photos are placeholders; replace them from the editor.
+     The FAQ uses native <details> so it toggles without extra script. -->
+<div dir="auto" data-nit-section="gallery"
+  style="--t-accent: var(--nit-brand-primary); --t-accent-2: var(--nit-brand-accent); --t-bg: #07090D; --t-surface: rgba(255,255,255,0.04); --t-ink: #E8ECF1; --t-white: #FFFFFF; --t-muted: #9AA5B4; --t-muted2: #778393; --t-border: rgba(255,255,255,0.08); font-family: 'Space Grotesk','IBM Plex Sans Arabic',system-ui,sans-serif; background: var(--t-bg); color: var(--t-ink);">
+  <!-- gallery grid -->
+  <div style="max-width: 1280px; margin: 0 auto; padding: clamp(56px,7vw,88px) 20px; border-block: 1px solid rgba(255,255,255,0.07);">
+    <h2 style="margin: 0; font-size: clamp(28px,3.4vw,40px); font-weight: 600; letter-spacing: -0.035em; color: var(--t-white); text-align: center;">{mlang en}Inside the academy{mlang}{mlang ar}من داخل الأكاديمية{mlang}</h2>
+    <div style="margin-top: 40px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px;">
+      <div style="grid-column: span 2; min-height: 260px; border-radius: 18px; border: 1px solid var(--t-border); background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--t-accent) 8%, transparent) 0 12px, rgba(255,255,255,0.02) 12px 24px); display: grid; place-items: center; color: #7E8A9A; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 700;">{mlang en}Photo · lab floor{mlang}{mlang ar}صورة · قاعة{mlang}</div>
+      <div style="min-height: 122px; border-radius: 18px; border: 1px solid var(--t-border); background: repeating-linear-gradient(135deg, rgba(255,255,255,0.05) 0 12px, rgba(255,255,255,0.02) 12px 24px);"></div>
+      <div style="min-height: 122px; border-radius: 18px; border: 1px solid var(--t-border); background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--t-accent-2) 8%, transparent) 0 12px, rgba(255,255,255,0.02) 12px 24px);"></div>
+      <div style="min-height: 122px; border-radius: 18px; border: 1px solid var(--t-border); background: repeating-linear-gradient(135deg, rgba(255,255,255,0.05) 0 12px, rgba(255,255,255,0.02) 12px 24px);"></div>
+      <div style="min-height: 122px; border-radius: 18px; border: 1px solid var(--t-border); background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--t-accent) 8%, transparent) 0 12px, rgba(255,255,255,0.02) 12px 24px);"></div>
+    </div>
+  </div>
+  <!-- testimonials -->
+  <div style="background: rgba(255,255,255,0.02); border-bottom: 1px solid rgba(255,255,255,0.07);">
+    <div style="max-width: 1280px; margin: 0 auto; padding: clamp(56px,7vw,92px) 20px;">
+      <h2 style="margin: 0; font-size: clamp(28px,3.4vw,40px); font-weight: 600; letter-spacing: -0.035em; color: var(--t-white); text-align: center;">{mlang en}What learners say{mlang}{mlang ar}ماذا يقول المتعلمون{mlang}</h2>
+      <div style="margin-top: 42px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+        <div style="background: var(--t-surface); border: 1px solid var(--t-border); border-radius: 20px; padding: 28px; backdrop-filter: blur(12px);">
+          <div style="color: var(--t-accent-2); font-size: 13px; letter-spacing: 0.1em;">★★★★★</div>
+          <p style="margin: 16px 0 0; font-size: 15px; line-height: 1.75; color: #C9D2DD;">{mlang en}“Placeholder testimonial about the course experience and the outcome it led to.”{mlang}{mlang ar}«نص بديل لرأي أحد المتعلمين عن تجربته في الدورة والنتيجة التي وصل إليها.»{mlang}</p>
+          <div style="display: flex; align-items: center; gap: 12px; margin-top: 22px;">
+            <span style="width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.08); display: block;"></span>
+            <div>
+              <div style="font-size: 13px; font-weight: 600; color: var(--t-white);">{mlang en}Learner name{mlang}{mlang ar}اسم المتعلم{mlang}</div>
+              <div style="font-size: 11px; color: var(--t-muted2); margin-top: 2px;">{mlang en}Graduate, 2025{mlang}{mlang ar}دفعة ٢٠٢٥{mlang}</div>
+            </div>
+          </div>
+        </div>
+        <div style="background: var(--t-surface); border: 1px solid color-mix(in srgb, var(--t-accent) 22%, transparent); border-radius: 20px; padding: 28px; backdrop-filter: blur(12px); box-shadow: 0 0 40px color-mix(in srgb, var(--t-accent) 8%, transparent);">
+          <div style="color: var(--t-accent-2); font-size: 13px; letter-spacing: 0.1em;">★★★★★</div>
+          <p style="margin: 16px 0 0; font-size: 15px; line-height: 1.75; color: #C9D2DD;">{mlang en}“Placeholder testimonial about the course experience and the outcome it led to.”{mlang}{mlang ar}«نص بديل لرأي أحد المتعلمين عن تجربته في الدورة والنتيجة التي وصل إليها.»{mlang}</p>
+          <div style="display: flex; align-items: center; gap: 12px; margin-top: 22px;">
+            <span style="width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.08); display: block;"></span>
+            <div>
+              <div style="font-size: 13px; font-weight: 600; color: var(--t-white);">{mlang en}Learner name{mlang}{mlang ar}اسم المتعلم{mlang}</div>
+              <div style="font-size: 11px; color: var(--t-muted2); margin-top: 2px;">{mlang en}Graduate, 2025{mlang}{mlang ar}دفعة ٢٠٢٥{mlang}</div>
+            </div>
+          </div>
+        </div>
+        <div style="background: var(--t-surface); border: 1px solid var(--t-border); border-radius: 20px; padding: 28px; backdrop-filter: blur(12px);">
+          <div style="color: var(--t-accent-2); font-size: 13px; letter-spacing: 0.1em;">★★★★★</div>
+          <p style="margin: 16px 0 0; font-size: 15px; line-height: 1.75; color: #C9D2DD;">{mlang en}“Placeholder testimonial about the course experience and the outcome it led to.”{mlang}{mlang ar}«نص بديل لرأي أحد المتعلمين عن تجربته في الدورة والنتيجة التي وصل إليها.»{mlang}</p>
+          <div style="display: flex; align-items: center; gap: 12px; margin-top: 22px;">
+            <span style="width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.08); display: block;"></span>
+            <div>
+              <div style="font-size: 13px; font-weight: 600; color: var(--t-white);">{mlang en}Learner name{mlang}{mlang ar}اسم المتعلم{mlang}</div>
+              <div style="font-size: 11px; color: var(--t-muted2); margin-top: 2px;">{mlang en}Graduate, 2025{mlang}{mlang ar}دفعة ٢٠٢٥{mlang}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- faq -->
+  <div style="max-width: 920px; margin: 0 auto; padding: clamp(56px,7vw,88px) 20px;">
+    <h2 style="margin: 0 0 34px; font-size: clamp(28px,3.4vw,38px); font-weight: 600; letter-spacing: -0.035em; color: var(--t-white); text-align: center;">{mlang en}Common questions{mlang}{mlang ar}أسئلة متكررة{mlang}</h2>
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <details style="background: var(--t-surface); border: 1px solid color-mix(in srgb, var(--t-accent) 22%, transparent); border-radius: 16px; padding: 24px 26px;" open>
+        <summary style="font-size: 16px; font-weight: 600; cursor: pointer; list-style: none; color: var(--t-white);">{mlang en}How long do I keep access to a course?{mlang}{mlang ar}كم تستمر صلاحية الوصول للدورة؟{mlang}</summary>
+        <p style="margin: 14px 0 0; font-size: 14px; line-height: 1.8; color: #8E99A8;">{mlang en}Placeholder answer text. Replace with the academy's own policy.{mlang}{mlang ar}نص إجابة بديل. استبدله بسياسة الأكاديمية.{mlang}</p>
+      </details>
+      <details style="background: rgba(255,255,255,0.03); border: 1px solid var(--t-border); border-radius: 16px; padding: 24px 26px;">
+        <summary style="font-size: 16px; font-weight: 600; cursor: pointer; list-style: none; color: var(--t-ink);">{mlang en}Are certificates accredited?{mlang}{mlang ar}هل الشهادات معتمدة؟{mlang}</summary>
+        <p style="margin: 14px 0 0; font-size: 14px; line-height: 1.8; color: #8E99A8;">{mlang en}Placeholder answer text.{mlang}{mlang ar}نص إجابة بديل.{mlang}</p>
+      </details>
+      <details style="background: rgba(255,255,255,0.03); border: 1px solid var(--t-border); border-radius: 16px; padding: 24px 26px;">
+        <summary style="font-size: 16px; font-weight: 600; cursor: pointer; list-style: none; color: var(--t-ink);">{mlang en}Can I pay in instalments?{mlang}{mlang ar}هل يمكن الدفع على أقساط؟{mlang}</summary>
+        <p style="margin: 14px 0 0; font-size: 14px; line-height: 1.8; color: #8E99A8;">{mlang en}Placeholder answer text.{mlang}{mlang ar}نص إجابة بديل.{mlang}</p>
+      </details>
+      <details style="background: rgba(255,255,255,0.03); border: 1px solid var(--t-border); border-radius: 16px; padding: 24px 26px;">
+        <summary style="font-size: 16px; font-weight: 600; cursor: pointer; list-style: none; color: var(--t-ink);">{mlang en}Do you offer team licences?{mlang}{mlang ar}هل تتوفر تراخيص للفرق؟{mlang}</summary>
+        <p style="margin: 14px 0 0; font-size: 14px; line-height: 1.8; color: #8E99A8;">{mlang en}Placeholder answer text.{mlang}{mlang ar}نص إجابة بديل.{mlang}</p>
+      </details>
+    </div>
+  </div>
+</div>

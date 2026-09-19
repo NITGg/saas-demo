@@ -1,0 +1,83 @@
+<!-- NIT homepage template T9 · Elegant Mono — HERO section.
+     Paste into an HTML nit_section block on the FRONT PAGE (Site home).
+     data-nit-stat counters are filled by theme_nit's front-page engine.
+     HYBRID PALETTE: structure = the template's mono neutrals; the design's single
+     accent (#D6001C) maps to the brand palette (--nit-brand-primary / accent) so the
+     academy's brand colour flows through. Bilingual via {mlang}. -->
+<div dir="auto" data-nit-section="hero"
+  style="--t-accent: var(--nit-brand-primary); --t-accent-2: var(--nit-brand-accent); --t-on-accent: var(--nit-brand-on-primary, #fff); --t-accent-soft: color-mix(in srgb, var(--nit-brand-primary) 16%, transparent); --t-ink: #14121F; --t-bg: #F4F1EA; --t-surface: #FFFFFF; --t-muted: #5E5B54; --t-muted2: #8F8B80; --t-border: #DAD5C7; --t-dark: #14121F; --t-dark-border: #2E2B38; --t-dark-muted: #A8A39A; --t-dark-muted2: #6E6A61; font-family: 'Syne','IBM Plex Sans Arabic',system-ui,sans-serif; background: var(--t-dark); color: #fff;">
+  <div style="max-width: 1280px; margin: 0 auto; padding: 0 clamp(20px,4vw,44px);">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 0; align-items: stretch;">
+      <div style="padding: clamp(56px,7vw,96px) 0; padding-inline-end: clamp(0px,4vw,60px);">
+        <div style="display: flex; align-items: center; gap: 14px; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--t-accent); font-weight: 700;">
+          <span style="width: 34px; height: 2px; background: var(--t-accent); display: block;"></span>
+          {mlang en}By invitation · 2026 cohort{mlang}{mlang ar}بالدعوة · دفعة ٢٠٢٦{mlang}
+        </div>
+        <h1 style="margin: 34px 0 0; font-size: clamp(48px,8vw,86px); line-height: 0.96; letter-spacing: -0.045em; font-weight: 800; text-transform: uppercase;">
+          {mlang en}Learn from<br>the <span style="color: var(--t-accent);">very</span><br>best{mlang}{mlang ar}تعلّم من<br><span style="color: var(--t-accent);">أفضل</span><br>الممارسين{mlang}
+        </h1>
+        <p style="margin: 38px 0 0; font-size: 17px; line-height: 1.8; color: var(--t-dark-muted); max-width: 440px; font-weight: 400;">
+          {mlang en}Short, structured programmes led by practitioners at the top of their field. Study at your own pace and finish with a certificate you can show.{mlang}{mlang ar}برامج قصيرة ومنظّمة يقودها ممارسون في قمة مجالهم. تعلّم بالوتيرة التي تناسبك واحصل على شهادة يمكنك عرضها.{mlang}
+        </p>
+        <div style="display: flex; gap: 0; margin-top: 44px; flex-wrap: wrap;">
+          <a class="nit-btn-solid" href="/course/index.php" data-nit-btn=""
+            style="font-size: 12px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; background: var(--t-accent); color: var(--t-on-accent); padding: 19px 38px; text-decoration: none;">{mlang en}Browse courses{mlang}{mlang ar}استعرض الدورات{mlang}</a>
+          <a class="nit-btn-ghost" href="#nit-about" data-nit-btn=""
+            style="font-size: 12px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; border: 1px solid var(--t-dark-border); color: #fff; padding: 19px 38px; text-decoration: none;">{mlang en}How it works{mlang}{mlang ar}كيف تعمل المنصة{mlang}</a>
+        </div>
+        <div style="display: flex; gap: 0; margin-top: 60px; border-top: 1px solid var(--t-dark-border); flex-wrap: wrap;">
+          <div style="padding: 26px 0; padding-inline-end: clamp(24px,4vw,40px); border-inline-end: 1px solid var(--t-dark-border);">
+            <div style="font-size: 30px; font-weight: 700; letter-spacing: -0.03em;"><span data-nit-stat="courses">0</span></div>
+            <div style="font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--t-dark-muted2); margin-top: 6px;">{mlang en}Courses{mlang}{mlang ar}دورة{mlang}</div>
+          </div>
+          <div style="padding: 26px clamp(24px,4vw,40px) 0; border-inline-end: 1px solid var(--t-dark-border);">
+            <div style="font-size: 30px; font-weight: 700; letter-spacing: -0.03em;"><span data-nit-stat="students">0</span></div>
+            <div style="font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--t-dark-muted2); margin-top: 6px;">{mlang en}Learners{mlang}{mlang ar}متعلم{mlang}</div>
+          </div>
+          <div style="padding: 26px 0 0; padding-inline-start: clamp(24px,4vw,40px);">
+            <div style="font-size: 30px; font-weight: 700; letter-spacing: -0.03em; color: var(--t-accent);"><span data-nit-stat="categories">0</span></div>
+            <div style="font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--t-dark-muted2); margin-top: 6px;">{mlang en}Specialities{mlang}{mlang ar}تخصص{mlang}</div>
+          </div>
+        </div>
+      </div>
+      <div style="position: relative; border-inline-start: 1px solid var(--t-dark-border); min-height: 420px;">
+        <div style="height: 100%; min-height: 420px; background: repeating-linear-gradient(135deg, #1B1826 0 13px, #211E2D 13px 26px); display: grid; place-items: center; color: #6E6A61; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 700; text-align: center;">{mlang en}Hero photo · portrait{mlang}{mlang ar}صورة رئيسية · طولية{mlang}</div>
+        <div style="position: absolute; inset-inline-start: 0; bottom: 0; background: var(--t-accent); color: var(--t-on-accent); padding: 22px 28px;">
+          <div style="font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700;">{mlang en}Next intake{mlang}{mlang ar}الدفعة القادمة{mlang}</div>
+          <div style="font-size: 22px; font-weight: 700; margin-top: 6px; letter-spacing: -0.02em;">{mlang en}Enrolment open{mlang}{mlang ar}التسجيل مفتوح{mlang}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    /* Load the T9 signature font once (Syne). Guarded so it runs a single time. */
+    (function () {
+      if (document.getElementById('nit-tpl-font-t9')) { return; }
+      var l = document.createElement('link');
+      l.id = 'nit-tpl-font-t9';
+      l.rel = 'stylesheet';
+      l.href = 'https://fonts.googleapis.com/css2?family=Syne:wght@400..800&display=swap';
+      (document.head || document.documentElement).appendChild(l);
+    })();
+  </script>
+  <script>
+    /* Shared hover effects for .nit-btn-solid / .nit-btn-ghost / cards. Idempotent. */
+    (function () {
+      if (document.getElementById('nit-hoverfx-style')) { return; }
+      var css =
+        '.nit-btn-solid,.nit-btn-ghost,[data-nit-copy],[data-nit-scroll],[data-nit-coupons-scroll],[data-nit-categories]>a,[data-nit-my-courses]>div,[data-nit-about-card]{transition:background-color .2s ease,background .2s ease,color .2s ease,border-color .2s ease,transform .2s ease,box-shadow .2s ease}' +
+        '.nit-btn-solid:not(:disabled):hover{filter:brightness(1.08);transform:translateY(-2px);box-shadow:0 14px 30px rgba(20,18,31,.28)}' +
+        '.nit-btn-ghost:not(:disabled):hover{border-color:var(--nit-brand-primary)!important;color:#fff;transform:translateY(-2px)}' +
+        '[data-nit-copy]:hover{filter:brightness(1.12);transform:translateY(-2px)}' +
+        '[data-nit-scroll]:hover,[data-nit-coupons-scroll]:hover{transform:translateY(-50%) scale(1.08)!important}' +
+        '[data-nit-categories]>a:hover{background:var(--nit-brand-primary)!important;color:#fff!important}' +
+        '[data-nit-categories]>a:hover *{color:#fff!important}' +
+        '[data-nit-my-courses]>div:not([data-nit-my-course-card]):not([data-nit-my-courses-empty]):hover{transform:translateY(-4px)}' +
+        '[data-nit-about-card]:hover{border-color:var(--nit-brand-primary)!important}';
+      var st = document.createElement('style');
+      st.id = 'nit-hoverfx-style';
+      st.textContent = css;
+      (document.head || document.documentElement).appendChild(st);
+    })();
+  </script>
+</div>

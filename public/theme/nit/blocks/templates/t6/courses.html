@@ -1,0 +1,58 @@
+<!-- NIT homepage template T6 · Soft Glass — COURSES grid.
+     theme_nit's engine clones the INNER html of [data-nit-course-card] once per
+     course from window.NIT_COURSES, substituting {{url}} {{fullname}} {{teacher}}
+     {{pricebadge}} {{cta}} and setting [data-nit-course-image] as a background.
+     Only real course fields are bound (no fake ratings / lesson counts). -->
+<div dir="auto" data-nit-section="courses"
+  style="--t-accent: var(--nit-brand-primary); --t-accent-2: var(--nit-brand-accent); --t-accent-soft: color-mix(in srgb, var(--nit-brand-primary) 12%, transparent); --t-ink: #10243E; --t-muted: #5C6480; --t-muted2: #8E93A8; --t-glass: rgba(255,255,255,0.62); --t-glass-border: rgba(255,255,255,0.88); font-family: 'Public Sans','IBM Plex Sans Arabic',system-ui,sans-serif; background: linear-gradient(170deg, color-mix(in srgb, var(--t-accent-2) 8%, #fff), color-mix(in srgb, var(--t-accent) 7%, #fff)); color: var(--t-ink); padding: clamp(40px,6vw,84px) 0;">
+  <div style="max-width: 1240px; margin: 0 auto; padding: 0 20px;">
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+      <div>
+        <div style="font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--t-accent); font-weight: 700;">{mlang en}Our courses{mlang}{mlang ar}دوراتنا{mlang}</div>
+        <h2 style="margin: 12px 0 0; font-size: clamp(28px,3.4vw,44px); font-weight: 500; letter-spacing: -0.03em;">{mlang en}Gentle places to begin{mlang}{mlang ar}بدايات هادئة{mlang}</h2>
+      </div>
+      <a class="nit-btn-ghost" href="/course/index.php"
+        style="font-size: 14px; font-weight: 600; color: var(--t-accent); text-decoration: none; padding: 12px 22px; background: var(--t-glass); border: 1px solid var(--t-glass-border); border-radius: 999px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">{mlang en}View all courses{mlang}{mlang ar}كل الدورات{mlang}</a>
+    </div>
+    <div data-nit-courses="" data-limit="6" data-cta-label="→" data-continue-label="→"
+      style="margin-top: 40px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px;">
+      <!-- CARD TEMPLATE (hidden wrapper; its inner card is cloned per course) -->
+      <div data-nit-course-card="" style="display: none;">
+        <a href="{{url}}"
+          style="display: flex; flex-direction: column; background: var(--t-glass); border: 1px solid var(--t-glass-border); border-radius: 28px; overflow: hidden; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); box-shadow: 0 18px 46px rgba(16,36,62,0.1); text-decoration: none; color: var(--t-ink); height: 100%; box-sizing: border-box;">
+          <div data-nit-course-image=""
+            style="aspect-ratio: 16/10; background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--t-accent) 12%, transparent) 0 12px, rgba(255,255,255,0.55) 12px 24px) center/cover no-repeat; display: grid; place-items: center; color: var(--t-muted2); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600;"></div>
+          <div style="padding: 24px; display: flex; flex-direction: column; flex: 1; min-height: 0;">
+            <h3 style="margin: 0; font-size: 19px; font-weight: 600; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">{{fullname}}</h3>
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 14px;">
+              <span style="width: 28px; height: 28px; border-radius: 50%; background: var(--t-accent-soft); color: var(--t-accent); display: grid; place-items: center; font-size: 13px; flex: 0 0 auto;">👤</span>
+              <span style="font-size: 13px; color: var(--t-muted);">{{teacher}}</span>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 20px; padding-top: 18px; border-top: 1px solid color-mix(in srgb, var(--t-accent) 14%, transparent);">
+              <span style="font-size: 15px; font-weight: 700; letter-spacing: -0.02em;">{{pricebadge}}</span>
+              <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--t-accent);">{mlang en}View{mlang}{mlang ar}عرض{mlang} {{cta}}</span>
+            </div>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+  <script>
+    /* Shared hover effects for .nit-btn-solid / .nit-btn-ghost / cards. Idempotent. */
+    (function () {
+      if (document.getElementById('nit-hoverfx-style')) { return; }
+      var css =
+        '.nit-btn-solid,.nit-btn-ghost,[data-nit-copy],[data-nit-scroll],[data-nit-coupons-scroll],[data-nit-categories]>a,[data-nit-my-courses]>div,[data-nit-about-card]{transition:background-color .2s ease,background .2s ease,color .2s ease,border-color .2s ease,transform .2s ease,box-shadow .2s ease}' +
+        '.nit-btn-solid:not(:disabled):hover{filter:brightness(1.06);transform:translateY(-2px);box-shadow:0 16px 36px color-mix(in srgb,var(--nit-brand-primary) 36%,transparent)}' +
+        '.nit-btn-ghost:not(:disabled):hover{border-color:var(--nit-brand-primary)!important;transform:translateY(-2px);box-shadow:0 12px 28px rgba(16,36,62,.12)}' +
+        '[data-nit-copy]:hover{border-color:var(--nit-brand-primary)!important;transform:translateY(-2px)}' +
+        '[data-nit-scroll]:hover,[data-nit-coupons-scroll]:hover{transform:translateY(-50%) scale(1.08)!important}' +
+        '[data-nit-categories]>a:hover,[data-nit-my-courses]>div:not([data-nit-my-course-card]):not([data-nit-my-courses-empty]):hover{transform:translateY(-6px);box-shadow:0 22px 50px rgba(16,36,62,.16)}' +
+        '[data-nit-about-card]:hover{transform:translateY(-4px);border-color:var(--nit-brand-primary)!important}';
+      var st = document.createElement('style');
+      st.id = 'nit-hoverfx-style';
+      st.textContent = css;
+      (document.head || document.documentElement).appendChild(st);
+    })();
+  </script>
+</div>

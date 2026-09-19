@@ -1,0 +1,108 @@
+<!-- NIT homepage template T10 · Vibrant Duotone — GALLERY + testimonials + FAQ.
+     Static, owner-editable. Photos are placeholders; replace them from the editor.
+     The FAQ uses native <details> so it toggles without extra script. -->
+<div dir="auto" data-nit-section="gallery"
+  style="--t-accent: var(--nit-brand-primary); --t-accent-2: var(--nit-brand-accent); --t-on-accent: var(--nit-brand-on-primary, #fff); --t-ink: #14121F; --t-bg: #F4F1EA; --t-dark: #14121F; --t-on-dark: #D6D3E2; --t-muted2: #8B87A3; --t-border-dark: #332F47; font-family: 'Syne','Changa','IBM Plex Sans Arabic',system-ui,sans-serif; background: var(--t-bg); color: var(--t-ink);">
+  <!-- gallery grid -->
+  <div style="max-width: 1300px; margin: 0 auto; padding: clamp(48px,7vw,88px) 20px;">
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; border-bottom: 3px solid var(--t-ink); padding-bottom: 20px;">
+      <h2 style="margin: 0; font-size: clamp(30px,4.2vw,50px); font-weight: 800; letter-spacing: -0.045em;">{mlang en}Inside the academy{mlang}{mlang ar}من داخل الأكاديمية{mlang}</h2>
+      <a href="#" style="font-size: 13px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--t-accent); text-decoration: none;">{mlang en}Full archive{mlang}{mlang ar}الأرشيف الكامل{mlang}</a>
+    </div>
+    <div style="margin-top: 32px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+      <div style="grid-column: span 2; min-height: 280px; position: relative; overflow: hidden;">
+        <div style="position: absolute; inset: 0; background: repeating-linear-gradient(135deg, #DED9CE 0 12px, #EAE5DA 12px 24px);"></div>
+        <div style="position: absolute; inset: 0; background: linear-gradient(140deg, color-mix(in srgb, var(--t-accent) 80%, transparent), color-mix(in srgb, var(--t-accent-2) 70%, transparent)); mix-blend-mode: hard-light;"></div>
+        <div style="position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 800;">{mlang en}Photo · classroom{mlang}{mlang ar}صورة · قاعة{mlang}</div>
+      </div>
+      <div style="min-height: 132px; position: relative; overflow: hidden;">
+        <div style="position: absolute; inset: 0; background: repeating-linear-gradient(135deg, #DED9CE 0 12px, #EAE5DA 12px 24px);"></div>
+        <div style="position: absolute; inset: 0; background: linear-gradient(140deg, color-mix(in srgb, var(--t-accent-2) 80%, transparent), color-mix(in srgb, var(--t-ink) 80%, transparent)); mix-blend-mode: hard-light;"></div>
+      </div>
+      <div style="min-height: 132px; position: relative; overflow: hidden;">
+        <div style="position: absolute; inset: 0; background: repeating-linear-gradient(135deg, #DED9CE 0 12px, #EAE5DA 12px 24px);"></div>
+        <div style="position: absolute; inset: 0; background: linear-gradient(140deg, color-mix(in srgb, var(--t-accent) 85%, transparent), color-mix(in srgb, var(--t-ink) 75%, transparent)); mix-blend-mode: hard-light;"></div>
+      </div>
+      <div style="min-height: 132px; background: var(--t-accent-2); display: grid; place-items: center; color: var(--t-ink); font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 800; text-align: center; padding: 20px;">{mlang en}Degree show<br>every June{mlang}{mlang ar}معرض التخرج<br>كل يونيو{mlang}</div>
+      <div style="min-height: 132px; position: relative; overflow: hidden;">
+        <div style="position: absolute; inset: 0; background: repeating-linear-gradient(135deg, #DED9CE 0 12px, #EAE5DA 12px 24px);"></div>
+        <div style="position: absolute; inset: 0; background: linear-gradient(140deg, color-mix(in srgb, var(--t-accent-2) 75%, transparent), color-mix(in srgb, var(--t-accent) 75%, transparent)); mix-blend-mode: hard-light;"></div>
+      </div>
+    </div>
+  </div>
+  <!-- testimonials -->
+  <div style="background: var(--t-dark); color: #fff;">
+    <div style="max-width: 1300px; margin: 0 auto; padding: clamp(48px,7vw,84px) 20px;">
+      <h2 style="margin: 0 0 40px; font-size: clamp(28px,3.6vw,44px); font-weight: 800; letter-spacing: -0.045em;">{mlang en}What learners say{mlang}{mlang ar}ماذا يقول المتعلمون{mlang}</h2>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+        <div style="border: 2px solid var(--t-border-dark); padding: 28px;">
+          <div style="display: flex; gap: 6px;">
+            <span style="width: 12px; height: 12px; background: var(--t-accent); display: block;"></span>
+            <span style="width: 12px; height: 12px; background: var(--t-accent-2); display: block;"></span>
+            <span style="width: 12px; height: 12px; background: #fff; display: block;"></span>
+          </div>
+          <p style="margin: 20px 0 0; font-size: 16px; line-height: 1.75; color: var(--t-on-dark); font-weight: 500;">{mlang en}“Placeholder testimonial about the course experience and the outcome it led to.”{mlang}{mlang ar}«نص بديل لرأي أحد المتعلمين عن تجربته في الدورة والنتيجة التي وصل إليها.»{mlang}</p>
+          <div style="display: flex; align-items: center; gap: 12px; margin-top: 24px;">
+            <span style="width: 38px; height: 38px; background: linear-gradient(135deg, var(--t-accent), var(--t-accent-2)); display: block;"></span>
+            <div>
+              <div style="font-size: 13px; font-weight: 800;">{mlang en}Learner name{mlang}{mlang ar}اسم المتعلم{mlang}</div>
+              <div style="font-size: 11px; color: var(--t-muted2); font-weight: 600; margin-top: 2px;">{mlang en}Graduate, 2025{mlang}{mlang ar}دفعة ٢٠٢٥{mlang}</div>
+            </div>
+          </div>
+        </div>
+        <div style="border: 2px solid var(--t-accent); padding: 28px; background: var(--t-accent); color: var(--t-on-accent);">
+          <div style="display: flex; gap: 6px;">
+            <span style="width: 12px; height: 12px; background: var(--t-ink); display: block;"></span>
+            <span style="width: 12px; height: 12px; background: var(--t-accent-2); display: block;"></span>
+            <span style="width: 12px; height: 12px; background: #fff; display: block;"></span>
+          </div>
+          <p style="margin: 20px 0 0; font-size: 16px; line-height: 1.75; color: #fff; font-weight: 500;">{mlang en}“Placeholder testimonial about the course experience and the outcome it led to.”{mlang}{mlang ar}«نص بديل لرأي أحد المتعلمين عن تجربته في الدورة والنتيجة التي وصل إليها.»{mlang}</p>
+          <div style="display: flex; align-items: center; gap: 12px; margin-top: 24px;">
+            <span style="width: 38px; height: 38px; background: var(--t-ink); display: block;"></span>
+            <div>
+              <div style="font-size: 13px; font-weight: 800;">{mlang en}Learner name{mlang}{mlang ar}اسم المتعلم{mlang}</div>
+              <div style="font-size: 11px; color: rgba(255,255,255,0.8); font-weight: 600; margin-top: 2px;">{mlang en}Graduate, 2025{mlang}{mlang ar}دفعة ٢٠٢٥{mlang}</div>
+            </div>
+          </div>
+        </div>
+        <div style="border: 2px solid var(--t-border-dark); padding: 28px;">
+          <div style="display: flex; gap: 6px;">
+            <span style="width: 12px; height: 12px; background: var(--t-accent); display: block;"></span>
+            <span style="width: 12px; height: 12px; background: var(--t-accent-2); display: block;"></span>
+            <span style="width: 12px; height: 12px; background: #fff; display: block;"></span>
+          </div>
+          <p style="margin: 20px 0 0; font-size: 16px; line-height: 1.75; color: var(--t-on-dark); font-weight: 500;">{mlang en}“Placeholder testimonial about the course experience and the outcome it led to.”{mlang}{mlang ar}«نص بديل لرأي أحد المتعلمين عن تجربته في الدورة والنتيجة التي وصل إليها.»{mlang}</p>
+          <div style="display: flex; align-items: center; gap: 12px; margin-top: 24px;">
+            <span style="width: 38px; height: 38px; background: linear-gradient(135deg, var(--t-accent-2), var(--t-accent)); display: block;"></span>
+            <div>
+              <div style="font-size: 13px; font-weight: 800;">{mlang en}Learner name{mlang}{mlang ar}اسم المتعلم{mlang}</div>
+              <div style="font-size: 11px; color: var(--t-muted2); font-weight: 600; margin-top: 2px;">{mlang en}Graduate, 2025{mlang}{mlang ar}دفعة ٢٠٢٥{mlang}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- faq -->
+  <div style="max-width: 1000px; margin: 0 auto; padding: clamp(48px,7vw,88px) 20px;">
+    <h2 style="margin: 0 0 32px; font-size: clamp(28px,3.6vw,44px); font-weight: 800; letter-spacing: -0.045em;">{mlang en}Common questions{mlang}{mlang ar}أسئلة متكررة{mlang}</h2>
+    <div style="border-top: 3px solid var(--t-ink);">
+      <details style="padding: 26px 0; border-bottom: 1px solid #DDD7CB;" open>
+        <summary style="display: flex; align-items: baseline; gap: 20px; font-size: 20px; font-weight: 800; letter-spacing: -0.02em; cursor: pointer; list-style: none;"><span style="width: 14px; height: 14px; background: var(--t-accent); display: block; margin-top: 6px; flex-shrink: 0;"></span><span style="flex: 1;">{mlang en}How long do I keep access to a course?{mlang}{mlang ar}كم تستمر صلاحية الوصول للدورة؟{mlang}</span></summary>
+        <p style="margin: 14px 0 0; padding-inline-start: 34px; font-size: 15px; line-height: 1.85; color: #4C4860; font-weight: 500;">{mlang en}Placeholder answer text. Replace with the academy's own policy.{mlang}{mlang ar}نص إجابة بديل. استبدله بسياسة الأكاديمية.{mlang}</p>
+      </details>
+      <details style="padding: 26px 0; border-bottom: 1px solid #DDD7CB;">
+        <summary style="display: flex; align-items: baseline; gap: 20px; font-size: 20px; font-weight: 800; letter-spacing: -0.02em; cursor: pointer; list-style: none;"><span style="width: 14px; height: 14px; background: var(--t-accent-2); display: block; margin-top: 6px; flex-shrink: 0;"></span><span style="flex: 1;">{mlang en}Are certificates accredited?{mlang}{mlang ar}هل الشهادات معتمدة؟{mlang}</span></summary>
+        <p style="margin: 14px 0 0; padding-inline-start: 34px; font-size: 15px; line-height: 1.85; color: #4C4860; font-weight: 500;">{mlang en}Placeholder answer text.{mlang}{mlang ar}نص إجابة بديل.{mlang}</p>
+      </details>
+      <details style="padding: 26px 0; border-bottom: 1px solid #DDD7CB;">
+        <summary style="display: flex; align-items: baseline; gap: 20px; font-size: 20px; font-weight: 800; letter-spacing: -0.02em; cursor: pointer; list-style: none;"><span style="width: 14px; height: 14px; background: var(--t-ink); display: block; margin-top: 6px; flex-shrink: 0;"></span><span style="flex: 1;">{mlang en}Can I pay in instalments?{mlang}{mlang ar}هل يمكن الدفع على أقساط؟{mlang}</span></summary>
+        <p style="margin: 14px 0 0; padding-inline-start: 34px; font-size: 15px; line-height: 1.85; color: #4C4860; font-weight: 500;">{mlang en}Placeholder answer text.{mlang}{mlang ar}نص إجابة بديل.{mlang}</p>
+      </details>
+      <details style="padding: 26px 0; border-bottom: 1px solid #DDD7CB;">
+        <summary style="display: flex; align-items: baseline; gap: 20px; font-size: 20px; font-weight: 800; letter-spacing: -0.02em; cursor: pointer; list-style: none;"><span style="width: 14px; height: 14px; background: var(--t-accent); display: block; margin-top: 6px; flex-shrink: 0;"></span><span style="flex: 1;">{mlang en}Do you offer team licences?{mlang}{mlang ar}هل تتوفر تراخيص للفرق؟{mlang}</span></summary>
+        <p style="margin: 14px 0 0; padding-inline-start: 34px; font-size: 15px; line-height: 1.85; color: #4C4860; font-weight: 500;">{mlang en}Placeholder answer text.{mlang}{mlang ar}نص إجابة بديل.{mlang}</p>
+      </details>
+    </div>
+  </div>
+</div>

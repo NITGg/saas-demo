@@ -207,3 +207,16 @@ $string['edit_new'] = 'new';
 $string['download_title'] = 'Get the app';
 $string['download_sub'] = 'Learn on the go — download the NIT Academy app for Android or iOS.';
 $string['download_geton'] = 'Get it on';
+
+// Homepage template picker (T1..T10) — theme/nit/homepage.php.
+$string['homepagetemplates'] = 'Homepage template';
+$string['homepagetemplates_desc'] = 'Choose the look of this academy\'s homepage. Applying rewrites the homepage sections from the selected template; the academy owner then adds their own images and brand colour on top.';
+$string['applytemplate'] = 'Apply this template';
+$string['templatereapply'] = 'Re-apply';
+$string['templatecurrent'] = 'Current';
+$string['templateapplied'] = 'Homepage template "{$a}" applied.';
+$string['templateunknown'] = 'Unknown template.';
+$string['viewhomepage'] = 'View homepage';
+$string['applyconfirm'] = 'Apply the "{$a}" template? This replaces the current homepage sections. Any images or copy already added to those sections will be overwritten.';
+$string['applywarning'] = 'Applying a template replaces the homepage sections with the template\'s layout. Do this before the owner adds their images and content — re-applying later resets those sections.';
+$string['invalidtemplate'] = 'Unknown homepage template: {$a}';

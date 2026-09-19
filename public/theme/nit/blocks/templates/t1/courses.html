@@ -1,0 +1,40 @@
+<!-- NIT homepage template T1 · Modern Minimal — COURSES grid.
+     theme_nit's engine clones the INNER html of [data-nit-course-card] once per
+     course from window.NIT_COURSES, substituting {{url}} {{fullname}} {{teacher}}
+     {{pricebadge}} {{cta}} and setting [data-nit-course-image] as a background.
+     Only real course fields are bound (no fake ratings / lesson counts). -->
+<div dir="auto"
+  style="--t-accent: var(--nit-brand-primary); --t-accent-soft: color-mix(in srgb, var(--nit-brand-primary) 9%, transparent); --t-ink: #16191D; --t-bg: #FFFFFF; --t-muted: #6E7781; --t-muted2: #8A8A82; --t-border: #EDEDE9; font-family: 'Manrope','IBM Plex Sans Arabic',system-ui,sans-serif; background: var(--t-bg); color: var(--t-ink); padding: clamp(40px,6vw,88px) 0;">
+  <div style="max-width: 1240px; margin: 0 auto; padding: 0 20px;">
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+      <div>
+        <div style="font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--t-accent); font-weight: 700;">{mlang en}Courses{mlang}{mlang ar}الدورات{mlang}</div>
+        <h2 style="margin: 12px 0 0; font-size: clamp(28px,3.4vw,40px); font-weight: 250; letter-spacing: -0.03em;">{mlang en}Featured courses{mlang}{mlang ar}دورات مختارة{mlang}</h2>
+      </div>
+      <a class="nit-btn-ghost" href="/course/index.php"
+        style="font-size: 14px; font-weight: 600; color: var(--t-ink); text-decoration: none; padding: 11px 22px; border: 1px solid var(--t-border); border-radius: 10px;">{mlang en}View all courses{mlang}{mlang ar}كل الدورات{mlang}</a>
+    </div>
+    <div data-nit-courses="" data-limit="6" data-cta-label="→" data-continue-label="→"
+      style="margin-top: 40px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 26px;">
+      <!-- CARD TEMPLATE (hidden wrapper; its inner card is cloned per course) -->
+      <div data-nit-course-card="" style="display: none;">
+        <a href="{{url}}"
+          style="display: flex; flex-direction: column; background: var(--t-bg); border: 1px solid var(--t-border); border-radius: 16px; overflow: hidden; box-shadow: 0 14px 34px rgba(20,24,28,0.06); text-decoration: none; color: var(--t-ink); height: 100%; box-sizing: border-box;">
+          <div data-nit-course-image=""
+            style="aspect-ratio: 16/9; background: repeating-linear-gradient(135deg, #EFEFEC 0 11px, #F7F7F5 11px 22px) center/cover no-repeat; display: grid; place-items: center; color: #7C7C74; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600;"></div>
+          <div style="padding: 22px; display: flex; flex-direction: column; flex: 1; min-height: 0;">
+            <h3 style="margin: 0; font-size: 19px; font-weight: 550; line-height: 1.35; letter-spacing: -0.015em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">{{fullname}}</h3>
+            <div style="display: flex; align-items: center; gap: 9px; margin-top: 14px;">
+              <span style="width: 28px; height: 28px; border-radius: 50%; background: var(--t-accent-soft); color: var(--t-accent); display: grid; place-items: center; font-size: 13px; flex: 0 0 auto;">👤</span>
+              <span style="font-size: 13px; color: var(--t-muted);">{{teacher}}</span>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 20px; padding-top: 18px; border-top: 1px solid color-mix(in srgb, var(--t-border) 80%, transparent);">
+              <span style="font-size: 15px; font-weight: 650; letter-spacing: -0.02em;">{{pricebadge}}</span>
+              <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--t-accent);">{mlang en}View{mlang}{mlang ar}عرض{mlang} {{cta}}</span>
+            </div>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>

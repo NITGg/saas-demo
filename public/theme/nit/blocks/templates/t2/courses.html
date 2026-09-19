@@ -1,0 +1,61 @@
+<!-- NIT homepage template T2 · Bold Gradient — COURSES grid.
+     theme_nit's engine clones the INNER html of [data-nit-course-card] once per
+     course from window.NIT_COURSES, substituting {{url}} {{fullname}} {{teacher}}
+     {{summary}} {{pricebadge}} {{cta}} and setting [data-nit-course-image] as a
+     background. Only real course fields are bound (no fake ratings / week counts /
+     course-level tags). -->
+<div dir="auto" data-nit-section="courses"
+  style="--t-accent: var(--nit-brand-primary); --t-accent-2: var(--nit-brand-accent); --t-accent-soft: color-mix(in srgb, var(--nit-brand-primary) 8%, transparent); --t-grad: linear-gradient(135deg, var(--t-accent), var(--t-accent-2)); --t-ink: #1B1035; --t-bg: #FFFFFF; --t-muted: #5A5177; --t-muted2: #6B6386; --t-border: #EFE9FB; --t-border2: color-mix(in srgb, var(--nit-brand-primary) 22%, transparent); font-family: 'Plus Jakarta Sans','IBM Plex Sans Arabic',system-ui,sans-serif; background: var(--t-bg); color: var(--t-ink); padding: clamp(48px,6vw,88px) 0;">
+  <div style="max-width: 1280px; margin: 0 auto; padding: 0 20px;">
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap;">
+      <div>
+        <div style="font-size: 13px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; background: var(--t-grad); -webkit-background-clip: text; background-clip: text; color: transparent;">{mlang en}Our courses{mlang}{mlang ar}دوراتنا{mlang}</div>
+        <h2 style="margin: 12px 0 0; font-size: clamp(30px,3.8vw,46px); font-weight: 800; letter-spacing: -0.035em;">{mlang en}Most popular right now{mlang}{mlang ar}الأكثر رواجاً الآن{mlang}</h2>
+      </div>
+      <a class="nit-btn-ghost" href="/course/index.php"
+        style="font-size: 14px; font-weight: 800; color: var(--t-accent); background: var(--t-accent-soft); border: 1.5px solid var(--t-border2); border-radius: 999px; padding: 12px 22px; text-decoration: none;">{mlang en}View all →{mlang}{mlang ar}شاهد الكل →{mlang}</a>
+    </div>
+    <div data-nit-courses="" data-limit="6" data-cta-label="→" data-continue-label="→"
+      style="margin-top: 42px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 26px;">
+      <!-- CARD TEMPLATE (hidden wrapper; its inner card is cloned per course) -->
+      <div data-nit-course-card="" style="display: none;">
+        <a href="{{url}}"
+          style="display: flex; flex-direction: column; background: var(--t-bg); border: 1px solid var(--t-border); border-radius: 28px; overflow: hidden; box-shadow: 0 20px 48px rgba(27,16,53,0.12); text-decoration: none; color: var(--t-ink); height: 100%; box-sizing: border-box;">
+          <div data-nit-course-image=""
+            style="position: relative; aspect-ratio: 16/10; background: var(--t-grad) center/cover no-repeat; display: grid; place-items: center; color: rgba(255,255,255,0.82); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 800;">
+            <span style="position: absolute; bottom: 14px; inset-inline-end: 14px; background: #fff; color: var(--t-ink); font-size: 15px; font-weight: 800; padding: 8px 14px; border-radius: 999px; box-shadow: 0 8px 20px rgba(27,16,53,0.22);">{{pricebadge}}</span>
+          </div>
+          <div style="padding: 24px; display: flex; flex-direction: column; flex: 1; min-height: 0;">
+            <h3 style="margin: 0; font-size: 20px; font-weight: 800; line-height: 1.32; letter-spacing: -0.02em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">{{fullname}}</h3>
+            <div style="display: flex; align-items: center; gap: 9px; margin-top: 14px;">
+              <span style="width: 30px; height: 30px; border-radius: 50%; background: var(--t-grad); display: grid; place-items: center; color: #fff; font-size: 13px; font-weight: 800; flex: 0 0 auto;">👤</span>
+              <span style="font-size: 13px; font-weight: 700; color: var(--t-muted2);">{{teacher}}</span>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--t-border);">
+              <span style="font-size: 13px; color: var(--t-muted);">{mlang en}Self-paced{mlang}{mlang ar}تعلّم ذاتي{mlang}</span>
+              <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 800; color: var(--t-accent);">{mlang en}Enrol{mlang}{mlang ar}سجّل{mlang} {{cta}}</span>
+            </div>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+  <script>
+    /* Shared hover effects (T2 flavour). Idempotent via id. */
+    (function () {
+      if (document.getElementById('nit-hoverfx-style')) { return; }
+      var css =
+        '.nit-btn-solid,.nit-btn-ghost,[data-nit-copy],[data-nit-scroll],[data-nit-coupons-scroll],[data-nit-categories]>a,[data-nit-my-courses]>div,[data-nit-about-card]{transition:background-color .2s ease,background .2s ease,color .2s ease,border-color .2s ease,transform .2s ease,box-shadow .2s ease}' +
+        '.nit-btn-solid:not(:disabled):hover{filter:brightness(1.06);transform:translateY(-2px);box-shadow:0 16px 34px rgba(27,16,53,.28)}' +
+        '.nit-btn-ghost:not(:disabled):hover{border-color:var(--nit-brand-primary)!important;transform:translateY(-2px);box-shadow:0 12px 26px rgba(27,16,53,.16)}' +
+        '[data-nit-copy]:hover{border-color:var(--nit-brand-primary)!important;transform:translateY(-2px)}' +
+        '[data-nit-scroll]:hover,[data-nit-coupons-scroll]:hover{transform:translateY(-50%) scale(1.08)!important}' +
+        '[data-nit-categories]>a:hover,[data-nit-my-courses]>div:not([data-nit-my-course-card]):not([data-nit-my-courses-empty]):hover{transform:translateY(-6px);box-shadow:0 22px 48px rgba(27,16,53,.16)}' +
+        '[data-nit-about-card]:hover{transform:translateY(-4px);border-color:var(--nit-brand-primary)!important}';
+      var st = document.createElement('style');
+      st.id = 'nit-hoverfx-style';
+      st.textContent = css;
+      (document.head || document.documentElement).appendChild(st);
+    })();
+  </script>
+</div>

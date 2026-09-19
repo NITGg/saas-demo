@@ -1,0 +1,94 @@
+<!-- NIT homepage template T4 · Dark Premium — HERO section.
+     Paste into an HTML nit_section block on the FRONT PAGE (Site home).
+     data-nit-stat counters are filled by theme_nit's front-page engine.
+     HYBRID PALETTE (DARK variant): structure = the template's own dark hex
+     (near-black bg, glass surfaces, light ink); accent/CTA/glow = the brand
+     palette (--nit-brand-primary / --nit-brand-accent) so the academy's brand
+     colour flows through. Bilingual via the multilang filter. -->
+<div dir="auto" data-nit-section="hero"
+  style="--t-accent: var(--nit-brand-primary); --t-accent-2: var(--nit-brand-accent); --t-on-accent: var(--nit-brand-on-primary, #fff); --t-accent-soft: color-mix(in srgb, var(--nit-brand-primary) 12%, transparent); --t-bg: #07090D; --t-surface: rgba(255,255,255,0.045); --t-ink: #E8ECF1; --t-white: #FFFFFF; --t-muted: #9AA5B4; --t-muted2: #778393; --t-border: rgba(255,255,255,0.1); --t-border2: rgba(255,255,255,0.14); font-family: 'Space Grotesk','IBM Plex Sans Arabic',system-ui,sans-serif; background: var(--t-bg); color: var(--t-ink); position: relative; overflow: hidden;">
+  <div style="position: absolute; inset: 0; background: radial-gradient(760px 480px at 18% 6%, color-mix(in srgb, var(--t-accent) 20%, transparent), transparent 66%), radial-gradient(620px 420px at 88% 40%, color-mix(in srgb, var(--t-accent-2) 16%, transparent), transparent 64%);"></div>
+  <div style="position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px); background-size: 64px 64px;"></div>
+  <div style="position: relative; max-width: 1280px; margin: 0 auto; padding: clamp(64px,7vw,104px) 20px clamp(70px,7vw,110px); display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: clamp(40px,5vw,64px); align-items: center;">
+    <div>
+      <div style="display: inline-flex; align-items: center; gap: 10px; background: var(--t-accent-soft); border: 1px solid color-mix(in srgb, var(--t-accent) 30%, transparent); border-radius: 999px; padding: 8px 16px; font-size: 12px; font-weight: 600; color: var(--t-accent); letter-spacing: 0.04em;">
+        <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--t-accent); box-shadow: 0 0 10px var(--t-accent); display: block;"></span>
+        {mlang en}Next cohort · enrolment open{mlang}{mlang ar}الدفعة القادمة · التسجيل مفتوح{mlang}
+      </div>
+      <h1 style="margin: 26px 0 0; font-size: clamp(40px,6vw,68px); line-height: 1.06; letter-spacing: -0.04em; font-weight: 600; color: var(--t-white);">
+        {mlang en}Ship real code<br>from <span style="background: linear-gradient(90deg, var(--t-accent), var(--t-accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent;">week one</span>{mlang}{mlang ar}اكتب كوداً حقيقياً<br>من <span style="background: linear-gradient(90deg, var(--t-accent), var(--t-accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent;">الأسبوع الأول</span>{mlang}
+      </h1>
+      <p style="margin: 24px 0 0; font-size: 17px; line-height: 1.75; color: var(--t-muted); max-width: 480px;">
+        {mlang en}Structured tracks with live labs, code review and a portfolio that stands up to interviews.{mlang}{mlang ar}مسارات منظّمة مع معامل مباشرة ومراجعة للكود وملف أعمال يصمد في المقابلات.{mlang}
+      </p>
+      <div style="display: flex; gap: 12px; margin-top: 34px; flex-wrap: wrap;">
+        <a class="nit-btn-solid" href="/course/index.php" data-nit-btn=""
+          style="font-size: 15px; font-weight: 700; background: linear-gradient(135deg, var(--t-accent), var(--t-accent-2)); color: var(--t-on-accent); padding: 15px 30px; border-radius: 12px; text-decoration: none; box-shadow: 0 0 34px color-mix(in srgb, var(--t-accent) 36%, transparent);">{mlang en}Browse courses{mlang}{mlang ar}استعرض الدورات{mlang}</a>
+        <a class="nit-btn-ghost" href="#nit-about" data-nit-btn=""
+          style="font-size: 15px; font-weight: 600; background: rgba(255,255,255,0.05); border: 1px solid var(--t-border2); color: var(--t-ink); padding: 15px 30px; border-radius: 12px; text-decoration: none; backdrop-filter: blur(10px);">{mlang en}How it works{mlang}{mlang ar}كيف تعمل المنصة{mlang}</a>
+      </div>
+      <div style="display: flex; gap: 40px; margin-top: 48px; padding-top: 30px; border-top: 1px solid var(--t-border); flex-wrap: wrap;">
+        <div>
+          <div style="font-size: 26px; font-weight: 600; color: var(--t-white);"><span data-nit-stat="courses">0</span>+</div>
+          <div style="font-size: 12px; color: var(--t-muted2); margin-top: 4px;">{mlang en}Courses{mlang}{mlang ar}دورة{mlang}</div>
+        </div>
+        <div>
+          <div style="font-size: 26px; font-weight: 600; color: var(--t-white);"><span data-nit-stat="students">0</span>+</div>
+          <div style="font-size: 12px; color: var(--t-muted2); margin-top: 4px;">{mlang en}Learners{mlang}{mlang ar}متعلم{mlang}</div>
+        </div>
+        <div>
+          <div style="font-size: 26px; font-weight: 600; color: var(--t-white);"><span data-nit-stat="categories">0</span></div>
+          <div style="font-size: 12px; color: var(--t-muted2); margin-top: 4px;">{mlang en}Specialities{mlang}{mlang ar}تخصص{mlang}</div>
+        </div>
+      </div>
+    </div>
+    <div style="position: relative;">
+      <div style="background: var(--t-surface); border: 1px solid var(--t-border); border-radius: 20px; padding: 18px; backdrop-filter: blur(16px); box-shadow: 0 30px 70px rgba(0,0,0,0.55);">
+        <div style="display: flex; align-items: center; gap: 8px; padding: 0 6px 14px;">
+          <span style="width: 10px; height: 10px; border-radius: 50%; background: #F87171; display: block;"></span>
+          <span style="width: 10px; height: 10px; border-radius: 50%; background: #FBBF24; display: block;"></span>
+          <span style="width: 10px; height: 10px; border-radius: 50%; background: #34D399; display: block;"></span>
+          <span style="margin-inline-start: 10px; font-size: 11px; color: var(--t-muted2); letter-spacing: 0.08em;">lab-01 · {mlang en}live session{mlang}{mlang ar}جلسة مباشرة{mlang}</span>
+        </div>
+        <div style="aspect-ratio: 16/11; border-radius: 14px; background: repeating-linear-gradient(135deg, rgba(255,255,255,0.05) 0 12px, rgba(255,255,255,0.02) 12px 24px); display: grid; place-items: center; color: #6C7787; text-align: center; padding: 12px; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 700;">{mlang en}Hero photo · replace via the editor{mlang}{mlang ar}صورة رئيسية · استبدلها من المحرّر{mlang}</div>
+      </div>
+      <div style="position: absolute; inset-inline-start: -18px; bottom: -22px; background: rgba(14,18,25,0.86); border: 1px solid color-mix(in srgb, var(--t-accent-2) 30%, transparent); border-radius: 16px; padding: 16px 20px; backdrop-filter: blur(14px); box-shadow: 0 0 36px color-mix(in srgb, var(--t-accent-2) 18%, transparent); display: flex; align-items: center; gap: 13px;">
+        <span style="width: 38px; height: 38px; border-radius: 11px; background: color-mix(in srgb, var(--t-accent-2) 16%, transparent); display: grid; place-items: center; color: var(--t-accent-2); font-size: 16px;">✓</span>
+        <div>
+          <div style="font-size: 14px; font-weight: 600; color: var(--t-white);">{mlang en}Code review in 24h{mlang}{mlang ar}مراجعة الكود في ٢٤ ساعة{mlang}</div>
+          <div style="font-size: 11px; color: var(--t-muted2); margin-top: 3px;">{mlang en}by senior instructors{mlang}{mlang ar}من مدربين خبراء{mlang}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    /* Load the T4 signature font once (Space Grotesk). Guarded so it runs a single time. */
+    (function () {
+      if (document.getElementById('nit-tpl-font-t4')) { return; }
+      var l = document.createElement('link');
+      l.id = 'nit-tpl-font-t4';
+      l.rel = 'stylesheet';
+      l.href = 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap';
+      (document.head || document.documentElement).appendChild(l);
+    })();
+  </script>
+  <script>
+    /* Shared hover effects for .nit-btn-solid / .nit-btn-ghost / cards. Idempotent.
+       Dark-theme flavour: shadows are darkened to read on the near-black ground. */
+    (function () {
+      if (document.getElementById('nit-hoverfx-style')) { return; }
+      var css =
+        '.nit-btn-solid,.nit-btn-ghost,[data-nit-copy],[data-nit-scroll],[data-nit-coupons-scroll],[data-nit-categories]>a,[data-nit-my-courses]>div,[data-nit-about-card]{transition:background-color .2s ease,background .2s ease,color .2s ease,border-color .2s ease,transform .2s ease,box-shadow .2s ease}' +
+        '.nit-btn-solid:not(:disabled):hover{filter:brightness(1.08);transform:translateY(-2px);box-shadow:0 16px 40px rgba(0,0,0,.6)}' +
+        '.nit-btn-ghost:not(:disabled):hover{border-color:var(--nit-brand-primary)!important;transform:translateY(-2px);box-shadow:0 12px 30px rgba(0,0,0,.5)}' +
+        '[data-nit-copy]:hover{border-color:var(--nit-brand-primary)!important;transform:translateY(-2px)}' +
+        '[data-nit-scroll]:hover,[data-nit-coupons-scroll]:hover{transform:translateY(-50%) scale(1.08)!important}' +
+        '[data-nit-categories]>a:hover,[data-nit-my-courses]>div:not([data-nit-my-course-card]):not([data-nit-my-courses-empty]):hover{transform:translateY(-6px);box-shadow:0 22px 54px rgba(0,0,0,.6)}' +
+        '[data-nit-about-card]:hover{transform:translateY(-4px);border-color:var(--nit-brand-primary)!important}';
+      var st = document.createElement('style');
+      st.id = 'nit-hoverfx-style';
+      st.textContent = css;
+      (document.head || document.documentElement).appendChild(st);
+    })();
+  </script>
+</div>

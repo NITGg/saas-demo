@@ -1,0 +1,88 @@
+<!-- NIT homepage template T1 · Modern Minimal — HERO section.
+     Paste into an HTML nit_section block on the FRONT PAGE (Site home).
+     data-nit-stat counters are filled by theme_nit's front-page engine.
+     HYBRID PALETTE: structure = template's own neutrals; accent/CTA = brand
+     palette (--nit-brand-primary / --nit-brand-accent) so the academy's brand
+     colour flows through. Bilingual via {mlang}. -->
+<div dir="auto" data-nit-section="hero"
+  style="--t-accent: var(--nit-brand-primary); --t-accent-2: var(--nit-brand-accent); --t-on-accent: var(--nit-brand-on-primary, #fff); --t-accent-soft: color-mix(in srgb, var(--nit-brand-primary) 9%, transparent); --t-ink: #16191D; --t-bg: #FFFFFF; --t-muted: #6E7781; --t-muted2: #8A8A82; --t-border: #EDEDE9; --t-border2: #DCDCD7; font-family: 'Manrope','IBM Plex Sans Arabic',system-ui,sans-serif; background: radial-gradient(900px 500px at 82% 8%, var(--t-accent-soft), transparent 70%), var(--t-bg); color: var(--t-ink); padding: 0;">
+  <div style="max-width: 1240px; margin: 0 auto; padding: clamp(56px,7vw,104px) 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: clamp(40px,5vw,72px); align-items: center;">
+    <div>
+      <div style="display: inline-flex; align-items: center; gap: 9px; border: 1px solid color-mix(in srgb, var(--t-accent) 30%, transparent); background: var(--t-accent-soft); color: var(--t-accent); border-radius: 40px; padding: 7px 15px; font-size: 12px; font-weight: 600; letter-spacing: 0.02em;">
+        <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--t-accent); display: block;"></span>
+        {mlang en}New term · enrolment open{mlang}{mlang ar}فصل جديد · التسجيل مفتوح{mlang}
+      </div>
+      <h1 style="margin: 26px 0 0; font-size: clamp(38px,6vw,66px); line-height: 1.05; letter-spacing: -0.035em; font-weight: 250;">
+        {mlang en}Learn a skill<br>that <span style="font-weight: 600; color: var(--t-accent);">stays with you</span>{mlang}{mlang ar}تعلّم مهارة<br><span style="font-weight: 600; color: var(--t-accent);">تبقى معك</span>{mlang}
+      </h1>
+      <p style="margin: 26px 0 0; font-size: 17px; line-height: 1.75; color: var(--t-muted); max-width: 480px; font-weight: 400;">
+        {mlang en}Short, structured courses taught by working professionals. Study at your own pace and finish with a certificate you can show.{mlang}{mlang ar}دورات قصيرة ومنظّمة يقدّمها مختصون في مجالهم. تعلّم بالوتيرة التي تناسبك واحصل على شهادة معتمدة.{mlang}
+      </p>
+      <div style="display: flex; gap: 12px; margin-top: 36px; flex-wrap: wrap;">
+        <a class="nit-btn-solid" href="/course/index.php" data-nit-btn=""
+          style="font-size: 15px; font-weight: 600; background: var(--t-accent); color: var(--t-on-accent); padding: 15px 30px; border-radius: 10px; text-decoration: none; box-shadow: 0 14px 30px color-mix(in srgb, var(--t-accent) 30%, transparent);">{mlang en}Browse courses{mlang}{mlang ar}استعرض الدورات{mlang}</a>
+        <a class="nit-btn-ghost" href="#nit-about" data-nit-btn=""
+          style="font-size: 15px; font-weight: 600; background: var(--t-bg); color: var(--t-ink); padding: 15px 30px; border-radius: 10px; text-decoration: none; border: 1px solid var(--t-border2);">{mlang en}How it works{mlang}{mlang ar}كيف تعمل المنصة{mlang}</a>
+      </div>
+      <div style="display: flex; gap: 44px; margin-top: 52px; padding-top: 32px; border-top: 1px solid var(--t-border); flex-wrap: wrap;">
+        <div>
+          <div style="font-size: 28px; font-weight: 300; letter-spacing: -0.02em;"><span data-nit-stat="courses">0</span>+</div>
+          <div style="font-size: 12px; color: var(--t-muted2); margin-top: 4px; letter-spacing: 0.04em;">{mlang en}Courses{mlang}{mlang ar}دورة{mlang}</div>
+        </div>
+        <div>
+          <div style="font-size: 28px; font-weight: 300; letter-spacing: -0.02em;"><span data-nit-stat="categories">0</span></div>
+          <div style="font-size: 12px; color: var(--t-muted2); margin-top: 4px; letter-spacing: 0.04em;">{mlang en}Specialities{mlang}{mlang ar}تخصص{mlang}</div>
+        </div>
+        <div>
+          <div style="font-size: 28px; font-weight: 300; letter-spacing: -0.02em;"><span data-nit-stat="topcategories">0</span></div>
+          <div style="font-size: 12px; color: var(--t-muted2); margin-top: 4px; letter-spacing: 0.04em;">{mlang en}Programs{mlang}{mlang ar}برنامج{mlang}</div>
+        </div>
+      </div>
+    </div>
+    <div style="position: relative;">
+      <div style="position: absolute; inset-inline-end: -26px; top: -26px; width: 210px; height: 210px; border-radius: 22px; background: linear-gradient(150deg, color-mix(in srgb, var(--t-accent) 18%, transparent), transparent); z-index: 0;"></div>
+      <div style="position: relative; z-index: 1; aspect-ratio: 4/4.6; border-radius: 20px; overflow: hidden; box-shadow: 0 34px 70px rgba(20,24,28,0.18); background: repeating-linear-gradient(135deg, #EFEFEC 0 12px, #F7F7F5 12px 24px); display: grid; place-items: center;">
+        <div style="text-align: center; color: #7C7C74;">
+          <div style="font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 600;">{mlang en}Hero photo{mlang}{mlang ar}صورة رئيسية{mlang}</div>
+          <div style="font-size: 11px; margin-top: 6px;">{mlang en}Replace via the editor{mlang}{mlang ar}استبدلها من المحرّر{mlang}</div>
+        </div>
+      </div>
+      <div style="position: absolute; z-index: 2; inset-inline-start: -18px; bottom: 44px; background: var(--t-bg); border-radius: 14px; padding: 15px 19px; box-shadow: 0 20px 44px rgba(20,24,28,0.16); display: flex; align-items: center; gap: 13px;">
+        <div style="width: 40px; height: 40px; border-radius: 11px; background: var(--t-accent-soft); color: var(--t-accent); display: grid; place-items: center; font-size: 17px;">★</div>
+        <div>
+          <div style="font-size: 14px; font-weight: 600;">4.9 / 5</div>
+          <div style="font-size: 11px; color: var(--t-muted2); margin-top: 2px;">{mlang en}learner rating{mlang}{mlang ar}تقييم المتعلمين{mlang}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    /* Load the T1 signature font once (Manrope). Guarded so it runs a single time. */
+    (function () {
+      if (document.getElementById('nit-tpl-font-t1')) { return; }
+      var l = document.createElement('link');
+      l.id = 'nit-tpl-font-t1';
+      l.rel = 'stylesheet';
+      l.href = 'https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap';
+      (document.head || document.documentElement).appendChild(l);
+    })();
+  </script>
+  <script>
+    /* Shared hover effects for .nit-btn-solid / .nit-btn-ghost / cards. Idempotent. */
+    (function () {
+      if (document.getElementById('nit-hoverfx-style')) { return; }
+      var css =
+        '.nit-btn-solid,.nit-btn-ghost,[data-nit-copy],[data-nit-scroll],[data-nit-coupons-scroll],[data-nit-categories]>a,[data-nit-my-courses]>div,[data-nit-about-card]{transition:background-color .2s ease,background .2s ease,color .2s ease,border-color .2s ease,transform .2s ease,box-shadow .2s ease}' +
+        '.nit-btn-solid:not(:disabled):hover{filter:brightness(1.06);transform:translateY(-2px);box-shadow:0 16px 34px rgba(20,24,28,.22)}' +
+        '.nit-btn-ghost:not(:disabled):hover{border-color:var(--nit-brand-primary)!important;transform:translateY(-2px);box-shadow:0 12px 26px rgba(20,24,28,.12)}' +
+        '[data-nit-copy]:hover{border-color:var(--nit-brand-primary)!important;transform:translateY(-2px)}' +
+        '[data-nit-scroll]:hover,[data-nit-coupons-scroll]:hover{transform:translateY(-50%) scale(1.08)!important}' +
+        '[data-nit-categories]>a:hover,[data-nit-my-courses]>div:not([data-nit-my-course-card]):not([data-nit-my-courses-empty]):hover{transform:translateY(-6px);box-shadow:0 22px 48px rgba(20,24,28,.16)}' +
+        '[data-nit-about-card]:hover{transform:translateY(-4px);border-color:var(--nit-brand-primary)!important}';
+      var st = document.createElement('style');
+      st.id = 'nit-hoverfx-style';
+      st.textContent = css;
+      (document.head || document.documentElement).appendChild(st);
+    })();
+  </script>
+</div>

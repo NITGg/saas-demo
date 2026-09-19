@@ -1,0 +1,94 @@
+<!-- NIT homepage template T6 · Soft Glass — GALLERY + testimonials + FAQ.
+     Static, owner-editable. Photos are placeholders; replace them from the editor.
+     The FAQ uses native <details> so it toggles without extra script. -->
+<div dir="auto" data-nit-section="gallery"
+  style="--t-accent: var(--nit-brand-primary); --t-accent-2: var(--nit-brand-accent); --t-ink: #10243E; --t-muted: #5C6480; --t-muted2: #8E93A8; --t-glass: rgba(255,255,255,0.62); --t-glass-border: rgba(255,255,255,0.88); font-family: 'Public Sans','IBM Plex Sans Arabic',system-ui,sans-serif; background: linear-gradient(170deg, color-mix(in srgb, var(--t-accent) 8%, #fff), color-mix(in srgb, var(--t-accent-2) 8%, #fff)); color: var(--t-ink);">
+  <!-- gallery grid -->
+  <div style="max-width: 1240px; margin: 0 auto; padding: clamp(48px,7vw,88px) 20px 0;">
+    <h2 style="margin: 0; font-size: clamp(28px,3.4vw,40px); font-weight: 500; letter-spacing: -0.03em; text-align: center;">{mlang en}Our spaces{mlang}{mlang ar}أماكننا{mlang}</h2>
+    <div style="margin-top: 36px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px;">
+      <div style="min-height: 240px; border-radius: 26px; border: 1px solid var(--t-glass-border); background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--t-accent) 12%, transparent) 0 12px, rgba(255,255,255,0.55) 12px 24px); display: grid; place-items: center; color: var(--t-muted2); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);">{mlang en}Photo · studio{mlang}{mlang ar}صورة · استوديو{mlang}</div>
+      <div style="min-height: 240px; border-radius: 26px; border: 1px solid var(--t-glass-border); background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--t-accent-2) 14%, transparent) 0 12px, rgba(255,255,255,0.55) 12px 24px); display: grid; place-items: center; color: var(--t-muted2); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);">{mlang en}Photo · class{mlang}{mlang ar}صورة · قاعة{mlang}</div>
+      <div style="min-height: 240px; border-radius: 26px; border: 1px solid var(--t-glass-border); background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--t-accent) 10%, transparent) 0 12px, rgba(255,255,255,0.55) 12px 24px); display: grid; place-items: center; color: var(--t-muted2); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);">{mlang en}Photo · lounge{mlang}{mlang ar}صورة · استراحة{mlang}</div>
+    </div>
+  </div>
+  <!-- testimonials -->
+  <div style="max-width: 1240px; margin: 0 auto; padding: clamp(48px,7vw,88px) 20px;">
+    <h2 style="margin: 0; font-size: clamp(28px,3.4vw,40px); font-weight: 500; letter-spacing: -0.03em; text-align: center;">{mlang en}Kind words{mlang}{mlang ar}كلمات طيبة{mlang}</h2>
+    <div style="margin-top: 36px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+      <div style="background: var(--t-glass); border: 1px solid var(--t-glass-border); border-radius: 28px; padding: 28px; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); box-shadow: 0 14px 38px rgba(16,36,62,0.08);">
+        <div style="color: #F0A154; font-size: 14px; letter-spacing: 0.1em;">★★★★★</div>
+        <p style="margin: 16px 0 0; font-size: 15px; line-height: 1.8; color: var(--t-muted);">{mlang en}“Placeholder testimonial about the course experience and the outcome it led to.”{mlang}{mlang ar}«نص بديل لرأي أحد المتعلمين عن تجربته في الدورة والنتيجة التي وصل إليها.»{mlang}</p>
+        <div style="display: flex; align-items: center; gap: 12px; margin-top: 22px;">
+          <span style="width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(140deg, color-mix(in srgb, var(--t-accent) 45%, #fff), var(--t-accent)); display: block;"></span>
+          <div>
+            <div style="font-size: 13px; font-weight: 600;">{mlang en}Learner name{mlang}{mlang ar}اسم المتعلم{mlang}</div>
+            <div style="font-size: 11px; color: var(--t-muted2); margin-top: 2px;">{mlang en}Graduate, 2025{mlang}{mlang ar}دفعة ٢٠٢٥{mlang}</div>
+          </div>
+        </div>
+      </div>
+      <div style="background: var(--t-glass); border: 1px solid var(--t-glass-border); border-radius: 28px; padding: 28px; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); box-shadow: 0 14px 38px rgba(16,36,62,0.08);">
+        <div style="color: #F0A154; font-size: 14px; letter-spacing: 0.1em;">★★★★★</div>
+        <p style="margin: 16px 0 0; font-size: 15px; line-height: 1.8; color: var(--t-muted);">{mlang en}“Placeholder testimonial about the course experience and the outcome it led to.”{mlang}{mlang ar}«نص بديل لرأي أحد المتعلمين عن تجربته في الدورة والنتيجة التي وصل إليها.»{mlang}</p>
+        <div style="display: flex; align-items: center; gap: 12px; margin-top: 22px;">
+          <span style="width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(140deg, color-mix(in srgb, var(--t-accent-2) 45%, #fff), var(--t-accent-2)); display: block;"></span>
+          <div>
+            <div style="font-size: 13px; font-weight: 600;">{mlang en}Learner name{mlang}{mlang ar}اسم المتعلم{mlang}</div>
+            <div style="font-size: 11px; color: var(--t-muted2); margin-top: 2px;">{mlang en}Graduate, 2025{mlang}{mlang ar}دفعة ٢٠٢٥{mlang}</div>
+          </div>
+        </div>
+      </div>
+      <div style="background: var(--t-glass); border: 1px solid var(--t-glass-border); border-radius: 28px; padding: 28px; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); box-shadow: 0 14px 38px rgba(16,36,62,0.08);">
+        <div style="color: #F0A154; font-size: 14px; letter-spacing: 0.1em;">★★★★★</div>
+        <p style="margin: 16px 0 0; font-size: 15px; line-height: 1.8; color: var(--t-muted);">{mlang en}“Placeholder testimonial about the course experience and the outcome it led to.”{mlang}{mlang ar}«نص بديل لرأي أحد المتعلمين عن تجربته في الدورة والنتيجة التي وصل إليها.»{mlang}</p>
+        <div style="display: flex; align-items: center; gap: 12px; margin-top: 22px;">
+          <span style="width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(140deg, color-mix(in srgb, var(--t-accent) 30%, var(--t-accent-2)), var(--t-accent)); display: block;"></span>
+          <div>
+            <div style="font-size: 13px; font-weight: 600;">{mlang en}Learner name{mlang}{mlang ar}اسم المتعلم{mlang}</div>
+            <div style="font-size: 11px; color: var(--t-muted2); margin-top: 2px;">{mlang en}Graduate, 2025{mlang}{mlang ar}دفعة ٢٠٢٥{mlang}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- faq -->
+  <div style="max-width: 900px; margin: 0 auto; padding: 0 20px clamp(48px,7vw,88px);">
+    <h2 style="margin: 0 0 30px; font-size: clamp(28px,3.4vw,38px); font-weight: 500; letter-spacing: -0.03em; text-align: center;">{mlang en}Good to know{mlang}{mlang ar}معلومات مفيدة{mlang}</h2>
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <details style="background: rgba(255,255,255,0.66); border: 1px solid var(--t-glass-border); border-radius: 22px; padding: 24px 26px; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);" open>
+        <summary style="font-size: 16px; font-weight: 600; cursor: pointer; list-style: none;">{mlang en}How long do I keep access to a course?{mlang}{mlang ar}كم تستمر صلاحية الوصول للدورة؟{mlang}</summary>
+        <p style="margin: 14px 0 0; font-size: 14px; line-height: 1.8; color: var(--t-muted);">{mlang en}Placeholder answer text. Replace with the academy's own policy.{mlang}{mlang ar}نص إجابة بديل. استبدله بسياسة الأكاديمية.{mlang}</p>
+      </details>
+      <details style="background: rgba(255,255,255,0.52); border: 1px solid var(--t-glass-border); border-radius: 22px; padding: 24px 26px; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);">
+        <summary style="font-size: 16px; font-weight: 600; cursor: pointer; list-style: none;">{mlang en}Are certificates accredited?{mlang}{mlang ar}هل الشهادات معتمدة؟{mlang}</summary>
+        <p style="margin: 14px 0 0; font-size: 14px; line-height: 1.8; color: var(--t-muted);">{mlang en}Placeholder answer text.{mlang}{mlang ar}نص إجابة بديل.{mlang}</p>
+      </details>
+      <details style="background: rgba(255,255,255,0.52); border: 1px solid var(--t-glass-border); border-radius: 22px; padding: 24px 26px; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);">
+        <summary style="font-size: 16px; font-weight: 600; cursor: pointer; list-style: none;">{mlang en}Can I pay in instalments?{mlang}{mlang ar}هل يمكن الدفع على أقساط؟{mlang}</summary>
+        <p style="margin: 14px 0 0; font-size: 14px; line-height: 1.8; color: var(--t-muted);">{mlang en}Placeholder answer text.{mlang}{mlang ar}نص إجابة بديل.{mlang}</p>
+      </details>
+      <details style="background: rgba(255,255,255,0.52); border: 1px solid var(--t-glass-border); border-radius: 22px; padding: 24px 26px; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);">
+        <summary style="font-size: 16px; font-weight: 600; cursor: pointer; list-style: none;">{mlang en}Do you offer team licences?{mlang}{mlang ar}هل تتوفر تراخيص للفرق؟{mlang}</summary>
+        <p style="margin: 14px 0 0; font-size: 14px; line-height: 1.8; color: var(--t-muted);">{mlang en}Placeholder answer text.{mlang}{mlang ar}نص إجابة بديل.{mlang}</p>
+      </details>
+    </div>
+  </div>
+  <script>
+    /* Shared hover effects for .nit-btn-solid / .nit-btn-ghost / cards. Idempotent. */
+    (function () {
+      if (document.getElementById('nit-hoverfx-style')) { return; }
+      var css =
+        '.nit-btn-solid,.nit-btn-ghost,[data-nit-copy],[data-nit-scroll],[data-nit-coupons-scroll],[data-nit-categories]>a,[data-nit-my-courses]>div,[data-nit-about-card]{transition:background-color .2s ease,background .2s ease,color .2s ease,border-color .2s ease,transform .2s ease,box-shadow .2s ease}' +
+        '.nit-btn-solid:not(:disabled):hover{filter:brightness(1.06);transform:translateY(-2px);box-shadow:0 16px 36px color-mix(in srgb,var(--nit-brand-primary) 36%,transparent)}' +
+        '.nit-btn-ghost:not(:disabled):hover{border-color:var(--nit-brand-primary)!important;transform:translateY(-2px);box-shadow:0 12px 28px rgba(16,36,62,.12)}' +
+        '[data-nit-copy]:hover{border-color:var(--nit-brand-primary)!important;transform:translateY(-2px)}' +
+        '[data-nit-scroll]:hover,[data-nit-coupons-scroll]:hover{transform:translateY(-50%) scale(1.08)!important}' +
+        '[data-nit-categories]>a:hover,[data-nit-my-courses]>div:not([data-nit-my-course-card]):not([data-nit-my-courses-empty]):hover{transform:translateY(-6px);box-shadow:0 22px 50px rgba(16,36,62,.16)}' +
+        '[data-nit-about-card]:hover{transform:translateY(-4px);border-color:var(--nit-brand-primary)!important}';
+      var st = document.createElement('style');
+      st.id = 'nit-hoverfx-style';
+      st.textContent = css;
+      (document.head || document.documentElement).appendChild(st);
+    })();
+  </script>
+</div>

@@ -1,0 +1,63 @@
+<!-- NIT homepage template T10 · Vibrant Duotone — ABOUT + stats strip.
+     Static, owner-editable copy. The cyan stats strip reuses data-nit-stat so the
+     numbers count up to the real site totals. -->
+<div dir="auto" data-nit-section="about" id="nit-about"
+  style="--t-accent: var(--nit-brand-primary); --t-accent-2: var(--nit-brand-accent); --t-on-accent: var(--nit-brand-on-primary, #fff); --t-ink: #14121F; --t-dark: #14121F; --t-on-dark: #B4B0C8; --t-muted2: #8B87A3; --t-border-dark: #332F47; font-family: 'Syne','Changa','IBM Plex Sans Arabic',system-ui,sans-serif; background: var(--t-dark); color: #fff; position: relative; overflow: hidden;">
+  <div style="position: absolute; inset-inline-end: 8%; top: 60px; width: 140px; height: 140px; border: 3px solid var(--t-accent); border-radius: 50%;"></div>
+  <div style="max-width: 1300px; margin: 0 auto; padding: clamp(56px,7vw,88px) 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: clamp(40px,5vw,60px); align-items: center; position: relative;">
+    <div style="position: relative;">
+      <div style="position: relative; aspect-ratio: 4/4.8; overflow: hidden; border: 3px solid var(--t-accent-2);">
+        <div style="position: absolute; inset: 0; background: repeating-linear-gradient(135deg, #2A2640 0 12px, #332F47 12px 24px);"></div>
+        <div style="position: absolute; inset: 0; background: linear-gradient(140deg, color-mix(in srgb, var(--t-accent-2) 75%, transparent), color-mix(in srgb, var(--t-accent) 70%, transparent)); mix-blend-mode: hard-light;"></div>
+        <div style="position: absolute; inset: 0; display: grid; place-items: center; color: rgba(255,255,255,0.92); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 800; text-align: center; padding: 16px;">{mlang en}Instructor photo{mlang}{mlang ar}صورة المدرب{mlang}</div>
+      </div>
+      <div style="position: absolute; inset-inline-end: -24px; bottom: -20px; background: var(--t-accent-2); color: var(--t-ink); padding: 18px 22px;">
+        <div style="font-size: 28px; font-weight: 800; letter-spacing: -0.03em;">12</div>
+        <div style="font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; margin-top: 3px;">{mlang en}years teaching{mlang}{mlang ar}سنة خبرة{mlang}</div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--t-accent-2); font-weight: 800;">{mlang en}About the academy{mlang}{mlang ar}عن الأكاديمية{mlang}</div>
+      <h2 style="margin: 16px 0 0; font-size: clamp(30px,4.2vw,50px); font-weight: 800; letter-spacing: -0.045em; line-height: 1.04;">{mlang en}Taught by people who do the work{mlang}{mlang ar}يدرّسها من يمارس العمل فعلاً{mlang}</h2>
+      <p style="margin: 22px 0 0; font-size: 16px; line-height: 1.8; color: var(--t-on-dark); max-width: 560px; font-weight: 500;">{mlang en}Placeholder text describing the academy, its approach to teaching and who the programmes are for. Replace with your own copy from the page editor.{mlang}{mlang ar}نص بديل يوضّح نبذة عن الأكاديمية ومنهجها في التدريس والفئة المستهدفة من البرامج. استبدله بمحتواك من محرّر الصفحة.{mlang}</p>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0; margin-top: 36px; border-top: 1px solid var(--t-border-dark);">
+        <div data-nit-about-card="" style="padding: 26px 24px 0 0; padding-inline-end: 24px; padding-inline-start: 0; border-inline-end: 1px solid var(--t-border-dark);">
+          <div style="width: 26px; height: 26px; background: var(--t-accent); display: block; clip-path: polygon(50% 0, 100% 100%, 0 100%);"></div>
+          <div style="font-size: 15px; font-weight: 800; margin-top: 14px;">{mlang en}Structured paths{mlang}{mlang ar}مسارات منظّمة{mlang}</div>
+          <div style="font-size: 13px; color: var(--t-muted2); line-height: 1.6; margin-top: 6px; font-weight: 500;">{mlang en}Step-by-step programmes.{mlang}{mlang ar}برامج خطوة بخطوة.{mlang}</div>
+        </div>
+        <div data-nit-about-card="" style="padding: 26px 24px 0; border-inline-end: 1px solid var(--t-border-dark);">
+          <div style="width: 26px; height: 26px; background: var(--t-accent-2); display: block;"></div>
+          <div style="font-size: 15px; font-weight: 800; margin-top: 14px;">{mlang en}Live sessions{mlang}{mlang ar}جلسات مباشرة{mlang}</div>
+          <div style="font-size: 13px; color: var(--t-muted2); line-height: 1.6; margin-top: 6px; font-weight: 500;">{mlang en}Learn with instructors.{mlang}{mlang ar}تعلّم مع المدربين.{mlang}</div>
+        </div>
+        <div data-nit-about-card="" style="padding: 26px 0 0; padding-inline-start: 24px;">
+          <div style="width: 26px; height: 26px; background: #fff; border-radius: 50%; display: block;"></div>
+          <div style="font-size: 15px; font-weight: 800; margin-top: 14px;">{mlang en}Certificates{mlang}{mlang ar}شهادات{mlang}</div>
+          <div style="font-size: 13px; color: var(--t-muted2); line-height: 1.6; margin-top: 6px; font-weight: 500;">{mlang en}Recognised on completion.{mlang}{mlang ar}معتمدة عند الإتمام.{mlang}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- stats strip (cyan structural band) -->
+  <div style="background: var(--t-accent-2); color: var(--t-ink);">
+    <div style="max-width: 1300px; margin: 0 auto; padding: clamp(40px,4vw,52px) 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0;">
+      <div style="padding-inline-end: 28px; border-inline-end: 2px solid color-mix(in srgb, var(--t-ink) 20%, transparent);">
+        <div style="font-size: clamp(32px,4.5vw,42px); font-weight: 800; letter-spacing: -0.045em;"><span data-nit-stat="courses">0</span>+</div>
+        <div style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 800; margin-top: 6px;">{mlang en}Courses published{mlang}{mlang ar}دورة منشورة{mlang}</div>
+      </div>
+      <div style="padding-inline: 28px; border-inline-end: 2px solid color-mix(in srgb, var(--t-ink) 20%, transparent);">
+        <div style="font-size: clamp(32px,4.5vw,42px); font-weight: 800; letter-spacing: -0.045em;"><span data-nit-stat="students">0</span>+</div>
+        <div style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 800; margin-top: 6px;">{mlang en}Enrolled learners{mlang}{mlang ar}متعلم مسجّل{mlang}</div>
+      </div>
+      <div style="padding-inline: 28px; border-inline-end: 2px solid color-mix(in srgb, var(--t-ink) 20%, transparent);">
+        <div style="font-size: clamp(32px,4.5vw,42px); font-weight: 800; letter-spacing: -0.045em;"><span data-nit-stat="categories">0</span></div>
+        <div style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 800; margin-top: 6px;">{mlang en}Specialities{mlang}{mlang ar}تخصص{mlang}</div>
+      </div>
+      <div style="padding-inline-start: 28px;">
+        <div style="font-size: clamp(32px,4.5vw,42px); font-weight: 800; letter-spacing: -0.045em;">94%</div>
+        <div style="font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 800; margin-top: 6px;">{mlang en}Completion rate{mlang}{mlang ar}نسبة الإكمال{mlang}</div>
+      </div>
+    </div>
+  </div>
+</div>

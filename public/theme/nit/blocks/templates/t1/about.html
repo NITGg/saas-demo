@@ -1,0 +1,58 @@
+<!-- NIT homepage template T1 · Modern Minimal — ABOUT + stats strip.
+     Static, owner-editable copy. The dark stats strip reuses data-nit-stat so the
+     numbers count up to the real site totals. -->
+<div dir="auto" data-nit-section="about" id="nit-about"
+  style="--t-accent: var(--nit-brand-primary); --t-accent-soft: color-mix(in srgb, var(--nit-brand-primary) 9%, transparent); --t-on-accent: var(--nit-brand-on-primary, #fff); --t-ink: #16191D; --t-bg: #FFFFFF; --t-bg-alt: #FAFAF8; --t-muted: #6E7781; --t-muted2: #8A8A82; --t-border: #EDEDE9; --t-dark: #16191D; font-family: 'Manrope','IBM Plex Sans Arabic',system-ui,sans-serif; background: var(--t-bg-alt); border-block: 1px solid var(--t-border); color: var(--t-ink);">
+  <div style="max-width: 1240px; margin: 0 auto; padding: clamp(56px,7vw,100px) 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: clamp(40px,5vw,76px); align-items: center;">
+    <div style="position: relative;">
+      <div style="aspect-ratio: 4/5; border-radius: 18px; background: repeating-linear-gradient(135deg, #E9E9E4 0 12px, #F2F2EE 12px 24px); display: grid; place-items: center; color: #7C7C74; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600; box-shadow: 0 26px 56px rgba(20,24,28,0.10);">{mlang en}Instructor photo{mlang}{mlang ar}صورة المدرب{mlang}</div>
+      <div style="position: absolute; inset-inline-end: -14px; bottom: -18px; background: var(--t-accent); color: var(--t-on-accent); border-radius: 14px; padding: 18px 22px; box-shadow: 0 18px 40px color-mix(in srgb, var(--t-accent) 34%, transparent);">
+        <div style="font-size: 26px; font-weight: 300;">12</div>
+        <div style="font-size: 11px; opacity: 0.9; margin-top: 3px;">{mlang en}years teaching{mlang}{mlang ar}سنة خبرة{mlang}</div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--t-accent); font-weight: 700;">{mlang en}About the academy{mlang}{mlang ar}عن الأكاديمية{mlang}</div>
+      <h2 style="margin: 14px 0 0; font-size: clamp(28px,3.4vw,40px); font-weight: 250; letter-spacing: -0.03em; line-height: 1.18;">{mlang en}Taught by people who do the work{mlang}{mlang ar}يدرّسها من يمارس العمل فعلاً{mlang}</h2>
+      <p style="margin: 22px 0 0; font-size: 16px; line-height: 1.8; color: var(--t-muted); max-width: 560px;">{mlang en}Placeholder text describing the academy, its approach to teaching and who the programmes are for. Replace with your own copy from the page editor.{mlang}{mlang ar}نص بديل يوضّح نبذة عن الأكاديمية ومنهجها في التدريس والفئة المستهدفة من البرامج. استبدله بمحتواك من محرّر الصفحة.{mlang}</p>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 18px; margin-top: 34px;">
+        <div data-nit-about-card="" style="background: var(--t-bg); border: 1px solid var(--t-border); border-radius: 14px; padding: 20px;">
+          <div style="width: 30px; height: 30px; border-radius: 9px; background: var(--t-accent-soft); display: grid; place-items: center; color: var(--t-accent); font-size: 14px;">✓</div>
+          <div style="font-size: 14px; font-weight: 600; margin-top: 14px;">{mlang en}Structured paths{mlang}{mlang ar}مسارات منظّمة{mlang}</div>
+          <div style="font-size: 12px; color: var(--t-muted2); line-height: 1.6; margin-top: 6px;">{mlang en}Step-by-step programmes.{mlang}{mlang ar}برامج خطوة بخطوة.{mlang}</div>
+        </div>
+        <div data-nit-about-card="" style="background: var(--t-bg); border: 1px solid var(--t-border); border-radius: 14px; padding: 20px;">
+          <div style="width: 30px; height: 30px; border-radius: 9px; background: var(--t-accent-soft); display: grid; place-items: center; color: var(--t-accent); font-size: 14px;">✓</div>
+          <div style="font-size: 14px; font-weight: 600; margin-top: 14px;">{mlang en}Live sessions{mlang}{mlang ar}جلسات مباشرة{mlang}</div>
+          <div style="font-size: 12px; color: var(--t-muted2); line-height: 1.6; margin-top: 6px;">{mlang en}Learn with instructors.{mlang}{mlang ar}تعلّم مع المدربين.{mlang}</div>
+        </div>
+        <div data-nit-about-card="" style="background: var(--t-bg); border: 1px solid var(--t-border); border-radius: 14px; padding: 20px;">
+          <div style="width: 30px; height: 30px; border-radius: 9px; background: var(--t-accent-soft); display: grid; place-items: center; color: var(--t-accent); font-size: 14px;">✓</div>
+          <div style="font-size: 14px; font-weight: 600; margin-top: 14px;">{mlang en}Certificates{mlang}{mlang ar}شهادات{mlang}</div>
+          <div style="font-size: 12px; color: var(--t-muted2); line-height: 1.6; margin-top: 6px;">{mlang en}Recognised on completion.{mlang}{mlang ar}معتمدة عند الإتمام.{mlang}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- stats strip (dark structural band) -->
+  <div style="background: var(--t-dark); color: #fff;">
+    <div style="max-width: 1240px; margin: 0 auto; padding: clamp(40px,4vw,56px) 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 30px;">
+      <div>
+        <div style="font-size: clamp(30px,4vw,40px); font-weight: 250; letter-spacing: -0.03em;"><span data-nit-stat="courses">0</span>+</div>
+        <div style="font-size: 12px; color: #9CA3AA; margin-top: 7px; letter-spacing: 0.06em;">{mlang en}Courses published{mlang}{mlang ar}دورة منشورة{mlang}</div>
+      </div>
+      <div>
+        <div style="font-size: clamp(30px,4vw,40px); font-weight: 250; letter-spacing: -0.03em;"><span data-nit-stat="students">0</span>+</div>
+        <div style="font-size: 12px; color: #9CA3AA; margin-top: 7px; letter-spacing: 0.06em;">{mlang en}Enrolled learners{mlang}{mlang ar}متعلم مسجّل{mlang}</div>
+      </div>
+      <div>
+        <div style="font-size: clamp(30px,4vw,40px); font-weight: 250; letter-spacing: -0.03em;"><span data-nit-stat="categories">0</span></div>
+        <div style="font-size: 12px; color: #9CA3AA; margin-top: 7px; letter-spacing: 0.06em;">{mlang en}Specialities{mlang}{mlang ar}تخصص{mlang}</div>
+      </div>
+      <div>
+        <div style="font-size: clamp(30px,4vw,40px); font-weight: 250; letter-spacing: -0.03em;">94%</div>
+        <div style="font-size: 12px; color: #9CA3AA; margin-top: 7px; letter-spacing: 0.06em;">{mlang en}Completion rate{mlang}{mlang ar}نسبة الإكمال{mlang}</div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,45 @@
+<!-- NIT homepage template T10 · Vibrant Duotone — CONTACT.
+     Honest contact section: real contact methods + a mailto CTA (no dead form).
+     Replace the email / phone / address placeholders from the page editor. -->
+<div dir="auto" data-nit-section="contact"
+  style="--t-accent: var(--nit-brand-primary); --t-accent-2: var(--nit-brand-accent); --t-on-accent: var(--nit-brand-on-primary, #fff); --t-ink: #14121F; --t-bg: #F4F1EA; --t-surface: #FFFFFF; --t-muted: #5C5872; font-family: 'Syne','Changa','IBM Plex Sans Arabic',system-ui,sans-serif; background: var(--t-bg); color: var(--t-ink);">
+  <div style="max-width: 1300px; margin: 0 auto; padding: clamp(48px,7vw,88px) 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: clamp(32px,4vw,40px);">
+    <div style="background: var(--t-surface); border: 3px solid var(--t-ink); padding: clamp(28px,4vw,40px);">
+      <div style="font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--t-accent); font-weight: 800;">{mlang en}Contact{mlang}{mlang ar}تواصل{mlang}</div>
+      <h2 style="margin: 14px 0 0; font-size: clamp(28px,3.6vw,40px); font-weight: 800; letter-spacing: -0.045em;">{mlang en}Ask us anything{mlang}{mlang ar}اسألنا عن أي شيء{mlang}</h2>
+      <p style="margin: 20px 0 0; font-size: 16px; line-height: 1.8; color: var(--t-muted); max-width: 460px; font-weight: 500;">{mlang en}Have a question about a course, a plan or team access? Reach out and the academy team will get back to you.{mlang}{mlang ar}لديك سؤال عن دورة أو خطة أو اشتراك للفرق؟ تواصل معنا وسيعود إليك فريق الأكاديمية.{mlang}</p>
+      <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 30px;">
+        <a href="mailto:hello@academy.example" style="display: flex; align-items: center; gap: 14px; padding: 16px 18px; border: 2px solid var(--t-ink); text-decoration: none; color: var(--t-ink);">
+          <span style="width: 40px; height: 40px; background: var(--t-accent); color: var(--t-on-accent); display: grid; place-items: center; font-size: 17px; flex: 0 0 auto;">✉</span>
+          <span>
+            <span style="display: block; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--t-muted); font-weight: 800;">{mlang en}Email{mlang}{mlang ar}البريد{mlang}</span>
+            <span style="display: block; font-size: 15px; margin-top: 3px; font-weight: 700;" dir="ltr">hello@academy.example</span>
+          </span>
+        </a>
+        <a href="tel:+96600000000" style="display: flex; align-items: center; gap: 14px; padding: 16px 18px; border: 2px solid var(--t-ink); text-decoration: none; color: var(--t-ink);">
+          <span style="width: 40px; height: 40px; background: var(--t-accent-2); color: var(--t-ink); display: grid; place-items: center; font-size: 17px; flex: 0 0 auto;">☎</span>
+          <span>
+            <span style="display: block; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--t-muted); font-weight: 800;">{mlang en}Phone{mlang}{mlang ar}الهاتف{mlang}</span>
+            <span style="display: block; font-size: 15px; margin-top: 3px; font-weight: 700;" dir="ltr">+966 00 000 0000</span>
+          </span>
+        </a>
+      </div>
+      <a class="nit-btn-solid" href="mailto:hello@academy.example" style="display: inline-block; margin-top: 24px; font-size: 14px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; background: var(--t-ink); color: #fff; padding: 16px 34px; text-decoration: none;">{mlang en}Send us an email{mlang}{mlang ar}راسلنا بالبريد{mlang}</a>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 18px;">
+      <div style="background: var(--t-accent); color: var(--t-on-accent); padding: 26px;">
+        <div style="font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 800; opacity: 0.9;">{mlang en}Working hours{mlang}{mlang ar}ساعات العمل{mlang}</div>
+        <div style="font-size: 18px; font-weight: 800; margin-top: 6px; line-height: 1.5;">{mlang en}Sun – Thu · 9:00 – 17:00{mlang}{mlang ar}الأحد – الخميس · ٩:٠٠ – ١٧:٠٠{mlang}</div>
+      </div>
+      <div style="background: var(--t-accent-2); color: var(--t-ink); padding: 26px;">
+        <div style="font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 800; opacity: 0.8;">{mlang en}Address{mlang}{mlang ar}العنوان{mlang}</div>
+        <div style="font-size: 18px; font-weight: 800; margin-top: 6px; line-height: 1.4;">{mlang en}Street, district, city{mlang}{mlang ar}الشارع، الحي، المدينة{mlang}</div>
+      </div>
+      <div style="flex: 1; min-height: 150px; position: relative; overflow: hidden; border: 3px solid var(--t-ink);">
+        <div style="position: absolute; inset: 0; background: repeating-linear-gradient(135deg, #DED9CE 0 10px, #EAE5DA 10px 20px);"></div>
+        <div style="position: absolute; inset: 0; background: linear-gradient(140deg, color-mix(in srgb, var(--t-accent) 60%, transparent), color-mix(in srgb, var(--t-accent-2) 60%, transparent)); mix-blend-mode: hard-light;"></div>
+        <div style="position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 800;">{mlang en}Map{mlang}{mlang ar}خريطة{mlang}</div>
+      </div>
+    </div>
+  </div>
+</div>

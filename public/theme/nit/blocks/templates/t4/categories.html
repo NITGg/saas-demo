@@ -1,0 +1,30 @@
+<!-- NIT homepage template T4 · Dark Premium — CATEGORIES strip.
+     theme_nit's engine clones the INNER html of [data-nit-category-card] once per
+     top-level category from window.NIT_CATEGORIES, substituting {{url}} {{name}}
+     {{coursecount}} and setting [data-nit-category-image] as a background. The
+     hidden wrapper stays; each clone's inner card becomes a direct grid child. -->
+<div dir="auto"
+  style="--t-accent: var(--nit-brand-primary); --t-accent-2: var(--nit-brand-accent); --t-accent-soft: color-mix(in srgb, var(--nit-brand-primary) 12%, transparent); --t-bg: #07090D; --t-surface: rgba(255,255,255,0.035); --t-ink: #E8ECF1; --t-white: #FFFFFF; --t-muted2: #778393; --t-border: rgba(255,255,255,0.08); font-family: 'Space Grotesk','IBM Plex Sans Arabic',system-ui,sans-serif; background: linear-gradient(rgba(255,255,255,0.02), rgba(255,255,255,0.02)), var(--t-bg); border-block: 1px solid rgba(255,255,255,0.07); color: var(--t-ink);">
+  <div style="max-width: 1280px; margin: 0 auto; padding: clamp(40px,5vw,56px) 20px;">
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 24px;">
+      <div>
+        <div style="font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--t-accent); font-weight: 700;">{mlang en}Browse{mlang}{mlang ar}تصفّح{mlang}</div>
+        <h2 style="margin: 12px 0 0; font-size: clamp(26px,3vw,34px); font-weight: 600; letter-spacing: -0.03em; color: var(--t-white);">{mlang en}Explore by category{mlang}{mlang ar}استعرض حسب التخصص{mlang}</h2>
+      </div>
+      <a href="/course/index.php" style="font-size: 14px; color: var(--t-accent); text-decoration: none;">{mlang en}See all →{mlang}{mlang ar}كل التصنيفات ←{mlang}</a>
+    </div>
+    <div data-nit-categories="" data-limit="12"
+      style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px;">
+      <!-- CARD TEMPLATE (hidden wrapper; its inner <a> is cloned per category) -->
+      <div data-nit-category-card="" style="display: none;">
+        <a href="{{url}}"
+          style="display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 12px; background: var(--t-surface); border: 1px solid var(--t-border); text-decoration: none; color: var(--t-ink); height: 100%; box-sizing: border-box;">
+          <span data-nit-category-image=""
+            style="width: 34px; height: 34px; border-radius: 9px; background: var(--t-accent-soft) center/contain no-repeat; box-shadow: 0 0 14px color-mix(in srgb, var(--t-accent) 30%, transparent); display: block; flex: 0 0 auto;"></span>
+          <span style="font-size: 14px; font-weight: 600; color: var(--t-white);">{{name}}</span>
+          <span style="font-size: 11px; color: var(--t-muted2);">{{coursecount}} {mlang en}courses{mlang}{mlang ar}دورة{mlang}</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>

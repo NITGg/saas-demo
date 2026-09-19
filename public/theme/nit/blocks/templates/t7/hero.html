@@ -1,0 +1,87 @@
+<!-- NIT homepage template T7 · Corporate Trust — HERO section.
+     Paste into an HTML nit_section block on the FRONT PAGE (Site home).
+     data-nit-stat counters are filled by theme_nit's front-page engine.
+     HYBRID PALETTE: structure = template's own neutrals (corporate navy/blue);
+     accent/CTA = brand palette (--nit-brand-primary / --nit-brand-accent) so the
+     academy's brand colour flows through. Bilingual via mlang tags. -->
+<div dir="auto" data-nit-section="hero"
+  style="--t-accent: var(--nit-brand-primary); --t-accent-2: var(--nit-brand-accent); --t-on-accent: var(--nit-brand-on-primary, #fff); --t-accent-soft: color-mix(in srgb, var(--nit-brand-primary) 10%, transparent); --t-ink: #2A2140; --t-bg: #FFFDF7; --t-surface: #FFFFFF; --t-bg-alt: #F5F9FE; --t-muted: #45618A; --t-muted2: #6C86A6; --t-border: #DCE5F0; --t-border2: #C3D4E9; --t-dark: #10243E; --t-gold: #E8A33D; font-family: 'Baloo Bhaijaan 2','IBM Plex Sans Arabic',system-ui,sans-serif; background: linear-gradient(180deg, var(--t-bg-alt) 0%, var(--t-bg) 100%); color: var(--t-ink); border-bottom: 1px solid var(--t-border);">
+  <div style="max-width: 1240px; margin: 0 auto; padding: clamp(56px,7vw,92px) 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: clamp(40px,5vw,64px); align-items: center;">
+    <div>
+      <div style="display: inline-flex; align-items: center; gap: 10px; background: var(--t-accent-soft); border: 1px solid color-mix(in srgb, var(--t-accent) 30%, transparent); border-radius: 6px; padding: 7px 14px; font-size: 12px; font-weight: 700; color: var(--t-accent); letter-spacing: 0.04em;">
+        <span style="width: 6px; height: 6px; background: var(--t-accent); display: block;"></span>
+        {mlang en}Accredited training provider{mlang}{mlang ar}جهة تدريب معتمدة{mlang}
+      </div>
+      <h1 style="margin: 24px 0 0; font-size: clamp(38px,6vw,58px); line-height: 1.12; letter-spacing: -0.02em; font-weight: 800;">
+        {mlang en}Certification training<br>your team can <span style="color: var(--t-accent);">rely on</span>{mlang}{mlang ar}تدريب احترافي<br>يعتمد عليه <span style="color: var(--t-accent);">فريقك</span>{mlang}
+      </h1>
+      <p style="margin: 22px 0 0; font-size: 17px; line-height: 1.75; color: var(--t-muted); max-width: 500px; font-weight: 500;">
+        {mlang en}Professional courses and certificates, delivered to individuals and corporate cohorts with an exam-aligned syllabus.{mlang}{mlang ar}دورات وشهادات مهنية للأفراد والفرق المؤسسية، بمنهج مطابق لمتطلبات الاختبار.{mlang}
+      </p>
+      <div style="display: flex; gap: 12px; margin-top: 30px; flex-wrap: wrap;">
+        <a class="nit-btn-solid" href="/course/index.php" data-nit-btn=""
+          style="font-size: 15px; font-weight: 700; background: var(--t-accent); color: var(--t-on-accent); padding: 15px 30px; border-radius: 8px; text-decoration: none; box-shadow: 0 12px 28px color-mix(in srgb, var(--t-accent) 26%, transparent);">{mlang en}Browse courses{mlang}{mlang ar}استعرض الدورات{mlang}</a>
+        <a class="nit-btn-ghost" href="#nit-about" data-nit-btn=""
+          style="font-size: 15px; font-weight: 600; background: var(--t-surface); border: 1px solid var(--t-border2); color: var(--t-ink); padding: 15px 30px; border-radius: 8px; text-decoration: none;">{mlang en}How it works{mlang}{mlang ar}كيف تعمل المنصة{mlang}</a>
+      </div>
+      <div style="display: flex; align-items: center; gap: 26px; margin-top: 40px; padding-top: 28px; border-top: 1px solid var(--t-border); flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="width: 28px; height: 28px; border-radius: 50%; background: var(--t-accent-soft); color: var(--t-accent); display: grid; place-items: center; font-size: 14px; font-weight: 700;">✓</span>
+          <span style="font-size: 13px; color: var(--t-muted); font-weight: 600;">{mlang en}Exam-aligned syllabus{mlang}{mlang ar}منهج مطابق للاختبار{mlang}</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="width: 28px; height: 28px; border-radius: 50%; background: var(--t-accent-soft); color: var(--t-accent); display: grid; place-items: center; font-size: 14px; font-weight: 700;">✓</span>
+          <span style="font-size: 13px; color: var(--t-muted); font-weight: 600;">{mlang en}Invoice billing{mlang}{mlang ar}فواتير ضريبية{mlang}</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div style="background: var(--t-surface); border: 1px solid var(--t-border); border-radius: 12px; overflow: hidden; box-shadow: 0 24px 56px rgba(16,36,62,0.12);">
+        <div style="aspect-ratio: 16/11; background: repeating-linear-gradient(135deg, #E9EFF7 0 12px, #F4F8FC 12px 24px); display: grid; place-items: center; color: #7A93B2; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 700; text-align: center;">{mlang en}Hero photo · training room{mlang}{mlang ar}صورة · قاعة تدريب{mlang}</div>
+        <div style="padding: 22px 24px; border-top: 1px solid var(--t-border); display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px;">
+          <div>
+            <div style="font-size: 24px; font-weight: 800; color: var(--t-accent);"><span data-nit-stat="courses">0</span>+</div>
+            <div style="font-size: 11px; color: var(--t-muted2); margin-top: 3px; letter-spacing: 0.04em;">{mlang en}Courses{mlang}{mlang ar}دورة{mlang}</div>
+          </div>
+          <div>
+            <div style="font-size: 24px; font-weight: 800; color: var(--t-accent);"><span data-nit-stat="students">0</span>+</div>
+            <div style="font-size: 11px; color: var(--t-muted2); margin-top: 3px; letter-spacing: 0.04em;">{mlang en}Learners{mlang}{mlang ar}متعلم{mlang}</div>
+          </div>
+          <div>
+            <div style="font-size: 24px; font-weight: 800; color: var(--t-accent);"><span data-nit-stat="categories">0</span></div>
+            <div style="font-size: 11px; color: var(--t-muted2); margin-top: 3px; letter-spacing: 0.04em;">{mlang en}Specialities{mlang}{mlang ar}تخصص{mlang}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    /* Load the T7 signature font once (Baloo Bhaijaan 2). Guarded so it runs a single time. */
+    (function () {
+      if (document.getElementById('nit-tpl-font-t7')) { return; }
+      var l = document.createElement('link');
+      l.id = 'nit-tpl-font-t7';
+      l.rel = 'stylesheet';
+      l.href = 'https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@400..800&display=swap';
+      (document.head || document.documentElement).appendChild(l);
+    })();
+  </script>
+  <script>
+    /* Shared hover effects for .nit-btn-solid / .nit-btn-ghost / cards. Idempotent. */
+    (function () {
+      if (document.getElementById('nit-hoverfx-style')) { return; }
+      var css =
+        '.nit-btn-solid,.nit-btn-ghost,[data-nit-copy],[data-nit-scroll],[data-nit-coupons-scroll],[data-nit-categories]>a,[data-nit-my-courses]>div,[data-nit-about-card]{transition:background-color .2s ease,background .2s ease,color .2s ease,border-color .2s ease,transform .2s ease,box-shadow .2s ease}' +
+        '.nit-btn-solid:not(:disabled):hover{filter:brightness(1.06);transform:translateY(-2px);box-shadow:0 16px 34px rgba(20,24,28,.22)}' +
+        '.nit-btn-ghost:not(:disabled):hover{border-color:var(--nit-brand-primary)!important;transform:translateY(-2px);box-shadow:0 12px 26px rgba(20,24,28,.12)}' +
+        '[data-nit-copy]:hover{border-color:var(--nit-brand-primary)!important;transform:translateY(-2px)}' +
+        '[data-nit-scroll]:hover,[data-nit-coupons-scroll]:hover{transform:translateY(-50%) scale(1.08)!important}' +
+        '[data-nit-categories]>a:hover,[data-nit-my-courses]>div:not([data-nit-my-course-card]):not([data-nit-my-courses-empty]):hover{transform:translateY(-6px);box-shadow:0 22px 48px rgba(20,24,28,.16)}' +
+        '[data-nit-about-card]:hover{transform:translateY(-4px);border-color:var(--nit-brand-primary)!important}';
+      var st = document.createElement('style');
+      st.id = 'nit-hoverfx-style';
+      st.textContent = css;
+      (document.head || document.documentElement).appendChild(st);
+    })();
+  </script>
+</div>

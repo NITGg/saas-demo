@@ -1,0 +1,65 @@
+<!-- NIT homepage template T7 · Corporate Trust — FOOTER.
+     data-nit-section="footer" — theme_nit moves this block to the fullwidth-bottom
+     region and slots the "download apps" band just above it automatically. -->
+<div dir="auto" data-nit-section="footer"
+  style="--t-accent: var(--nit-brand-primary); --t-dark: #10243E; font-family: 'Baloo Bhaijaan 2','IBM Plex Sans Arabic',system-ui,sans-serif; background: var(--t-dark); color: #A9BBD1;">
+  <div style="max-width: 1240px; margin: 0 auto; padding: 60px 20px 26px;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 40px;">
+      <div style="grid-column: 1 / -1; max-width: 300px;">
+        <div style="display: flex; align-items: center; gap: 11px;">
+          <span style="width: 32px; height: 32px; border-radius: 8px; background: var(--t-accent); display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 14px;">A</span>
+          <span style="font-size: 17px; font-weight: 700; color: #fff;">{mlang en}Academy Institute{mlang}{mlang ar}معهد الأكاديمية{mlang}</span>
+        </div>
+        <p style="margin: 16px 0 0; font-size: 13px; line-height: 1.85; color: #8AA2BF;">{mlang en}Accredited professional training for individuals and organisations.{mlang}{mlang ar}تدريب مهني معتمد للأفراد والمؤسسات.{mlang}</p>
+      </div>
+      <div>
+        <div style="font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #fff; font-weight: 700;">{mlang en}Courses{mlang}{mlang ar}الدورات{mlang}</div>
+        <div style="display: flex; flex-direction: column; gap: 11px; margin-top: 18px; font-size: 13px;">
+          <a href="/course/index.php" style="color: #A9BBD1; text-decoration: none;">{mlang en}All courses{mlang}{mlang ar}كل الدورات{mlang}</a>
+          <a href="/course/index.php" style="color: #A9BBD1; text-decoration: none;">{mlang en}Certifications{mlang}{mlang ar}الشهادات{mlang}</a>
+          <a href="/course/index.php" style="color: #A9BBD1; text-decoration: none;">{mlang en}Programmes{mlang}{mlang ar}البرامج{mlang}</a>
+        </div>
+      </div>
+      <div>
+        <div style="font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #fff; font-weight: 700;">{mlang en}Business{mlang}{mlang ar}المؤسسات{mlang}</div>
+        <div style="display: flex; flex-direction: column; gap: 11px; margin-top: 18px; font-size: 13px;">
+          <a href="#nit-contact" style="color: #A9BBD1; text-decoration: none;">{mlang en}Team licences{mlang}{mlang ar}تراخيص الفرق{mlang}</a>
+          <a href="#nit-contact" style="color: #A9BBD1; text-decoration: none;">{mlang en}On-site training{mlang}{mlang ar}تدريب في الموقع{mlang}</a>
+          <a href="#nit-about" style="color: #A9BBD1; text-decoration: none;">{mlang en}About{mlang}{mlang ar}من نحن{mlang}</a>
+        </div>
+      </div>
+      <div>
+        <div style="font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #fff; font-weight: 700;">{mlang en}Account{mlang}{mlang ar}الحساب{mlang}</div>
+        <div style="display: flex; flex-direction: column; gap: 11px; margin-top: 18px; font-size: 13px;">
+          <a href="/login/index.php" style="color: #A9BBD1; text-decoration: none;">{mlang en}Sign in{mlang}{mlang ar}تسجيل الدخول{mlang}</a>
+          <a href="/login/signup.php" style="color: #A9BBD1; text-decoration: none;">{mlang en}Create account{mlang}{mlang ar}إنشاء حساب{mlang}</a>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top: 44px; padding-top: 22px; border-top: 1px solid rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; font-size: 12px; color: #7B93B1;">
+      <span>{mlang en}© 2026 Academy Institute. All rights reserved.{mlang}{mlang ar}© ٢٠٢٦ معهد الأكاديمية. جميع الحقوق محفوظة.{mlang}</span>
+      <span style="display: flex; gap: 20px;">
+        <a href="#" style="color: #7B93B1; text-decoration: none;">{mlang en}Privacy{mlang}{mlang ar}الخصوصية{mlang}</a>
+        <a href="#" style="color: #7B93B1; text-decoration: none;">{mlang en}Terms{mlang}{mlang ar}الشروط{mlang}</a>
+      </span>
+    </div>
+  </div>
+  <script>
+    /* Shared hover effects (T7 flavour). Idempotent via id. */
+    (function () {
+      if (document.getElementById('nit-hoverfx-style')) { return; }
+      var css =
+        '.nit-btn-solid,.nit-btn-ghost,[data-nit-copy],[data-nit-scroll],[data-nit-coupons-scroll],[data-nit-categories]>a,[data-nit-my-courses]>div,[data-nit-about-card]{transition:background-color .2s ease,background .2s ease,color .2s ease,border-color .2s ease,transform .2s ease,box-shadow .2s ease}' +
+        '.nit-btn-solid:not(:disabled):hover{filter:brightness(1.06);transform:translateY(-2px);box-shadow:0 16px 34px rgba(20,24,28,.22)}' +
+        '.nit-btn-ghost:not(:disabled):hover{border-color:var(--nit-brand-primary)!important;transform:translateY(-2px);box-shadow:0 12px 26px rgba(20,24,28,.12)}' +
+        '[data-nit-copy]:hover{border-color:var(--nit-brand-primary)!important;transform:translateY(-2px)}' +
+        '[data-nit-scroll]:hover,[data-nit-coupons-scroll]:hover{transform:translateY(-50%) scale(1.08)!important}' +
+        '[data-nit-categories]>a:hover,[data-nit-my-courses]>div:not([data-nit-my-course-card]):not([data-nit-my-courses-empty]):hover{transform:translateY(-6px);box-shadow:0 22px 48px rgba(20,24,28,.16)}' +
+        '[data-nit-about-card]:hover{transform:translateY(-4px);border-color:var(--nit-brand-primary)!important}';
+      var st = document.createElement('style');
+      st.id = 'nit-hoverfx-style';
+      st.textContent = css;
+      (document.head || document.documentElement).appendChild(st);
+    })();
+  </script>
+</div>

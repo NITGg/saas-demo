@@ -1,0 +1,47 @@
+<!-- NIT homepage template T9 · Elegant Mono — CATEGORIES strip.
+     theme_nit's engine clones the INNER html of [data-nit-category-card] once per
+     top-level category from window.NIT_CATEGORIES, substituting {{url}} {{name}}
+     {{coursecount}} {{id}} and setting [data-nit-category-image] as a background. The
+     hidden wrapper stays; each clone's inner <a> becomes a direct grid child. Single
+     grid lines are drawn by borders on the container + each cell, so any count wraps
+     cleanly. -->
+<div dir="auto"
+  style="--t-accent: var(--nit-brand-primary); --t-accent-soft: color-mix(in srgb, var(--nit-brand-primary) 18%, transparent); --t-ink: #14121F; --t-dark: #14121F; --t-dark-border: #2E2B38; --t-dark-muted: #A8A39A; --t-dark-muted2: #6E6A61; font-family: 'Syne','IBM Plex Sans Arabic',system-ui,sans-serif; background: var(--t-dark); color: #fff;">
+  <div style="max-width: 1280px; margin: 0 auto; padding: 0 clamp(20px,4vw,44px);">
+    <div data-nit-categories="" data-limit="10"
+      style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 0; border-top: 1px solid var(--t-dark-border); border-inline-start: 1px solid var(--t-dark-border);">
+      <!-- CARD TEMPLATE (hidden wrapper; its inner <a> is cloned per category) -->
+      <div data-nit-category-card="" style="display: none;">
+        <a href="{{url}}"
+          style="display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 26px 22px; border-inline-end: 1px solid var(--t-dark-border); border-bottom: 1px solid var(--t-dark-border); text-decoration: none; color: #fff; box-sizing: border-box; height: 100%;">
+          <span style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+            <span data-nit-category-image=""
+              style="width: 22px; height: 22px; background: var(--t-accent-soft) center/contain no-repeat; display: block; flex: 0 0 auto;"></span>
+            <span style="font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{name}}</span>
+          </span>
+          <span style="color: var(--t-accent); font-size: 15px; font-weight: 700; flex: 0 0 auto;">→</span>
+        </a>
+      </div>
+    </div>
+  </div>
+  <script>
+    /* Shared hover effects for .nit-btn-solid / .nit-btn-ghost / cards. Idempotent. */
+    (function () {
+      if (document.getElementById('nit-hoverfx-style')) { return; }
+      var css =
+        '.nit-btn-solid,.nit-btn-ghost,[data-nit-copy],[data-nit-scroll],[data-nit-coupons-scroll],[data-nit-categories]>a,[data-nit-my-courses]>div,[data-nit-about-card]{transition:background-color .2s ease,background .2s ease,color .2s ease,border-color .2s ease,transform .2s ease,box-shadow .2s ease}' +
+        '.nit-btn-solid:not(:disabled):hover{filter:brightness(1.08);transform:translateY(-2px);box-shadow:0 14px 30px rgba(20,18,31,.28)}' +
+        '.nit-btn-ghost:not(:disabled):hover{border-color:var(--nit-brand-primary)!important;color:#fff;transform:translateY(-2px)}' +
+        '[data-nit-copy]:hover{filter:brightness(1.12);transform:translateY(-2px)}' +
+        '[data-nit-scroll]:hover,[data-nit-coupons-scroll]:hover{transform:translateY(-50%) scale(1.08)!important}' +
+        '[data-nit-categories]>a:hover{background:var(--nit-brand-primary)!important;color:#fff!important}' +
+        '[data-nit-categories]>a:hover *{color:#fff!important}' +
+        '[data-nit-my-courses]>div:not([data-nit-my-course-card]):not([data-nit-my-courses-empty]):hover{transform:translateY(-4px)}' +
+        '[data-nit-about-card]:hover{border-color:var(--nit-brand-primary)!important}';
+      var st = document.createElement('style');
+      st.id = 'nit-hoverfx-style';
+      st.textContent = css;
+      (document.head || document.documentElement).appendChild(st);
+    })();
+  </script>
+</div>

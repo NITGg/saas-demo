@@ -1,0 +1,30 @@
+<!-- NIT homepage template T8 · Playful Rounded — CATEGORIES strip.
+     theme_nit's engine clones the INNER html of [data-nit-category-card] once per
+     top-level category from window.NIT_CATEGORIES, substituting {{url}} {{name}}
+     {{coursecount}} and setting [data-nit-category-image] as a background. The
+     hidden wrapper stays; each clone's inner card becomes a direct grid child. -->
+<div dir="auto"
+  style="--t-accent: var(--nit-brand-primary); --t-accent-2: var(--nit-brand-accent); --t-accent-soft: color-mix(in srgb, var(--nit-brand-primary) 12%, transparent); --t-ink: #2A2140; --t-bg: #FFFDF7; --t-surface: #FFFFFF; --t-muted: #5A4E78; --t-yellow: #FFE08A; font-family: 'Archivo','IBM Plex Sans Arabic',system-ui,sans-serif; background: var(--t-bg); color: var(--t-ink);">
+  <div style="max-width: 1260px; margin: 0 auto; padding: clamp(40px,5vw,64px) 20px;">
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 28px;">
+      <div>
+        <div style="font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--t-accent); font-weight: 700;">{mlang en}Browse{mlang}{mlang ar}تصفّح{mlang}</div>
+        <h2 style="margin: 10px 0 0; font-size: clamp(28px,3.4vw,44px); font-weight: 800; letter-spacing: -0.02em;">{mlang en}Explore by category{mlang}{mlang ar}استعرض حسب التخصص{mlang}</h2>
+      </div>
+      <a href="/course/index.php" style="font-size: 15px; font-weight: 700; background: var(--t-yellow); color: var(--t-ink); padding: 13px 24px; border-radius: 999px; text-decoration: none;">{mlang en}See all →{mlang}{mlang ar}كل التصنيفات ←{mlang}</a>
+    </div>
+    <div data-nit-categories="" data-limit="12"
+      style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px;">
+      <!-- CARD TEMPLATE (hidden wrapper; its inner <a> is cloned per category) -->
+      <div data-nit-category-card="" style="display: none;">
+        <a href="{{url}}"
+          style="display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 22px; border-radius: 26px; background: var(--t-yellow); border: 3px solid var(--t-ink); text-decoration: none; color: var(--t-ink); height: 100%; box-sizing: border-box; text-align: center;">
+          <span data-nit-category-image=""
+            style="width: 46px; height: 46px; border-radius: 16px; background: var(--t-surface) center/contain no-repeat; display: block; flex: 0 0 auto;"></span>
+          <span style="font-size: 15px; font-weight: 700;">{{name}}</span>
+          <span style="font-size: 12px; color: var(--t-muted); font-weight: 600;">{{coursecount}} {mlang en}courses{mlang}{mlang ar}دورة{mlang}</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>

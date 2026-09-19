@@ -1,0 +1,23 @@
+<!-- NIT homepage template T10 · Vibrant Duotone — CATEGORIES strip.
+     theme_nit's engine clones the INNER html of [data-nit-category-card] once per
+     top-level category from window.NIT_CATEGORIES, substituting {{url}} {{name}}
+     {{coursecount}} and setting [data-nit-category-image] as a background. The
+     hidden wrapper stays; each clone's inner card becomes a direct grid child. -->
+<div dir="auto"
+  style="--t-accent: var(--nit-brand-primary); --t-accent-2: var(--nit-brand-accent); --t-on-accent: var(--nit-brand-on-primary, #fff); --t-ink: #14121F; font-family: 'Syne','Changa','IBM Plex Sans Arabic',system-ui,sans-serif; background: var(--t-accent); color: var(--t-on-accent);">
+  <div data-nit-categories="" data-limit="6"
+    style="max-width: 1300px; margin: 0 auto; padding: 0 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));">
+    <!-- CARD TEMPLATE (hidden wrapper; its inner <a> is cloned per category) -->
+    <div data-nit-category-card="" style="display: none;">
+      <a href="{{url}}"
+        style="display: flex; align-items: center; gap: 12px; padding: 24px 18px; border-inline-end: 1px solid color-mix(in srgb, var(--t-on-accent) 28%, transparent); text-decoration: none; color: var(--t-on-accent); height: 100%; box-sizing: border-box;">
+        <span data-nit-category-image=""
+          style="width: 26px; height: 26px; background: color-mix(in srgb, var(--t-on-accent) 88%, transparent) center/contain no-repeat; display: block; flex: 0 0 auto; clip-path: polygon(50% 0, 100% 100%, 0 100%);"></span>
+        <span style="display: flex; flex-direction: column; min-width: 0;">
+          <span style="font-size: 13px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;">{{name}}</span>
+          <span style="font-size: 11px; font-weight: 700; opacity: 0.85; margin-top: 3px;">{{coursecount}} {mlang en}courses{mlang}{mlang ar}دورة{mlang}</span>
+        </span>
+      </a>
+    </div>
+  </div>
+</div>

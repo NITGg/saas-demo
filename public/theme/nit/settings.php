@@ -36,6 +36,14 @@ $ADMIN->add('appearance', new admin_externalpage(
     'moodle/site:config'
 ));
 
+// Admin-only homepage template picker (T1..T10).
+$ADMIN->add('appearance', new admin_externalpage(
+    'theme_nit_homepage',
+    get_string('homepagetemplates', 'theme_nit'),
+    new moodle_url('/theme/nit/homepage.php'),
+    'moodle/site:config'
+));
+
 if ($ADMIN->fulltree) {
     $settings = new admin_settingpage('themesettingnit', get_string('configtitle', 'theme_nit'));
 

@@ -1,0 +1,100 @@
+<!-- NIT homepage template T9 · Elegant Mono — GALLERY + testimonials + FAQ.
+     Static, owner-editable. Photos are placeholders; replace them from the editor.
+     The FAQ uses native <details> so it toggles without extra script. -->
+<div dir="auto" data-nit-section="gallery"
+  style="--t-accent: var(--nit-brand-primary); --t-on-accent: var(--nit-brand-on-primary, #fff); --t-ink: #14121F; --t-bg: #F4F1EA; --t-surface: #FFFFFF; --t-muted: #5E5B54; --t-muted2: #8F8B80; --t-border: #DAD5C7; --t-dark: #14121F; --t-dark-border: #2E2B38; --t-dark-muted: #A8A39A; --t-dark-muted2: #6E6A61; font-family: 'Syne','IBM Plex Sans Arabic',system-ui,sans-serif; background: var(--t-bg); color: var(--t-ink);">
+  <!-- gallery grid -->
+  <div style="max-width: 1280px; margin: 0 auto; padding: clamp(56px,7vw,96px) clamp(20px,4vw,44px);">
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; border-bottom: 2px solid var(--t-ink); padding-bottom: 22px;">
+      <h2 style="margin: 0; font-size: clamp(30px,4vw,46px); font-weight: 800; letter-spacing: -0.04em; text-transform: uppercase;">{mlang en}Inside the academy{mlang}{mlang ar}من داخل الأكاديمية{mlang}</h2>
+      <a href="#" style="font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--t-accent); text-decoration: none;">{mlang en}All images{mlang}{mlang ar}كل الصور{mlang}</a>
+    </div>
+    <div style="margin-top: 32px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 2px; background: var(--t-ink); padding: 2px;">
+      <div style="grid-column: span 2; min-height: 300px; background: repeating-linear-gradient(135deg, #EDE9DF 0 12px, #F6F4EE 12px 24px); display: grid; place-items: center; color: #8F8B80; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700;">{mlang en}Photo · main room{mlang}{mlang ar}صورة · القاعة الرئيسية{mlang}</div>
+      <div style="min-height: 148px; background: repeating-linear-gradient(135deg, #EDE9DF 0 12px, #F6F4EE 12px 24px); display: grid; place-items: center; color: #8F8B80; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700;">{mlang en}Photo{mlang}{mlang ar}صورة{mlang}</div>
+      <div style="min-height: 148px; background: repeating-linear-gradient(135deg, #EDE9DF 0 12px, #F6F4EE 12px 24px); display: grid; place-items: center; color: #8F8B80; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700;">{mlang en}Photo{mlang}{mlang ar}صورة{mlang}</div>
+      <div style="min-height: 148px; background: repeating-linear-gradient(135deg, #EDE9DF 0 12px, #F6F4EE 12px 24px); display: grid; place-items: center; color: #8F8B80; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700;">{mlang en}Photo{mlang}{mlang ar}صورة{mlang}</div>
+      <div style="min-height: 148px; background: var(--t-accent); color: var(--t-on-accent); display: grid; place-items: center; font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 700; text-align: center; padding: 20px;">{mlang en}Learn from<br>the best{mlang}{mlang ar}تعلّم من<br>الأفضل{mlang}</div>
+    </div>
+  </div>
+  <!-- testimonials (dark band) -->
+  <div style="background: var(--t-dark); color: #fff;">
+    <div style="max-width: 1280px; margin: 0 auto; padding: clamp(56px,7vw,88px) clamp(20px,4vw,44px);">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0;">
+        <div style="padding: 0 clamp(0px,3vw,40px); padding-inline-start: 0; border-inline-end: 1px solid var(--t-dark-border);">
+          <div style="color: var(--t-accent); font-size: 13px; letter-spacing: 0.14em;">★★★★★</div>
+          <p style="margin: 22px 0 0; font-size: 19px; line-height: 1.65; font-weight: 500;">{mlang en}“Placeholder testimonial about the course experience and the outcome it led to.”{mlang}{mlang ar}«نص بديل لرأي أحد المتعلمين عن تجربته في الدورة والنتيجة التي وصل إليها.»{mlang}</p>
+          <div style="font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--t-dark-muted2); margin-top: 26px;">{mlang en}Learner · Graduate 2025{mlang}{mlang ar}متعلم · دفعة ٢٠٢٥{mlang}</div>
+        </div>
+        <div style="padding: 0 clamp(0px,3vw,40px); border-inline-end: 1px solid var(--t-dark-border);">
+          <div style="color: var(--t-accent); font-size: 13px; letter-spacing: 0.14em;">★★★★★</div>
+          <p style="margin: 22px 0 0; font-size: 19px; line-height: 1.65; font-weight: 500;">{mlang en}“Placeholder testimonial about the course experience and the outcome it led to.”{mlang}{mlang ar}«نص بديل لرأي أحد المتعلمين عن تجربته في الدورة والنتيجة التي وصل إليها.»{mlang}</p>
+          <div style="font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--t-dark-muted2); margin-top: 26px;">{mlang en}Learner · Graduate 2025{mlang}{mlang ar}متعلمة · دفعة ٢٠٢٥{mlang}</div>
+        </div>
+        <div style="padding: 0 clamp(0px,3vw,40px); padding-inline-end: 0;">
+          <div style="color: var(--t-accent); font-size: 13px; letter-spacing: 0.14em;">★★★★★</div>
+          <p style="margin: 22px 0 0; font-size: 19px; line-height: 1.65; font-weight: 500;">{mlang en}“Placeholder testimonial about the course experience and the outcome it led to.”{mlang}{mlang ar}«نص بديل لرأي أحد المتعلمين عن تجربته في الدورة والنتيجة التي وصل إليها.»{mlang}</p>
+          <div style="font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--t-dark-muted2); margin-top: 26px;">{mlang en}Learner · Graduate 2024{mlang}{mlang ar}متعلم · دفعة ٢٠٢٤{mlang}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- faq -->
+  <div style="max-width: 1000px; margin: 0 auto; padding: clamp(56px,7vw,92px) clamp(20px,4vw,44px);">
+    <h2 style="margin: 0 0 34px; font-size: clamp(28px,3.4vw,40px); font-weight: 800; letter-spacing: -0.04em; text-transform: uppercase;">{mlang en}Common questions{mlang}{mlang ar}أسئلة متكررة{mlang}</h2>
+    <div style="border-top: 2px solid var(--t-ink);">
+      <details style="border-bottom: 1px solid var(--t-border); padding: 26px 0;" open>
+        <summary style="display: flex; align-items: baseline; gap: 22px; cursor: pointer; list-style: none;">
+          <span style="font-size: 11px; letter-spacing: 0.16em; color: var(--t-accent); font-weight: 700;">01</span>
+          <span style="flex: 1; font-size: 19px; font-weight: 700; letter-spacing: -0.01em;">{mlang en}How long do I keep access to a course?{mlang}{mlang ar}كم تستمر صلاحية الوصول للدورة؟{mlang}</span>
+          <span style="color: var(--t-accent); font-size: 18px;">−</span>
+        </summary>
+        <p style="margin: 16px 0 0; padding-inline-start: 33px; font-size: 15px; line-height: 1.85; color: var(--t-muted); max-width: 720px;">{mlang en}Placeholder answer text. Replace with the academy's own policy.{mlang}{mlang ar}نص إجابة بديل. استبدله بسياسة الأكاديمية.{mlang}</p>
+      </details>
+      <details style="border-bottom: 1px solid var(--t-border); padding: 26px 0;">
+        <summary style="display: flex; align-items: baseline; gap: 22px; cursor: pointer; list-style: none;">
+          <span style="font-size: 11px; letter-spacing: 0.16em; color: var(--t-accent); font-weight: 700;">02</span>
+          <span style="flex: 1; font-size: 19px; font-weight: 700; letter-spacing: -0.01em;">{mlang en}Are certificates accredited?{mlang}{mlang ar}هل الشهادات معتمدة؟{mlang}</span>
+          <span style="color: var(--t-muted2); font-size: 18px;">+</span>
+        </summary>
+        <p style="margin: 16px 0 0; padding-inline-start: 33px; font-size: 15px; line-height: 1.85; color: var(--t-muted); max-width: 720px;">{mlang en}Placeholder answer text.{mlang}{mlang ar}نص إجابة بديل.{mlang}</p>
+      </details>
+      <details style="border-bottom: 1px solid var(--t-border); padding: 26px 0;">
+        <summary style="display: flex; align-items: baseline; gap: 22px; cursor: pointer; list-style: none;">
+          <span style="font-size: 11px; letter-spacing: 0.16em; color: var(--t-accent); font-weight: 700;">03</span>
+          <span style="flex: 1; font-size: 19px; font-weight: 700; letter-spacing: -0.01em;">{mlang en}Can I pay in instalments?{mlang}{mlang ar}هل يمكن الدفع على أقساط؟{mlang}</span>
+          <span style="color: var(--t-muted2); font-size: 18px;">+</span>
+        </summary>
+        <p style="margin: 16px 0 0; padding-inline-start: 33px; font-size: 15px; line-height: 1.85; color: var(--t-muted); max-width: 720px;">{mlang en}Placeholder answer text.{mlang}{mlang ar}نص إجابة بديل.{mlang}</p>
+      </details>
+      <details style="border-bottom: 1px solid var(--t-border); padding: 26px 0;">
+        <summary style="display: flex; align-items: baseline; gap: 22px; cursor: pointer; list-style: none;">
+          <span style="font-size: 11px; letter-spacing: 0.16em; color: var(--t-accent); font-weight: 700;">04</span>
+          <span style="flex: 1; font-size: 19px; font-weight: 700; letter-spacing: -0.01em;">{mlang en}Do you offer team licences?{mlang}{mlang ar}هل تتوفر تراخيص للفرق؟{mlang}</span>
+          <span style="color: var(--t-muted2); font-size: 18px;">+</span>
+        </summary>
+        <p style="margin: 16px 0 0; padding-inline-start: 33px; font-size: 15px; line-height: 1.85; color: var(--t-muted); max-width: 720px;">{mlang en}Placeholder answer text.{mlang}{mlang ar}نص إجابة بديل.{mlang}</p>
+      </details>
+    </div>
+  </div>
+  <script>
+    /* Shared hover effects for .nit-btn-solid / .nit-btn-ghost / cards. Idempotent. */
+    (function () {
+      if (document.getElementById('nit-hoverfx-style')) { return; }
+      var css =
+        '.nit-btn-solid,.nit-btn-ghost,[data-nit-copy],[data-nit-scroll],[data-nit-coupons-scroll],[data-nit-categories]>a,[data-nit-my-courses]>div,[data-nit-about-card]{transition:background-color .2s ease,background .2s ease,color .2s ease,border-color .2s ease,transform .2s ease,box-shadow .2s ease}' +
+        '.nit-btn-solid:not(:disabled):hover{filter:brightness(1.08);transform:translateY(-2px);box-shadow:0 14px 30px rgba(20,18,31,.28)}' +
+        '.nit-btn-ghost:not(:disabled):hover{border-color:var(--nit-brand-primary)!important;color:#fff;transform:translateY(-2px)}' +
+        '[data-nit-copy]:hover{filter:brightness(1.12);transform:translateY(-2px)}' +
+        '[data-nit-scroll]:hover,[data-nit-coupons-scroll]:hover{transform:translateY(-50%) scale(1.08)!important}' +
+        '[data-nit-categories]>a:hover{background:var(--nit-brand-primary)!important;color:#fff!important}' +
+        '[data-nit-categories]>a:hover *{color:#fff!important}' +
+        '[data-nit-my-courses]>div:not([data-nit-my-course-card]):not([data-nit-my-courses-empty]):hover{transform:translateY(-4px)}' +
+        '[data-nit-about-card]:hover{border-color:var(--nit-brand-primary)!important}';
+      var st = document.createElement('style');
+      st.id = 'nit-hoverfx-style';
+      st.textContent = css;
+      (document.head || document.documentElement).appendChild(st);
+    })();
+  </script>
+</div>

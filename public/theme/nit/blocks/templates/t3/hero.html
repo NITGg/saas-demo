@@ -1,0 +1,70 @@
+<!-- NIT homepage template T3 · Academic Classic — HERO section.
+     Paste into an HTML nit_section block on the FRONT PAGE (Site home).
+     HYBRID PALETTE: structure = template's own navy/cream neutrals; accent/CTA =
+     brand palette (--nit-brand-primary / --nit-brand-accent) so the academy's
+     brand colour flows through the gold role. Bilingual via {mlang}.
+     The design's utility bar + fake navbar are dropped (the theme renders the
+     real navbar). Signature font (Almarai + Libre Baskerville) is injected once. -->
+<div dir="auto" data-nit-section="hero"
+  style="--t-accent: var(--nit-brand-primary); --t-accent-2: var(--nit-brand-accent); --t-on-accent: var(--nit-brand-on-primary, #fff); --t-accent-soft: color-mix(in srgb, var(--nit-brand-primary) 12%, transparent); --t-accent-bright: color-mix(in srgb, var(--nit-brand-primary) 55%, #fff); --t-ink: #0B2545; --t-bg: #FBF9F4; --t-surface: #FFFFFF; --t-navy: #0B2545; --t-on-navy: #C3CEDC; --t-muted: #33475F; --t-muted2: #6A7789; --t-border: #DED6C6; font-family: 'Almarai','IBM Plex Sans Arabic',system-ui,sans-serif; background: var(--t-navy); color: #fff; position: relative; overflow: hidden;">
+  <div style="position: absolute; inset: 0; background: radial-gradient(760px 420px at 78% 12%, color-mix(in srgb, var(--t-accent) 24%, transparent), transparent 70%);"></div>
+  <div style="position: absolute; inset-inline-start: 0; top: 0; bottom: 0; width: 6px; background: linear-gradient(180deg, var(--t-accent), transparent);"></div>
+  <div style="position: relative; max-width: 1220px; margin: 0 auto; padding: clamp(56px,7vw,92px) 20px clamp(60px,7vw,96px); display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: clamp(44px,5vw,70px); align-items: center;">
+    <div>
+      <div style="display: inline-flex; align-items: center; gap: 10px; border: 1px solid color-mix(in srgb, var(--t-accent) 50%, transparent); color: var(--t-accent-bright); padding: 8px 16px; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 700;">
+        <span style="width: 5px; height: 5px; background: var(--t-accent); display: block;"></span>
+        {mlang en}Admissions open · Autumn term{mlang}{mlang ar}التسجيل مفتوح · الفصل الخريفي{mlang}
+      </div>
+      <h1 style="margin: 28px 0 0; font-family: 'Libre Baskerville','Amiri','Almarai',Georgia,serif; font-size: clamp(38px,6vw,60px); line-height: 1.16; letter-spacing: -0.01em; font-weight: 700;">
+        {mlang en}A rigorous education,<br>faithfully <span style="color: var(--t-accent-bright); font-style: italic;">delivered</span>{mlang}{mlang ar}تعليم رصين<br>وأداء <span style="color: var(--t-accent-bright);">موثوق</span>{mlang}
+      </h1>
+      <div style="width: 74px; height: 2px; background: var(--t-accent); margin: 30px 0;"></div>
+      <p style="margin: 0; font-size: 16px; line-height: 1.9; color: var(--t-on-navy); max-width: 500px;">
+        {mlang en}Accredited diplomas and professional certificates taught by a faculty of practitioners and academics.{mlang}{mlang ar}دبلومات معتمدة وشهادات مهنية تدرّسها هيئة من الأكاديميين والممارسين في الميدان.{mlang}
+      </p>
+      <div style="display: flex; gap: 14px; margin-top: 36px; flex-wrap: wrap;">
+        <a class="nit-btn-solid" href="/course/index.php" data-nit-btn=""
+          style="font-size: 14px; font-weight: 700; background: var(--t-accent); color: var(--t-on-accent); padding: 15px 30px; text-decoration: none;">{mlang en}Explore programmes{mlang}{mlang ar}استعرض البرامج{mlang}</a>
+        <a class="nit-btn-ghost" href="#nit-about" data-nit-btn=""
+          style="font-size: 14px; font-weight: 700; border: 1px solid rgba(255,255,255,0.32); color: #fff; padding: 15px 30px; text-decoration: none; background: transparent;">{mlang en}Book a visit{mlang}{mlang ar}احجز زيارة{mlang}</a>
+      </div>
+    </div>
+    <div style="position: relative;">
+      <div style="position: absolute; inset-inline-start: -18px; top: -18px; inset-inline-end: 18px; bottom: 18px; border: 2px solid color-mix(in srgb, var(--t-accent) 55%, transparent);"></div>
+      <div style="position: relative; aspect-ratio: 4/4.4; background: repeating-linear-gradient(135deg, #E7E2D6 0 12px, #F1ECE1 12px 24px); display: grid; place-items: center; color: #6E6A5C; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 700;">{mlang en}Campus photo{mlang}{mlang ar}صورة الحرم{mlang}</div>
+      <div style="position: absolute; inset-inline-end: 22px; bottom: -34px; background: var(--t-bg); color: var(--t-ink); padding: 20px 26px; border-bottom: 3px solid var(--t-accent); box-shadow: 0 20px 44px rgba(11,37,69,0.3); text-align: center;">
+        <div style="font-family: 'Libre Baskerville','Almarai',Georgia,serif; font-size: 30px; font-weight: 700;">28</div>
+        <div style="font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--t-muted2); margin-top: 4px; font-weight: 700;">{mlang en}Years{mlang}{mlang ar}عاماً{mlang}</div>
+      </div>
+    </div>
+  </div>
+  <script>
+    /* Load the T3 signature fonts once (Almarai + Libre Baskerville). Guarded. */
+    (function () {
+      if (document.getElementById('nit-tpl-font-t3')) { return; }
+      var l = document.createElement('link');
+      l.id = 'nit-tpl-font-t3';
+      l.rel = 'stylesheet';
+      l.href = 'https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap';
+      (document.head || document.documentElement).appendChild(l);
+    })();
+  </script>
+  <script>
+    /* Shared hover effects for .nit-btn-solid / .nit-btn-ghost / cards. Idempotent. */
+    (function () {
+      if (document.getElementById('nit-hoverfx-style')) { return; }
+      var css =
+        '.nit-btn-solid,.nit-btn-ghost,[data-nit-copy],[data-nit-scroll],[data-nit-coupons-scroll],[data-nit-categories]>a,[data-nit-my-courses]>div,[data-nit-about-card]{transition:background-color .2s ease,background .2s ease,color .2s ease,border-color .2s ease,transform .2s ease,box-shadow .2s ease}' +
+        '.nit-btn-solid:not(:disabled):hover{filter:brightness(1.06);transform:translateY(-2px);box-shadow:0 16px 34px rgba(11,37,69,.22)}' +
+        '.nit-btn-ghost:not(:disabled):hover{border-color:var(--nit-brand-primary)!important;transform:translateY(-2px);box-shadow:0 12px 26px rgba(11,37,69,.12)}' +
+        '[data-nit-copy]:hover{border-color:var(--nit-brand-primary)!important;transform:translateY(-2px)}' +
+        '[data-nit-scroll]:hover,[data-nit-coupons-scroll]:hover{transform:translateY(-50%) scale(1.08)!important}' +
+        '[data-nit-categories]>a:hover,[data-nit-my-courses]>div:not([data-nit-my-course-card]):not([data-nit-my-courses-empty]):hover{transform:translateY(-4px);box-shadow:0 22px 48px rgba(11,37,69,.16)}' +
+        '[data-nit-about-card]:hover{transform:translateY(-4px);border-color:var(--nit-brand-primary)!important}';
+      var st = document.createElement('style');
+      st.id = 'nit-hoverfx-style';
+      st.textContent = css;
+      (document.head || document.documentElement).appendChild(st);
+    })();
+  </script>
+</div>

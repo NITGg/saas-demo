@@ -1,0 +1,72 @@
+<!-- NIT homepage template T2 · Bold Gradient — ABOUT + stats strip.
+     Static, owner-editable copy. The gradient stats band reuses data-nit-stat so
+     the numbers count up to the real site totals. -->
+<div dir="auto" data-nit-section="about" id="nit-about"
+  style="--t-accent: var(--nit-brand-primary); --t-accent-2: var(--nit-brand-accent); --t-on-accent: var(--nit-brand-on-primary, #fff); --t-grad: linear-gradient(135deg, var(--t-accent), var(--t-accent-2)); --t-ink: #1B1035; --t-bg: #FFFFFF; --t-bg-alt: #F9F7FF; --t-muted: #5A5177; --t-muted2: #6B6386; --t-border: #EFE9FB; font-family: 'Plus Jakarta Sans','IBM Plex Sans Arabic',system-ui,sans-serif; background: var(--t-bg-alt); color: var(--t-ink);">
+  <div style="max-width: 1280px; margin: 0 auto; padding: clamp(56px,7vw,96px) 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: clamp(40px,5vw,72px); align-items: center;">
+    <div style="position: relative; padding: 18px;">
+      <div style="position: absolute; inset: 0; border-radius: 40px; background: var(--t-grad);"></div>
+      <div style="position: relative; aspect-ratio: 1/1.08; border-radius: 28px; background: repeating-linear-gradient(135deg, #EDE7FA 0 12px, #F6F2FF 12px 24px); display: grid; place-items: center; color: #9A8FB5; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 800;">{mlang en}Mentor photo{mlang}{mlang ar}صورة المدرب{mlang}</div>
+      <div style="position: absolute; inset-inline-end: -14px; bottom: 44px; background: #fff; border-radius: 18px; padding: 14px 18px; box-shadow: 0 18px 40px rgba(27,16,53,0.18);">
+        <div style="font-size: 24px; font-weight: 800; background: var(--t-grad); -webkit-background-clip: text; background-clip: text; color: transparent;">94%</div>
+        <div style="font-size: 11px; color: var(--t-muted2); font-weight: 600; margin-top: 2px;">{mlang en}hired in 6 months{mlang}{mlang ar}توظيف خلال ٦ أشهر{mlang}</div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size: 13px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--t-accent-2);">{mlang en}About us{mlang}{mlang ar}من نحن{mlang}</div>
+      <h2 style="margin: 12px 0 0; font-size: clamp(28px,3.6vw,44px); font-weight: 800; letter-spacing: -0.035em; line-height: 1.12;">{mlang en}Mentors who build, not just teach{mlang}{mlang ar}مدربون يعملون في المجال فعلاً{mlang}</h2>
+      <p style="margin: 20px 0 0; font-size: 16px; line-height: 1.8; color: var(--t-muted); max-width: 560px; font-weight: 500;">{mlang en}Placeholder paragraph about the academy's teaching model, the projects learners build and the support they get along the way. Replace with your own copy from the page editor.{mlang}{mlang ar}نص بديل يوضّح منهج الأكاديمية في التدريب والمشاريع التي ينفّذها المتعلمون والدعم الذي يحصلون عليه. استبدله بمحتواك من محرّر الصفحة.{mlang}</p>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-top: 32px;">
+        <div data-nit-about-card="" style="background: #fff; border: 1px solid var(--t-border); border-radius: 20px; padding: 22px; box-shadow: 0 12px 30px rgba(27,16,53,0.08);">
+          <div style="width: 36px; height: 36px; border-radius: 12px; background: var(--t-grad); display: grid; place-items: center; color: #fff; font-weight: 800;">1</div>
+          <div style="font-size: 15px; font-weight: 800; margin-top: 14px;">{mlang en}Project-based{mlang}{mlang ar}تعلّم بالمشاريع{mlang}</div>
+          <div style="font-size: 13px; color: var(--t-muted2); line-height: 1.6; margin-top: 6px; font-weight: 500;">{mlang en}Build real work you can show.{mlang}{mlang ar}تنفّذ أعمالاً حقيقية تعرضها.{mlang}</div>
+        </div>
+        <div data-nit-about-card="" style="background: #fff; border: 1px solid var(--t-border); border-radius: 20px; padding: 22px; box-shadow: 0 12px 30px rgba(27,16,53,0.08);">
+          <div style="width: 36px; height: 36px; border-radius: 12px; background: var(--t-grad); display: grid; place-items: center; color: #fff; font-weight: 800;">2</div>
+          <div style="font-size: 15px; font-weight: 800; margin-top: 14px;">{mlang en}Career support{mlang}{mlang ar}دعم مهني{mlang}</div>
+          <div style="font-size: 13px; color: var(--t-muted2); line-height: 1.6; margin-top: 6px; font-weight: 500;">{mlang en}Guidance until you land a role.{mlang}{mlang ar}إرشاد حتى تحصل على وظيفة.{mlang}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- stats strip (gradient structural band) -->
+  <div style="background: var(--t-grad);">
+    <div style="max-width: 1280px; margin: 0 auto; padding: clamp(44px,5vw,60px) 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px;">
+      <div style="background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.2); border-radius: 22px; padding: 26px; color: #fff;">
+        <div style="font-size: clamp(32px,4vw,40px); font-weight: 800; letter-spacing: -0.03em;"><span data-nit-stat="courses">0</span>+</div>
+        <div style="font-size: 13px; color: rgba(255,255,255,0.84); margin-top: 6px; font-weight: 600;">{mlang en}Courses{mlang}{mlang ar}دورة{mlang}</div>
+      </div>
+      <div style="background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.2); border-radius: 22px; padding: 26px; color: #fff;">
+        <div style="font-size: clamp(32px,4vw,40px); font-weight: 800; letter-spacing: -0.03em;"><span data-nit-stat="students">0</span>+</div>
+        <div style="font-size: 13px; color: rgba(255,255,255,0.84); margin-top: 6px; font-weight: 600;">{mlang en}Learners{mlang}{mlang ar}متعلم{mlang}</div>
+      </div>
+      <div style="background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.2); border-radius: 22px; padding: 26px; color: #fff;">
+        <div style="font-size: clamp(32px,4vw,40px); font-weight: 800; letter-spacing: -0.03em;"><span data-nit-stat="categories">0</span></div>
+        <div style="font-size: 13px; color: rgba(255,255,255,0.84); margin-top: 6px; font-weight: 600;">{mlang en}Specialities{mlang}{mlang ar}تخصص{mlang}</div>
+      </div>
+      <div style="background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.2); border-radius: 22px; padding: 26px; color: #fff;">
+        <div style="font-size: clamp(32px,4vw,40px); font-weight: 800; letter-spacing: -0.03em;">94%</div>
+        <div style="font-size: 13px; color: rgba(255,255,255,0.84); margin-top: 6px; font-weight: 600;">{mlang en}Hired{mlang}{mlang ar}نسبة التوظيف{mlang}</div>
+      </div>
+    </div>
+  </div>
+  <script>
+    /* Shared hover effects (T2 flavour). Idempotent via id. */
+    (function () {
+      if (document.getElementById('nit-hoverfx-style')) { return; }
+      var css =
+        '.nit-btn-solid,.nit-btn-ghost,[data-nit-copy],[data-nit-scroll],[data-nit-coupons-scroll],[data-nit-categories]>a,[data-nit-my-courses]>div,[data-nit-about-card]{transition:background-color .2s ease,background .2s ease,color .2s ease,border-color .2s ease,transform .2s ease,box-shadow .2s ease}' +
+        '.nit-btn-solid:not(:disabled):hover{filter:brightness(1.06);transform:translateY(-2px);box-shadow:0 16px 34px rgba(27,16,53,.28)}' +
+        '.nit-btn-ghost:not(:disabled):hover{border-color:var(--nit-brand-primary)!important;transform:translateY(-2px);box-shadow:0 12px 26px rgba(27,16,53,.16)}' +
+        '[data-nit-copy]:hover{border-color:var(--nit-brand-primary)!important;transform:translateY(-2px)}' +
+        '[data-nit-scroll]:hover,[data-nit-coupons-scroll]:hover{transform:translateY(-50%) scale(1.08)!important}' +
+        '[data-nit-categories]>a:hover,[data-nit-my-courses]>div:not([data-nit-my-course-card]):not([data-nit-my-courses-empty]):hover{transform:translateY(-6px);box-shadow:0 22px 48px rgba(27,16,53,.16)}' +
+        '[data-nit-about-card]:hover{transform:translateY(-4px);border-color:var(--nit-brand-primary)!important}';
+      var st = document.createElement('style');
+      st.id = 'nit-hoverfx-style';
+      st.textContent = css;
+      (document.head || document.documentElement).appendChild(st);
+    })();
+  </script>
+</div>
