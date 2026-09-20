@@ -1,6 +1,6 @@
 # Theme Template System — plan & status
 
-_Last updated: 2026-09-20 · branch `main` · image `v2026.09.68`_
+_Last updated: 2026-09-20 · branch `main` · image `v2026.09.69`_
 
 > **North star.** Every academy picks one of ten theme templates (T1–T10). That
 > template drives the **whole** storefront and app — homepage, catalog, course,
@@ -31,10 +31,12 @@ in-repo copy the team edits alongside the code.
 
 ## The gap we're closing
 
-**All nine T1 app screens are built with real data and real function — but their
-look is hardcoded to T1's light palette.** A T4 "Dark Premium" academy today would
-get a T4 homepage and a T1 (light) catalog. **Phase 2 — the per-template token
-layer — is the fix**, and it turns T2–T10 into *token sets*, not ten rebuilds.
+**Closed by Phase 2 (the per-template token layer).** The app screens no longer
+hardcode T1: they inherit `--t-*` structure tokens from the active template on
+`:root`, so switching an academy to e.g. T4 "Dark Premium" flips catalog,
+dashboard, course, checkout, profile and player to dark with the brand accent.
+Verified live (checkout modal card `#07090D` under T4). The one holdout is the
+auth screens (login/signup), intentionally brand-panel-driven — a follow-up.
 
 ---
 
@@ -43,14 +45,14 @@ layer — is the fix**, and it turns T2–T10 into *token sets*, not ten rebuild
 | Surface | Design + function (T1) | Template-aware | T2–T10 |
 |---|---|---|---|
 | Homepage (`site-index`) | ✅ Done | ✅ token-driven | 🔶 sections exist · chrome+hooks pending |
-| Login / Signup (core overrides) | ✅ Done | ⬜ next | ⬜ via token set |
-| Catalog (`local/nit_category`) | ✅ Done · real filter/sort | ⬜ next | ⬜ via token set |
-| Dashboard (`/my`) | ✅ Done · real progress | ⬜ next | ⬜ via token set |
-| Course landing (`format_topics`) | ✅ Done · prospects only | ⬜ next | ⬜ via token set |
-| Checkout (Kashier modal) | ✅ Done · coupon/offer live | ⬜ next | ⬜ via token set |
-| Profile (`user/edit`) | ✅ Done · real form | ⬜ next | ⬜ via token set |
-| Player (`mod_vimeo` view) | ✅ Done · real embed + nav | ⬜ next | ⬜ via token set |
-| Edit page (front-page edit mode) | ✅ Done · real toolbar | ⬜ next | ⬜ via token set |
+| Login / Signup (core overrides) | ✅ Done | 🔶 follow-up (brand panel) | 🔶 via token set |
+| Catalog (`local/nit_category`) | ✅ Done · real filter/sort | ✅ reads `:root` tokens | ✅ auto via token set |
+| Dashboard (`/my`) | ✅ Done · real progress | ✅ reads `:root` tokens | ✅ auto via token set |
+| Course landing (`format_topics`) | ✅ Done · prospects only | ✅ reads `:root` tokens | ✅ auto via token set |
+| Checkout (Kashier modal) | ✅ Done · coupon/offer live | ✅ reads `:root` tokens | ✅ auto via token set |
+| Profile (`user/edit`) | ✅ Done · real form | ✅ reads `:root` tokens | ✅ auto via token set |
+| Player (`mod_vimeo` view) | ✅ Done · real embed + nav | ✅ reads `:root` tokens | ✅ auto via token set |
+| Edit page (front-page edit mode) | ✅ Done · real toolbar | ➖ dark editing chrome | ➖ n/a |
 | Selector + provisioning (nit2 → Moodle) | ✅ Done | ✅ template flows e2e | 🔶 per-template content schema |
 
 ---
@@ -79,11 +81,14 @@ layer — is the fix**, and it turns T2–T10 into *token sets*, not ten rebuild
 - **Edit page** — front-page edit toolbar via `before_standard_top_of_body_html`
   hook; real View page / Done editing; no fake publish (front-page editing is live).
 
-### Phase 2 — Template token layer 🔶 Next up (the multiplier)
-- Extract T1's hardcoded structure into a single token set (one source of truth).
-- Make every app screen read the **active template's** tokens (drop hardcoded T1).
-- Define token sets for T2–T10 (bg/ink/surface/border/font per template).
-- Inject the active token set site-wide from config `theme_nit/homepage_template`.
+### Phase 2 — Template token layer ✅ Done (the multiplier)
+- ✅ Token registry for T1–T10 (`theme_nit_template_tokens` in `theme/nit/lib.php`).
+- ✅ Active set emitted on `:root` (`theme_nit_template_tokens_scss` → `extra_scss`);
+  recompiles on template change (`purge_all_caches` in the applier).
+- ✅ App screens inherit `--t-*` (dashboard, catalog, course, checkout, profile,
+  player) — drop hardcoded T1, keep it as fallback; accent still from brand.
+- ✅ Verified: checkout modal flips to dark under T4 (`#07090D`).
+- 🔶 Follow-up: auth (login/signup) token-awareness; per-template font/radius polish.
 
 ### Phase 3 — T2–T10 parity across every surface
 - Homepage chrome + content hooks for T2–T10 (nav · app-band · footer).
