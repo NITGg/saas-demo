@@ -1122,9 +1122,46 @@
         var navtools = document.querySelector('.nit-navbar-tools') || document.querySelector('.nit-navbar-editswitch');
         (navtools || document.body).appendChild(coloursBtn);
 
-        // Activate with Moodle's native "Edit mode" toggle (body.editing) — no
-        // separate button. React live if the user flips it without a reload.
         var isEditing = function () { return document.body.classList.contains('editing'); };
+
+        // The front page has no Moodle edit-mode switch (it uses a chrome-free
+        // layout), and it ignores the ?edit GET toggle — so an owner can't turn
+        // editing ON from here. Give them the design's "Edit page" button, which
+        // POSTs to Moodle's real editmode endpoint (setmode=on) and returns to the
+        // page in edit mode → the pencils below activate. Shown only when NOT
+        // already editing (in edit mode, the top "Editing homepage" toolbar has the
+        // "Done editing" control).
+        if (!isEditing()) {
+            var mcfg = (window.M && M.cfg) || {};
+            var editBtn = document.createElement('button');
+            editBtn.type = 'button';
+            editBtn.className = 'nit-editpage-btn';
+            editBtn.setAttribute('style',
+                'display:inline-flex;align-items:center;gap:8px;cursor:pointer;font:inherit;'
+                + 'font-size:13px;font-weight:600;background:#FFF7E6;border:1px solid #F0DDB0;'
+                + 'color:#8A6A12;padding:9px 14px;border-radius:9px;');
+            editBtn.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:#E0A100;display:block;"></span>'
+                + t('editpage', 'Edit page');
+            editBtn.addEventListener('click', function () {
+                var f = document.createElement('form');
+                f.method = 'post';
+                f.action = (mcfg.wwwroot || '') + '/editmode.php';
+                var add = function (n, v) {
+                    var i = document.createElement('input');
+                    i.type = 'hidden'; i.name = n; i.value = v; f.appendChild(i);
+                };
+                add('setmode', 'on');
+                add('sesskey', mcfg.sesskey || (CFG && CFG.sesskey) || '');
+                add('pageurl', window.location.href);
+                add('context', mcfg.contextid || '');
+                document.body.appendChild(f);
+                f.submit();
+            });
+            (navtools || document.body).appendChild(editBtn);
+        }
+
+        // Activate with Moodle's native "Edit mode" toggle (body.editing). React
+        // live if the user flips it without a reload.
         setEditing(isEditing());
         try {
             new MutationObserver(function () { setEditing(isEditing()); })
