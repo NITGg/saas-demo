@@ -79,6 +79,19 @@ class hook_callbacks {
             return;
         }
 
+        // Route Moodle's default course index / category browse to the T1
+        // catalogue (local_nit_category), so every "all courses" / "all
+        // categories" link lands on the designed page. Course MANAGEMENT
+        // (/course/management.php, a different pagetype) is untouched, so staff
+        // still have the real management UI. Runs on before_http_headers — early
+        // enough for a clean redirect before any output.
+        $pt = $PAGE->pagetype ?? '';
+        if (($pt === 'course-index' || $pt === 'course-index-category')
+                && file_exists($GLOBALS['CFG']->dirroot . '/local/nit_category/index.php')) {
+            $catid = optional_param('categoryid', 0, PARAM_INT);
+            redirect(new \moodle_url('/local/nit_category/index.php', $catid ? ['id' => $catid] : []));
+        }
+
         // Is this the app's WebView? Sticky for the rest of the (WebView-only) session.
         $isapp = !empty($SESSION->theme_nit_appembed)
             || \core_useragent::is_moodle_app()
