@@ -89,6 +89,17 @@
         }
     }
 
+    // Moodle 5.x renders the collapsible fieldset title as an <h3> (the <legend>
+    // is visually-hidden), so scale that down to the T1 section-header size too.
+    .mform fieldset h3 {
+        font-family: $t-font;
+        font-size: 15px !important;
+        font-weight: 600 !important;
+        letter-spacing: -0.01em;
+        color: var(--t-ink);
+        margin: 0;
+    }
+
     .fcontainer {
         padding: 22px;
     }
