@@ -110,10 +110,19 @@ class homepage_content {
             $t('app_text', 'app', 'App band text', true),
             ['key' => 'app_ios', 'type' => 'link', 'group' => 'app', 'label' => 'App Store URL'],
             ['key' => 'app_android', 'type' => 'link', 'group' => 'app', 'label' => 'Google Play URL'],
+            ['key' => 'app_screen', 'type' => 'image', 'group' => 'app', 'label' => 'App screenshot (phone frame)'],
             // Contact.
             $t('contact_email', 'contact', 'Contact email'),
             $t('contact_phone', 'contact', 'Contact phone'),
             $t('contact_address', 'contact', 'Contact address', true),
+            ['key' => 'contact_map', 'type' => 'link', 'group' => 'contact', 'label' => 'Google Maps link (place or ?q=address)'],
+            ['key' => 'social_facebook', 'type' => 'link', 'group' => 'contact', 'label' => 'Facebook'],
+            ['key' => 'social_instagram', 'type' => 'link', 'group' => 'contact', 'label' => 'Instagram'],
+            ['key' => 'social_youtube', 'type' => 'link', 'group' => 'contact', 'label' => 'YouTube'],
+            ['key' => 'social_tiktok', 'type' => 'link', 'group' => 'contact', 'label' => 'TikTok'],
+            ['key' => 'social_x', 'type' => 'link', 'group' => 'contact', 'label' => 'X (Twitter)'],
+            ['key' => 'social_linkedin', 'type' => 'link', 'group' => 'contact', 'label' => 'LinkedIn'],
+            ['key' => 'social_whatsapp', 'type' => 'link', 'group' => 'contact', 'label' => 'WhatsApp (https://wa.me/…)'],
         ];
     }
 
@@ -201,7 +210,7 @@ class homepage_content {
         global $DB;
         $log = [];
         $content = self::normalise($manifest);
-        if (!$content['text'] && !$content['href'] && !$content['img']) {
+        if (!$content['text'] && $content['href'] === [] && !$content['img']) {
             $log[] = 'no content fields to apply';
             return true;
         }
@@ -276,7 +285,9 @@ class homepage_content {
 
         $hrefsrc = isset($m['href']) && is_array($m['href']) ? $m['href'] : $m;
         foreach ($linkkeys as $k) {
-            if (!empty($hrefsrc[$k]) && is_string($hrefsrc[$k])) {
+            if (array_key_exists($k, $hrefsrc) && is_string($hrefsrc[$k])) {
+                // '' is a valid value: it clears the link (the front page hides
+                // empty social / map hooks).
                 $out['href'][$k] = clean_param(trim($hrefsrc[$k]), PARAM_URL);
             }
         }
@@ -335,9 +346,11 @@ class homepage_content {
                 while ($node->firstChild) {
                     $node->removeChild($node->firstChild);
                 }
-                // The value is a {mlang} / plain string; store as a text node so the
-                // multilang filter processes it at render time.
-                $node->appendChild($dom->createTextNode($val));
+                // The value is a {mlang} / plain string that may carry a little
+                // inline markup (line breaks, an accent <span>) — the templates'
+                // own defaults do. Anything beyond that whitelist is escaped, so
+                // an owner can never inject scripts/attributes through the editor.
+                self::append_rich_text($dom, $node, $val);
                 $changed = true;
             }
         }
@@ -373,8 +386,55 @@ class homepage_content {
         return $out;
     }
 
-    /** Set/replace the background-image on an element's inline style. */
+    /**
+     * Append a text value that may contain a small inline-markup subset
+     * (<br>, <span style>, <strong>, <em>, <b>, <i>) as real nodes; everything
+     * else is escaped text. Newlines become <br> so a multi-line textarea value
+     * renders as typed.
+     */
+    private static function append_rich_text(\DOMDocument $dom, \DOMElement $node, string $val): void {
+        $val = str_replace(["\r\n", "\r"], "\n", $val);
+        $val = str_replace("\n", '<br>', $val);
+        // Whitelist tags; drop any on* / javascript: attributes on what remains.
+        $val = strip_tags($val, ['br', 'span', 'strong', 'em', 'b', 'i']);
+        $val = preg_replace('/\s+on\w+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $val);
+        $val = preg_replace('/\s+(href|src)\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $val);
+        if (strpos($val, '<') === false) {
+            $node->appendChild($dom->createTextNode($val));
+            return;
+        }
+        $frag = new \DOMDocument();
+        $prev = libxml_use_internal_errors(true);
+        $ok = $frag->loadHTML('<?xml encoding="utf-8"?><div data-nitfrag="1">' . $val . '</div>',
+            LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_clear_errors();
+        libxml_use_internal_errors($prev);
+        $wrap = $ok ? $frag->getElementsByTagName('div')->item(0) : null;
+        if (!$wrap) {
+            $node->appendChild($dom->createTextNode(strip_tags($val)));
+            return;
+        }
+        foreach (iterator_to_array($wrap->childNodes) as $c) {
+            $node->appendChild($dom->importNode($c, true));
+        }
+    }
+
+    /**
+     * Set/replace the background-image on an element's inline style. The image
+     * hooks ship a "placeholder" caption inside them ("Hero photo"); once a real
+     * image is set the caption is removed — unless the box also carries other
+     * hooks / real content (then only the style changes).
+     */
     private static function set_bg(\DOMElement $node, string $datauri): void {
+        if ($node->hasChildNodes()) {
+            $xp = new \DOMXPath($node->ownerDocument);
+            $real = $xp->query('.//*[@data-nit-edit or @data-nit-edit-img or @data-nit-edit-href or @data-nit-stat or @data-nit-logo]', $node);
+            if ($real->length === 0) {
+                while ($node->firstChild) {
+                    $node->removeChild($node->firstChild);
+                }
+            }
+        }
         $style = $node->getAttribute('style');
         // Drop any existing background-image, keep the rest (position/size/repeat).
         $style = preg_replace('/background-image\s*:[^;]*;?/i', '', $style);

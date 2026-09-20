@@ -127,7 +127,11 @@
     // CONTRAST with the primary — not follow the body Text primary, which on a
     // light palette is near-black and vanishes on a dark primary. color-contrast()
     // returns black or white for this academy's Group-1 primary.
-    --nit-brand-on-primary: #{color-contrast($nit-b-g1-primary)};
+    @if $nit-b-g1-onprimary == auto {
+        --nit-brand-on-primary: #{color-contrast($nit-b-g1-primary)};
+    } @else {
+        --nit-brand-on-primary: #{$nit-b-g1-onprimary};
+    }
 }
 
 // --- Group switch classes. A component (or any wrapper) carrying one of these

@@ -1,0 +1,51 @@
+// Homepage / template interaction states.
+//
+// The section templates ship inline hover effects that only brighten (filter)
+// — invisible on many brand colours — and label colours that sometimes follow
+// the body text instead of the primary fill. These rules sit above the stored
+// section HTML so every template gets the same, visible, brand-correct states:
+// solid buttons darken on hover and always use the on-primary label; ghost
+// buttons and links take the accent-text colour; footer links go white.
+body.path-site,
+body.pagelayout-frontpage {
+    .nit-btn-solid,
+    [data-nit-buy],
+    [data-nit-section] .btn-primary {
+        color: var(--nit-brand-on-primary) !important;
+        transition: background-color .18s ease, color .18s ease, transform .18s ease, box-shadow .18s ease;
+
+        &:hover,
+        &:focus-visible {
+            background: color-mix(in srgb, var(--nit-brand-primary) 84%, #000) !important;
+            color: var(--nit-brand-on-primary) !important;
+            filter: none !important;
+        }
+    }
+
+    .nit-btn-ghost:hover,
+    .nit-btn-ghost:focus-visible {
+        color: var(--nit-brand-primary) !important;
+        border-color: var(--nit-brand-primary) !important;
+        filter: none !important;
+    }
+
+    [data-nit-section]:not([data-nit-section="footer"]) a:not(.nit-btn-solid):not(.nit-btn-ghost):not([data-nit-edit-img]):not([data-nit-map]) {
+        transition: color .15s ease, opacity .15s ease;
+
+        &:hover {
+            color: var(--nit-brand-primary) !important;
+        }
+    }
+
+    [data-nit-section="footer"] a:not(.nit-btn-solid):hover {
+        color: #fff !important;
+        opacity: 1;
+    }
+
+    // Social / method tiles in Contact.
+    [data-nit-social] a:hover {
+        border-color: var(--nit-brand-primary) !important;
+        color: var(--nit-brand-primary) !important;
+        transform: translateY(-2px);
+    }
+}

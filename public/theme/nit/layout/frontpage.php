@@ -241,6 +241,16 @@ $templatecontext = [
     'nitcoursesnoscript' => $nitcoursesnoscript,
     // NIT: category view-models exposed as window.NIT_CATEGORIES.
     'nitcategoriesjson' => json_encode(theme_nit_get_categories(12), JSON_UNESCAPED_UNICODE),
+    // Owner picks (which real items each data section shows; null = all) and the
+    // licence flags that hide unlicensed sections (subscriptions / coupons).
+    'nitpicksjson' => json_encode(\theme_nit\local\home_picks::all(), JSON_UNESCAPED_UNICODE),
+    'nitlicencejson' => json_encode(\theme_nit\local\home_picks::licence_flags()),
+    'nitfooterlinksjson' => theme_nit_footer_links_json(),
+    // Real course reviews for the testimonials section (owner's pick, else the
+    // three newest with text).
+    'nitreviewsjson' => json_encode(\theme_nit\local\home_picks::reviews(
+        \theme_nit\local\home_picks::get('testimonials') ? 12 : 3,
+        \theme_nit\local\home_picks::get('testimonials')), JSON_UNESCAPED_UNICODE),
     // NIT: full-width region payloads for theme_nit/frontpage.
     'fullwidthtop' => $fullwidthtop,
     'hasfullwidthtop' => $hasfullwidthtop,
@@ -314,6 +324,7 @@ if (\theme_nit\local\editor::can_edit()) {
         'footer'        => \theme_nit\local\editor::footer_fields(),
         'palette'       => [
             'primary'    => (string) get_config('theme_nit', 'brandcolour_g1_primary'),
+            'onprimary'  => (string) get_config('theme_nit', 'brandcolour_g1_onprimary'),
             'accent'     => (string) get_config('theme_nit', 'brandcolour_g1_accent'),
             'secondary'  => (string) get_config('theme_nit', 'brandcolour_g1_secondary'),
             'background' => (string) get_config('theme_nit', 'brandcolour_g1_background'),
@@ -340,6 +351,14 @@ if (\theme_nit\local\editor::can_edit()) {
         'contentFields' => \theme_nit\local\homepage_content::fields(),
         'contentValues' => \theme_nit\local\homepage_content::read(),
         'sections'      => \theme_nit\local\template_applier::sections_state(),
+        'picks'         => [
+            'current' => \theme_nit\local\home_picks::all(),
+            'options' => \theme_nit\local\home_picks::options(),
+            'licence' => \theme_nit\local\home_picks::licence_flags(),
+        ],
+        'pages'         => theme_nit_site_pages(),
+        'navPages'      => json_decode((string) get_config('theme_nit', 'nav_pages'), true) ?: [],
+        'footerLinks'   => json_decode((string) get_config('theme_nit', 'footer_links'), true) ?: [],
         'auth'          => [
             'welcome' => \theme_nit\local\editor::mlang_parse((string) get_config('theme_nit', 'auth_welcome')),
             'tagline' => \theme_nit\local\editor::mlang_parse((string) get_config('theme_nit', 'auth_tagline')),
@@ -402,6 +421,42 @@ if (\theme_nit\local\editor::can_edit()) {
             'col_text'      => get_string('edit_col_text', 'theme_nit'),
             'savefailed'    => get_string('edit_savefailed', 'theme_nit'),
             'imagetoolarge' => get_string('edit_imagetoolarge', 'theme_nit'),
+            'discard' => get_string('edit_discard', 'theme_nit'),
+            'unsaved' => get_string('edit_unsaved', 'theme_nit'),
+            'sidehint' => get_string('edit_sidehint', 'theme_nit'),
+            'pagesections' => get_string('edit_pagesections', 'theme_nit'),
+            'design' => get_string('edit_design', 'theme_nit'),
+            'settings' => get_string('edit_settings', 'theme_nit'),
+            'moveup' => get_string('edit_moveup', 'theme_nit'),
+            'movedown' => get_string('edit_movedown', 'theme_nit'),
+            'hidesection' => get_string('edit_hidesection', 'theme_nit'),
+            'showsection' => get_string('edit_showsection', 'theme_nit'),
+            'resetsection' => get_string('edit_resetsection', 'theme_nit'),
+            'resetconfirm' => get_string('edit_resetconfirm', 'theme_nit'),
+            'addsection' => get_string('edit_addsection', 'theme_nit'),
+            'noeditable' => get_string('edit_noeditable', 'theme_nit'),
+            'notlicensed' => get_string('edit_notlicensed', 'theme_nit'),
+            'noreviews' => get_string('edit_noreviews', 'theme_nit'),
+            'noitems' => get_string('edit_noitems', 'theme_nit'),
+            'pickshint' => get_string('edit_pickshint', 'theme_nit'),
+            'selectall' => get_string('edit_selectall', 'theme_nit'),
+            'selectnone' => get_string('edit_selectnone', 'theme_nit'),
+            'aboutcards' => get_string('edit_aboutcards', 'theme_nit'),
+            'cardtitle' => get_string('edit_cardtitle', 'theme_nit'),
+            'cardtext' => get_string('edit_cardtext', 'theme_nit'),
+            'addcard' => get_string('edit_addcard', 'theme_nit'),
+            'remove' => get_string('edit_remove', 'theme_nit'),
+            'navlinks' => get_string('edit_navlinks', 'theme_nit'),
+            'navlinkshint' => get_string('edit_navlinkshint', 'theme_nit'),
+            'footerlinks' => get_string('edit_footerlinks', 'theme_nit'),
+            'footerlinkshint' => get_string('edit_footerlinkshint', 'theme_nit'),
+            'authwelcome' => get_string('edit_authwelcome', 'theme_nit'),
+            'authtagline' => get_string('edit_authtagline', 'theme_nit'),
+            'loginpreview' => get_string('edit_loginpreview', 'theme_nit'),
+            'col_onprimary' => get_string('edit_col_onprimary', 'theme_nit'),
+            'auto' => get_string('edit_auto', 'theme_nit'),
+            'toolarge' => get_string('edit_toolarge', 'theme_nit'),
+            'advanced' => get_string('edit_advanced', 'theme_nit'),
         ],
     ];
     // Publish the config in <head> BEFORE editor.js runs (it reads window.NIT_EDIT

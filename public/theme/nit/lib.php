@@ -1034,7 +1034,19 @@ function theme_nit_get_site_stats(): array {
         'subcategories' => max(0, $categories - $topcategories),
         // Distinct users with at least one enrolment.
         'students' => (int) $DB->count_records_sql('SELECT COUNT(DISTINCT userid) FROM {user_enrolments}'),
+        // Real learner rating across every course review (local_nit_reviews);
+        // 0 / 0 when the plugin is absent or nobody has rated yet — the templates
+        // hide their rating badge in that case rather than show a made-up figure.
+        'rating' => 0,
+        'ratingcount' => 0,
     ];
+    if ($DB->get_manager()->table_exists('local_nit_reviews')) {
+        $agg = $DB->get_record_sql('SELECT AVG(rating) AS avg, COUNT(id) AS cnt FROM {local_nit_reviews}');
+        if ($agg && (int) $agg->cnt > 0) {
+            $stats['rating'] = round((float) $agg->avg, 1);
+            $stats['ratingcount'] = (int) $agg->cnt;
+        }
+    }
 
     if ($ttl > 0) {
         $cache->set('sitestats', ['expires' => time() + $ttl, 'data' => $stats]);
@@ -1396,6 +1408,11 @@ function theme_nit_get_pre_scss($theme) {
     foreach (theme_nit_brand_palette() as $key => $meta) {
         $scss .= '$nit-b-' . str_replace('_', '-', $key) . ': ' . theme_nit_brandcolour($key) . ";\n";
     }
+    // Text ON the primary fill (button labels). Auto = color-contrast() of the
+    // primary; the owner may pin it in the homepage editor (Colours → "Text on
+    // buttons") when the automatic black/white pick does not suit the brand.
+    $onprimary = trim((string) get_config('theme_nit', 'brandcolour_g1_onprimary'));
+    $scss .= '$nit-b-g1-onprimary: ' . (preg_match('/^#[0-9a-fA-F]{6}$/', $onprimary) ? $onprimary : 'auto') . ";\n";
 
     // Drive the Bootstrap / semantic SCSS layer from Group 1 — the site-wide
     // default group. Unlike the legacy colour map above (applied only when the
@@ -1630,4 +1647,90 @@ function theme_nit_get_categories(int $limit = 4): array {
     }
 
     return $categories;
+}
+
+/**
+ * The academy's own pages an owner can link to from the navbar / footer
+ * (homepage editor → "Brand & navbar" / "Footer"). Real routes only — anchors
+ * point at homepage sections the front page tags with id="nit-<section>".
+ *
+ * @return array<int, array{key:string,label:array{en:string,ar:string},url:string}>
+ */
+function theme_nit_site_pages(): array {
+    $pages = [
+        ['key' => 'home',          'label' => ['en' => 'Home',            'ar' => 'الرئيسية'],        'url' => '/'],
+        ['key' => 'catalog',       'label' => ['en' => 'All courses',     'ar' => 'كل الدورات'],      'url' => '/local/nit_category/index.php'],
+        ['key' => 'about',         'label' => ['en' => 'About',           'ar' => 'من نحن'],          'url' => '/#nit-about'],
+        ['key' => 'subscriptions', 'label' => ['en' => 'Plans',           'ar' => 'الخطط'],           'url' => '/#nit-subscriptions'],
+        ['key' => 'coupons',       'label' => ['en' => 'Offers',          'ar' => 'العروض'],          'url' => '/#nit-coupons'],
+        ['key' => 'gallery',       'label' => ['en' => 'Gallery',         'ar' => 'المعرض'],          'url' => '/#nit-gallery'],
+        ['key' => 'testimonials',  'label' => ['en' => 'Testimonials',    'ar' => 'آراء المتعلمين'],  'url' => '/#nit-testimonials'],
+        ['key' => 'faq',           'label' => ['en' => 'FAQ',             'ar' => 'الأسئلة الشائعة'], 'url' => '/#nit-faq'],
+        ['key' => 'contact',       'label' => ['en' => 'Contact',         'ar' => 'تواصل معنا'],      'url' => '/#nit-contact'],
+        ['key' => 'dashboard',     'label' => ['en' => 'My learning',     'ar' => 'تعلّمي'],          'url' => '/my/'],
+        ['key' => 'certificates',  'label' => ['en' => 'Certificates',    'ar' => 'الشهادات'],        'url' => '/local/academy/certificate.php'],
+        ['key' => 'profile',       'label' => ['en' => 'Profile',         'ar' => 'الملف الشخصي'],    'url' => '/local/academy/profile.php'],
+        ['key' => 'login',         'label' => ['en' => 'Sign in',         'ar' => 'تسجيل الدخول'],    'url' => '/login/index.php'],
+        ['key' => 'signup',        'label' => ['en' => 'Create account',  'ar' => 'إنشاء حساب'],      'url' => '/login/signup.php'],
+    ];
+    // Unlicensed features never become links.
+    if (class_exists('\theme_nit\local\home_picks')) {
+        $pages = array_values(array_filter($pages, static function ($p) {
+            return !in_array($p['key'], ['subscriptions', 'coupons'], true)
+                || \theme_nit\local\home_picks::licensed($p['key']);
+        }));
+    }
+    return $pages;
+}
+
+/**
+ * The owner's picked navbar pages → Moodle's own custom menu ($CFG->custommenuitems),
+ * one line per language so the label follows the UI language. Keys are page
+ * keys from theme_nit_site_pages(); unknown keys are dropped. An empty pick
+ * clears the custom menu.
+ *
+ * @param string[] $keys
+ */
+function theme_nit_save_nav_pages(array $keys): void {
+    $pages = [];
+    foreach (theme_nit_site_pages() as $p) {
+        $pages[$p['key']] = $p;
+    }
+    $lines = [];
+    $picked = [];
+    foreach ($keys as $k) {
+        if (isset($pages[$k])) {
+            $picked[] = $k;
+            $lines[] = $pages[$k]['label']['en'] . '|' . $pages[$k]['url'] . '||en';
+            $lines[] = $pages[$k]['label']['ar'] . '|' . $pages[$k]['url'] . '||ar';
+        }
+    }
+    set_config('nav_pages', json_encode(array_values(array_unique($picked))), 'theme_nit');
+    set_config('custommenuitems', implode("\n", $lines));
+    purge_all_caches();
+}
+
+/**
+ * The footer's picked pages as JSON [{label,url}] in the current language, or
+ * "null" when the owner has not picked any (template defaults stay).
+ *
+ * @return string JSON
+ */
+function theme_nit_footer_links_json(): string {
+    $keys = json_decode((string) get_config('theme_nit', 'footer_links'), true);
+    if (!is_array($keys) || !$keys) {
+        return 'null';
+    }
+    $lang = (strpos(current_language(), 'ar') === 0) ? 'ar' : 'en';
+    $pages = [];
+    foreach (theme_nit_site_pages() as $p) {
+        $pages[$p['key']] = $p;
+    }
+    $out = [];
+    foreach ($keys as $k) {
+        if (isset($pages[$k])) {
+            $out[] = ['label' => $pages[$k]['label'][$lang], 'url' => $pages[$k]['url']];
+        }
+    }
+    return json_encode($out, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: 'null';
 }

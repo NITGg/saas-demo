@@ -90,3 +90,114 @@ body:not(.pagelayout-frontpage):not(.pagelayout-login):not(.pagelayout-embedded)
         }
     }
 }
+
+// Staff / admin chrome that still took the raw brand ground: the secondary
+// navigation bar (course "Category / Settings / Upload courses" tabs, the
+// course "Course / Participants / Grades" tabs), the drawers (course index,
+// blocks drawer), the more-menu dropdowns, tables and the sticky footer. Put
+// them on the template surface with template ink.
+body:not(.pagelayout-frontpage):not(.pagelayout-login):not(.pagelayout-embedded):not(.path-site) {
+    .secondary-navigation,
+    .secondary-navigation .navigation,
+    .secondary-navigation .moremenu,
+    .secondary-navigation .nav-tabs,
+    .tertiary-navigation,
+    .drawer,
+    .drawer .drawercontent,
+    .drawer .drawerheader,
+    .drawer-left,
+    .drawer-right,
+    .courseindex,
+    .courseindex-section,
+    .courseindex-section-title,
+    .courseindex-item,
+    .dropdown-menu,
+    .moremenu .dropdown-menu,
+    .stickyfooter,
+    .table,
+    .generaltable,
+    .generaltable > :not(caption) > * > *,
+    .modal-content,
+    .modal-header,
+    .modal-footer,
+    .list-group-item,
+    .breadcrumb,
+    .page-header-headings,
+    .activity-item,
+    .course-content .section,
+    .course-section-header,
+    .section .content,
+    .block,
+    .block .card-body {
+        background-color: var(--t-bg, #FFFFFF) !important;
+        color: var(--t-ink, #16191D) !important;
+        border-color: var(--t-border, #EDEDE9);
+    }
+
+    .secondary-navigation .nav-link,
+    .moremenu .nav-link,
+    .courseindex a,
+    .courseindex .courseindex-link,
+    .courseindex-section-title a,
+    .drawer a,
+    .dropdown-item,
+    .breadcrumb-item a,
+    .page-header-headings h1,
+    h1, h2, h3, h4, h5, h6,
+    .activity-item .activityname a,
+    .activity-item .instancename,
+    .section .sectionname,
+    .course-section-header .sectionname a {
+        color: var(--t-ink, #16191D) !important;
+    }
+
+    .secondary-navigation .nav-link.active,
+    .moremenu .nav-link.active {
+        color: var(--nit-brand-primary) !important;
+        border-bottom-color: var(--nit-brand-primary) !important;
+    }
+
+    .courseindex-item.pageitem,
+    .courseindex-item.pageitem a {
+        background-color: var(--nit-brand-primary) !important;
+        color: var(--nit-brand-on-primary) !important;
+    }
+
+    .dropdown-item:hover,
+    .dropdown-item:focus,
+    .courseindex-item:hover,
+    .list-group-item-action:hover {
+        background-color: var(--t-surface, #FAFAF8) !important;
+        color: var(--t-ink, #16191D) !important;
+    }
+
+    .text-muted,
+    .dimmed_text,
+    .dimmed_text a,
+    .small,
+    small {
+        color: var(--t-muted, #6E7781) !important;
+    }
+
+    .btn-secondary,
+    .btn-outline-secondary {
+        background-color: var(--t-bg, #FFFFFF) !important;
+        color: var(--t-ink, #16191D) !important;
+        border-color: var(--t-border2, #DCDCD7) !important;
+
+        &:hover {
+            background-color: var(--t-surface, #FAFAF8) !important;
+            border-color: var(--nit-brand-primary) !important;
+        }
+    }
+
+    .btn-primary {
+        color: var(--nit-brand-on-primary) !important;
+
+        &:hover {
+            background-color: color-mix(in srgb, var(--nit-brand-primary) 84%, #000) !important;
+            border-color: color-mix(in srgb, var(--nit-brand-primary) 84%, #000) !important;
+            color: var(--nit-brand-on-primary) !important;
+        }
+    }
+}

@@ -92,21 +92,33 @@ class hook_callbacks {
             redirect(new \moodle_url('/local/nit_category/index.php', $catid ? ['id' => $catid] : []));
         }
 
-        // Course view for ENROLLED learners → the player (their resume lesson).
-        // Design: entering a course you're enrolled in lands on the lesson player
-        // (video + curriculum sidebar), not a course page; prospects fall through to
-        // the T1 course detail (format renderer), and edit mode keeps the real
-        // Moodle course for management. Only video lessons make a "player", so a
-        // course without any video activity is left alone.
+        // A lesson embedded inside the course player (/local/academy/player.php)
+        // renders chrome-free — this request only, no session flag.
+        if (optional_param('nitplayer', 0, PARAM_BOOL) && $PAGE->cm !== null) {
+            $PAGE->set_pagelayout('embedded');
+            return;
+        }
+
+        // Course view for ENROLLED learners → the player, at their resume lesson
+        // (first not-yet-completed lesson of ANY type — video lessons open their
+        // module page, everything else the generic player frame). Prospects fall
+        // through to the T1 course detail (format renderer) and edit mode / staff
+        // keep the real Moodle course for management. An enrolled learner in a
+        // course with no lesson yet sees the detail page in the full-width layout
+        // (no course-index drawer).
         if (strpos($pt, 'course-view') === 0
-                && !empty($PAGE->course->id) && (int) $PAGE->course->id !== SITEID
+                && $PAGE->course !== null && !empty($PAGE->course->id) && (int) $PAGE->course->id !== SITEID
                 && !(method_exists($PAGE, 'user_is_editing') && $PAGE->user_is_editing())
                 && optional_param('section', null, PARAM_INT) === null
                 && optional_param('sectionid', null, PARAM_INT) === null
                 && isloggedin() && !isguestuser()) {
-            $url = self::resume_lesson_url($PAGE->course);
-            if ($url !== '') {
-                redirect($url);
+            $ctx = \context_course::instance($PAGE->course->id);
+            if (!has_capability('moodle/course:update', $ctx) && !is_siteadmin()) {
+                $url = self::resume_lesson_url($PAGE->course);
+                if ($url !== '') {
+                    redirect($url);
+                }
+                $PAGE->set_pagelayout('nit_fullwidth');
             }
         }
 
@@ -160,21 +172,11 @@ class hook_callbacks {
         if (!is_enrolled($ctx, $USER, '', true) && !has_capability('moodle/course:view', $ctx)) {
             return '';
         }
-        $modinfo = get_fast_modinfo($course);
-        $completion = new \completion_info($course);
-        $first = null;
-        foreach ($modinfo->get_cms() as $cm) {
-            if (!in_array($cm->modname, ['vimeo', 'vdocipher'], true) || !$cm->uservisible || $cm->deletioninprogress) {
-                continue;
-            }
-            if ($first === null) {
-                $first = $cm;
-            }
-            if ($completion->is_enabled($cm) && $completion->get_data($cm, false)->completionstate == COMPLETION_INCOMPLETE) {
-                return $cm->url ? $cm->url->out(false) : '';
-            }
+        if (!class_exists('\local_academy\player')) {
+            return '';
         }
-        return ($first && $first->url) ? $first->url->out(false) : '';
+        $cm = \local_academy\player::resume_cm($course);
+        return $cm ? \local_academy\player::url_for($cm) : '';
     }
 
     /**

@@ -333,6 +333,67 @@ class editor {
      * @param string[] $bullets
      * @return string|null
      */
+    /**
+     * Rewrite the About section's feature cards ([data-nit-about-card]) from a
+     * list of {title, text} (each a {mlang} string). The FIRST existing card is
+     * the prototype (keeps the template's styling and glyph); its two text
+     * leaves — the title, then the description — take the new values. Cards
+     * beyond the list are dropped, missing ones cloned. Max 5.
+     *
+     * @param string $html the section HTML
+     * @param array $cards [{title: string, text: string}]
+     * @return string|null the new HTML, or null when the section has no cards
+     */
+    public static function set_about_cards(string $html, array $cards): ?string {
+        $dom = new \DOMDocument();
+        $prev = libxml_use_internal_errors(true);
+        $ok = $dom->loadHTML(
+            '<?xml encoding="utf-8"?><div data-nitwrap="1">' . $html . '</div>',
+            LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
+        );
+        libxml_clear_errors();
+        libxml_use_internal_errors($prev);
+        if (!$ok) {
+            return null;
+        }
+        $xp = new \DOMXPath($dom);
+        $existing = iterator_to_array($xp->query('//*[@data-nit-about-card]'));
+        if (!$existing) {
+            return null;
+        }
+        $proto = $existing[0]->cloneNode(true);
+        $parent = $existing[0]->parentNode;
+        foreach ($existing as $c) {
+            $parent->removeChild($c);
+        }
+        $cards = array_slice(array_values($cards), 0, 5);
+        foreach ($cards as $card) {
+            $node = $proto->cloneNode(true);
+            // Text leaves in document order: [glyph], title, text.
+            $leaves = [];
+            foreach (iterator_to_array($xp->query('.//*[not(*)]', $node)) as $leaf) {
+                if (trim($leaf->textContent) !== '') {
+                    $leaves[] = $leaf;
+                }
+            }
+            if ($leaves && \core_text::strlen(trim($leaves[0]->textContent)) <= 2) {
+                array_shift($leaves); // the glyph
+            }
+            $vals = [trim((string) ($card['title'] ?? '')), trim((string) ($card['text'] ?? ''))];
+            foreach ($vals as $i => $v) {
+                if (!isset($leaves[$i])) {
+                    continue;
+                }
+                while ($leaves[$i]->firstChild) {
+                    $leaves[$i]->removeChild($leaves[$i]->firstChild);
+                }
+                $leaves[$i]->appendChild($dom->createTextNode($v));
+            }
+            $parent->appendChild($node);
+        }
+        return self::inner_html($dom, $xp);
+    }
+
     public static function set_about_points(string $html, array $bullets): ?string {
         $dom = new \DOMDocument();
         $prev = libxml_use_internal_errors(true);
@@ -1045,6 +1106,9 @@ class editor {
         $set('bordersecondary', self::mix($surf, $txt, 0.24));
         $set('hoverbackground', self::mix($surf, $p, 0.14));
         $set('hovertext', $txt);
+        // Optional pinned button-label colour ('' / 'auto' → contrast-derived).
+        $onp = strtolower(trim((string) ($c['onprimary'] ?? '')));
+        $set('onprimary', preg_match('/^#[0-9a-f]{6}$/', $onp) ? $onp : '');
         self::bust_theme_caches($prewarm);
         return true;
     }

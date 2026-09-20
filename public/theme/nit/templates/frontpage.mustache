@@ -70,6 +70,10 @@ window.NIT_STATS = {{{ nitstatsjson }}};
 window.NIT_COURSES = {{{ nitcoursesjson }}};
 window.NIT_MY_COURSES = {{{ nitmycoursesjson }}};
 window.NIT_CATEGORIES = {{{ nitcategoriesjson }}};
+window.NIT_PICKS = {{{ nitpicksjson }}};
+window.NIT_LICENCE = {{{ nitlicencejson }}};
+window.NIT_FOOTER_LINKS = {{{ nitfooterlinksjson }}};
+window.NIT_REVIEWS = {{{ nitreviewsjson }}};
 (function () {
     function esc(s) {
         var d = document.createElement('div');
@@ -100,8 +104,31 @@ window.NIT_CATEGORIES = {{{ nitcategoriesjson }}};
     // Count up every [data-nit-stat] element to its real value.
     function fillStats() {
         var stats = window.NIT_STATS || {};
+        // Rating badges show the REAL site-wide learner rating, or disappear.
+        // Older provisioned copies of the templates carry a hard-coded "4.9 / 5"
+        // badge without the hook — retrofit the hook so the same rule applies.
+        Array.prototype.forEach.call(document.querySelectorAll('[data-nit-section] div'), function (d) {
+            if (d.children.length === 0 && /^4\.9\s*\/\s*5$/.test((d.textContent || '').trim()) && d.parentElement && d.parentElement.parentElement) {
+                d.setAttribute('data-nit-rating-value', '');
+                d.parentElement.parentElement.setAttribute('data-nit-rating-badge', '');
+            }
+        });
+        Array.prototype.forEach.call(document.querySelectorAll('[data-nit-rating-badge]'), function (b) {
+            var r = parseFloat(stats.rating) || 0;
+            if (r <= 0) { b.remove(); return; }
+            var v = b.querySelector('[data-nit-rating-value]');
+            if (v) { v.textContent = r.toFixed(1) + ' / 5'; }
+        });
         Array.prototype.forEach.call(document.querySelectorAll('[data-nit-stat]'), function (el) {
             var key = el.getAttribute('data-nit-stat');
+            // Category counts ("Specialities", "Programs") mean nothing to a
+            // single academy — drop that stat tile wherever a template (or an
+            // already-provisioned copy of one) still carries it.
+            if (key === 'categories' || key === 'topcategories' || key === 'subcategories') {
+                var tile = el.parentElement && el.parentElement.parentElement;
+                if (tile && tile.querySelectorAll('[data-nit-stat]').length === 1) { tile.remove(); } else { el.textContent = ''; }
+                return;
+            }
             if (stats[key] === undefined) { return; }
             var target = parseInt(stats[key], 10) || 0;
             // Reserve the final number's width up front so the count-up animation
@@ -122,8 +149,14 @@ window.NIT_CATEGORIES = {{{ nitcategoriesjson }}};
     }
     // Clone each [data-nit-courses] container's <template> once per course,
     // substituting {{fullname}} {{summary}} {{url}} {{image}} {{price}}.
+    // Owner picks: which real items a data section shows (null = all).
+    function picked(section, id) {
+        var p = (window.NIT_PICKS || {})[section];
+        if (!p || !p.length) { return true; }
+        return p.map(String).indexOf(String(id)) !== -1;
+    }
     function renderCourses() {
-        var data = window.NIT_COURSES || [];
+        var data = (window.NIT_COURSES || []).filter(function (c) { return picked('courses', c.id); });
         Array.prototype.forEach.call(document.querySelectorAll('[data-nit-courses]'), function (container) {
             // The card template may be a <template> or a hidden <div>; both are
             // matched by [data-nit-course-card] and .innerHTML works for both.
@@ -223,7 +256,7 @@ window.NIT_CATEGORIES = {{{ nitcategoriesjson }}};
 
     // Clone each [data-nit-categories] container's <template> once per category.
     function renderCategories() {
-        var data = window.NIT_CATEGORIES || [];
+        var data = (window.NIT_CATEGORIES || []).filter(function (c) { return picked('categories', c.id); });
         Array.prototype.forEach.call(document.querySelectorAll('[data-nit-categories]'), function (container) {
             var tpl = container.querySelector('[data-nit-category-card]');
             if (!tpl) { return; }
@@ -285,7 +318,167 @@ window.NIT_CATEGORIES = {{{ nitcategoriesjson }}};
         }
     }
 
-    function init() { fillStats(); renderCourses(); renderMyCourses(); renderCategories(); wireSliders(); placeDownloadBand(); }
+    // Testimonials = real course reviews (window.NIT_REVIEWS), cloned from the
+    // section's <template data-nit-testimonial-card>.
+    function renderTestimonials() {
+        var data = window.NIT_REVIEWS || [];
+        var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+        Array.prototype.forEach.call(document.querySelectorAll('[data-nit-testimonials]'), function (container) {
+            var tpl = container.querySelector('[data-nit-testimonial-card]');
+            var empty = container.querySelector('[data-nit-testimonials-empty]');
+            if (!tpl) { return; }
+            var limit = parseInt(container.getAttribute('data-limit'), 10) || data.length;
+            var rows = data.slice(0, limit);
+            if (!rows.length) { return; } // keep the empty-state note
+            if (empty) { empty.remove(); }
+            var frag = document.createDocumentFragment();
+            rows.forEach(function (r) {
+                var stars = '★★★★★'.slice(0, Math.max(1, Math.min(5, r.rating || 5)));
+                var html = tpl.innerHTML
+                    .replace(/\{\{stars\}\}/g, stars)
+                    .replace(/\{\{text\}\}/g, esc(r.text))
+                    .replace(/\{\{name\}\}/g, esc(r.name))
+                    .replace(/\{\{course\}\}/g, esc(r.course))
+                    .replace(/\{\{avatar\}\}/g, esc(r.avatar || ''));
+                var w = document.createElement('div');
+                w.innerHTML = html;
+                while (w.firstChild) { frag.appendChild(w.firstChild); }
+            });
+            container.appendChild(frag);
+        });
+    }
+    // Repair two artefacts of earlier saves in already-stored section HTML:
+    //  * an image hook that has a real image but still shows its placeholder caption;
+    //  * a text hook whose inline markup (<br>, accent <span>) was stored escaped and
+    //    renders as literal tags — re-interpret only that small whitelist.
+    function repairHooks() {
+        Array.prototype.forEach.call(document.querySelectorAll('[data-nit-edit-img],[data-nit-logo]'), function (el) {
+            var st = el.getAttribute('style') || '';
+            if (!/background-image\s*:\s*url\(/i.test(st)) { return; }
+            Array.prototype.forEach.call(el.children, function (c) {
+                if (!c.querySelector('[data-nit-edit],[data-nit-edit-img],[data-nit-stat],[data-nit-edit-href]')) { c.style.visibility = 'hidden'; }
+            });
+        });
+        Array.prototype.forEach.call(document.querySelectorAll('[data-nit-edit]'), function (el) {
+            if (el.children.length) { return; }
+            var txt = el.textContent || '';
+            if (!/<\s*(br|span|strong|em|b|i)\b/i.test(txt)) { return; }
+            var safe = txt
+                .replace(/<(?!\/?(br|span|strong|em|b|i)\b)[^>]*>/gi, '')
+                .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+                .replace(/\s(href|src)\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '');
+            el.innerHTML = safe;
+        });
+    }
+    // Section anchors (id="nit-<section>") so navbar / footer links can target
+    // any section on any template; data sections are found by their signature.
+    function tagSections() {
+        var sig = { categories: '[data-nit-categories]', courses: '[data-nit-courses],[data-nit-my-courses]',
+            subscriptions: '[data-nit-subs]', coupons: '[data-nit-coupons]' };
+        Array.prototype.forEach.call(document.querySelectorAll('[data-nit-section]'), function (s) {
+            if (!s.id) { s.id = 'nit-' + s.getAttribute('data-nit-section'); }
+        });
+        Object.keys(sig).forEach(function (k) {
+            var el = document.querySelector(sig[k]);
+            if (!el) { return; }
+            var root = el.closest('[data-nit-section]') || el.closest('.block_nit_section, [data-block]') || el;
+            if (!root.getAttribute('data-nit-section')) { root.setAttribute('data-nit-section', k); }
+            if (!root.id) { root.id = 'nit-' + k; }
+        });
+    }
+    // Licence: sections whose feature is not in this academy's plan are removed.
+    function applyLicence() {
+        var lic = window.NIT_LICENCE || {};
+        Object.keys(lic).forEach(function (k) {
+            if (lic[k] === false) {
+                var s = document.getElementById('nit-' + k);
+                if (s) { s.remove(); }
+            }
+        });
+    }
+    // Plans / coupons render asynchronously from their own APIs; drop the cards
+    // that are not picked as they appear (plans carry data-sub-id, coupons data-code).
+    function watchPicks() {
+        var subs = (window.NIT_PICKS || {}).subscriptions, cps = (window.NIT_PICKS || {}).coupons;
+        if ((!subs || !subs.length) && (!cps || !cps.length)) { return; }
+        var prune = function () {
+            if (subs && subs.length) {
+                Array.prototype.forEach.call(document.querySelectorAll('[data-sub-id]'), function (c) {
+                    if (!picked('subscriptions', c.getAttribute('data-sub-id'))) { c.remove(); }
+                });
+            }
+            if (cps && cps.length) {
+                Array.prototype.forEach.call(document.querySelectorAll('[data-nit-coupons-card]'), function (c) {
+                    var code = c.querySelector('[data-code]');
+                    if (code && !picked('coupons', code.getAttribute('data-code'))) { c.remove(); }
+                });
+            }
+        };
+        prune();
+        try { new MutationObserver(prune).observe(document.body, { childList: true, subtree: true }); } catch (e) { /* ignore */ }
+    }
+    // Contact: hide social icons with no link; embed the Google Maps location.
+    function wireContact() {
+        Array.prototype.forEach.call(document.querySelectorAll('[data-nit-edit-href^="social_"]'), function (a) {
+            var h = (a.getAttribute('href') || '').trim();
+            if (h === '' || h === '#') { a.style.display = 'none'; } else { a.target = '_blank'; a.rel = 'noopener'; }
+        });
+        Array.prototype.forEach.call(document.querySelectorAll('[data-nit-map]'), function (a) {
+            var h = (a.getAttribute('href') || '').trim();
+            if (h === '' || h === '#') { if (!document.body.classList.contains('editing')) { a.style.display = 'none'; } return; }
+            var q = null, m;
+            try {
+                var u = new URL(h, window.location.href);
+                q = u.searchParams.get('q') || u.searchParams.get('query');
+                if (!q && (m = u.pathname.match(/\/place\/([^\/]+)/))) { q = decodeURIComponent(m[1].replace(/\+/g, ' ')); }
+                if (!q && (m = u.pathname.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/))) { q = m[1] + ',' + m[2]; }
+            } catch (e) { q = null; }
+            if (!q) { return; } // unknown share link: stays a plain "open map" link
+            a.textContent = '';
+            a.style.display = 'block';
+            a.style.background = 'none';
+            var f = document.createElement('iframe');
+            f.src = 'https://maps.google.com/maps?q=' + encodeURIComponent(q) + '&z=15&output=embed';
+            f.setAttribute('loading', 'lazy'); f.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
+            f.style.cssText = 'display:block;width:100%;height:100%;min-height:160px;border:0;pointer-events:auto;';
+            a.appendChild(f);
+        });
+    }
+    // Footer links: the owner's picked pages fill the footer's first link column;
+    // the template's other placeholder columns go, dead "#" links always go.
+    function renderFooterLinks() {
+        var footer = document.querySelector('[data-nit-section="footer"]');
+        if (!footer) { return; }
+        var pages = window.NIT_FOOTER_LINKS || null; // [{label, url}] or null = template defaults
+        Array.prototype.forEach.call(footer.querySelectorAll('a[href="#"]'), function (a) {
+            var col = a.parentElement;
+            a.remove();
+            if (col && !col.querySelector('a')) {
+                var wrap = col.parentElement;
+                if (wrap && wrap !== footer && !wrap.querySelector('a') && !wrap.querySelector('[data-nit-edit]')
+                        && !/©/.test(wrap.textContent || '')) { wrap.remove(); } else { col.remove(); }
+            }
+        });
+        if (!pages) { return; }
+        var cols = Array.prototype.filter.call(footer.querySelectorAll('div'), function (d) {
+            var links = Array.prototype.filter.call(d.children, function (c) { return c.tagName === 'A'; });
+            return links.length >= 1 && links.length === d.children.length && !d.closest('[data-nit-edit]')
+                && !d.querySelector('a[href*="/login/"]');
+        });
+        if (!cols.length) { return; }
+        var first = cols[0];
+        var proto = first.querySelector('a');
+        first.innerHTML = '';
+        pages.forEach(function (p) {
+            var a = proto.cloneNode(false);
+            a.href = p.url; a.textContent = p.label;
+            first.appendChild(a);
+        });
+        cols.slice(1).forEach(function (c) { var wrap = c.parentElement; if (wrap && wrap !== footer) { wrap.remove(); } else { c.remove(); } });
+    }
+
+    function init() { repairHooks(); tagSections(); applyLicence(); fillStats(); renderCourses(); renderMyCourses(); renderCategories(); renderTestimonials(); wireSliders(); placeDownloadBand(); watchPicks(); wireContact(); renderFooterLinks(); }
     if (document.readyState !== 'loading') { init(); }
     else { document.addEventListener('DOMContentLoaded', init); }
 })();

@@ -1071,7 +1071,9 @@ class format_topics_renderer extends \format_topics\output\renderer {
                 foreach (($modinfo->sections[$secinfo->section] ?? []) as $cmid) {
                     $cm = $modinfo->cms[$cmid] ?? null;
                     if ($cm && $cm->uservisible && $cm->url && $cm->modname !== 'label') {
-                        return $cm->url->out(false);
+                        // Open in the course player frame (video lessons are their own player).
+                        return class_exists('\local_academy\player')
+                            ? \local_academy\player::url_for($cm) : $cm->url->out(false);
                     }
                 }
             }

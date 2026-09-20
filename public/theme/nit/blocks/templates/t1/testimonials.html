@@ -1,0 +1,27 @@
+<!-- NIT homepage template T1 · Modern Minimal — TESTIMONIALS.
+     Cards are REAL course reviews (local_nit_reviews) rendered by the front page
+     from window.NIT_REVIEWS — the owner picks which reviews appear in the page
+     editor; nothing here is typed copy except the heading. The hidden card is
+     the template: {{text}} {{name}} {{course}} {{stars}} {{avatar}}. -->
+<div dir="auto" data-nit-section="testimonials"
+  style="--t-accent: var(--nit-brand-primary); --t-ink: #16191D; --t-bg: #FFFFFF; --t-bg-alt: #FAFAF8; --t-muted: #6E7781; --t-muted2: #8A8A82; --t-border: #EDEDE9; font-family: 'Manrope','IBM Plex Sans Arabic',system-ui,sans-serif; background: var(--t-bg-alt); color: var(--t-ink); border-block: 1px solid var(--t-border);">
+  <div style="max-width: 1240px; margin: 0 auto; padding: clamp(56px,7vw,96px) 20px;">
+    <h2 data-nit-edit="testimonials_heading" style="margin: 0; font-size: clamp(28px,3.4vw,40px); font-weight: 250; letter-spacing: -0.03em; text-align: center;">{mlang en}What learners say{mlang}{mlang ar}ماذا يقول المتعلمون{mlang}</h2>
+    <div data-nit-testimonials="" data-limit="3" style="margin-top: 44px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 22px;">
+      <template data-nit-testimonial-card="">
+        <div style="background: var(--t-bg); border: 1px solid var(--t-border); border-radius: 16px; padding: 28px;">
+          <div style="color: #E0A100; font-size: 14px; letter-spacing: 0.1em;">{{stars}}</div>
+          <p style="margin: 18px 0 0; font-size: 15px; line-height: 1.75; color: #3D4752;">“{{text}}”</p>
+          <div style="display: flex; align-items: center; gap: 12px; margin-top: 24px;">
+            <span style="width: 38px; height: 38px; border-radius: 50%; background: var(--t-border) url('{{avatar}}') center/cover no-repeat; display: block;"></span>
+            <div>
+              <div style="font-size: 13px; font-weight: 600;">{{name}}</div>
+              <div style="font-size: 11px; color: var(--t-muted2); margin-top: 2px;">{{course}}</div>
+            </div>
+          </div>
+        </div>
+      </template>
+      <div data-nit-testimonials-empty="" style="grid-column: 1 / -1; text-align: center; color: var(--t-muted); font-size: 14px; padding: 12px;">{mlang en}Reviews from your learners will appear here once a course is rated.{mlang}{mlang ar}ستظهر هنا آراء المتعلمين بعد تقييم أول دورة.{mlang}</div>
+    </div>
+  </div>
+</div>

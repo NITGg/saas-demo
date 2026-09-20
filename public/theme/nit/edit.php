@@ -31,6 +31,7 @@ define('AJAX_SCRIPT', true);
 
 require(__DIR__ . '/../../config.php');
 require_once($CFG->libdir . '/blocklib.php');
+require_once($CFG->dirroot . '/theme/nit/lib.php');
 
 require_login();
 require_sesskey();
@@ -270,6 +271,73 @@ try {
             nit_edit_respond(true);
             break;
 
+        // About — the feature cards (title + text each, max 5), bilingual.
+        case 'about_cards':
+            $found = editor::find_section('about');
+            if (!$found) {
+                nit_edit_respond(false, ['error' => 'notfound']);
+            }
+            $decoded = json_decode(required_param('cards', PARAM_RAW), true);
+            if (!is_array($decoded)) {
+                nit_edit_respond(false, ['error' => 'badcards']);
+            }
+            $cards = [];
+            foreach ($decoded as $c) {
+                if (!is_array($c)) {
+                    continue;
+                }
+                $ml = static function ($v): string {
+                    if (is_array($v)) {
+                        return editor::mlang_build(\core_text::substr(trim((string) ($v['en'] ?? '')), 0, 200),
+                            \core_text::substr(trim((string) ($v['ar'] ?? '')), 0, 200));
+                    }
+                    return \core_text::substr(trim((string) $v), 0, 200);
+                };
+                $title = $ml($c['title'] ?? '');
+                $text = $ml($c['text'] ?? '');
+                if ($title === '' && $text === '') {
+                    continue;
+                }
+                $cards[] = ['title' => $title, 'text' => $text];
+                if (count($cards) >= 5) {
+                    break;
+                }
+            }
+            [$bi, $cfg] = $found;
+            $newhtml = editor::set_about_cards(editor::section_html($cfg), $cards);
+            if ($newhtml === null) {
+                nit_edit_respond(false, ['error' => 'nocards']);
+            }
+            editor::save_section_html($bi, $cfg, $newhtml);
+            nit_edit_respond(true);
+            break;
+
+        // Which real items a data section shows (courses / categories / plans /
+        // coupons); an empty list = all.
+        case 'picks':
+            $section = required_param('section', PARAM_ALPHA);
+            $ids = json_decode(optional_param('ids', '[]', PARAM_RAW), true);
+            \theme_nit\local\home_picks::set($section, is_array($ids) ? $ids : []);
+            nit_edit_respond(true);
+            break;
+
+        // Navbar links → Moodle's custom menu, from the academy's own pages.
+        case 'nav_pages':
+            $keys = json_decode(optional_param('keys', '[]', PARAM_RAW), true);
+            theme_nit_save_nav_pages(is_array($keys) ? array_map('strval', $keys) : []);
+            nit_edit_respond(true);
+            break;
+
+        // Footer links: picked pages (rendered client-side into the footer's link column).
+        case 'footer_links':
+            $keys = json_decode(optional_param('keys', '[]', PARAM_RAW), true);
+            $valid = array_column(theme_nit_site_pages(), 'key');
+            $keys = is_array($keys) ? array_values(array_intersect(array_map('strval', $keys), $valid)) : [];
+            set_config('footer_links', $keys ? json_encode($keys) : '', 'theme_nit');
+            purge_all_caches();
+            nit_edit_respond(true);
+            break;
+
         // Gallery — full staged rebuild: reorder + delete + add, in one save.
         // `order` is a JSON list of tokens (e:<i> keep existing i / n:<k> new file
         // image<k>); new files arrive as image0, image1, …
@@ -381,6 +449,7 @@ try {
                 'background' => optional_param('background', '', PARAM_RAW_TRIMMED),
                 'surface'    => optional_param('surface', '', PARAM_RAW_TRIMMED),
                 'text'       => optional_param('text', '', PARAM_RAW_TRIMMED),
+                'onprimary'  => optional_param('onprimary', '', PARAM_RAW_TRIMMED),
             ], false); // defer the compile — spawned below
             if (!$ok) {
                 nit_edit_respond(false, ['error' => 'badcolor']);
@@ -498,6 +567,16 @@ try {
                     nit_edit_respond(false, ['error' => $err ?? 'image', 'field' => $k]);
                 }
                 $manifest['images'][$k] = $datauri;
+                // The logo lives in TWO places: the section hooks (footer mark) and
+                // the theme navbar (core site logo). Keep them in sync.
+                if ($k === 'logo') {
+                    $lerr = null;
+                    if (!editor::replace_site_file('logo', 'logo', $file, $lerr)) {
+                        nit_edit_respond(false, ['error' => $lerr ?? 'logo', 'field' => $k]);
+                    }
+                    editor::replace_site_file('logocompact', 'logocompact', $file, $lerr);
+                    editor::bust_theme_caches(false);
+                }
             }
             $log = [];
             \theme_nit\local\homepage_content::apply($manifest, $log);
@@ -517,6 +596,15 @@ try {
             $blockid = required_param('blockid', PARAM_INT);
             $dir = required_param('dir', PARAM_ALPHA) === 'up' ? 'up' : 'down';
             \theme_nit\local\template_applier::move_section($blockid, $dir);
+            nit_edit_respond(true);
+            break;
+
+        // "Reset section": fresh template HTML for one section (drops its edits).
+        case 'section_reset':
+            $blockid = required_param('blockid', PARAM_INT);
+            if (!\theme_nit\local\template_applier::reset_section($blockid)) {
+                nit_edit_respond(false, ['error' => 'unknownsection']);
+            }
             nit_edit_respond(true);
             break;
 

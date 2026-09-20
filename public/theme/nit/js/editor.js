@@ -168,6 +168,18 @@
             "#nit-side-panel .nit-side-secrow{padding:6px 8px;gap:6px}" +
             "#nit-side-panel .nit-side-secrow .n{flex:1;text-align:start;background:none;border:0;padding:6px 4px;cursor:pointer;" +
             "font:600 14px 'Manrope',system-ui;color:inherit}" +
+            ".nit-side-group{margin:18px 0 6px;padding-top:14px;border-top:1px solid #ECECE8}" +
+            ".nit-side-subhd{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:#6E7781;margin:0 0 10px}" +
+            ".nit-side-checks{display:flex;flex-direction:column;gap:6px;max-height:260px;overflow:auto;padding:4px 2px}" +
+            ".nit-side-check{display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:1.4;margin:0;cursor:pointer}" +
+            ".nit-side-check input{margin-top:3px;flex:none}" +
+            ".nit-side-mini{display:flex;gap:6px;margin-bottom:6px}" +
+            ".nit-side-mini button{font:600 11px system-ui;padding:3px 9px;border-radius:999px;border:1px solid #DCDCD7;background:#fff;cursor:pointer}" +
+            ".nit-side-card{position:relative;display:flex;flex-direction:column;gap:6px;padding:10px 34px 10px 10px;border:1px solid #ECECE8;border-radius:10px;margin-bottom:8px;background:#FAFAF8}" +
+            ".nit-side-x{position:absolute;top:6px;inset-inline-end:6px;width:24px;height:24px;border-radius:50%;border:1px solid #DCDCD7;background:#fff;cursor:pointer;font-size:14px;line-height:1}" +
+            ".nit-side-preview{border:1px solid #ECECE8;border-radius:10px;overflow:hidden;background:#fff;margin-bottom:12px;aspect-ratio:16/10}" +
+            ".nit-side-preview iframe{width:200%;height:200%;border:0;transform:scale(.5);transform-origin:0 0;pointer-events:none}" +
+            "body.nit-dirty .nit-side-btn:not(.sec){box-shadow:0 0 0 3px rgba(224,161,0,.35)}" +
             "#nit-side-panel .nit-side-secrow .h,#nit-side-panel .nit-side-secrow .eye{background:none;border:0;cursor:pointer;" +
             "color:#A3A39B;font-size:13px;padding:4px 5px;line-height:1}" +
             "#nit-side-panel .nit-side-secrow .h:disabled{opacity:.25;cursor:default}" +
@@ -983,6 +995,26 @@
             body.appendChild(row);
             inputs[key] = inp;
         });
+        // Text ON buttons (labels on the primary fill): automatic contrast, or pinned.
+        var onRow = document.createElement('div');
+        onRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px';
+        var onLbl = document.createElement('label'); onLbl.style.fontWeight = '600';
+        onLbl.textContent = t('col_onprimary', 'Text on buttons');
+        var onWrap = document.createElement('div'); onWrap.style.cssText = 'display:flex;align-items:center;gap:8px';
+        var onAuto = document.createElement('input'); onAuto.type = 'checkbox'; onAuto.id = 'nit-onprimary-auto';
+        var onAutoL = document.createElement('label'); onAutoL.htmlFor = onAuto.id; onAutoL.textContent = t('auto', 'Auto'); onAutoL.style.cssText = 'font-size:12px;margin:0';
+        var onInp = document.createElement('input'); onInp.type = 'color';
+        onInp.style.cssText = 'width:54px;height:34px;border:1px solid #ccc;border-radius:8px;background:none;cursor:pointer;padding:2px';
+        var pinned = /^#[0-9A-Fa-f]{6}$/.test((pal.onprimary || '').trim());
+        onAuto.checked = !pinned; onInp.value = pinned ? pal.onprimary.trim() : '#ffffff'; onInp.disabled = !pinned;
+        var onPreview = function () {
+            document.documentElement.style.setProperty('--nit-brand-on-primary', onAuto.checked ? '' : onInp.value);
+        };
+        onAuto.addEventListener('change', function () { onInp.disabled = onAuto.checked; onPreview(); });
+        onInp.addEventListener('input', onPreview);
+        onWrap.appendChild(onAuto); onWrap.appendChild(onAutoL); onWrap.appendChild(onInp);
+        onRow.appendChild(onLbl); onRow.appendChild(onWrap);
+        body.appendChild(onRow);
         var note = document.createElement('p');
         note.style.cssText = 'font-size:12px;color:#666;margin:2px 0 12px';
         note.textContent = t('palettenote', 'Text, borders and hover shades are derived automatically.');
@@ -1004,6 +1036,7 @@
             fd.append('action', 'palette');
             fd.append('sesskey', CFG.sesskey);
             PALETTE_FIELDS.forEach(function (k) { fd.append(k, inputs[k].value); });
+            fd.append('onprimary', onAuto.checked ? '' : onInp.value);
             var label = save.textContent;
             save.disabled = true;
             save.textContent = t('saving', 'Saving…');
@@ -1112,26 +1145,46 @@
     }
 
     // ── Design panel: edits the REAL homepage content ─────────────────────────
-    // A persistent right panel. Selecting a section lists every content hook it
-    // carries — data-nit-edit (text), data-nit-edit-img (image), data-nit-edit-href
-    // (link) — as fields prefilled from the live values, and saves them through
-    // edit.php?action=content → homepage_content::apply(): the same pipeline nit2
-    // and the admin content page use, so this edits the actual section HTML.
-    // PAGE SECTIONS lists the active template's sections with reorder + show/hide
-    // + "Add a section"; DESIGN holds Colours, Branding and the Auth pages texts.
+    // ── The design's right-hand editor panel ─────────────────────────────────
+    // Selecting a section lists its REAL content hooks — data-nit-edit (text),
+    // data-nit-edit-img (image), data-nit-edit-href (link) — prefilled from the
+    // live values. Every change previews live on the page as you type; nothing
+    // is stored until Save (edit.php?action=content → homepage_content::apply(),
+    // the same pipeline nit2 / the admin content page use). Discard reloads.
+    // Data sections (courses, categories, plans, coupons, testimonials) get a
+    // picker of the real items to show; About gets its feature cards; Brand gets
+    // the navbar pages; Footer its links. PAGE SECTIONS: reorder, show/hide,
+    // reset to template, add a section. DESIGN: Colours, Branding, Auth pages.
     var sidePanel = null;
     var panelContent = null;
+    var dirty = false;
     var SECTION_LABELS = {
         hero: ['Hero', 'الغلاف'], categories: ['Categories', 'التصنيفات'],
         courses: ['Courses', 'الدورات'], about: ['About', 'من نحن'],
         subscriptions: ['Subscriptions', 'الاشتراكات'], coupons: ['Coupons', 'الكوبونات'],
-        gallery: ['Gallery', 'المعرض'], contact: ['Contact', 'تواصل'], footer: ['Footer', 'التذييل'],
-        appband: ['App band', 'التطبيق'], brand: ['Brand & navbar', 'الهوية'], auth: ['Auth pages', 'صفحات الدخول']
+        gallery: ['Gallery', 'المعرض'], testimonials: ['Testimonials', 'آراء المتعلمين'], faq: ['FAQ', 'الأسئلة الشائعة'],
+        contact: ['Contact', 'تواصل'], footer: ['Footer', 'التذييل'],
+        appband: ['App band', 'التطبيق'], brand: ['Brand & navbar', 'الهوية والقائمة'], auth: ['Auth pages', 'صفحات الدخول']
     };
+    // Data sections carry no data-nit-section on older copies — find them by signature.
+    var SECTION_SIG = {
+        categories: '[data-nit-categories]', courses: '[data-nit-courses],[data-nit-my-courses]',
+        subscriptions: '[data-nit-subs]', coupons: '[data-nit-coupons]', testimonials: '[data-nit-testimonials]'
+    };
+    var PICK_SECTIONS = ['courses', 'categories', 'subscriptions', 'coupons', 'testimonials'];
     var isAr = (document.documentElement.getAttribute('lang') || '').indexOf('ar') === 0;
     function secLabel(marker) {
         var l = SECTION_LABELS[marker];
         return l ? (isAr ? l[1] : l[0]) : marker;
+    }
+    function sectionRoot(marker) {
+        var r = document.querySelector('[data-nit-section="' + marker + '"]');
+        if (r) { return r; }
+        var sel = SECTION_SIG[marker];
+        if (!sel) { return null; }
+        var el = document.querySelector(sel);
+        if (!el) { return null; }
+        return el.closest('[data-nit-section]') || el.closest('.block_nit_section, [data-block]') || el;
     }
     function schemaFor(key) {
         var fields = CFG.contentFields || [];
@@ -1144,11 +1197,22 @@
         var f = schemaFor(key);
         return f ? f.label : key.replace(/_/g, ' ');
     }
+    function escapeHtml(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
+    // Stored values may carry a little markup (<br>, an accent <span>): edit them
+    // as plain text with line breaks; never show raw tags in a field.
+    function plainOf(html) {
+        var d = document.createElement('div');
+        d.innerHTML = String(html || '').replace(/<br\s*\/?>/gi, '\n');
+        return (d.textContent || '').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+    }
     function currentText(key, el) {
         var v = (CFG.contentValues || {})[key];
-        if (v && typeof v === 'object') { return { en: v.en || '', ar: v.ar || '' }; }
-        var txt = el ? (el.textContent || '').trim() : '';
-        return { en: txt, ar: '' };
+        if (v && typeof v === 'object') { return { en: plainOf(v.en), ar: plainOf(v.ar) }; }
+        return { en: el ? plainOf(el.innerHTML) : '', ar: '' };
     }
     function mkInput(multiline, value, placeholder) {
         var i = document.createElement(multiline ? 'textarea' : 'input');
@@ -1158,24 +1222,104 @@
         if (placeholder) { i.placeholder = placeholder; }
         return i;
     }
-    // Build the editor for one section root element (or the brand/navbar
-    // pseudo-section). Returns the panel body node.
+    function fieldRow(label) {
+        var row = document.createElement('div');
+        row.className = 'nit-side-field';
+        var lab = document.createElement('label');
+        lab.textContent = label;
+        row.appendChild(lab);
+        return row;
+    }
+    function markDirty() {
+        dirty = true;
+        document.body.classList.add('nit-dirty');
+    }
+    function post(fd) {
+        fd.append('sesskey', CFG.sesskey);
+        return fetch(CFG.editUrl, { method: 'POST', body: fd, credentials: 'same-origin' }).then(function (r) { return r.json(); });
+    }
+    function saveButton(label, onClick) {
+        var b = document.createElement('button');
+        b.type = 'button'; b.className = 'nit-side-btn';
+        b.textContent = label || t('save', 'Save');
+        b.addEventListener('click', function () {
+            var lbl = b.textContent;
+            b.disabled = true; b.textContent = t('saving', 'Saving…');
+            Promise.resolve(onClick()).then(function (d) {
+                if (d && d.ok) { dirty = false; window.location.reload(); return; }
+                b.disabled = false; b.textContent = lbl;
+                window.alert(t('savefailed', 'Could not save') + (d && d.error ? ' (' + d.error + ')' : ''));
+            }).catch(function () {
+                b.disabled = false; b.textContent = lbl;
+                window.alert(t('savefailed', 'Could not save'));
+            });
+        });
+        return b;
+    }
+    function discardButton() {
+        var b = document.createElement('button');
+        b.type = 'button'; b.className = 'nit-side-btn sec';
+        b.textContent = t('discard', 'Discard');
+        b.addEventListener('click', function () { dirty = false; window.location.reload(); });
+        return b;
+    }
+    function actionsRow(saveBtn, extra) {
+        var actions = document.createElement('div');
+        actions.className = 'nit-side-actions';
+        actions.appendChild(saveBtn);
+        actions.appendChild(discardButton());
+        (extra || []).forEach(function (e) { actions.appendChild(e); });
+        return actions;
+    }
+    // Live preview of a text value into its hook element(s), in the UI language.
+    function previewText(key, en, ar) {
+        var v = isAr ? (ar || en) : (en || ar);
+        document.querySelectorAll('[data-nit-edit="' + key + '"]').forEach(function (el) {
+            el.innerHTML = escapeHtml(v).replace(/\n/g, '<br>');
+        });
+    }
+    function previewImage(el, url) {
+        el.style.backgroundImage = 'url(' + url + ')';
+        el.style.backgroundSize = 'cover';
+        el.style.backgroundPosition = 'center';
+        [].slice.call(el.children).forEach(function (c) {
+            if (!c.querySelector('[data-nit-edit],[data-nit-edit-img],[data-nit-stat]')) { c.style.visibility = 'hidden'; }
+        });
+    }
+    function checkList(options, checked, onChange) {
+        var wrap = document.createElement('div');
+        wrap.className = 'nit-side-checks';
+        var boxes = [];
+        options.forEach(function (o) {
+            var lab = document.createElement('label');
+            lab.className = 'nit-side-check';
+            var cb = document.createElement('input');
+            cb.type = 'checkbox'; cb.value = String(o.id ? o.id : o.key);
+            cb.checked = checked(cb.value);
+            cb.addEventListener('change', function () { markDirty(); if (onChange) { onChange(); } });
+            var sp = document.createElement('span'); sp.textContent = o.label;
+            lab.appendChild(cb); lab.appendChild(sp);
+            wrap.appendChild(lab);
+            boxes.push(cb);
+        });
+        return { node: wrap, values: function () { return boxes.filter(function (b) { return b.checked; }).map(function (b) { return b.value; }); }, boxes: boxes };
+    }
+
+    // The editor for one section root (or the brand pseudo-section).
     function contentEditorFor(marker, root) {
-        var scope = root || document;
         var body = document.createElement('div');
-        var textEls = [].slice.call(scope.querySelectorAll('[data-nit-edit]'))
-            .filter(function (el) { var k = el.getAttribute('data-nit-edit'); return k !== 'logo' && k !== 'apps'; });
-        var imgEls  = [].slice.call(scope.querySelectorAll('[data-nit-edit-img]'));
-        var hrefEls = [].slice.call(scope.querySelectorAll('[data-nit-edit-href]'));
+        var scope = root || null;
+        var textEls = [], imgEls = [], hrefEls = [];
         if (marker === 'brand') {
-            textEls = [].slice.call(document.querySelectorAll('[data-nit-edit="brand_name"],[data-nit-edit="footer_tagline"]'));
-            imgEls  = [].slice.call(document.querySelectorAll('[data-nit-logo],[data-nit-edit-img="logo"]')).slice(0, 1);
-            hrefEls = [];
+            textEls = [].slice.call(document.querySelectorAll('[data-nit-edit="brand_name"]'));
+            imgEls  = [].slice.call(document.querySelectorAll('[data-nit-logo]')).slice(0, 1);
+        } else if (scope) {
+            textEls = [].slice.call(scope.querySelectorAll('[data-nit-edit]'))
+                .filter(function (el) { var k = el.getAttribute('data-nit-edit'); return k !== 'logo' && k !== 'apps' && k !== 'brand_name'; });
+            imgEls  = [].slice.call(scope.querySelectorAll('[data-nit-edit-img]'));
+            hrefEls = [].slice.call(scope.querySelectorAll('[data-nit-edit-href]'));
         }
-        var textInputs = {};
-        var hrefInputs = {};
-        var fileInputs = {};
-        var seen = {};
+        var textInputs = {}, hrefInputs = {}, fileInputs = {}, seen = {};
 
         textEls.forEach(function (el) {
             var key = el.getAttribute('data-nit-edit');
@@ -1184,36 +1328,35 @@
             var sch = schemaFor(key);
             var multiline = sch ? !!sch.multiline : (el.textContent || '').length > 80;
             var cur = currentText(key, el);
-            var row = document.createElement('div');
-            row.className = 'nit-side-field';
-            var lab = document.createElement('label');
-            lab.textContent = fieldLabel(key);
-            row.appendChild(lab);
+            var row = fieldRow(fieldLabel(key));
             var en = mkInput(multiline, cur.en, CFG.bilingual ? 'English' : '');
             row.appendChild(en);
             var ar = null;
-            if (CFG.bilingual) {
-                ar = mkInput(multiline, cur.ar, 'العربية');
-                ar.dir = 'rtl';
-                row.appendChild(ar);
-            }
+            if (CFG.bilingual) { ar = mkInput(multiline, cur.ar, 'العربية'); ar.dir = 'rtl'; row.appendChild(ar); }
+            var onInput = function () { markDirty(); previewText(key, en.value, ar ? ar.value : ''); };
+            en.addEventListener('input', onInput);
+            if (ar) { ar.addEventListener('input', onInput); }
             textInputs[key] = { en: en, ar: ar };
             body.appendChild(row);
         });
 
         hrefEls.forEach(function (el) {
             var key = el.getAttribute('data-nit-edit-href');
-            if (!key || seen['h:' + key]) { return; }
+            if (!key || seen['h:' + key] || seen['t:' + key]) { return; } // contact_email/phone derive their href from the text
             seen['h:' + key] = true;
-            var row = document.createElement('div');
-            row.className = 'nit-side-field';
-            var lab = document.createElement('label');
-            lab.textContent = fieldLabel(key) + ' — URL';
-            row.appendChild(lab);
-            var cur = (CFG.contentValues || {})[key + '__href'] || el.getAttribute('href') || '';
+            var row = fieldRow(fieldLabel(key));
+            var cur = (CFG.contentValues || {})[key + '__href'];
+            if (cur == null) { cur = el.getAttribute('href') || ''; }
+            if (cur === '#') { cur = ''; }
             var i = mkInput(false, cur, 'https://');
-            i.type = 'url';
-            i.dir = 'ltr';
+            i.type = 'url'; i.dir = 'ltr';
+            i.addEventListener('input', function () {
+                markDirty();
+                document.querySelectorAll('[data-nit-edit-href="' + key + '"]').forEach(function (a) {
+                    a.setAttribute('href', i.value.trim());
+                    if (key.indexOf('social_') === 0) { a.style.display = i.value.trim() ? '' : 'none'; }
+                });
+            });
             row.appendChild(i);
             hrefInputs[key] = i;
             body.appendChild(row);
@@ -1223,154 +1366,299 @@
             var key = el.getAttribute('data-nit-edit-img') || 'logo';
             if (seen['i:' + key]) { return; }
             seen['i:' + key] = true;
-            var row = document.createElement('div');
-            row.className = 'nit-side-field';
-            var lab = document.createElement('label');
-            lab.textContent = fieldLabel(key);
-            row.appendChild(lab);
-            var pick = document.createElement('div');
-            pick.className = 'nit-side-img';
-            var thumb = document.createElement('div');
-            thumb.className = 'nit-side-thumb';
+            var row = fieldRow(fieldLabel(key));
+            var pick = document.createElement('div'); pick.className = 'nit-side-img';
+            var thumb = document.createElement('div'); thumb.className = 'nit-side-thumb';
             var bg = (getComputedStyle(el).backgroundImage || '');
             if (bg && bg !== 'none') { thumb.style.backgroundImage = bg; }
             var file = document.createElement('input');
             file.type = 'file'; file.accept = 'image/*'; file.className = 'nit-side-file';
             file.addEventListener('change', function () {
-                if (file.files && file.files[0]) {
-                    if (file.files[0].size > (CFG.maxImageBytes || 1572864)) {
-                        window.alert(t('toolarge', 'Image too large'));
-                        file.value = '';
-                        return;
-                    }
-                    thumb.style.backgroundImage = 'url(' + URL.createObjectURL(file.files[0]) + ')';
+                if (!(file.files && file.files[0])) { return; }
+                if (file.files[0].size > (CFG.maxImageBytes || 1572864)) {
+                    window.alert(t('toolarge', 'Image too large')); file.value = ''; return;
+                }
+                var url = URL.createObjectURL(file.files[0]);
+                thumb.style.backgroundImage = 'url(' + url + ')';
+                markDirty();
+                document.querySelectorAll('[data-nit-edit-img="' + key + '"]').forEach(function (x) { previewImage(x, url); });
+                if (key === 'logo') {
+                    document.querySelectorAll('[data-nit-logo]').forEach(function (x) { previewImage(x, url); });
+                    document.querySelectorAll('.nit-navbar-logo').forEach(function (img) { img.src = url; });
+                    document.querySelectorAll('.nit-navbar-mark').forEach(function (m) { previewImage(m, url); });
                 }
             });
-            pick.appendChild(thumb);
-            pick.appendChild(file);
+            pick.appendChild(thumb); pick.appendChild(file);
             row.appendChild(pick);
             fileInputs[key] = file;
             body.appendChild(row);
         });
 
-        if (!textEls.length && !imgEls.length && !hrefEls.length) {
-            var none = document.createElement('p');
-            none.className = 'nit-side-hint';
-            none.textContent = t('noeditable', 'This section has no editable text or images; it renders live Moodle data.');
-            body.appendChild(none);
-            if (root) {
-                var bgb = document.createElement('button');
-                bgb.type = 'button'; bgb.className = 'nit-side-btn sec';
-                bgb.textContent = t('editimage', 'Replace background image');
-                bgb.addEventListener('click', function () { uploadImage('section_bg_image', { section: marker }, null); });
-                body.appendChild(bgb);
-            }
-        }
-
-        // Structural editors that go beyond text/image hooks.
-        var advanced = null;
-        if (marker === 'about') { advanced = function () { return aboutPanel(root); }; }
-        if (marker === 'gallery') { advanced = function () { return galleryPanel(root); }; }
-        if (marker === 'contact') { advanced = function () { return contactPanel(); }; }
-        if (marker === 'footer') { advanced = function () { return footerPanel(root); }; }
-        if (marker === 'hero') { advanced = function () { return heroPanel('hero'); }; }
-
-        var actions = document.createElement('div');
-        actions.className = 'nit-side-actions';
-        var save = document.createElement('button');
-        save.type = 'button'; save.className = 'nit-side-btn';
-        save.textContent = t('save', 'Save');
-        save.addEventListener('click', function () {
+        var saveContent = function () {
             var text = {}, href = {};
             Object.keys(textInputs).forEach(function (k) {
                 var en = textInputs[k].en.value, ar = textInputs[k].ar ? textInputs[k].ar.value : '';
                 text[k] = CFG.bilingual ? { en: en, ar: ar } : en;
             });
-            Object.keys(hrefInputs).forEach(function (k) { href[k] = hrefInputs[k].value; });
+            Object.keys(hrefInputs).forEach(function (k) { href[k] = hrefInputs[k].value.trim(); });
             var fd = new FormData();
             fd.append('action', 'content');
-            fd.append('sesskey', CFG.sesskey);
             fd.append('text', JSON.stringify(text));
             fd.append('href', JSON.stringify(href));
             Object.keys(fileInputs).forEach(function (k) {
                 var f = fileInputs[k];
                 if (f.files && f.files[0]) { fd.append('image_' + k, f.files[0]); }
             });
-            save.disabled = true;
-            save.textContent = t('saving', 'Saving…');
-            fetch(CFG.editUrl, { method: 'POST', body: fd, credentials: 'same-origin' })
-                .then(function (r) { return r.json(); })
-                .then(function (d) {
-                    if (d && d.ok) { window.location.reload(); return; }
-                    save.disabled = false; save.textContent = t('save', 'Save');
-                    window.alert(t('savefailed', 'Could not save') + (d && d.error ? ' (' + d.error + ')' : ''));
-                })
-                .catch(function () {
-                    save.disabled = false; save.textContent = t('save', 'Save');
-                    window.alert(t('savefailed', 'Could not save'));
-                });
-        });
-        actions.appendChild(save);
-        if (advanced) {
-            var adv = document.createElement('button');
-            adv.type = 'button'; adv.className = 'nit-side-btn sec';
-            adv.textContent = t('advanced', 'Advanced…');
-            adv.addEventListener('click', function () { openPanel(secLabel(marker), advanced()); });
-            actions.appendChild(adv);
+            return post(fd);
+        };
+        var hasContent = !!(textEls.length || imgEls.length || hrefEls.length);
+
+        // ── Section-specific structure editors (chained into the same Save) ──
+        var extraSavers = [];
+
+        if (marker === 'about' && root) {
+            body.appendChild(aboutCardsEditor(root, extraSavers));
         }
-        body.appendChild(actions);
+        if (PICK_SECTIONS.indexOf(marker) !== -1) {
+            body.appendChild(picksEditor(marker, extraSavers));
+        }
+        if (marker === 'brand') {
+            body.appendChild(pagesEditor(t('navlinks', 'Navbar links'), CFG.navPages || [], 'nav_pages', extraSavers,
+                t('navlinkshint', 'Pages shown in the top navigation (Moodle custom menu).')));
+        }
+        if (marker === 'footer') {
+            body.appendChild(pagesEditor(t('footerlinks', 'Footer links'), CFG.footerLinks || [], 'footer_links', extraSavers,
+                t('footerlinkshint', 'Pages listed in the footer link column. None picked = the template defaults.')));
+        }
+
+        if (!hasContent && !extraSavers.length) {
+            var none = document.createElement('p');
+            none.className = 'nit-side-hint';
+            none.textContent = t('noeditable', 'This section has no editable text or images; it renders live Moodle data.');
+            body.appendChild(none);
+        }
+
+        var save = saveButton(t('save', 'Save'), function () {
+            var chain = hasContent ? saveContent() : Promise.resolve({ ok: true });
+            extraSavers.forEach(function (fn) {
+                chain = chain.then(function (d) { return (d && d.ok) ? fn() : d; });
+            });
+            return chain;
+        });
+        var extra = [];
+        if (root && (!hasContent || marker === 'hero')) {
+            var bgb = document.createElement('button');
+            bgb.type = 'button'; bgb.className = 'nit-side-btn sec';
+            bgb.textContent = t('editimage', 'Background image');
+            bgb.addEventListener('click', function () { uploadImage('section_bg_image', { section: marker }, null); });
+            extra.push(bgb);
+        }
+        body.appendChild(actionsRow(save, extra));
         return body;
     }
 
-    // Auth pages: the login/signup brand panel texts + background image.
+    // About: the feature cards (title + text, max 5) — add / remove / edit.
+    function aboutCardsEditor(root, savers) {
+        var wrap = document.createElement('div');
+        wrap.className = 'nit-side-group';
+        var hd = document.createElement('div'); hd.className = 'nit-side-subhd'; hd.textContent = t('aboutcards', 'Feature cards (max 5)');
+        wrap.appendChild(hd);
+        var list = document.createElement('div');
+        var cards = [].slice.call(root.querySelectorAll('[data-nit-about-card]'));
+        if (!cards.length) { return document.createDocumentFragment(); }
+        var rows = [];
+        var leavesOf = function (card) {
+            var ls = [].slice.call(card.querySelectorAll('*')).filter(function (n) {
+                return n.children.length === 0 && (n.textContent || '').trim() !== '';
+            });
+            if (ls.length && (ls[0].textContent || '').trim().length <= 2) { ls.shift(); }
+            return ls;
+        };
+        var addRow = function (title, text, cardEl) {
+            if (rows.length >= 5) { return; }
+            var r = document.createElement('div');
+            r.className = 'nit-side-card';
+            var ti = mkInput(false, title, t('cardtitle', 'Title'));
+            var tx = mkInput(true, text, t('cardtext', 'Text'));
+            var del = document.createElement('button'); del.type = 'button'; del.className = 'nit-side-x'; del.textContent = '×'; del.title = t('remove', 'Remove');
+            var live = function () {
+                markDirty();
+                if (!cardEl) { return; }
+                var ls = leavesOf(cardEl);
+                if (ls[0]) { ls[0].textContent = ti.value; }
+                if (ls[1]) { ls[1].textContent = tx.value; }
+            };
+            ti.addEventListener('input', live); tx.addEventListener('input', live);
+            del.addEventListener('click', function () {
+                markDirty();
+                if (cardEl) { cardEl.style.display = 'none'; }
+                rows.splice(rows.indexOf(entry), 1);
+                r.remove();
+                addBtn.disabled = rows.length >= 5;
+            });
+            r.appendChild(ti); r.appendChild(tx); r.appendChild(del);
+            list.appendChild(r);
+            var entry = { title: ti, text: tx };
+            rows.push(entry);
+            addBtn.disabled = rows.length >= 5;
+        };
+        var addBtn = document.createElement('button');
+        addBtn.type = 'button'; addBtn.className = 'nit-side-btn sec';
+        addBtn.textContent = '+ ' + t('addcard', 'Add a card');
+        addBtn.addEventListener('click', function () {
+            var proto = cards[0];
+            var clone = proto.cloneNode(true);
+            var ls = leavesOf(clone);
+            if (ls[0]) { ls[0].textContent = ''; }
+            if (ls[1]) { ls[1].textContent = ''; }
+            proto.parentNode.appendChild(clone);
+            addRow('', '', clone);
+            markDirty();
+        });
+        cards.forEach(function (c) {
+            var ls = leavesOf(c);
+            addRow(ls[0] ? ls[0].textContent.trim() : '', ls[1] ? ls[1].textContent.trim() : '', c);
+        });
+        wrap.appendChild(list);
+        wrap.appendChild(addBtn);
+        savers.push(function () {
+            var data = rows.map(function (r) {
+                var title = r.title.value.trim(), text = r.text.value.trim();
+                return CFG.bilingual ? { title: isAr ? { en: '', ar: title } : { en: title, ar: '' }, text: isAr ? { en: '', ar: text } : { en: text, ar: '' } }
+                                     : { title: title, text: text };
+            }).filter(function (c) { return (CFG.bilingual ? (c.title.en || c.title.ar || c.text.en || c.text.ar) : (c.title || c.text)); });
+            var fd = new FormData();
+            fd.append('action', 'about_cards');
+            fd.append('cards', JSON.stringify(data));
+            return post(fd);
+        });
+        return wrap;
+    }
+
+    // Data sections: pick which real items show (none picked = all).
+    function picksEditor(section, savers) {
+        var wrap = document.createElement('div');
+        wrap.className = 'nit-side-group';
+        var picks = CFG.picks || {};
+        var opts = (picks.options || {})[section] || [];
+        var cur = (picks.current || {})[section];
+        var titles = { courses: ['Courses to show', 'الدورات المعروضة'], categories: ['Categories to show', 'التصنيفات المعروضة'],
+            subscriptions: ['Plans to show', 'الخطط المعروضة'], coupons: ['Coupons to show', 'الكوبونات المعروضة'],
+            testimonials: ['Reviews to show', 'الآراء المعروضة'] };
+        var hd = document.createElement('div'); hd.className = 'nit-side-subhd';
+        hd.textContent = isAr ? titles[section][1] : titles[section][0];
+        wrap.appendChild(hd);
+        if (picks.licence && picks.licence[section] === false) {
+            var lic = document.createElement('p'); lic.className = 'nit-side-hint';
+            lic.textContent = t('notlicensed', 'Not included in your plan.');
+            wrap.appendChild(lic);
+            return wrap;
+        }
+        if (!opts.length) {
+            var none = document.createElement('p'); none.className = 'nit-side-hint';
+            none.textContent = section === 'testimonials'
+                ? t('noreviews', 'No learner reviews with text yet — they appear here once learners rate a course.')
+                : t('noitems', 'Nothing to pick yet.');
+            wrap.appendChild(none);
+            return wrap;
+        }
+        var all = !cur || !cur.length;
+        var cl = checkList(opts, function (v) { return all || cur.map(String).indexOf(v) !== -1; }, null);
+        var hint = document.createElement('p'); hint.className = 'nit-side-hint';
+        hint.textContent = t('pickshint', 'Untick to hide an item from the homepage. All ticked = show everything.');
+        var tools = document.createElement('div'); tools.className = 'nit-side-mini';
+        var selAll = document.createElement('button'); selAll.type = 'button'; selAll.textContent = t('selectall', 'All');
+        var selNone = document.createElement('button'); selNone.type = 'button'; selNone.textContent = t('selectnone', 'None');
+        selAll.addEventListener('click', function () { cl.boxes.forEach(function (b) { b.checked = true; }); markDirty(); });
+        selNone.addEventListener('click', function () { cl.boxes.forEach(function (b) { b.checked = false; }); markDirty(); });
+        tools.appendChild(selAll); tools.appendChild(selNone);
+        wrap.appendChild(tools);
+        wrap.appendChild(cl.node);
+        wrap.appendChild(hint);
+        savers.push(function () {
+            var v = cl.values();
+            var fd = new FormData();
+            fd.append('action', 'picks');
+            fd.append('section', section);
+            fd.append('ids', JSON.stringify(v.length === opts.length ? [] : v));
+            return post(fd);
+        });
+        return wrap;
+    }
+
+    // Navbar / footer: pick the academy pages to link.
+    function pagesEditor(title, current, action, savers, hint) {
+        var wrap = document.createElement('div');
+        wrap.className = 'nit-side-group';
+        var hd = document.createElement('div'); hd.className = 'nit-side-subhd'; hd.textContent = title;
+        wrap.appendChild(hd);
+        var pages = (CFG.pages || []).map(function (p) { return { key: p.key, label: isAr ? p.label.ar : p.label.en }; });
+        var cl = checkList(pages, function (v) { return current.map(String).indexOf(v) !== -1; }, null);
+        wrap.appendChild(cl.node);
+        var h = document.createElement('p'); h.className = 'nit-side-hint'; h.textContent = hint; wrap.appendChild(h);
+        savers.push(function () {
+            var fd = new FormData();
+            fd.append('action', action);
+            fd.append('keys', JSON.stringify(cl.values()));
+            return post(fd);
+        });
+        return wrap;
+    }
+
+    // Auth pages: welcome + tagline + background, with a live login preview.
     function authEditor() {
         var body = document.createElement('div');
         var a = CFG.auth || {};
-        function field(label, key, multiline) {
-            var row = document.createElement('div');
-            row.className = 'nit-side-field';
-            var lab = document.createElement('label'); lab.textContent = label; row.appendChild(lab);
+        var frameWrap = document.createElement('div'); frameWrap.className = 'nit-side-preview';
+        var frame = document.createElement('iframe');
+        frame.src = (M.cfg && M.cfg.wwwroot ? M.cfg.wwwroot : '') + '/theme/nit/authpreview.php';
+        frame.title = t('loginpreview', 'Login preview');
+        frameWrap.appendChild(frame);
+        body.appendChild(frameWrap);
+        var inDoc = function (fn) { try { var d = frame.contentDocument; if (d && d.body) { fn(d); } } catch (e) { /* ignore */ } };
+        function field(label, key, multiline, sel) {
+            var row = fieldRow(label);
             var cur = a[key] || { en: '', ar: '' };
             var en = mkInput(multiline, cur.en, CFG.bilingual ? 'English' : ''); row.appendChild(en);
             var ar = null;
             if (CFG.bilingual) { ar = mkInput(multiline, cur.ar, 'العربية'); ar.dir = 'rtl'; row.appendChild(ar); }
+            var live = function () {
+                markDirty();
+                var v = isAr ? (ar && ar.value) || en.value : en.value || (ar && ar.value);
+                inDoc(function (d) { var el = d.querySelector(sel); if (el) { el.textContent = v; } });
+            };
+            en.addEventListener('input', live); if (ar) { ar.addEventListener('input', live); }
             body.appendChild(row);
             return { en: en, ar: ar };
         }
-        var welcome = field(t('authwelcome', 'Welcome title'), 'welcome', false);
-        var tagline = field(t('authtagline', 'Tagline'), 'tagline', true);
-        var imgrow = document.createElement('div'); imgrow.className = 'nit-side-field';
-        var il = document.createElement('label'); il.textContent = t('loginbg', 'Login background image'); imgrow.appendChild(il);
+        var welcome = field(t('authwelcome', 'Welcome title'), 'welcome', false, '.nit-auth-side .quote h2');
+        var tagline = field(t('authtagline', 'Tagline'), 'tagline', true, '.nit-auth-side .quote p');
+        var imgrow = fieldRow(t('loginbg', 'Login background image'));
         var file = document.createElement('input'); file.type = 'file'; file.accept = 'image/*'; file.className = 'nit-side-file';
+        file.addEventListener('change', function () {
+            if (!(file.files && file.files[0])) { return; }
+            markDirty();
+            var url = URL.createObjectURL(file.files[0]);
+            inDoc(function (d) { var art = d.getElementById('nit-auth-art'); if (art) { art.style.backgroundImage = 'url(' + url + ')'; } });
+        });
         imgrow.appendChild(file); body.appendChild(imgrow);
-        var actions = document.createElement('div'); actions.className = 'nit-side-actions';
-        var save = document.createElement('button'); save.type = 'button'; save.className = 'nit-side-btn'; save.textContent = t('save', 'Save');
-        save.addEventListener('click', function () {
+        var save = saveButton(t('save', 'Save'), function () {
             var fd = new FormData();
-            fd.append('action', 'auth'); fd.append('sesskey', CFG.sesskey);
+            fd.append('action', 'auth');
             fd.append('welcome', JSON.stringify({ en: welcome.en.value, ar: welcome.ar ? welcome.ar.value : '' }));
             fd.append('tagline', JSON.stringify({ en: tagline.en.value, ar: tagline.ar ? tagline.ar.value : '' }));
             if (file.files && file.files[0]) { fd.append('image', file.files[0]); }
-            save.disabled = true;
-            fetch(CFG.editUrl, { method: 'POST', body: fd, credentials: 'same-origin' })
-                .then(function (r) { return r.json(); })
-                .then(function (d) {
-                    if (d && d.ok) { window.location.reload(); return; }
-                    save.disabled = false; window.alert(t('savefailed', 'Could not save'));
-                })
-                .catch(function () { save.disabled = false; window.alert(t('savefailed', 'Could not save')); });
+            return post(fd);
         });
-        actions.appendChild(save); body.appendChild(actions);
+        body.appendChild(actionsRow(save));
         return body;
     }
 
     function postAction(fields) {
         var fd = new FormData();
-        fd.append('sesskey', CFG.sesskey);
         Object.keys(fields).forEach(function (k) { fd.append(k, fields[k]); });
-        return fetch(CFG.editUrl, { method: 'POST', body: fd, credentials: 'same-origin' })
-            .then(function (r) { return r.json(); })
-            .then(function (d) { if (d && d.ok) { window.location.reload(); } else { window.alert(t('savefailed', 'Could not save')); } })
+        return post(fd)
+            .then(function (d) { if (d && d.ok) { dirty = false; window.location.reload(); } else { window.alert(t('savefailed', 'Could not save') + (d && d.error ? ' (' + d.error + ')' : '')); } })
             .catch(function () { window.alert(t('savefailed', 'Could not save')); });
     }
 
@@ -1382,13 +1670,16 @@
         st.textContent = title;
         panelContent.appendChild(st);
         panelContent.appendChild(node);
+        panelContent.scrollTop = 0;
     }
     function selectSection(marker) {
-        var root = document.querySelector('[data-nit-section="' + marker + '"]');
+        if (dirty && !window.confirm(t('unsaved', 'You have unsaved changes. Discard them?'))) { return; }
+        if (dirty) { dirty = false; window.location.reload(); return; }
+        var root = marker === 'brand' ? null : sectionRoot(marker);
         document.querySelectorAll('[data-nit-section].nit-sel').forEach(function (s) { s.classList.remove('nit-sel'); });
         if (root) {
             root.classList.add('nit-sel');
-            if (root.scrollIntoView) { root.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+            if (root.scrollIntoView) { root.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
         }
         if (sidePanel) {
             sidePanel.querySelectorAll('.nit-side-secrow').forEach(function (r) {
@@ -1400,9 +1691,17 @@
 
     function buildSidePanel() {
         if (sidePanel) { return; }
-        var state = CFG.sections || [];
-        var present = state.filter(function (s) { return s.present; });
-        var missing = state.filter(function (s) { return !s.present; });
+        var state = (CFG.sections || []).slice();
+        // Order the present sections as they actually appear on the page.
+        var domIndex = function (s) {
+            var r = sectionRoot(s.key);
+            if (!r) { return 1e9; }
+            var all = [].slice.call(document.querySelectorAll('[data-nit-section], .block_nit_section, [data-block]'));
+            var i = all.indexOf(r);
+            return i === -1 ? 1e8 : i;
+        };
+        var present = state.filter(function (s) { return s.present; }).sort(function (a, b) { return domIndex(a) - domIndex(b); });
+        var missing = state.filter(function (s) { return !s.present && s.licensed !== false; });
         sidePanel = document.createElement('aside');
         sidePanel.id = 'nit-side-panel';
 
@@ -1410,7 +1709,7 @@
         panelContent.className = 'nit-side-content';
         var hint = document.createElement('p');
         hint.className = 'nit-side-hint';
-        hint.textContent = t('sidehint', 'Select a section to edit its text, images and links.');
+        hint.textContent = t('sidehint', 'Select a section to edit its text, images and links. Changes preview live; Save to publish.');
         panelContent.appendChild(hint);
         sidePanel.appendChild(panelContent);
 
@@ -1439,6 +1738,7 @@
         present.forEach(function (s, i) {
             var r = rowFor(s.key, secLabel(s.key), function () { selectSection(s.key); });
             if (!s.visible) { r.row.classList.add('off'); }
+            if (s.licensed === false) { r.row.classList.add('off'); r.row.title = t('notlicensed', 'Not included in your plan.'); }
             var up = document.createElement('button'); up.type = 'button'; up.className = 'h'; up.textContent = '↑'; up.title = t('moveup', 'Move up');
             var down = document.createElement('button'); down.type = 'button'; down.className = 'h'; down.textContent = '↓'; down.title = t('movedown', 'Move down');
             up.disabled = i === 0; down.disabled = i === present.length - 1;
@@ -1448,7 +1748,14 @@
             eye.textContent = s.visible ? '👁' : '◌';
             eye.title = s.visible ? t('hidesection', 'Hide section') : t('showsection', 'Show section');
             eye.addEventListener('click', function () { postAction({ action: 'section_toggle', blockid: s.blockid, visible: s.visible ? 0 : 1 }); });
-            r.row.appendChild(up); r.row.appendChild(down); r.row.appendChild(r.name); r.row.appendChild(eye);
+            var rst = document.createElement('button'); rst.type = 'button'; rst.className = 'eye'; rst.textContent = '↺';
+            rst.title = t('resetsection', 'Reset to template (drops this section\'s edits)');
+            rst.addEventListener('click', function () {
+                if (window.confirm(t('resetconfirm', 'Reset this section to the template? Its edits will be lost.'))) {
+                    postAction({ action: 'section_reset', blockid: s.blockid });
+                }
+            });
+            r.row.appendChild(up); r.row.appendChild(down); r.row.appendChild(r.name); r.row.appendChild(rst); r.row.appendChild(eye);
             list.appendChild(r.row);
         });
         sidePanel.appendChild(list);
@@ -1478,7 +1785,10 @@
          ['branding', t('editbrand', 'Branding'), brandingPanel],
          ['auth', secLabel('auth'), authEditor]].forEach(function (d) {
             var r = rowFor(d[0], d[1], function () {
+                if (dirty && !window.confirm(t('unsaved', 'You have unsaved changes. Discard them?'))) { return; }
+                if (dirty) { dirty = false; window.location.reload(); return; }
                 sidePanel.querySelectorAll('.nit-side-secrow').forEach(function (x) { x.classList.toggle('on', x === r.row); });
+                document.querySelectorAll('[data-nit-section].nit-sel').forEach(function (s) { s.classList.remove('nit-sel'); });
                 showInPanel(d[1], d[2]());
             });
             var h = document.createElement('span'); h.className = 'h'; h.textContent = '✦';
@@ -1489,6 +1799,7 @@
 
         document.body.appendChild(sidePanel);
         document.body.classList.add('nit-editing-panel');
+        window.addEventListener('beforeunload', function (e) { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
     }
     function removeSidePanel() {
         if (sidePanel) { sidePanel.remove(); sidePanel = null; panelContent = null; }
@@ -1542,7 +1853,8 @@
         // page in edit mode → the pencils below activate. Shown only when NOT
         // already editing (in edit mode, the top "Editing homepage" toolbar has the
         // "Done editing" control).
-        if (!isEditing()) {
+        var hasSwitch = !!document.querySelector('.nit-navbar-editswitch input, .editmode-switch-form, [data-region="editmode-switch"]');
+        if (!isEditing() && !hasSwitch) {
             var mcfg = (window.M && M.cfg) || {};
             var editBtn = document.createElement('button');
             editBtn.type = 'button';

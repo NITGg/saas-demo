@@ -122,10 +122,17 @@ class template_applier {
         }
         $claimed = [];
         $out = [];
+        $tpl = homepage_templates::current();
         foreach (homepage_templates::sections() as $section) {
             $target = self::match_block($blocks, $decoded, $claimed, $section['signatures']);
+            // A section the active template does not ship (and that is not on the
+            // page already) cannot be added — leave it out of the list.
+            if (!$target && !is_readable(homepage_templates::dir($tpl) . '/' . $section['file'])) {
+                continue;
+            }
             $row = ['key' => $section['key'], 'region' => $section['region'], 'blockid' => 0,
-                'present' => false, 'visible' => true, 'weight' => (int) $section['weight']];
+                'present' => false, 'visible' => true, 'weight' => (int) $section['weight'],
+                'licensed' => home_picks::licensed($section['key'])];
             if ($target) {
                 $claimed[$target->id] = true;
                 $pos = $posbyblock[(int) $target->id] ?? null;
@@ -137,7 +144,10 @@ class template_applier {
             }
             $out[] = $row;
         }
-        usort($out, static fn($a, $b) => [$a['region'], $a['weight']] <=> [$b['region'], $b['weight']]);
+        // Page order: the top region first, then the bottom one (alphabetical
+        // would put "fullwidth-bottom" — the footer — first).
+        $rank = static fn(string $r): int => $r === 'fullwidth-bottom' ? 1 : 0;
+        usort($out, static fn($a, $b) => [$rank($a['region']), $a['weight']] <=> [$rank($b['region']), $b['weight']]);
         return $out;
     }
 
@@ -179,6 +189,38 @@ class template_applier {
         }
         purge_all_caches();
         return (int) $new->id;
+    }
+
+    /**
+     * Reset a section block to the active template's fresh HTML (drops the owner's
+     * edits in that section; brand colours still apply — they are CSS variables).
+     *
+     * @param int $blockid
+     * @return bool false when the block/template file is unknown
+     */
+    public static function reset_section(int $blockid): bool {
+        global $DB;
+        $bi = $DB->get_record('block_instances', ['id' => $blockid, 'blockname' => 'nit_section']);
+        if (!$bi) {
+            return false;
+        }
+        $cfg = self::config_of($bi);
+        $html = self::html_of($cfg);
+        $id = homepage_templates::current();
+        foreach (homepage_templates::sections() as $section) {
+            foreach ($section['signatures'] as $sig) {
+                if ($html !== '' && strpos($html, $sig) !== false) {
+                    $fresh = self::read_html($id, $section['file']);
+                    if ($fresh === null) {
+                        return false;
+                    }
+                    self::write_config($bi, $cfg, $fresh);
+                    purge_all_caches();
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /** Show / hide a section block on the Site home (a block_positions row, like core). */

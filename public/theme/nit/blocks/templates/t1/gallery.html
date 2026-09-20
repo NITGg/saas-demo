@@ -1,6 +1,5 @@
-<!-- NIT homepage template T1 · Modern Minimal — GALLERY + testimonials + FAQ.
-     Fully editable: gallery images (data-nit-edit-img), testimonials + FAQ text
-     (data-nit-edit). FAQ uses native <details> so it toggles without script. -->
+<!-- NIT homepage template T1 · Modern Minimal — GALLERY (images only; testimonials and
+     FAQ are their own sections). Fully editable: gallery images (data-nit-edit-img). -->
 <div dir="auto" data-nit-section="gallery"
   style="--t-accent: var(--nit-brand-primary); --t-ink: #16191D; --t-bg: #FFFFFF; --t-bg-alt: #FAFAF8; --t-muted: #6E7781; --t-muted2: #8A8A82; --t-border: #EDEDE9; font-family: 'Manrope','IBM Plex Sans Arabic',system-ui,sans-serif; background: var(--t-bg); color: var(--t-ink);">
   <!-- gallery grid -->
@@ -17,69 +16,6 @@
       <div data-nit-edit-img="gallery_3" style="min-height: 122px; border-radius: 16px; background: repeating-linear-gradient(135deg, #EFEFEC 0 12px, #F7F7F5 12px 24px) center/cover no-repeat;"></div>
       <div data-nit-edit-img="gallery_4" style="min-height: 122px; border-radius: 16px; background: repeating-linear-gradient(135deg, #EFEFEC 0 12px, #F7F7F5 12px 24px) center/cover no-repeat;"></div>
       <div data-nit-edit-img="gallery_5" style="min-height: 122px; border-radius: 16px; background: repeating-linear-gradient(135deg, #EFEFEC 0 12px, #F7F7F5 12px 24px) center/cover no-repeat;"></div>
-    </div>
-  </div>
-  <!-- testimonials -->
-  <div style="background: var(--t-bg-alt); border-block: 1px solid var(--t-border);">
-    <div style="max-width: 1240px; margin: 0 auto; padding: clamp(56px,7vw,96px) 20px;">
-      <h2 data-nit-edit="testimonials_heading" style="margin: 0; font-size: clamp(28px,3.4vw,40px); font-weight: 250; letter-spacing: -0.03em; text-align: center;">{mlang en}What learners say{mlang}{mlang ar}ماذا يقول المتعلمون{mlang}</h2>
-      <div style="margin-top: 44px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 22px;">
-        <div style="background: var(--t-bg); border: 1px solid var(--t-border); border-radius: 16px; padding: 28px;">
-          <div style="color: #E0A100; font-size: 14px; letter-spacing: 0.1em;">★★★★★</div>
-          <p data-nit-edit="t_text_1" style="margin: 18px 0 0; font-size: 15px; line-height: 1.75; color: #3D4752;">{mlang en}“Placeholder testimonial about the course experience and the outcome it led to.”{mlang}{mlang ar}«نص بديل لرأي أحد المتعلمين عن تجربته في الدورة والنتيجة التي وصل إليها.»{mlang}</p>
-          <div style="display: flex; align-items: center; gap: 12px; margin-top: 24px;">
-            <span data-nit-edit-img="t_avatar_1" style="width: 38px; height: 38px; border-radius: 50%; background: repeating-linear-gradient(135deg, #EFEFEC 0 6px, #F7F7F5 6px 12px) center/cover no-repeat; display: block;"></span>
-            <div>
-              <div data-nit-edit="t_name_1" style="font-size: 13px; font-weight: 600;">{mlang en}Learner name{mlang}{mlang ar}اسم المتعلم{mlang}</div>
-              <div data-nit-edit="t_role_1" style="font-size: 11px; color: var(--t-muted2); margin-top: 2px;">{mlang en}Graduate, 2025{mlang}{mlang ar}دفعة ٢٠٢٥{mlang}</div>
-            </div>
-          </div>
-        </div>
-        <div style="background: var(--t-bg); border: 1px solid var(--t-border); border-radius: 16px; padding: 28px;">
-          <div style="color: #E0A100; font-size: 14px; letter-spacing: 0.1em;">★★★★★</div>
-          <p data-nit-edit="t_text_2" style="margin: 18px 0 0; font-size: 15px; line-height: 1.75; color: #3D4752;">{mlang en}“Placeholder testimonial about the course experience and the outcome it led to.”{mlang}{mlang ar}«نص بديل لرأي أحد المتعلمين عن تجربته في الدورة والنتيجة التي وصل إليها.»{mlang}</p>
-          <div style="display: flex; align-items: center; gap: 12px; margin-top: 24px;">
-            <span data-nit-edit-img="t_avatar_2" style="width: 38px; height: 38px; border-radius: 50%; background: repeating-linear-gradient(135deg, #EFEFEC 0 6px, #F7F7F5 6px 12px) center/cover no-repeat; display: block;"></span>
-            <div>
-              <div data-nit-edit="t_name_2" style="font-size: 13px; font-weight: 600;">{mlang en}Learner name{mlang}{mlang ar}اسم المتعلم{mlang}</div>
-              <div data-nit-edit="t_role_2" style="font-size: 11px; color: var(--t-muted2); margin-top: 2px;">{mlang en}Graduate, 2025{mlang}{mlang ar}دفعة ٢٠٢٥{mlang}</div>
-            </div>
-          </div>
-        </div>
-        <div style="background: var(--t-bg); border: 1px solid var(--t-border); border-radius: 16px; padding: 28px;">
-          <div style="color: #E0A100; font-size: 14px; letter-spacing: 0.1em;">★★★★★</div>
-          <p data-nit-edit="t_text_3" style="margin: 18px 0 0; font-size: 15px; line-height: 1.75; color: #3D4752;">{mlang en}“Placeholder testimonial about the course experience and the outcome it led to.”{mlang}{mlang ar}«نص بديل لرأي أحد المتعلمين عن تجربته في الدورة والنتيجة التي وصل إليها.»{mlang}</p>
-          <div style="display: flex; align-items: center; gap: 12px; margin-top: 24px;">
-            <span data-nit-edit-img="t_avatar_3" style="width: 38px; height: 38px; border-radius: 50%; background: repeating-linear-gradient(135deg, #EFEFEC 0 6px, #F7F7F5 6px 12px) center/cover no-repeat; display: block;"></span>
-            <div>
-              <div data-nit-edit="t_name_3" style="font-size: 13px; font-weight: 600;">{mlang en}Learner name{mlang}{mlang ar}اسم المتعلم{mlang}</div>
-              <div data-nit-edit="t_role_3" style="font-size: 11px; color: var(--t-muted2); margin-top: 2px;">{mlang en}Graduate, 2025{mlang}{mlang ar}دفعة ٢٠٢٥{mlang}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <!-- faq -->
-  <div style="max-width: 900px; margin: 0 auto; padding: clamp(56px,7vw,96px) 20px;">
-    <h2 data-nit-edit="faq_heading" style="margin: 0 0 36px; font-size: clamp(28px,3.4vw,40px); font-weight: 250; letter-spacing: -0.03em; text-align: center;">{mlang en}Common questions{mlang}{mlang ar}أسئلة متكررة{mlang}</h2>
-    <div style="display: flex; flex-direction: column; gap: 12px;">
-      <details style="border: 1px solid var(--t-border); border-radius: 12px; padding: 22px 24px; background: var(--t-bg-alt);" open>
-        <summary data-nit-edit="faq_q_1" style="font-size: 16px; font-weight: 600; cursor: pointer; list-style: none;">{mlang en}How long do I keep access to a course?{mlang}{mlang ar}كم تستمر صلاحية الوصول للدورة؟{mlang}</summary>
-        <p data-nit-edit="faq_a_1" style="margin: 14px 0 0; font-size: 14px; line-height: 1.8; color: var(--t-muted);">{mlang en}Placeholder answer text. Replace with the academy's own policy.{mlang}{mlang ar}نص إجابة بديل. استبدله بسياسة الأكاديمية.{mlang}</p>
-      </details>
-      <details style="border: 1px solid var(--t-border); border-radius: 12px; padding: 22px 24px;">
-        <summary data-nit-edit="faq_q_2" style="font-size: 16px; font-weight: 600; cursor: pointer; list-style: none;">{mlang en}Are certificates accredited?{mlang}{mlang ar}هل الشهادات معتمدة؟{mlang}</summary>
-        <p data-nit-edit="faq_a_2" style="margin: 14px 0 0; font-size: 14px; line-height: 1.8; color: var(--t-muted);">{mlang en}Placeholder answer text.{mlang}{mlang ar}نص إجابة بديل.{mlang}</p>
-      </details>
-      <details style="border: 1px solid var(--t-border); border-radius: 12px; padding: 22px 24px;">
-        <summary data-nit-edit="faq_q_3" style="font-size: 16px; font-weight: 600; cursor: pointer; list-style: none;">{mlang en}Can I pay in instalments?{mlang}{mlang ar}هل يمكن الدفع على أقساط؟{mlang}</summary>
-        <p data-nit-edit="faq_a_3" style="margin: 14px 0 0; font-size: 14px; line-height: 1.8; color: var(--t-muted);">{mlang en}Placeholder answer text.{mlang}{mlang ar}نص إجابة بديل.{mlang}</p>
-      </details>
-      <details style="border: 1px solid var(--t-border); border-radius: 12px; padding: 22px 24px;">
-        <summary data-nit-edit="faq_q_4" style="font-size: 16px; font-weight: 600; cursor: pointer; list-style: none;">{mlang en}Do you offer team licences?{mlang}{mlang ar}هل تتوفر تراخيص للفرق؟{mlang}</summary>
-        <p data-nit-edit="faq_a_4" style="margin: 14px 0 0; font-size: 14px; line-height: 1.8; color: var(--t-muted);">{mlang en}Placeholder answer text.{mlang}{mlang ar}نص إجابة بديل.{mlang}</p>
-      </details>
     </div>
   </div>
 </div>
