@@ -162,13 +162,19 @@ class home_picks {
             [$in, $params] = $DB->get_in_or_equal(array_map('intval', $onlyids), SQL_PARAMS_NAMED);
             $where .= " AND r.id $in";
         }
-        $ufields = \core_user\fields::for_name()->with_picture()->get_sql('u', false, '', '', false)->selects;
-        $rows = $DB->get_records_sql("SELECT r.id, r.rating, r.review, r.timecreated, c.fullname AS coursename, $ufields
+        // The homepage must never fail on the testimonials feed.
+        try {
+            $ufields = \core_user\fields::for_userpic()->with_name()->get_sql('u', false, '', '', false)->selects;
+            $rows = $DB->get_records_sql("SELECT r.id, r.rating, r.review, r.timecreated, c.fullname AS coursename, $ufields
                                         FROM {local_nit_reviews} r
                                         JOIN {user} u ON u.id = r.userid
                                         JOIN {course} c ON c.id = r.courseid
                                        WHERE $where AND u.deleted = 0 AND c.visible = 1
                                     ORDER BY r.timecreated DESC", $params, 0, $limit);
+        } catch (\Throwable $e) {
+            debugging('theme_nit testimonials feed: ' . $e->getMessage(), DEBUG_DEVELOPER);
+            return [];
+        }
         $out = [];
         foreach ($rows as $r) {
             $avatar = '';
