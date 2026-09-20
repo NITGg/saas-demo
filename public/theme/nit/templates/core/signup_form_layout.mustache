@@ -34,30 +34,65 @@
 
         var isar = (document.documentElement.getAttribute('lang') || '').indexOf('ar') === 0;
         var T = {
-            next:   isar ? 'التالي'        : 'Next',
-            back:   isar ? 'السابق'        : 'Back',
-            create: isar ? 'إنشاء الحساب'  : 'Create account'
+            next:    isar ? 'التالي'         : 'Next',
+            back:    isar ? 'السابق'         : 'Back',
+            create:  isar ? 'إنشاء الحساب'   : 'Create account',
+            account: isar ? 'الحساب'         : 'Account',
+            details: isar ? 'بياناتك'        : 'Your details',
+            finish:  isar ? 'إنهاء'          : 'Finish'
         };
 
         // The real submit + its row — we drive it and hide the native row.
         var submitBtn = form.querySelector('#id_submitbutton') || form.querySelector('[type="submit"]');
-        var submitRow = submitBtn && (submitBtn.closest('.fitem') || submitBtn.closest('.form-group') || submitBtn.closest('fieldset'));
+        var submitRow = submitBtn && (submitBtn.closest('.fitem') || submitBtn.closest('.form-group') || submitBtn.closest('.row'));
 
-        // Steppable fieldsets = those holding a real (non-button, non-hidden) field.
-        var steps = Array.prototype.slice.call(form.querySelectorAll('fieldset')).filter(function (fs) {
-            if (fs === submitRow) { return false; }
-            return fs.querySelector('input:not([type="submit"]):not([type="button"]):not([type="hidden"]), select, textarea');
-        });
-        if (steps.length < 2) { return; } // Single page — leave the normal form.
+        // Moodle's signup form is FLAT (no fieldset grouping), so we partition its
+        // real field rows by field name into up to three steps. Account first
+        // (login + email), then the learner's details, then anything left
+        // (custom profile fields, agreement, security question) to finish.
+        var ACCOUNT = ['username', 'password', 'email', 'email2'];
+        function fieldName(row) {
+            var el = row.querySelector('input:not([type="hidden"]), select, textarea');
+            return el ? (el.name || '').replace(/\[.*$/, '') : '';
+        }
+        function stepOf(name) {
+            if (ACCOUNT.indexOf(name) >= 0) { return 0; }
+            if (/recaptcha|policyagreed|agree|security/i.test(name)) { return 2; }
+            return 1;
+        }
+
+        var rows = Array.prototype.slice.call(form.querySelectorAll('.fitem, .form-group.row'))
+            .filter(function (r) {
+                if (submitRow && (r === submitRow || submitRow.contains(r) || r.contains(submitRow))) { return false; }
+                // Keep only rows that actually carry a field or static help text.
+                return r.querySelector('input, select, textarea') || r.querySelector('.form-control-static, .felement');
+            });
+        if (rows.length < 3) { return; } // Too small to bother stepping.
+
+        var buckets = [[], [], []];
+        rows.forEach(function (r) { buckets[stepOf(fieldName(r))].push(r); });
+        var steps = buckets.filter(function (b) { return b.length; });
+        if (steps.length < 2) { return; }
+        var labels = [];
+        if (buckets[0].length) { labels.push(T.account); }
+        if (buckets[1].length) { labels.push(T.details); }
+        if (buckets[2].length) { labels.push(T.finish); }
 
         if (submitRow) { submitRow.style.display = 'none'; }
 
-        // Progress header from the fieldset legends.
+        // Wrap each step's rows in its own container so we can show one at a time.
+        var containers = steps.map(function (bucket) {
+            var box = document.createElement('div');
+            box.className = 'nit-signup-step';
+            bucket[0].parentNode.insertBefore(box, bucket[0]);
+            bucket.forEach(function (r) { box.appendChild(r); });
+            return box;
+        });
+
+        // Progress header.
         var head = document.getElementById('nit-signup-steps');
         head.innerHTML = '';
-        steps.forEach(function (fs, i) {
-            var lg = fs.querySelector('legend');
-            var label = (lg && lg.textContent.trim()) || (T.next + ' ' + (i + 1));
+        labels.forEach(function (label, i) {
             var li = document.createElement('li');
             var sp = document.createElement('span'); sp.textContent = String(i + 1);
             var em = document.createElement('em'); em.style.fontStyle = 'normal'; em.textContent = label;
@@ -74,13 +109,13 @@
         var next = document.createElement('button');
         next.type = 'button'; next.className = 'btn btn-next'; next.textContent = T.next;
         nav.appendChild(back); nav.appendChild(next);
-        form.appendChild(nav);
+        (submitRow ? submitRow.parentNode : form).appendChild(nav);
 
         var cur = 0;
-        var LAST = steps.length - 1;
+        var LAST = containers.length - 1;
 
         function render() {
-            steps.forEach(function (fs, i) { fs.style.display = (i === cur) ? '' : 'none'; });
+            containers.forEach(function (c, i) { c.style.display = (i === cur) ? '' : 'none'; });
             Array.prototype.forEach.call(head.children, function (li, i) {
                 li.classList.toggle('on', i <= cur);
             });
@@ -89,7 +124,7 @@
         }
 
         function validStep(i) {
-            var els = steps[i].querySelectorAll('input, select, textarea');
+            var els = containers[i].querySelectorAll('input, select, textarea');
             for (var k = 0; k < els.length; k++) {
                 var el = els[k];
                 if (el.type === 'hidden' || el.disabled || !el.willValidate) { continue; }
@@ -109,10 +144,10 @@
         });
         back.addEventListener('click', function () { if (cur > 0) { cur--; render(); } });
 
-        // If Moodle re-rendered with a validation error, open its step.
+        // If Moodle re-rendered with a validation error, open the step holding it.
         var errsel = '.error, .has-danger, .is-invalid, [id^="id_error_"]';
-        for (var s = 0; s < steps.length; s++) {
-            var e = steps[s].querySelector(errsel);
+        for (var s = 0; s < containers.length; s++) {
+            var e = containers[s].querySelector(errsel);
             if (e && e.textContent && e.textContent.trim() !== '') { cur = s; break; }
         }
         render();
