@@ -123,54 +123,43 @@ class format_topics_renderer extends \format_topics\output\renderer {
 
         $data = $this->acad_gather($course, $modinfo, $context);
 
-        // Content bands + the tabs they map to (id => label), in display order.
-        $tabs  = [];
-        $body  = '';
-
-        $learn = $this->acad_learn($data);
-        if ($learn !== '') {
-            $tabs['about'] = get_string('acad_about', 'theme_nit');
-            $body .= $learn;
-        }
-
-        $skills = $this->acad_skills($data);
-        if ($skills !== '') {
-            $tabs['skills'] = get_string('acad_skills_tab', 'theme_nit');
-            $body .= $skills;
-        }
-
-        $requirements = $this->acad_requirements($data);
-        if ($requirements !== '') {
-            $tabs['requirements'] = get_string('acad_requirements', 'theme_nit');
-            $body .= $requirements;
-        }
-
-        $expertise = $this->acad_expertise($course, $context, $data);
-        if ($expertise !== '') {
-            $body .= $expertise;
-        }
-
-        // Modules band always renders (the section tree is the core of the page).
-        $tabs['modules'] = get_string('acad_modules', 'theme_nit');
-        $body .= $this->acad_modules($course, $modinfo, $context, $data);
-
-        // Assemble in visual order. The brand group class lets a course adopt its
-        // top-level category's palette (Group 1/2/3), same as category pages.
+        // Brand group class lets a course adopt its top-level category's palette
+        // (Group 1/2/3), same as category pages.
         $groupclass = '';
         if (function_exists('theme_nit_category_brand_group') && $course->category) {
             $groupclass = theme_nit_brand_group_class(theme_nit_category_brand_group($course->category));
         }
 
-        $o  = html_writer::start_div('acad-cr' . ($groupclass ? ' ' . $groupclass : ''));
-        $o .= $this->acad_breadcrumb($data);
-        $o .= $this->acad_hero($course, $context, $data);
-        $o .= $this->acad_tabs($tabs);
-        $o .= $body;
-        $o .= html_writer::end_div();
+        // ---- Left column (content) — each band returns '' when it has no data. ----
+        $main  = $this->acad_hero($course, $context, $data);   // header: title / meta / instructor.
+        $main .= $this->acad_learn($data);                     // "What you'll learn".
+        $main .= $this->acad_skills($data);                    // "Skills you'll gain".
+        $main .= $this->acad_requirements($data);              // "Requirements".
+        $main .= $this->acad_modules($course, $modinfo, $context, $data); // "Curriculum".
+        $main .= $this->acad_rail($course, $context, $data);   // "Instructor".
 
-        // Accordion / tab helpers. A format renderer runs after <head> is flushed,
-        // so $PAGE->requires->js() would be dropped; emit a plain inline <script>.
+        // ---- Right column (sticky purchase card). ----
+        $aside = $this->acad_purchase_card($course, $context, $data);
+
+        $layout = html_writer::div(
+            html_writer::div($main, 'acadt1__main') .
+            html_writer::tag('aside', $aside, ['class' => 'acadt1__aside']),
+            'acadt1__layout'
+        );
+
+        $o  = html_writer::start_div('acadt1' . ($groupclass ? ' ' . $groupclass : ''), ['dir' => 'auto']);
+        $o .= $this->acad_styles();
+        $o .= html_writer::start_div('acadt1__wrap');
+        $o .= $this->acad_breadcrumb($data);
+        $o .= $layout;
+        $o .= html_writer::end_div(); // wrap.
+        $o .= html_writer::end_div(); // acadt1.
+
+        // Accordion helper + font loader. A format renderer runs after <head> is
+        // flushed, so $PAGE->requires->js() would be dropped; emit inline <script>.
         $o .= html_writer::script($this->acad_inline_js());
+        // Buy buttons -> shared checkout modal (Kashier), mirroring nit_category.
+        $o .= $this->acad_checkout_js();
 
         return $o;
     }
@@ -215,6 +204,7 @@ class format_topics_renderer extends \format_topics\output\renderer {
         $d->modulerows = [];
         $d->modcount   = 0;
         $d->assesscount = 0;
+        $d->itemcount   = 0;
         foreach ($modinfo->get_section_info_all() as $snum => $sec) {
             if ($snum === 0) {
                 if (empty($modinfo->sections[0]) || !$sec->uservisible) {
@@ -239,6 +229,7 @@ class format_topics_renderer extends \format_topics\output\renderer {
             if (!$cm->uservisible) {
                 continue;
             }
+            $d->itemcount++;
             if (in_array($cm->modname, ['assign', 'quiz', 'workshop', 'lesson'], true)) {
                 $d->assesscount++;
             }
@@ -476,17 +467,19 @@ class format_topics_renderer extends \format_topics\output\renderer {
      * @return string
      */
     protected function acad_breadcrumb($data) {
-        $parts = array_merge([get_string('acad_browse', 'theme_nit')], $data->catnames);
+        // Category chain + the course itself as the trailing (current) crumb.
+        $parts = array_merge($data->catnames, [format_string($data->course->fullname)]);
         $html  = '';
         $last  = count($parts) - 1;
         foreach ($parts as $i => $p) {
             // $p is already HTML-safe (a lang string or format_string() output).
-            $html .= html_writer::tag('span', $p, ['class' => 'acad-cr__crumb']);
+            $cls = 'acadt1__crumb' . ($i === $last ? ' is-current' : '');
+            $html .= html_writer::tag('span', $p, ['class' => $cls]);
             if ($i < $last) {
-                $html .= html_writer::tag('span', '›', ['class' => 'acad-cr__crumb-sep', 'aria-hidden' => 'true']);
+                $html .= html_writer::tag('span', '/', ['class' => 'acadt1__crumb-sep', 'aria-hidden' => 'true']);
             }
         }
-        return html_writer::div(html_writer::div($html, 'acad-cr__crumbs'), 'acad-cr__wrap');
+        return html_writer::tag('nav', $html, ['class' => 'acadt1__crumbs']);
     }
 
     /**
@@ -499,69 +492,73 @@ class format_topics_renderer extends \format_topics\output\renderer {
      * @return string
      */
     protected function acad_hero($course, $context, $data) {
-        global $USER;
+        $o = html_writer::start_div('acadt1__header');
 
-        $isenrolled = is_enrolled($context, $USER->id, '', true);
-        if ($isenrolled) {
-            $url   = new moodle_url('/course/view.php', ['id' => $course->id]);
-            $label = get_string('acad_gotocourse', 'theme_nit');
-        } else {
-            $url   = new moodle_url('/enrol/index.php', ['id' => $course->id]);
-            $label = get_string('acad_enrol', 'theme_nit');
+        // Eyebrow = top-level category (provider).
+        $provider = !empty($data->catnames) ? $data->catnames[0] : format_string($course->shortname);
+        $o .= html_writer::div($provider, 'acadt1__eyebrow');
+
+        // Status chips — only real facts (free course, shareable certificate).
+        $chips = '';
+        if ($this->acad_cf_bool('free', $data)) {
+            $chips .= html_writer::tag('span', get_string('acad_free', 'theme_nit'),
+                ['class' => 'acadt1__chip acadt1__chip--free']);
+        }
+        if ($this->acad_cf_bool('certificate', $data)) {
+            $chips .= html_writer::tag('span', get_string('acad_certificate', 'theme_nit'), ['class' => 'acadt1__chip']);
+        }
+        if ($chips !== '') {
+            $o .= html_writer::div($chips, 'acadt1__chips');
         }
 
-        // Provider = top-level category.
-        $provider = !empty($data->catnames) ? $data->catnames[0] : format_string($course->shortname);
+        // Title.
+        $o .= html_writer::tag('h1', format_string($course->fullname), ['class' => 'acadt1__title']);
 
-        $o  = html_writer::start_div('acad-cr__hero');
-
-        // ---- Left main ----
-        $o .= html_writer::start_div('acad-cr__hero-main');
-        $o .= html_writer::div($provider, 'acad-cr__provider');
-        $o .= html_writer::tag('h1', format_string($course->fullname), ['class' => 'acad-cr__title']);
-
-        // Subject line from course_fields (real), else nothing. Already HTML-safe.
+        // Subject line from course_fields (real). Already HTML-safe.
         $subject = $this->acad_cf_text('course_fields', $data);
         if ($subject !== '') {
-            $o .= html_writer::tag('p', $subject, ['class' => 'acad-cr__partof']);
+            $o .= html_writer::tag('p', $subject, ['class' => 'acadt1__subject']);
+        }
+
+        // Short summary ("About this course").
+        $o .= $this->acad_expertise($course, $context, $data);
+
+        // Meta row — real facts only (learners, updated date, language).
+        $meta = '';
+        if ($data->enrolled > 0) {
+            $meta .= html_writer::div(
+                $this->acad_icon('people') .
+                html_writer::tag('span', $this->acad_count($data->enrolled, 'acad_1learner', 'acad_nlearners')),
+                'acadt1__meta-item');
+        }
+        $updated = $course->timemodified ? userdate($course->timemodified, get_string('strftimedatefullshort')) : '';
+        if ($updated !== '') {
+            $meta .= html_writer::div(
+                $this->acad_icon('clock') .
+                html_writer::tag('span', get_string('acad_updated', 'theme_nit', s($updated))),
+                'acadt1__meta-item');
+        }
+        $lang = $this->acad_cf_text('language', $data);
+        if ($lang !== '') {
+            // $lang is already HTML-safe (resolved via format_string/{mlang}).
+            $meta .= html_writer::div($this->acad_icon('lang') . html_writer::tag('span', $lang), 'acadt1__meta-item');
+        }
+        if ($meta !== '') {
+            $o .= html_writer::div($meta, 'acadt1__meta');
         }
 
         // Instructor line from enrolled teachers only (real).
         if (!empty($data->teachers)) {
             $first = fullname($data->teachers[0]);
             $more  = count($data->teachers) - 1;
-            $instr = html_writer::tag('strong', get_string('acad_instructor', 'theme_nit') . ' ')
-                   . html_writer::tag('span', s($first), ['class' => 'acad-cr__instr-name'])
+            $instr = get_string('acad_instructor', 'theme_nit') . ' '
+                   . html_writer::tag('b', s($first))
                    . ($more > 0 ? ' ' . get_string('acad_plusmore', 'theme_nit', $more) : '');
-            $o .= html_writer::div($instr, 'acad-cr__instructor');
+            $o .= html_writer::div($instr, 'acadt1__instructor');
         }
 
-        // CTA row: enrol/go button + free-or-paid badge + start date.
-        $o .= html_writer::start_div('acad-cr__cta-row');
-        $o .= html_writer::link($url, s($label), ['class' => 'btn btn-primary acad-cr-btn']);
-        if ($this->acad_cf_bool('free', $data)) {
-            $o .= html_writer::tag('span', get_string('acad_free', 'theme_nit'),
-                ['class' => 'acad-cr__badge acad-cr__badge--free']);
-        }
-        if ($data->startlabel !== '') {
-            $o .= html_writer::tag('span',
-                get_string('acad_starts', 'theme_nit', s($data->startlabel)),
-                ['class' => 'acad-cr__starts']);
-        }
-        $o .= html_writer::end_div();
-
-        if ($data->enrolled > 0) {
-            $o .= html_writer::div(
-                get_string('acad_enrolledcount', 'theme_nit', html_writer::tag('b', number_format($data->enrolled))),
-                'acad-cr__enrolled');
-        }
-        $o .= html_writer::end_div(); // hero-main.
-
-        // ---- Right aside: "at a glance" facts (signature) ----
-        $o .= $this->acad_glance($data);
-
-        $o .= html_writer::end_div(); // hero.
-        return html_writer::div($o, 'acad-cr__wrap');
+        $o .= html_writer::end_div(); // header.
+        return $o;
     }
 
     /**
@@ -573,37 +570,38 @@ class format_topics_renderer extends \format_topics\output\renderer {
     protected function acad_glance($data) {
         $rows = [];
 
-        // Modules.
+        // Lessons (visible activities) + modules — the course's real shape.
+        if ($data->itemcount > 0) {
+            $rows[] = [$this->acad_icon('book'),
+                $this->acad_count($data->itemcount, 'acad_1lesson', 'acad_nlessons')];
+        }
         if ($data->modcount > 0) {
             $rows[] = [$this->acad_icon('modules'),
-                get_string('acad_modules', 'theme_nit'),
                 $this->acad_count($data->modcount, 'acad_nmodule', 'acad_nmodules')];
         }
-        // Duration (hours).
+        // Duration (hours) — real custom field.
         $hours = $this->acad_cf_number('total_number_of_hours', $data);
         if ($hours !== '') {
             $rows[] = [$this->acad_icon('clock'),
-                get_string('acad_duration', 'theme_nit'),
                 get_string(($hours === '1') ? 'acad_nhour' : 'acad_nhours', 'theme_nit', s($hours))];
         }
         // Assessments (computed from the activity tree).
         if ($data->assesscount > 0) {
             $rows[] = [$this->acad_icon('assess'),
-                get_string('acad_assessments', 'theme_nit'),
                 $this->acad_count($data->assesscount, 'acad_nassessment', 'acad_nassessments')];
         }
         // Language of instruction.
         $lang = $this->acad_cf_text('language', $data);
         if ($lang !== '') {
             // $lang is already HTML-safe (resolved via format_string/{mlang}).
-            $rows[] = [$this->acad_icon('lang'), get_string('acad_language', 'theme_nit'), $lang];
+            $rows[] = [$this->acad_icon('lang'), $lang];
         }
-        // Certificate.
+        // Shareable certificate.
         if ($this->acad_cf_bool('certificate', $data)) {
-            $rows[] = [$this->acad_icon('cert'),
-                get_string('acad_certificate', 'theme_nit'),
-                get_string('acad_certificate_sub', 'theme_nit')];
+            $rows[] = [$this->acad_icon('cert'), get_string('acad_certificate_sub', 'theme_nit')];
         }
+        // Lifetime access is a real fact of enrolment on this platform.
+        $rows[] = [$this->acad_icon('infinity'), get_string('acad_lifetime', 'theme_nit')];
 
         if (empty($rows)) {
             return '';
@@ -611,46 +609,9 @@ class format_topics_renderer extends \format_topics\output\renderer {
 
         $body = '';
         foreach ($rows as $r) {
-            $body .= html_writer::div(
-                html_writer::div($r[0], 'acad-cr__glance-ico') .
-                html_writer::div(
-                    html_writer::div($r[1], 'acad-cr__glance-k') .
-                    html_writer::div($r[2], 'acad-cr__glance-v'),
-                    'acad-cr__glance-txt'
-                ),
-                'acad-cr__glance-row'
-            );
+            $body .= html_writer::div($r[0] . html_writer::tag('span', $r[1]), 'acadt1__feat');
         }
-
-        return html_writer::div(
-            html_writer::tag('h2', get_string('acad_ataglance', 'theme_nit'), ['class' => 'acad-cr__glance-h']) . $body,
-            'acad-cr__glance');
-    }
-
-    /**
-     * Sticky tab bar built from the bands that actually rendered.
-     *
-     * @param array $tabs id => label
-     * @return string
-     */
-    protected function acad_tabs($tabs) {
-        if (count($tabs) < 2) {
-            return '';
-        }
-        $o = html_writer::start_div('acad-cr__tabs');
-        $first = true;
-        foreach ($tabs as $id => $label) {
-            $cls = 'acad-cr__tab' . ($first ? ' is-active' : '');
-            $o .= html_writer::tag('button', s($label), [
-                'class'      => $cls,
-                'type'       => 'button',
-                'data-crtab' => $id,
-                'onclick'    => 'AcademyUI.crTab(this)',
-            ]);
-            $first = false;
-        }
-        $o .= html_writer::end_div();
-        return html_writer::div($o, 'acad-cr__wrap');
+        return html_writer::div($body, 'acadt1__features');
     }
 
     /**
@@ -673,14 +634,29 @@ class format_topics_renderer extends \format_topics\output\renderer {
         $grid  = '';
         foreach ($items as $item) {
             // $item is already HTML-safe (resolved via format_string/{mlang}).
-            $grid .= html_writer::div($check . html_writer::tag('span', $item), 'acad-cr__learn-item');
+            $grid .= html_writer::div($check . html_writer::tag('span', $item), 'acadt1__learn-item');
         }
 
-        $inner = html_writer::tag('h2', get_string('acad_learn', 'theme_nit'),
-                    ['class' => 'acad-cr__h2', 'id' => 'about'])
-               . html_writer::div(html_writer::div($grid, 'acad-cr__learn-grid'), 'acad-cr__learn-card');
+        return $this->acad_section(get_string('acad_learn', 'theme_nit'),
+            html_writer::div($grid, 'acadt1__learn'), 'about');
+    }
 
-        return html_writer::div(html_writer::div($inner, 'acad-cr__wrap'), 'acad-cr__band');
+    /**
+     * A titled content section (shared shell for the left-column bands).
+     *
+     * @param string $title heading text (plain, HTML-escaped here)
+     * @param string $body inner HTML
+     * @param string $id optional anchor id
+     * @return string
+     */
+    protected function acad_section($title, $body, $id = ''): string {
+        $attrs = ['class' => 'acadt1__h2'];
+        if ($id !== '') {
+            $attrs['id'] = $id;
+        }
+        return html_writer::tag('section',
+            html_writer::tag('h2', s($title), $attrs) . $body,
+            ['class' => 'acadt1__section']);
     }
 
     /**
@@ -696,21 +672,18 @@ class format_topics_renderer extends \format_topics\output\renderer {
         if (!empty($items)) {
             foreach ($items as $item) {
                 // $item is already HTML-safe (resolved via format_string/{mlang}).
-                $pills .= html_writer::tag('span', $item, ['class' => 'acad-cr__pill']);
+                $pills .= html_writer::tag('span', $item, ['class' => 'acadt1__pill']);
             }
         } else if (!empty($data->tags)) {
             foreach ($data->tags as $tag) {
-                $pills .= html_writer::tag('span', format_string($tag->get_display_name()), ['class' => 'acad-cr__pill']);
+                $pills .= html_writer::tag('span', format_string($tag->get_display_name()), ['class' => 'acadt1__pill']);
             }
         } else {
             return '';
         }
 
-        $inner = html_writer::tag('h2', get_string('acad_skills', 'theme_nit'),
-                    ['class' => 'acad-cr__h2', 'id' => 'skills'])
-               . html_writer::div($pills, 'acad-cr__skills');
-
-        return html_writer::div(html_writer::div($inner, 'acad-cr__wrap'), 'acad-cr__band');
+        return $this->acad_section(get_string('acad_skills', 'theme_nit'),
+            html_writer::div($pills, 'acadt1__pills'), 'skills');
     }
 
     /**
@@ -743,11 +716,8 @@ class format_topics_renderer extends \format_topics\output\renderer {
             return '';
         }
 
-        $inner = html_writer::tag('h2', get_string('acad_requirements', 'theme_nit'),
-                    ['class' => 'acad-cr__h2', 'id' => 'requirements'])
-               . html_writer::div($cards, 'acad-cr__req-grid');
-
-        return html_writer::div(html_writer::div($inner, 'acad-cr__wrap'), 'acad-cr__band');
+        return $this->acad_section(get_string('acad_requirements', 'theme_nit'),
+            html_writer::div($cards, 'acadt1__req'), 'requirements');
     }
 
     /**
@@ -765,9 +735,9 @@ class format_topics_renderer extends \format_topics\output\renderer {
             $list .= html_writer::tag('li', $p);
         }
         return html_writer::div(
-            html_writer::div($icon . html_writer::tag('span', $heading), 'acad-cr__req-h') .
-            html_writer::tag('ul', $list, ['class' => 'acad-cr__req-list']),
-            'acad-cr__req-card'
+            html_writer::div($icon . html_writer::tag('span', s($heading)), 'acadt1__req-h') .
+            html_writer::tag('ul', $list, ['class' => 'acadt1__req-list']),
+            'acadt1__req-card'
         );
     }
 
@@ -784,14 +754,7 @@ class format_topics_renderer extends \format_topics\output\renderer {
         if (trim(strip_tags($summary)) === '') {
             return '';
         }
-
-        $left = html_writer::tag('h2', get_string('acad_about_h', 'theme_nit'), ['class' => 'acad-cr__h2'])
-              . html_writer::div($summary, 'acad-cr__summary');
-
-        return html_writer::div(
-            html_writer::div(html_writer::div($left, 'acad-cr__wrap'), 'acad-cr__band'),
-            'acad-cr__soft'
-        );
+        return html_writer::div($summary, 'acadt1__summary');
     }
 
     // =========================================================================
@@ -808,26 +771,45 @@ class format_topics_renderer extends \format_topics\output\renderer {
      * @return string
      */
     protected function acad_modules($course, $modinfo, $context, $data) {
+        global $USER;
+
+        // Access state drives the per-lesson Free pill / lock (real, not fabricated):
+        // a free course -> Free; a paid course the viewer hasn't bought -> locked;
+        // enrolled/covered -> no marker (they already have access).
+        $isenrolled = is_enrolled($context, $USER->id, '', true);
+        $isfree     = !$this->acad_has_pricing($course->id);
+        $accessible = $isenrolled || $isfree;
+
         $acc = '';
         $idx = 0;
         foreach ($data->modulerows as $snum => $section) {
             $idx++;
-            $acc .= $this->acad_module_row($course, $section, $modinfo, $snum, $idx, ($idx === 1), $context);
+            $acc .= $this->acad_module_row(
+                $course, $section, $modinfo, $snum, $idx, ($idx === 1), $context, $accessible, $isfree);
         }
 
-        $left = html_writer::tag('h2',
-                    $this->acad_count($data->modcount, 'acad_1modulein', 'acad_nmodulesin'),
-                    ['class' => 'acad-cr__h2', 'id' => 'modules'])
-              . html_writer::div($acc, 'acad-cr__acc');
-        $rail = $this->acad_rail($course, $context, $data);
+        // "N modules · M lessons" summary line.
+        $meta = $this->acad_count($data->modcount, 'acad_nmodule', 'acad_nmodules');
+        if ($data->itemcount > 0) {
+            $meta .= ' · ' . $this->acad_count($data->itemcount, 'acad_1lesson', 'acad_nlessons');
+        }
 
-        $grid = html_writer::div(
-            html_writer::div($left, 'acad-cr__modules-main') .
-            html_writer::div($rail, 'acad-cr__modules-rail'),
-            'acad-cr__modules-grid'
-        );
+        $body = html_writer::div($meta, 'acadt1__curr-meta')
+              . html_writer::div($acc, 'acadt1__acc');
 
-        return html_writer::div(html_writer::div($grid, 'acad-cr__wrap'), 'acad-cr__band');
+        return $this->acad_section(get_string('acad_curriculum', 'theme_nit'), $body, 'curriculum');
+    }
+
+    /**
+     * Whether a course has active paid pricing (guarded; false when the payments
+     * plugin is absent).
+     *
+     * @param int $courseid
+     * @return bool
+     */
+    protected function acad_has_pricing($courseid): bool {
+        return class_exists('\local_payments\price_resolver')
+            && (bool) \local_payments\price_resolver::has_pricing($courseid);
     }
 
     /**
@@ -842,33 +824,24 @@ class format_topics_renderer extends \format_topics\output\renderer {
      * @param \context_course $context
      * @return string
      */
-    protected function acad_module_row($course, $section, $modinfo, $snum, $idx, $open, $context) {
+    protected function acad_module_row($course, $section, $modinfo, $snum, $idx, $open, $context, $accessible, $isfree) {
         $title  = get_section_name($course, $section);
-        $bodyid = 'acad-cr-mod-' . $snum;
+        $bodyid = 'acadt1-mod-' . $snum;
         $cmlist = !empty($modinfo->sections[$snum]) ? $modinfo->sections[$snum] : [];
 
-        // Count visible activities + a "What's included" tally by module type.
-        $typecounts = [];
-        $visitems   = 0;
+        // Count visible activities for the header meta.
+        $visitems = 0;
         foreach ($cmlist as $cmid) {
-            $cm = $modinfo->cms[$cmid];
-            if (!$cm->uservisible) {
-                continue;
+            if ($modinfo->cms[$cmid]->uservisible) {
+                $visitems++;
             }
-            $visitems++;
-            $plural = (string) $cm->modplural;
-            $typecounts[$plural] = ($typecounts[$plural] ?? 0) + 1;
-        }
-        $included = [];
-        foreach ($typecounts as $plural => $count) {
-            $included[] = html_writer::tag('b', $count) . ' ' . s($plural);
         }
 
-        $o  = html_writer::start_div('acad-cr__mod' . ($open ? ' is-open' : ''), ['id' => 'acad-cr-modwrap-' . $snum]);
+        $o  = html_writer::start_div('acadt1__mod' . ($open ? ' is-open' : ''));
 
-        // Header.
+        // Header (toggle button).
         $o .= html_writer::start_tag('button', [
-            'class'         => 'acad-cr__mod-head',
+            'class'         => 'acadt1__mod-head',
             'type'          => 'button',
             'onclick'       => 'AcademyUI.crModule(this)',
             'aria-expanded' => $open ? 'true' : 'false',
@@ -876,39 +849,33 @@ class format_topics_renderer extends \format_topics\output\renderer {
         ]);
         $meta = get_string('acad_modulen', 'theme_nit', $idx);
         if ($visitems > 0) {
-            $meta .= ' · ' . $this->acad_count($visitems, 'acad_nitem', 'acad_nitems');
+            $meta .= ' · ' . $this->acad_count($visitems, 'acad_1lesson', 'acad_nlessons');
         }
         $o .= html_writer::div(
-            html_writer::tag('div', format_string($title), ['class' => 'acad-cr__mod-title']) .
-            html_writer::tag('div', $meta, ['class' => 'acad-cr__mod-meta'])
+            html_writer::tag('div', format_string($title), ['class' => 'acadt1__mod-title']) .
+            html_writer::tag('div', $meta, ['class' => 'acadt1__mod-meta'])
         );
-        $o .= html_writer::tag('span',
-            get_string('acad_moduledetails', 'theme_nit') . $this->acad_icon('chevron'),
-            ['class' => 'acad-cr__mod-toggle']);
+        $o .= html_writer::tag('span', $this->acad_icon('chevron'), ['class' => 'acadt1__mod-chev']);
         $o .= html_writer::end_tag('button');
 
         // Body.
-        $o .= html_writer::start_div('acad-cr__mod-body', ['id' => $bodyid, 'role' => 'region']);
+        $o .= html_writer::start_div('acadt1__mod-body', ['id' => $bodyid, 'role' => 'region']);
 
         if ($section->uservisible && !empty($section->summary)) {
             $desc = format_text($section->summary, $section->summaryformat, ['context' => $context]);
             if (trim(strip_tags($desc)) !== '') {
-                $o .= html_writer::div($desc, 'acad-cr__mod-desc');
+                $o .= html_writer::div($desc, 'acadt1__mod-desc');
             }
-        }
-
-        if (!empty($included)) {
-            $o .= html_writer::tag('div', get_string('acad_included', 'theme_nit'), ['class' => 'acad-cr__included-h']);
-            $o .= html_writer::div(implode(' · ', $included), 'acad-cr__included-sum');
         }
 
         if (!$section->uservisible) {
             if (!empty($section->availableinfo)) {
                 $locked = \core_availability\info::format_info($section->availableinfo, $course);
-                $o .= html_writer::div($locked, 'acad-cr__act-locked');
+                $o .= html_writer::div(
+                    $this->acad_icon('lock') . html_writer::tag('span', $locked), 'acadt1__act-locked');
             }
         } else {
-            $o .= $this->acad_activities($modinfo, $cmlist);
+            $o .= $this->acad_activities($modinfo, $cmlist, $accessible, $isfree);
         }
 
         $o .= html_writer::end_div(); // body.
@@ -923,7 +890,7 @@ class format_topics_renderer extends \format_topics\output\renderer {
      * @param array $cmlist
      * @return string
      */
-    protected function acad_activities($modinfo, $cmlist) {
+    protected function acad_activities($modinfo, $cmlist, $accessible, $isfree) {
         $o = '';
         foreach ($cmlist as $cmid) {
             $cm = $modinfo->cms[$cmid];
@@ -932,17 +899,26 @@ class format_topics_renderer extends \format_topics\output\renderer {
             }
 
             $ico = html_writer::empty_tag('img', [
-                'src' => $cm->get_icon_url(), 'alt' => '', 'class' => 'acad-cr__act-ico', 'aria-hidden' => 'true',
+                'src' => $cm->get_icon_url(), 'alt' => '', 'class' => 'acadt1__act-ico', 'aria-hidden' => 'true',
             ]);
             $name = $cm->url
                 ? html_writer::link($cm->url, format_string($cm->name))
                 : format_string($cm->name);
 
+            // Real access marker: Free on a free course, a lock on a paid course the
+            // viewer can't yet access, nothing once they're enrolled/covered.
+            if ($isfree) {
+                $marker = html_writer::tag('span', get_string('acad_free', 'theme_nit'), ['class' => 'acadt1__free']);
+            } else if (!$accessible) {
+                $marker = html_writer::tag('span', $this->acad_icon('lock'),
+                    ['class' => 'acadt1__lock', 'title' => get_string('acad_lockedlesson', 'theme_nit')]);
+            } else {
+                $marker = '';
+            }
+
             $o .= html_writer::div(
-                $ico .
-                html_writer::div($name, 'acad-cr__act-name') .
-                html_writer::tag('span', s((string) $cm->modfullname), ['class' => 'acad-cr__act-type']),
-                'acad-cr__act'
+                $ico . html_writer::div($name, 'acadt1__act-name') . $marker,
+                'acadt1__act'
             );
         }
         return $o;
@@ -957,47 +933,360 @@ class format_topics_renderer extends \format_topics\output\renderer {
      * @return string
      */
     protected function acad_rail($course, $context, $data) {
-        $out = '';
+        if (empty($data->teachers)) {
+            return '';
+        }
 
-        // Instructors card (only when there are teachers).
-        if (!empty($data->teachers)) {
-            $tutors = '';
-            foreach ($data->teachers as $t) {
-                $userpic = new user_picture($t);
-                $userpic->size = 100;
-                $avatar = $this->output->render($userpic);
-                $profileurl = new moodle_url('/user/view.php', ['id' => $t->id, 'course' => $course->id]);
-                $tutors .= html_writer::div(
-                    $avatar .
-                    html_writer::div(
-                        html_writer::link($profileurl, s(fullname($t)), ['class' => 'acad-cr__tutor-name']) .
-                        html_writer::div(get_string('acad_instructorrole', 'theme_nit'), 'acad-cr__tutor-org')
-                    ),
-                    'acad-cr__tutor'
-                );
+        $tutors = '';
+        foreach ($data->teachers as $t) {
+            $userpic = new user_picture($t);
+            $userpic->size = 100;
+            $avatar = $this->output->render($userpic);
+            $profileurl = new moodle_url('/user/view.php', ['id' => $t->id, 'course' => $course->id]);
+            $tutors .= html_writer::div(
+                html_writer::div($avatar, 'acadt1__tutor-pic') .
+                html_writer::div(
+                    html_writer::link($profileurl, s(fullname($t)), ['class' => 'acadt1__tutor-name']) .
+                    html_writer::div(get_string('acad_instructorrole', 'theme_nit'), 'acadt1__tutor-role'),
+                    'acadt1__tutor-txt'
+                ),
+                'acadt1__tutor'
+            );
+        }
+
+        return $this->acad_section(get_string('acad_instructors', 'theme_nit'),
+            html_writer::div($tutors, 'acadt1__tutors'), 'instructor');
+    }
+
+    // =========================================================================
+    // Purchase card (sticky, right column) — mirrors the proven pricing / offer /
+    // enrol / buy behaviour of local/nit_category/index.php.
+    // =========================================================================
+
+    /**
+     * Sticky purchase card: preview thumbnail, price (+ offer), Enrol/Buy CTA and
+     * a real-facts feature list. The pricing / enrolment logic is identical to the
+     * catalogue card so Buy -> the same Kashier checkout and Enrol -> the same flow.
+     *
+     * @param stdClass $course
+     * @param \context_course $context
+     * @param stdClass $data
+     * @return string
+     */
+    protected function acad_purchase_card($course, $context, $data) {
+        $info       = $this->acad_courseinfo($course->id);
+        $detailsurl = (new moodle_url('/course/view.php', ['id' => $course->id]))->out(false);
+        $enrolurl   = (new moodle_url('/local/nit_subscriptions/enrol.php',
+            ['courseid' => $course->id, 'sesskey' => sesskey()]))->out(false);
+
+        // Preview thumbnail (course image) with a play glyph.
+        $thumbattrs = ['class' => 'acadt1__preview'];
+        if ($data->image) {
+            $thumbattrs['style'] = "background-image:url('" . s($data->image->out(false)) . "');";
+        }
+        $preview = html_writer::tag('div',
+            html_writer::tag('span', $this->acad_icon('play'), ['class' => 'acadt1__play', 'aria-hidden' => 'true']),
+            $thumbattrs
+        );
+
+        // Price row — identical states to the catalogue card.
+        $pricestr   = function_exists('theme_nit_course_price') ? theme_nit_course_price((int) $course->id) : '';
+        $pricelabel = $pricestr !== '' ? $pricestr : get_string('acad_free', 'theme_nit');
+        if (!$info['haspricing']) {
+            $price = html_writer::tag('span', get_string('acad_free', 'theme_nit'),
+                ['class' => 'acadt1__price acadt1__price--free']);
+        } else if ($info['offerlabel'] !== '' && $info['offerfinal'] > 0) {
+            $price = html_writer::tag('span', s($pricelabel), ['class' => 'acadt1__strike'])
+                . html_writer::tag('span',
+                    s(number_format($info['offerfinal'], 0)) . ' ' . get_string('acad_currency', 'theme_nit'),
+                    ['class' => 'acadt1__price'])
+                . html_writer::tag('span', s($info['offerlabel']), ['class' => 'acadt1__offer']);
+        } else {
+            $price = html_writer::tag('span', s($pricelabel), ['class' => 'acadt1__price']);
+        }
+        $pricerow = html_writer::div($price, 'acadt1__price-row');
+
+        // CTA — enrolled -> continue; covered -> enrol + details; paid -> Buy (modal);
+        // free -> enrol. Mirrors nit_category exactly (same enrol URL + buy hook).
+        if ($info['enrolled']) {
+            $cta = html_writer::link($detailsurl, get_string('acad_gotocourse', 'theme_nit'),
+                ['class' => 'acadt1__btn']);
+        } else if ($info['covered']) {
+            $cta = html_writer::div(get_string('acad_insubscription', 'theme_nit'), 'acadt1__cover')
+                . html_writer::link($enrolurl, get_string('acad_enrol', 'theme_nit'), ['class' => 'acadt1__btn'])
+                . html_writer::link($detailsurl, get_string('acad_gotocourse', 'theme_nit'),
+                    ['class' => 'acadt1__btn acadt1__btn--ghost']);
+        } else if ($info['haspricing']) {
+            $cta = html_writer::tag('button', get_string('acad_buynow', 'theme_nit'), [
+                'type'               => 'button',
+                'class'              => 'acadt1__btn',
+                'data-nit-buy-course' => '',
+                'data-courseid'      => (int) $course->id,
+                'data-name'          => s(format_string($course->fullname)),
+                'data-price'         => s((string) $info['price']),
+            ]);
+        } else {
+            $cta = html_writer::link($enrolurl, get_string('acad_enrol', 'theme_nit'), ['class' => 'acadt1__btn']);
+        }
+
+        // Real-facts feature list (built by acad_glance).
+        $features = $this->acad_glance($data);
+
+        return html_writer::div(
+            $preview . html_writer::div($pricerow . $cta . $features, 'acadt1__buy-body'),
+            'acadt1__buy'
+        );
+    }
+
+    /**
+     * Per-course state for the purchase card: enrolment, subscription coverage,
+     * pricing, and any active offer. A verbatim mirror of the $nitcourseinfo
+     * closure in local/nit_category/index.php (single source of truth for the
+     * buy/enrol behaviour), guarded so it degrades when the plugins are absent.
+     *
+     * @param int $courseid
+     * @return array
+     */
+    protected function acad_courseinfo($courseid) {
+        global $USER, $CFG;
+
+        $out = ['enrolled' => false, 'covered' => false, 'free' => true, 'haspricing' => false,
+            'price' => 0.0, 'offerlabel' => '', 'offerfinal' => 0.0];
+        $uid = (int) ($USER->id ?? 0);
+        $ctx = context_course::instance($courseid);
+        $out['enrolled'] = $uid > 0 && is_enrolled($ctx, $uid, '', true);
+
+        $nitcheckout = class_exists('\local_payments\price_resolver')
+            && file_exists($CFG->dirroot . '/local/nit_commerce/lib.php')
+            && class_exists('\local_nit_commerce\discount_manager');
+        if (!$nitcheckout) {
+            return $out;
+        }
+
+        $out['haspricing'] = (bool) \local_payments\price_resolver::has_pricing($courseid);
+        $out['free'] = !$out['haspricing'];
+
+        if (!$out['enrolled'] && $out['haspricing']
+                && class_exists('\local_nit_subscriptions\subscription_purchase_manager')) {
+            $out['covered'] = (bool) \local_payments\price_resolver::is_covered_by_active_subscription($courseid, $uid);
+        }
+
+        if ($out['haspricing']) {
+            try {
+                $pricing = \local_payments\price_resolver::resolve($courseid, $uid);
+                $base = (float) $pricing->price;
+                $out['price'] = $base;
+                $summary = \local_nit_commerce\discount_manager::offer_summary('course', (int) $courseid, $base);
+                if ($summary) {
+                    $out['offerlabel'] = $summary['label'];
+                    $out['offerfinal'] = (float) $summary['final'];
+                }
+            } catch (\Throwable $e) {
+                // Leave defaults on any pricing error.
             }
-            $out .= html_writer::div(
-                html_writer::tag('div', get_string('acad_instructors', 'theme_nit'), ['class' => 'acad-cr__rail-h']) .
-                $tutors,
-                'acad-cr__rail-card'
-            );
         }
-
-        // Offered by = top-level category.
-        if (!empty($data->catnames)) {
-            $out .= html_writer::div(
-                html_writer::tag('div', get_string('acad_offeredby', 'theme_nit'), ['class' => 'acad-cr__offered-h']) .
-                html_writer::div($data->catnames[0], 'acad-cr__offered-logo'),
-                'acad-cr__rail-card'
-            );
-        }
-
         return $out;
+    }
+
+    /**
+     * Wire the Buy buttons to the shared checkout modal (coupon + auto offer ->
+     * Kashier). Mirrors the footer script of local/nit_category/index.php; guarded
+     * so it is a no-op when the commerce plugins are absent. The format renderer
+     * runs after <head> is flushed, so the external module is loaded via a plain
+     * <script src> (not $PAGE->requires->js, which would be dropped).
+     *
+     * @return string
+     */
+    protected function acad_checkout_js() {
+        global $CFG;
+
+        $nitcheckout = class_exists('\local_payments\price_resolver')
+            && file_exists($CFG->dirroot . '/local/nit_commerce/lib.php')
+            && class_exists('\local_nit_commerce\discount_manager');
+        if (!$nitcheckout) {
+            return '';
+        }
+        require_once($CFG->dirroot . '/local/nit_commerce/lib.php');
+
+        $costr = local_nit_commerce_string_map([
+            'co_title', 'co_intro', 'co_total', 'co_offer', 'co_coupon', 'co_apply', 'co_discount',
+            'co_secure', 'co_proceed', 'co_cancel', 'co_loading', 'co_coupon_failed', 'co_currency',
+        ]);
+
+        $o  = html_writer::tag('script', '',
+            ['src' => (new moodle_url('/local/nit_commerce/checkout_modal.js'))->out(false)]);
+        $o .= html_writer::script('window.NIT_CO = ' . json_encode([
+            'wwwroot'  => $CFG->wwwroot,
+            'sesskey'  => sesskey(),
+            'commerce' => '/local/nit_commerce/api.php',
+            'str'      => $costr,
+            'loggedin' => isloggedin() && !isguestuser(),
+        ]) . ';');
+        $o .= html_writer::script(<<<'JS'
+(function () {
+    function init() {
+        if (!window.NitCheckout || !window.NIT_CO) { return; }
+        NitCheckout.init(window.NIT_CO);
+        document.addEventListener('click', function (ev) {
+            var btn = ev.target.closest('[data-nit-buy-course]');
+            if (!btn) { return; }
+            ev.preventDefault();
+            if (!window.NIT_CO.loggedin) { window.location.href = window.NIT_CO.wwwroot + '/login/index.php'; return; }
+            var id = btn.getAttribute('data-courseid');
+            NitCheckout.open({
+                itemType: 'course',
+                itemId: parseInt(id, 10),
+                name: btn.getAttribute('data-name'),
+                price: parseFloat(btn.getAttribute('data-price')) || 0,
+                proceed: function (code) {
+                    window.location.href = window.NIT_CO.wwwroot + '/local/payments/checkout.php?courseid=' + id +
+                        '&sesskey=' + encodeURIComponent(window.NIT_CO.sesskey) + '&coupon_code=' + encodeURIComponent(code);
+                }
+            });
+        });
+    }
+    if (document.readyState !== 'loading') { init(); }
+    else { document.addEventListener('DOMContentLoaded', init); }
+})();
+JS
+        );
+        return $o;
     }
 
     // =========================================================================
     // Helpers
     // =========================================================================
+
+    /**
+     * The inline <style> block for the T1 "Modern Minimal" course landing.
+     *
+     * Every colour resolves from the theme_nit Brand Colors palette (--nit-brand-*)
+     * so the page re-skins with the rest of the site and honours RTL/LTR and
+     * dark/light automatically. The local --t-* tokens map brand roles by job,
+     * exactly as local/nit_category/index.php does.
+     *
+     * @return string
+     */
+    protected function acad_styles(): string {
+        $css = <<<'CSS'
+.acadt1{
+  --t-accent: var(--nit-brand-primary);
+  --t-accent-2: var(--nit-brand-accent);
+  --t-on: var(--nit-brand-on-primary, #fff);
+  --t-accent-soft: color-mix(in srgb, var(--nit-brand-primary) 9%, transparent);
+  /* T1 keeps its LIGHT structure (like the homepage templates); only the accent
+     comes from the academy brand, so the T1 look stays consistent on any brand. */
+  --t-ink: #16191D;
+  --t-bg: #FFFFFF;
+  --t-surface: #FAFAF8;
+  --t-muted: #6E7781;
+  --t-border: #EDEDE9;
+  --t-success: var(--nit-brand-success);
+  font-family: 'Manrope','IBM Plex Sans Arabic',system-ui,sans-serif;
+  background: var(--t-bg); color: var(--t-ink);
+  width: 100vw; max-width: 100vw; margin-inline: calc(50% - 50vw); min-height: 100vh;
+}
+.acadt1 a{ text-decoration: none; color: inherit; }
+.acadt1__wrap{ max-width: 1200px; margin: 0 auto; padding: clamp(20px,3vw,40px) 20px 72px; }
+.acadt1__ico{ width: 20px; height: 20px; flex: 0 0 auto; }
+
+/* Breadcrumb */
+.acadt1__crumbs{ display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; color: var(--t-muted); margin-bottom: 24px; }
+.acadt1__crumb-sep{ color: var(--t-muted); opacity: .6; }
+.acadt1__crumb.is-current{ color: var(--t-ink); font-weight: 600; }
+
+/* Two-column layout — sticky purchase card on the right; below content on mobile */
+.acadt1__layout{ display: grid; grid-template-columns: minmax(0,1fr) 360px; gap: clamp(24px,4vw,56px); align-items: start; }
+@media (max-width: 960px){ .acadt1__layout{ grid-template-columns: 1fr; } .acadt1__aside{ position: static !important; } }
+
+/* Header */
+.acadt1__eyebrow{ font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: var(--t-accent); font-weight: 700; }
+.acadt1__chips{ display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.acadt1__chip{ font-size: 12px; font-weight: 700; letter-spacing: .04em; padding: 5px 12px; border-radius: 40px; border: 1px solid var(--t-border); color: var(--t-ink); background: var(--t-surface); }
+.acadt1__chip--free{ background: color-mix(in srgb, var(--t-success) 14%, transparent); color: var(--t-success); border-color: transparent; }
+.acadt1__title{ margin: 16px 0 0; font-size: clamp(30px,4vw,46px); font-weight: 250; letter-spacing: -0.03em; line-height: 1.08; }
+.acadt1__subject{ margin: 14px 0 0; font-size: 16px; color: var(--t-accent); font-weight: 600; }
+.acadt1__summary{ margin: 18px 0 0; font-size: 16px; line-height: 1.75; color: var(--t-muted); }
+.acadt1__summary *{ color: var(--t-muted); }
+.acadt1__meta{ display: flex; flex-wrap: wrap; gap: 10px 22px; margin-top: 22px; }
+.acadt1__meta-item{ display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--t-muted); }
+.acadt1__meta-item .acadt1__ico{ width: 17px; height: 17px; color: var(--t-accent); }
+.acadt1__instructor{ margin-top: 16px; font-size: 14px; color: var(--t-muted); }
+.acadt1__instructor b{ color: var(--t-ink); font-weight: 600; }
+
+/* Sections */
+.acadt1__section{ margin-top: clamp(36px,5vw,52px); }
+.acadt1__h2{ font-size: clamp(22px,2.6vw,30px); font-weight: 250; letter-spacing: -0.02em; margin: 0 0 20px; }
+
+/* What you'll learn */
+.acadt1__learn{ display: grid; grid-template-columns: repeat(auto-fit, minmax(250px,1fr)); gap: 14px 28px; }
+.acadt1__learn-item{ display: flex; gap: 11px; font-size: 15px; line-height: 1.5; color: var(--t-ink); }
+.acadt1__learn-item .acadt1__ico{ width: 20px; height: 20px; color: var(--t-accent); margin-top: 1px; }
+
+/* Skills */
+.acadt1__pills{ display: flex; flex-wrap: wrap; gap: 10px; }
+.acadt1__pill{ font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 40px; border: 1px solid var(--t-border); color: var(--t-ink); background: var(--t-surface); }
+
+/* Requirements */
+.acadt1__req{ display: grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: 18px; }
+.acadt1__req-card{ border: 1px solid var(--t-border); border-radius: 16px; padding: 22px; background: var(--t-surface); }
+.acadt1__req-h{ display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+.acadt1__req-h .acadt1__ico{ color: var(--t-accent); }
+.acadt1__req-list{ margin: 0; padding-inline-start: 18px; color: var(--t-muted); font-size: 14px; line-height: 1.75; }
+
+/* Curriculum */
+.acadt1__curr-meta{ margin: -8px 0 20px; font-size: 14px; color: var(--t-muted); }
+.acadt1__acc{ display: flex; flex-direction: column; gap: 12px; }
+.acadt1__mod{ border: 1px solid var(--t-border); border-radius: 14px; overflow: hidden; background: var(--t-surface); }
+.acadt1__mod-head{ width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 20px; background: none; border: 0; cursor: pointer; text-align: start; font-family: inherit; color: var(--t-ink); }
+.acadt1__mod-title{ font-size: 16px; font-weight: 600; }
+.acadt1__mod-meta{ margin-top: 3px; font-size: 13px; color: var(--t-muted); }
+.acadt1__mod-chev{ display: inline-flex; color: var(--t-muted); transition: transform .2s ease; }
+.acadt1__mod.is-open .acadt1__mod-chev{ transform: rotate(180deg); }
+.acadt1__mod-body{ display: none; padding: 0 20px 14px; }
+.acadt1__mod.is-open .acadt1__mod-body{ display: block; }
+.acadt1__mod-desc{ padding: 4px 0 12px; font-size: 14px; line-height: 1.6; color: var(--t-muted); }
+.acadt1__act{ display: flex; align-items: center; gap: 12px; padding: 11px 0; border-top: 1px solid color-mix(in srgb, var(--t-border) 70%, transparent); }
+.acadt1__act-ico{ width: 18px; height: 18px; object-fit: contain; opacity: .85; flex: 0 0 auto; }
+.acadt1__act-name{ flex: 1; min-width: 0; font-size: 14px; color: var(--t-ink); }
+.acadt1__act-name a:hover{ color: var(--t-accent); }
+.acadt1__act-type{ display: none; }
+.acadt1__free{ font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--t-success); background: color-mix(in srgb, var(--t-success) 14%, transparent); padding: 3px 9px; border-radius: 40px; flex: 0 0 auto; }
+.acadt1__lock{ display: inline-flex; color: var(--t-muted); flex: 0 0 auto; }
+.acadt1__lock .acadt1__ico{ width: 16px; height: 16px; }
+.acadt1__act-locked{ display: flex; align-items: center; gap: 8px; padding: 12px 0 4px; font-size: 13px; color: var(--t-muted); }
+.acadt1__act-locked .acadt1__ico{ width: 16px; height: 16px; }
+
+/* Instructor */
+.acadt1__tutors{ display: flex; flex-direction: column; gap: 18px; }
+.acadt1__tutor{ display: flex; align-items: center; gap: 14px; }
+.acadt1__tutor-pic img{ width: 56px; height: 56px; border-radius: 50%; object-fit: cover; }
+.acadt1__tutor-name{ font-size: 16px; font-weight: 600; color: var(--t-ink); }
+.acadt1__tutor-name:hover{ color: var(--t-accent); }
+.acadt1__tutor-role{ margin-top: 2px; font-size: 13px; color: var(--t-muted); }
+
+/* Purchase card */
+.acadt1__aside{ position: sticky; top: 20px; }
+.acadt1__buy{ border: 1px solid var(--t-border); border-radius: 18px; overflow: hidden; background: var(--t-bg); box-shadow: 0 18px 44px rgba(20,24,28,0.10); }
+.acadt1__preview{ position: relative; aspect-ratio: 16/9; display: grid; place-items: center; background: repeating-linear-gradient(135deg,#EFEFEC 0 11px,#F7F7F5 11px 22px) center/cover no-repeat; }
+.acadt1__play{ width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.92); color: var(--t-accent); box-shadow: 0 10px 26px rgba(20,24,28,.24); }
+.acadt1__play .acadt1__ico{ width: 26px; height: 26px; }
+.acadt1__buy-body{ padding: 22px; }
+.acadt1__price-row{ display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
+.acadt1__price{ font-size: 30px; font-weight: 300; letter-spacing: -0.02em; color: var(--t-ink); }
+.acadt1__price--free{ color: var(--t-success); font-weight: 600; }
+.acadt1__strike{ font-size: 16px; color: var(--t-muted); text-decoration: line-through; opacity: .7; }
+.acadt1__offer{ background: var(--t-accent); color: var(--t-on); font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 40px; }
+.acadt1__btn{ display: block; width: 100%; text-align: center; box-sizing: border-box; background: var(--t-accent); color: var(--t-on); font-size: 15px; font-weight: 600; font-family: inherit; padding: 15px 20px; border: 0; border-radius: 12px; cursor: pointer; box-shadow: 0 14px 30px color-mix(in srgb, var(--t-accent) 30%, transparent); }
+.acadt1__btn:hover{ filter: brightness(1.06); }
+.acadt1__btn--ghost{ margin-top: 10px; background: var(--t-bg); color: var(--t-ink); border: 1px solid var(--t-border); box-shadow: none; }
+.acadt1__cover{ margin-bottom: 12px; text-align: center; font-size: 13px; font-weight: 700; color: var(--t-accent); }
+.acadt1__features{ margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--t-border); display: flex; flex-direction: column; gap: 13px; }
+.acadt1__feat{ display: flex; align-items: center; gap: 11px; font-size: 14px; color: var(--t-ink); }
+.acadt1__feat .acadt1__ico{ width: 18px; height: 18px; color: var(--t-accent); }
+CSS;
+        return html_writer::tag('style', $css);
+    }
 
     /**
      * URL of the course overview image, or null when none is set.
@@ -1033,9 +1322,13 @@ class format_topics_renderer extends \format_topics\output\renderer {
             'cert'    => '<circle cx="12" cy="9" r="6" stroke="currentColor" stroke-width="1.7"/><path d="M8 14l-1 7 5-3 5 3-1-7" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>',
             'people'  => '<circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M16 5.5a3.2 3.2 0 0 1 0 5M17.5 20a5.5 5.5 0 0 0-2.5-4.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>',
             'list'    => '<path d="M8 6h12M8 12h12M8 18h12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="4" cy="6" r="1.3" fill="currentColor"/><circle cx="4" cy="12" r="1.3" fill="currentColor"/><circle cx="4" cy="18" r="1.3" fill="currentColor"/>',
+            'play'    => '<path d="M9 7.5v9l7-4.5-7-4.5z" fill="currentColor"/>',
+            'lock'    => '<rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.7"/>',
+            'book'    => '<path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H12v16H5.5A1.5 1.5 0 0 1 4 18.5v-13z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H12v16h6.5a1.5 1.5 0 0 0 1.5-1.5v-13z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>',
+            'infinity' => '<path d="M7 12c0-2 1.5-3.2 3-3.2 2 0 2.8 2 4 3.2 1.2 1.2 2 3.2 4 3.2 1.5 0 3-1.2 3-3.2s-1.5-3.2-3-3.2c-2 0-2.8 2-4 3.2-1.2 1.2-2 3.2-4 3.2-1.5 0-3-1.2-3-3.2z" stroke="currentColor" stroke-width="1.7"/>',
         ];
         $p = $paths[$key] ?? '';
-        return '<svg class="acad-cr__ico acad-cr__ico--' . $key . '" viewBox="0 0 24 24" fill="none" aria-hidden="true">'
+        return '<svg class="acadt1__ico acadt1__ico--' . $key . '" viewBox="0 0 24 24" fill="none" aria-hidden="true">'
             . $p . '</svg>';
     }
 
@@ -1051,30 +1344,22 @@ class format_topics_renderer extends \format_topics\output\renderer {
     'use strict';
     w.AcademyUI = w.AcademyUI || {};
 
-    // Accordion row: header button toggles .is-open on its .acad-cr__mod wrapper.
+    // Accordion row: header button toggles .is-open on its .acadt1__mod wrapper.
     w.AcademyUI.crModule = function (btn) {
-        var row = btn.closest('.acad-cr__mod');
+        var row = btn.closest('.acadt1__mod');
         if (!row) { return; }
         var open = row.classList.toggle('is-open');
         btn.setAttribute('aria-expanded', open ? 'true' : 'false');
     };
 
-    // Sticky tab bar: activate the clicked tab and smooth-scroll to its anchor.
-    w.AcademyUI.crTab = function (btn) {
-        var bar = btn.closest('.acad-cr__tabs');
-        if (bar) {
-            bar.querySelectorAll('.acad-cr__tab').forEach(function (t) {
-                t.classList.remove('is-active');
-            });
-        }
-        btn.classList.add('is-active');
-        var id = btn.getAttribute('data-crtab');
-        var target = id && document.getElementById(id);
-        if (target) {
-            var top = target.getBoundingClientRect().top + window.pageYOffset - 70;
-            window.scrollTo({ top: top, behavior: 'smooth' });
-        }
-    };
+    // Load the T1 signature font once (Manrope), matching the homepage templates.
+    if (!document.getElementById('nit-tpl-font-t1')) {
+        var l = document.createElement('link');
+        l.id = 'nit-tpl-font-t1';
+        l.rel = 'stylesheet';
+        l.href = 'https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap';
+        (document.head || document.documentElement).appendChild(l);
+    }
 })(window);
 JS;
     }

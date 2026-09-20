@@ -104,10 +104,11 @@ ob_start();
 ?>
 <style>
   .nit-dash{
+    /* T1 keeps its LIGHT structure; only the accent comes from the academy brand. */
     --t-accent: var(--nit-brand-primary); --t-on: var(--nit-brand-on-primary, #fff);
     --t-accent-soft: color-mix(in srgb, var(--nit-brand-primary) 9%, transparent);
-    --t-ink: var(--nit-brand-textprimary); --t-bg: var(--nit-brand-background); --t-surface: var(--nit-brand-surface);
-    --t-muted: var(--nit-brand-textsecondary); --t-border: var(--nit-brand-borderprimary);
+    --t-ink: #16191D; --t-bg: #FFFFFF; --t-surface: #FAFAF8;
+    --t-muted: #6E7781; --t-border: #EDEDE9;
     font-family:'Manrope','IBM Plex Sans Arabic',system-ui,sans-serif; background:var(--t-bg); color:var(--t-ink);
     min-height:100vh; padding:clamp(24px,4vw,48px) 20px 60px;
   }

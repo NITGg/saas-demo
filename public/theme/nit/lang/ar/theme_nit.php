@@ -132,6 +132,18 @@ $string['acad_nhour'] = 'ساعة واحدة';
 $string['acad_nassessment'] = 'تقييم واحد';
 $string['acad_nitem'] = 'عنصر واحد';
 $string['acad_1modulein'] = 'يحتوي هذا الكورس على وحدة واحدة';
+// T1 "Modern Minimal" course landing.
+$string['acad_curriculum'] = 'المنهج';
+$string['acad_nlessons'] = '{$a} درسًا';
+$string['acad_1lesson'] = 'درس واحد';
+$string['acad_nlearners'] = '{$a} متعلمًا';
+$string['acad_1learner'] = 'متعلم واحد';
+$string['acad_updated'] = 'آخر تحديث {$a}';
+$string['acad_lifetime'] = 'وصول مدى الحياة';
+$string['acad_buynow'] = 'اشترِ الآن';
+$string['acad_insubscription'] = 'ضمن اشتراكك';
+$string['acad_lockedlesson'] = 'مقفل';
+$string['acad_currency'] = 'ج.م';
 
 // Inline front-page editor (theme/nit/js/editor.js + edit.php).
 $string['edit_editpage'] = 'تعديل الصفحة';

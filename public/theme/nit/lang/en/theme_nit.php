@@ -142,6 +142,18 @@ $string['acad_nhour'] = '{$a} hour';
 $string['acad_nassessment'] = '{$a} assessment';
 $string['acad_nitem'] = '{$a} item';
 $string['acad_1modulein'] = 'There is {$a} module in this course';
+// T1 "Modern Minimal" course landing.
+$string['acad_curriculum'] = 'Curriculum';
+$string['acad_nlessons'] = '{$a} lessons';
+$string['acad_1lesson'] = '{$a} lesson';
+$string['acad_nlearners'] = '{$a} learners';
+$string['acad_1learner'] = '{$a} learner';
+$string['acad_updated'] = 'Updated {$a}';
+$string['acad_lifetime'] = 'Lifetime access';
+$string['acad_buynow'] = 'Buy now';
+$string['acad_insubscription'] = 'In your subscription';
+$string['acad_lockedlesson'] = 'Locked';
+$string['acad_currency'] = 'EGP';
 
 // Inline front-page editor (theme/nit/js/editor.js + edit.php).
 $string['edit_editpage'] = 'Edit page';
