@@ -1,0 +1,51 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// =============================================================================
+// Navbar — T1 skin (structural).
+//
+// The COLOURS of the one themed navbar come from the active template: the
+// --nit-navbar* palette is repointed onto --t-* in theme_nit_template_tokens_scss(),
+// so the whole _navbar.scss re-renders light on light templates and dark on t4 —
+// no per-rule recolour needed. This file only adjusts the SHAPE from the legacy
+// tall navy/gold header to the T1 design: a thin hairline bar, a plain (not
+// uppercase) wordmark, and a compact logo. Every Moodle control on the bar
+// (language, edit-mode switch, notifications, gear nav, user menu) is untouched.
+//
+// Loads after _navbar.scss (alphabetical concat), so these win by source order.
+// =============================================================================
+
+.nit-navbar {
+    // Design uses a hairline, not the legacy heavy dark drop shadow.
+    box-shadow: 0 1px 0 var(--t-border, #EDEDE9);
+
+    .container-fluid {
+        min-height: 68px;
+    }
+
+    // Wordmark: the design shows a plain, cased site name — not the legacy
+    // uppercase gold treatment.
+    .nit-navbar-title {
+        text-transform: none;
+        font-size: 1.15rem;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+    }
+
+    // Compact brand logo (the legacy 66px logo made the bar very tall).
+    .nit-navbar-logo {
+        height: 34px;
+    }
+}

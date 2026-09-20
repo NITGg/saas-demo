@@ -1504,7 +1504,28 @@ function theme_nit_template_tokens_scss(): string {
     // A scheme hint some screens use to keep on-dark elements consistent.
     $lines .= '--t-scheme:' . ($tpl === 't4' ? 'dark' : 'light') . ';';
     $lines .= '}';
-    return "\n/* NIT active-template structure tokens (" . $tpl . ") */\n" . $lines . "\n";
+
+    // Repoint the navbar palette (--nit-navbar*) onto the active template's
+    // structure tokens, so the ONE themed navbar (theme_boost/navbar override)
+    // follows the template like the rest of the common pages — light on light
+    // templates, dark on t4. Emitted here (extra_scss, after _root.scss) and
+    // scoped to .nit-navbar so it wins over the gallery palette defaults. The
+    // structural T1 shape lives in scss/components/_navbar_t1.scss.
+    $nav = '.nit-navbar{'
+        . '--nit-navbarbg:var(--t-bg);'
+        . '--nit-navbarsurface:var(--t-surface);'
+        . '--nit-navbarborder:var(--t-border);'
+        . '--nit-navbartext:var(--t-ink);'
+        . '--nit-navbaraccent:var(--t-ink);'
+        . '--nit-navbaraccenthover:var(--nit-brand-primary);'
+        . '--nit-navbariconaccent:var(--t-muted);'
+        . '--nit-navbariconaccenthover:var(--nit-brand-primary);'
+        . '--nit-navbarpanel:var(--t-bg);'
+        . '--nit-navbarpaneltext:var(--t-muted);'
+        . '--nit-navbarpanelborder:var(--t-border);'
+        . '}';
+
+    return "\n/* NIT active-template structure tokens (" . $tpl . ") */\n" . $lines . "\n" . $nav . "\n";
 }
 
 function theme_nit_get_extra_scss($theme) {
