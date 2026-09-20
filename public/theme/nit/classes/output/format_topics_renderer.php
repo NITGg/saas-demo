@@ -101,15 +101,15 @@ class format_topics_renderer extends \format_topics\output\renderer {
             $format = course_get_format($this->page->course);
             // get_sectionid() is null on the "all sections" landing page.
             if (!$format->get_sectionid()) {
-                // The T1 course LANDING (with the Buy/Enrol card) is for prospective
-                // learners only. Enrolled learners and staff/managers see the normal
-                // Moodle course content (untouched) — never the buy landing on their
-                // own course.
+                // The T1 course DETAIL page (design 19) is what learners see —
+                // prospects AND enrolled students (curriculum links to lessons, and
+                // the card shows Continue / Enrol / Buy per state). Only staff who
+                // can EDIT the course (and anyone in edit mode — already excluded
+                // above) get the real Moodle course page, for management.
                 $context = \context_course::instance($this->page->course->id);
-                $canaccesscontent = is_enrolled($context, null, '', true)
-                    || has_capability('moodle/course:update', $context)
+                $isstaff = has_capability('moodle/course:update', $context)
                     || is_siteadmin();
-                if (!$canaccesscontent) {
+                if (!$isstaff) {
                     return $this->acad_render_page($format);
                 }
             }
@@ -985,7 +985,10 @@ class format_topics_renderer extends \format_topics\output\renderer {
      */
     protected function acad_purchase_card($course, $context, $data) {
         $info       = $this->acad_courseinfo($course->id);
-        $detailsurl = (new moodle_url('/course/view.php', ['id' => $course->id]))->out(false);
+        // Enrolled learners now also see this detail page, so "continue" must go to
+        // the first LESSON (course/view.php is this page — linking there would loop).
+        $lessonurl  = $this->acad_first_lesson_url($course);
+        $detailsurl = $lessonurl ?: (new moodle_url('/course/view.php', ['id' => $course->id]))->out(false);
         $enrolurl   = (new moodle_url('/local/nit_subscriptions/enrol.php',
             ['courseid' => $course->id, 'sesskey' => sesskey()]))->out(false);
 
@@ -1046,6 +1049,31 @@ class format_topics_renderer extends \format_topics\output\renderer {
             $preview . html_writer::div($pricerow . $cta . $features, 'acadt1__buy-body'),
             'acadt1__buy'
         );
+    }
+
+    /**
+     * URL of the FIRST navigable lesson (activity) in the course, so an enrolled
+     * learner's "continue" goes into the content instead of looping back to this
+     * detail page. Returns '' when the course has no viewable activity yet.
+     *
+     * @param stdClass $course
+     * @return string
+     */
+    protected function acad_first_lesson_url($course): string {
+        try {
+            $modinfo = get_fast_modinfo($course);
+            foreach ($modinfo->get_section_info_all() as $secinfo) {
+                foreach (($modinfo->sections[$secinfo->section] ?? []) as $cmid) {
+                    $cm = $modinfo->cms[$cmid] ?? null;
+                    if ($cm && $cm->uservisible && $cm->url && $cm->modname !== 'label') {
+                        return $cm->url->out(false);
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            // Fall through to ''.
+        }
+        return '';
     }
 
     /**
