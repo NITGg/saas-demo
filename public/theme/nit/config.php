@@ -95,10 +95,8 @@ $THEME->layouts['nit_fullwidth'] = [
 ];
 
 // -----------------------------------------------------------------------------
-// NIT learner dashboard (/my) — the T1 "Welcome back" dashboard rendered from the
-// user's real enrolled courses + completion progress (no blocks). See
-// theme/nit/layout/mydashboard.php.
-$THEME->layouts['mydashboard'] = [
-    'file' => 'mydashboard.php',
-    'regions' => [],
-];
+// The learner dashboard (/my) deliberately does NOT override the layout: it uses
+// Boost's real 'mydashboard' (drawers) layout so blocks, edit mode and per-role
+// views all keep working. The T1 look is applied as a SKIN over the real
+// dashboard + the Course overview block in scss/components/_dashboard.scss
+// (scoped to #page-my-index). "Skin Moodle, don't rebuild it."

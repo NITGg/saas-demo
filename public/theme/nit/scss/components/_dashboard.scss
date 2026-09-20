@@ -1,0 +1,115 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// =============================================================================
+// Dashboard (/my) — T1 SKIN over Moodle's REAL dashboard.
+//
+// We do NOT override the layout: /my keeps Boost's real 'mydashboard' (drawers)
+// layout, so blocks, edit mode and per-role views all work. This only reskins the
+// native dashboard + the Course overview block (block_myoverview) to the T1 look,
+// scoped to #page-my-index. Colours come from the active template's --t-* tokens,
+// so the dashboard follows the template like the other common pages. Structural
+// choices are conservative — we recolour and reshape, we do not restructure the
+// block, so nothing about its behaviour changes.
+// =============================================================================
+
+#page-my-index {
+    $t-font: 'Manrope', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+
+    &#page,
+    #page {
+        background: var(--t-surface, #FAFAF8);
+    }
+
+    // Page + block headings in the T1 display style.
+    h1,
+    h2,
+    .h2,
+    .block_myoverview h5,
+    [data-region="header-container"] {
+        font-family: $t-font;
+        color: var(--t-ink, #16191D);
+        letter-spacing: -0.02em;
+    }
+
+    // ---- Course overview block --------------------------------------------
+    .block_myoverview {
+        .card,
+        .dashboard-card {
+            border: 1px solid var(--t-border, #EDEDE9);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: none;
+            background: var(--t-bg, #FFFFFF);
+            transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease;
+
+            &:hover {
+                border-color: color-mix(in srgb, var(--nit-brand-primary, #0E7C66) 40%, var(--t-border, #EDEDE9));
+                box-shadow: 0 18px 40px rgba(20, 24, 28, 0.08);
+                transform: translateY(-2px);
+            }
+        }
+
+        .card-footer {
+            background: var(--t-bg, #FFFFFF) !important;
+        }
+
+        .coursename,
+        .course-listitem .coursename {
+            font-family: $t-font;
+            font-weight: 600;
+            letter-spacing: -0.015em;
+            color: var(--t-ink, #16191D);
+        }
+
+        .categoryname {
+            font-size: 11px;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: var(--nit-brand-primary, #0E7C66);
+        }
+
+        // Progress bar → brand accent on a token track.
+        .progress {
+            height: 6px;
+            border-radius: 6px;
+            background: var(--t-border, #EDEDE9);
+        }
+
+        .progress-bar {
+            background: var(--nit-brand-primary, #0E7C66);
+            border-radius: 6px;
+        }
+
+        .progress-text {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--t-muted, #6E7781);
+        }
+
+        // List / summary rows.
+        .course-listitem {
+            border-color: var(--t-line, #F1F1ED) !important;
+        }
+    }
+
+    // Generic blocks on the dashboard get the same light card treatment so the
+    // page reads as one design in edit mode too.
+    .block:not(.block_myoverview) .card-body,
+    section.block {
+        border-radius: 16px;
+    }
+}
