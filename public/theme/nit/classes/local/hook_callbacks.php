@@ -164,7 +164,25 @@ class hook_callbacks {
     ): void {
         global $PAGE;
 
-        if (($PAGE->pagetype ?? '') !== 'site-index') {
+        // Course pages: a floating "Rate this course" button for enrolled learners
+        // who can review (local_nit_reviews). Links to the plugin's rate page.
+        $pt = $PAGE->pagetype ?? '';
+        if (strpos($pt, 'course-view') === 0
+                && class_exists('\local_nit_reviews\api')
+                && !empty($PAGE->course->id) && (int) $PAGE->course->id > 1
+                && \local_nit_reviews\api::can_rate((int) $PAGE->course->id)) {
+            $label = (strpos(current_language(), 'ar') === 0) ? 'قيّم هذه الدورة' : 'Rate this course';
+            $rateurl = (new \moodle_url('/local/nit_reviews/rate.php', ['courseid' => $PAGE->course->id]))->out(false);
+            $hook->add_html('<a href="' . $rateurl . '" id="nit-rate-fab" style="'
+                . 'position:fixed; inset-inline-end:20px; bottom:20px; z-index:1030;'
+                . 'display:inline-flex; align-items:center; gap:8px; text-decoration:none;'
+                . 'background:var(--nit-brand-primary,#0E7C66); color:var(--nit-brand-on-primary,#fff);'
+                . "font-family:'Manrope','IBM Plex Sans Arabic',system-ui,sans-serif; font-weight:600; font-size:14px;"
+                . 'padding:12px 18px; border-radius:999px; box-shadow:0 10px 26px rgba(20,24,28,.22);">'
+                . '<span style="font-size:16px;">&#9733;</span> ' . s($label) . '</a>');
+        }
+
+        if ($pt !== 'site-index') {
             return;
         }
         if (!method_exists($PAGE, 'user_is_editing') || !$PAGE->user_is_editing()) {

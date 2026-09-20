@@ -80,6 +80,13 @@ $leveloptions = \local_nit_category\course_meta::level_options();
 if ($levelfilter !== '' && !in_array($levelfilter, $leveloptions, true)) {
     $levelfilter = '';
 }
+// Rating filter (?rating=) — REAL: minimum average stars from local_nit_reviews.
+// 0 = all; only offered when the reviews plugin is present.
+$hasreviews   = class_exists('\local_nit_reviews\api');
+$ratingfilter = optional_param('rating', 0, PARAM_INT);
+if ($ratingfilter < 1 || $ratingfilter > 5 || !$hasreviews) {
+    $ratingfilter = 0;
+}
 $fetchcourses = function (core_course_category $cat, bool $recursive) use ($sortorder): array {
     return $cat->get_courses([
         'recursive'      => $recursive,
@@ -136,16 +143,20 @@ if (empty($subcategories)) {
 // Apply the price + level filters (recursively removes non-matching courses),
 // then drop empty subtrees, so counts and the header total stay correct.
 $haspricefilter = ($pricefilter !== 'all' && class_exists('\local_payments\price_resolver'));
-if ($haspricefilter || $levelfilter !== '') {
+if ($haspricefilter || $levelfilter !== '' || $ratingfilter > 0) {
     $wantpaid = ($pricefilter === 'paid');
-    $filternode = function (array $node) use (&$filternode, $haspricefilter, $wantpaid, $levelfilter): array {
-        $node['courses'] = array_values(array_filter($node['courses'], static function ($c) use ($haspricefilter, $wantpaid, $levelfilter) {
+    $filternode = function (array $node) use (&$filternode, $haspricefilter, $wantpaid, $levelfilter, $ratingfilter): array {
+        $node['courses'] = array_values(array_filter($node['courses'], static function ($c) use ($haspricefilter, $wantpaid, $levelfilter, $ratingfilter) {
             if ($haspricefilter) {
                 $paid = (bool) \local_payments\price_resolver::has_pricing((int) $c->id);
                 if ($wantpaid ? !$paid : $paid) { return false; }
             }
             if ($levelfilter !== '' && \local_nit_category\course_meta::get_level((int) $c->id) !== $levelfilter) {
                 return false;
+            }
+            if ($ratingfilter > 0) {
+                $agg = \local_nit_reviews\api::get_aggregate((int) $c->id);
+                if ($agg->count < 1 || $agg->avg < $ratingfilter) { return false; }
             }
             return true;
         }));
@@ -313,6 +324,9 @@ echo $OUTPUT->header();
   .nit-t1-thumb{ aspect-ratio:16/9; background:repeating-linear-gradient(135deg,#EFEFEC 0 11px,#F7F7F5 11px 22px) center/cover no-repeat; position:relative; }
   .nit-t1-badge{ position:absolute; top:12px; inset-inline-start:12px; background:var(--t-bg); color:var(--t-accent); font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:5px 9px; border-radius:6px; box-shadow:0 4px 12px rgba(20,24,28,.12); }
   .nit-t1-badge--level{ inset-inline-start:auto; inset-inline-end:12px; background:var(--t-ink); color:var(--t-bg); }
+  .nit-t1-rating{ font-size:13px; font-weight:600; color:var(--t-ink); margin-top:6px; display:flex; align-items:center; gap:5px; }
+  .nit-t1-rating .s{ color:#F5A623; }
+  .nit-t1-rating .c{ color:var(--t-muted); font-weight:500; }
   .nit-t1-cb{ padding:20px; display:flex; flex-direction:column; flex:1; }
   .nit-t1-title{ font-size:18px; font-weight:550; line-height:1.35; letter-spacing:-0.015em; margin:0; color:var(--t-ink); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
   .nit-t1-teacher{ display:flex; align-items:center; gap:8px; margin-top:12px; font-size:13px; color:var(--t-muted); }
@@ -356,6 +370,7 @@ echo $OUTPUT->header();
         <?php if ($subid): ?><input type="hidden" name="sub" value="<?= (int) $subid ?>"><?php endif; ?>
         <?php if ($pricefilter !== 'all'): ?><input type="hidden" name="price" value="<?= s($pricefilter) ?>"><?php endif; ?>
         <?php if ($levelfilter !== ''): ?><input type="hidden" name="level" value="<?= s($levelfilter) ?>"><?php endif; ?>
+        <?php if ($ratingfilter > 0): ?><input type="hidden" name="rating" value="<?= (int) $ratingfilter ?>"><?php endif; ?>
         <label for="nit-sort"><?= $t('Sort', 'ترتيب') ?></label>
         <select id="nit-sort" name="sort" onchange="this.form.submit()">
           <option value="recommended" <?= $sort === 'recommended' ? 'selected' : '' ?>><?= $t('Recommended', 'موصى به') ?></option>
@@ -369,15 +384,16 @@ echo $OUTPUT->header();
       <aside class="nit-cat-side">
         <div class="nit-cat-side-head">
           <span><?= $t('Categories', 'التصنيفات') ?></span>
-          <?php if ($subid): ?><a href="<?= (new moodle_url('/local/nit_category/index.php', array_filter(['id' => $categoryid, 'sort' => $sort, 'price' => $pricefilter !== 'all' ? $pricefilter : null, 'level' => $levelfilter !== '' ? $levelfilter : null])))->out() ?>"><?= $t('Clear', 'مسح') ?></a><?php endif; ?>
+          <?php if ($subid): ?><a href="<?= (new moodle_url('/local/nit_category/index.php', array_filter(['id' => $categoryid, 'sort' => $sort, 'price' => $pricefilter !== 'all' ? $pricefilter : null, 'level' => $levelfilter !== '' ? $levelfilter : null, 'rating' => $ratingfilter ?: null])))->out() ?>"><?= $t('Clear', 'مسح') ?></a><?php endif; ?>
         </div>
         <?php
-          // Preserve the active price + level filters across category switches.
-          $caturl = function (?int $sub) use ($categoryid, $sort, $pricefilter, $levelfilter): string {
+          // Preserve the active price / level / rating filters across category switches.
+          $caturl = function (?int $sub) use ($categoryid, $sort, $pricefilter, $levelfilter, $ratingfilter): string {
               $p = ['id' => $categoryid, 'sort' => $sort];
               if ($sub) { $p['sub'] = $sub; }
               if ($pricefilter !== 'all') { $p['price'] = $pricefilter; }
               if ($levelfilter !== '') { $p['level'] = $levelfilter; }
+              if ($ratingfilter > 0) { $p['rating'] = $ratingfilter; }
               return (new moodle_url('/local/nit_category/index.php', $p))->out();
           };
         ?>
@@ -397,11 +413,12 @@ echo $OUTPUT->header();
           <div class="nit-cat-side-head" style="margin-top:24px;"><span><?= $t('Price', 'السعر') ?></span></div>
           <?php
             $priceopts = ['all' => $t('All', 'الكل'), 'free' => $t('Free', 'مجانًا'), 'paid' => $t('Paid', 'مدفوعة')];
-            $priceurl = function (string $pk) use ($categoryid, $subid, $sort, $levelfilter): string {
+            $priceurl = function (string $pk) use ($categoryid, $subid, $sort, $levelfilter, $ratingfilter): string {
                 $p = ['id' => $categoryid, 'sort' => $sort];
                 if ($subid) { $p['sub'] = $subid; }
                 if ($pk !== 'all') { $p['price'] = $pk; }
                 if ($levelfilter !== '') { $p['level'] = $levelfilter; }
+                if ($ratingfilter > 0) { $p['rating'] = $ratingfilter; }
                 return (new moodle_url('/local/nit_category/index.php', $p))->out();
             };
             foreach ($priceopts as $pk => $plabel): ?>
@@ -414,11 +431,12 @@ echo $OUTPUT->header();
         <?php if (!empty($leveloptions)): // Level filter — only when the field exists. ?>
           <div class="nit-cat-side-head" style="margin-top:24px;"><span><?= get_string('level', 'local_nit_category') ?></span></div>
           <?php
-            $levelurl = function (string $lv) use ($categoryid, $subid, $sort, $pricefilter): string {
+            $levelurl = function (string $lv) use ($categoryid, $subid, $sort, $pricefilter, $ratingfilter): string {
                 $p = ['id' => $categoryid, 'sort' => $sort];
                 if ($subid) { $p['sub'] = $subid; }
                 if ($pricefilter !== 'all') { $p['price'] = $pricefilter; }
                 if ($lv !== '') { $p['level'] = $lv; }
+                if ($ratingfilter > 0) { $p['rating'] = $ratingfilter; }
                 return (new moodle_url('/local/nit_category/index.php', $p))->out();
             };
           ?>
@@ -431,16 +449,36 @@ echo $OUTPUT->header();
             </a>
           <?php endforeach; ?>
         <?php endif; ?>
+
+        <?php if ($hasreviews): // Rating filter — only when the reviews plugin is present. ?>
+          <div class="nit-cat-side-head" style="margin-top:24px;"><span><?= get_string('rating', 'local_nit_reviews') ?></span></div>
+          <?php
+            $ratingurl = function (int $rv) use ($categoryid, $subid, $sort, $pricefilter, $levelfilter): string {
+                $p = ['id' => $categoryid, 'sort' => $sort];
+                if ($subid) { $p['sub'] = $subid; }
+                if ($pricefilter !== 'all') { $p['price'] = $pricefilter; }
+                if ($levelfilter !== '') { $p['level'] = $levelfilter; }
+                if ($rv > 0) { $p['rating'] = $rv; }
+                return (new moodle_url('/local/nit_category/index.php', $p))->out();
+            };
+            $ratingopts = [0 => $t('All', 'الكل'), 4 => '★★★★ ' . $t('& up', 'فأكثر'), 3 => '★★★ ' . $t('& up', 'فأكثر')];
+            foreach ($ratingopts as $rv => $rlabel): ?>
+              <a class="nit-cat-filter<?= $ratingfilter === $rv ? ' on' : '' ?>" href="<?= $ratingurl($rv) ?>">
+                <span style="font-size:14px;color:inherit;"><?= $rlabel ?></span>
+              </a>
+          <?php endforeach; ?>
+        <?php endif; ?>
       </aside>
 
       <main class="nit-cat-main">
         <?php
           // T1 course card — restyled; the pricing/offer/enrolment display and the
           // checkout trigger (data-nit-buy-course) are IDENTICAL to before.
-          $rendercard = function (core_course_list_element $course, string $sectionname) use ($t, $nitcourseinfo) {
+          $rendercard = function (core_course_list_element $course, string $sectionname) use ($t, $nitcourseinfo, $hasreviews) {
               $courseurl  = new moodle_url('/course/view.php', ['id' => $course->id]);
               $coursename = $course->get_formatted_name();
               $level      = \local_nit_category\course_meta::get_level((int) $course->id);
+              $agg        = $hasreviews ? \local_nit_reviews\api::get_aggregate((int) $course->id) : null;
               $price      = function_exists('theme_nit_course_price') ? theme_nit_course_price((int) $course->id) : '';
               $teacher    = function_exists('theme_nit_course_teacher') ? theme_nit_course_teacher((int) $course->id) : '';
               $pricelabel = $price !== '' ? $price : $t('Free', 'مجانًا');
@@ -466,6 +504,9 @@ echo $OUTPUT->header();
             <div class="nit-t1-cb">
               <a href="<?= $detailsurl ?>" style="color:inherit;"><h3 class="nit-t1-title"><?= $coursename ?></h3></a>
               <?php if ($teacher !== ''): ?><div class="nit-t1-teacher">👤 <?= s($teacher) ?></div><?php endif; ?>
+              <?php if ($agg && $agg->count > 0): ?>
+                <div class="nit-t1-rating"><span class="s">★</span> <?= number_format($agg->avg, 1) ?> <span class="c">(<?= (int) $agg->count ?>)</span></div>
+              <?php endif; ?>
               <div class="nit-t1-foot">
                 <div class="nit-t1-priceslot">
                   <?php if ($info['enrolled']): ?>
