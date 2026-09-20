@@ -93,3 +93,12 @@ $THEME->layouts['nit_fullwidth'] = [
     'file' => 'fullwidth.php',
     'regions' => [],
 ];
+
+// -----------------------------------------------------------------------------
+// NIT learner dashboard (/my) — the T1 "Welcome back" dashboard rendered from the
+// user's real enrolled courses + completion progress (no blocks). See
+// theme/nit/layout/mydashboard.php.
+$THEME->layouts['mydashboard'] = [
+    'file' => 'mydashboard.php',
+    'regions' => [],
+];
