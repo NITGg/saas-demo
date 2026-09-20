@@ -44,10 +44,42 @@
   .nit-auth .text-muted{ color:var(--a-muted)!important; }
   .nit-auth .signupform .form-text, .nit-auth .signupform small, .nit-auth .signupform .text-muted{ color:var(--a-muted)!important; }
   .nit-auth .signupform, .nit-auth .loginform{ color:var(--a-ink); }
-  .nit-auth .login-form-submit .btn, .nit-auth #loginbtn{ width:100%; background:var(--a-ink); border:0; color:#fff; padding:15px; border-radius:12px; font-weight:600; font-size:15px; }
-  .nit-auth .login-form-submit .btn:hover, .nit-auth #loginbtn:hover{ filter:brightness(1.12); }
-  .nit-auth .login-identityprovider-btn{ width:100%; display:flex; align-items:center; justify-content:center; gap:10px; border:1px solid var(--a-border)!important; border-radius:12px!important; padding:13px!important; font-weight:600!important; color:var(--a-ink)!important; background:var(--a-bg)!important; margin-bottom:10px!important; }
-  .nit-auth .login-identityprovider-btn:hover{ border-color:var(--a-accent)!important; }
+  /* ONE button system for the whole auth panel — every full-width button shares
+     the same width, height, radius and type, so nothing looks mismatched. */
+  .nit-auth .login-form-submit .btn, .nit-auth #loginbtn,
+  .nit-auth .login-identityprovider-btn,
+  .nit-auth .signupform .btn-primary, .nit-auth .signupform #id_submitbutton,
+  .nit-auth-nav .btn{
+    width:100%!important; display:flex!important; align-items:center; justify-content:center; gap:10px;
+    min-height:52px; padding:14px 18px!important; border-radius:12px!important; font-weight:600!important;
+    font-size:15px!important; line-height:1.2; border:1px solid transparent; cursor:pointer;
+    transition:background-color .15s ease, border-color .15s ease, color .15s ease;
+  }
+  /* Primary (dark ink): the submit / final action. */
+  .nit-auth .login-form-submit .btn, .nit-auth #loginbtn,
+  .nit-auth .signupform .btn-primary, .nit-auth .signupform #id_submitbutton,
+  .nit-auth-nav .btn-next{
+    background:var(--a-ink)!important; color:#fff!important; border-color:var(--a-ink)!important;
+  }
+  .nit-auth .login-form-submit .btn:hover, .nit-auth #loginbtn:hover,
+  .nit-auth .signupform .btn-primary:hover, .nit-auth .signupform #id_submitbutton:hover,
+  .nit-auth-nav .btn-next:hover{
+    background:color-mix(in srgb, var(--a-ink) 80%, #fff)!important;
+    border-color:color-mix(in srgb, var(--a-ink) 80%, #fff)!important;
+  }
+  /* Secondary (bordered): identity providers, guest, stepper Back. */
+  .nit-auth .login-identityprovider-btn, .nit-auth-nav .btn-back{
+    background:var(--a-bg)!important; color:var(--a-ink)!important; border:1px solid var(--a-border)!important;
+    margin-bottom:0!important;
+  }
+  .nit-auth .login-identityprovider-btn{ margin-bottom:10px!important; }
+  .nit-auth .login-identityprovider-btn:hover, .nit-auth-nav .btn-back:hover{
+    background:color-mix(in srgb, var(--a-ink) 4%, var(--a-bg))!important;
+    border-color:var(--a-accent)!important; color:var(--a-ink)!important;
+  }
+  /* Stepper Next/Back row. */
+  .nit-auth-nav{ display:flex; gap:10px; margin-top:6px; }
+  .nit-auth-nav .btn{ flex:1; }
   .nit-auth .login-separator{ display:flex; align-items:center; text-align:center; color:var(--a-muted); font-size:13px; margin:22px 0; }
   .nit-auth .login-separator::before, .nit-auth .login-separator::after{ content:""; flex:1; height:1px; background:var(--a-border); }
   .nit-auth .login-separator::before{ margin-inline-end:14px; } .nit-auth .login-separator::after{ margin-inline-start:14px; }

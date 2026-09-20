@@ -3,15 +3,121 @@
 
     NIT override of core/signup_form_layout — the T1 "Create your account" screen.
     Renders inside theme_nit/core/login_layout (signup.php uses the 'login'
-    pagelayout), so it inherits the split screen + dark brand panel. The signup
-    form html is Moodle's mform, styled by the .nit-auth CSS.
+    pagelayout), so it inherits the split screen + dark brand panel.
+
+    The stepper is a PROGRESSIVE ENHANCEMENT over Moodle's real signup mform: the
+    JS below groups the form's actual <fieldset>s into steps with Back/Next and a
+    progress header, and only advances when the current step's HTML5 constraints
+    pass. Nothing about the form is rebuilt — all fields, names, ids, the security
+    question / recaptcha and the real submit are Moodle's own, and if the JS does
+    not run (or there is only one fieldset) the full form shows and submits
+    normally. On a server-side validation error it opens the step holding the
+    first invalid field so the message is never hidden behind a later step.
 }}
 <div class="signupform">
     <h1>{{#str}}signupcreatetitle, theme_nit{{/str}}</h1>
     <p class="text-muted mb-4">{{#str}}signupsubtitle, theme_nit{{/str}}</p>
+    <ol class="nit-auth-steps" id="nit-signup-steps" hidden></ol>
     {{{formhtml}}}
     <div class="signup-haveaccount text-center" style="margin-top:16px;">
         <span class="text-muted me-1">{{#str}} alreadyhaveaccount, theme_nit {{/str}}</span>
         <a href="{{config.wwwroot}}/login/index.php">{{#str}} logintoaccount, theme_nit {{/str}}</a>
     </div>
 </div>
+<script>
+(function () {
+    'use strict';
+    try {
+        var root = document.querySelector('.nit-auth .signupform');
+        var form = root && root.querySelector('form');
+        if (!form) { return; }
+
+        var isar = (document.documentElement.getAttribute('lang') || '').indexOf('ar') === 0;
+        var T = {
+            next:   isar ? 'التالي'        : 'Next',
+            back:   isar ? 'السابق'        : 'Back',
+            create: isar ? 'إنشاء الحساب'  : 'Create account'
+        };
+
+        // The real submit + its row — we drive it and hide the native row.
+        var submitBtn = form.querySelector('#id_submitbutton') || form.querySelector('[type="submit"]');
+        var submitRow = submitBtn && (submitBtn.closest('.fitem') || submitBtn.closest('.form-group') || submitBtn.closest('fieldset'));
+
+        // Steppable fieldsets = those holding a real (non-button, non-hidden) field.
+        var steps = Array.prototype.slice.call(form.querySelectorAll('fieldset')).filter(function (fs) {
+            if (fs === submitRow) { return false; }
+            return fs.querySelector('input:not([type="submit"]):not([type="button"]):not([type="hidden"]), select, textarea');
+        });
+        if (steps.length < 2) { return; } // Single page — leave the normal form.
+
+        if (submitRow) { submitRow.style.display = 'none'; }
+
+        // Progress header from the fieldset legends.
+        var head = document.getElementById('nit-signup-steps');
+        head.innerHTML = '';
+        steps.forEach(function (fs, i) {
+            var lg = fs.querySelector('legend');
+            var label = (lg && lg.textContent.trim()) || (T.next + ' ' + (i + 1));
+            var li = document.createElement('li');
+            var sp = document.createElement('span'); sp.textContent = String(i + 1);
+            var em = document.createElement('em'); em.style.fontStyle = 'normal'; em.textContent = label;
+            li.appendChild(sp); li.appendChild(em);
+            head.appendChild(li);
+        });
+        head.hidden = false;
+
+        // Back / Next row.
+        var nav = document.createElement('div');
+        nav.className = 'nit-auth-nav';
+        var back = document.createElement('button');
+        back.type = 'button'; back.className = 'btn btn-back'; back.textContent = T.back;
+        var next = document.createElement('button');
+        next.type = 'button'; next.className = 'btn btn-next'; next.textContent = T.next;
+        nav.appendChild(back); nav.appendChild(next);
+        form.appendChild(nav);
+
+        var cur = 0;
+        var LAST = steps.length - 1;
+
+        function render() {
+            steps.forEach(function (fs, i) { fs.style.display = (i === cur) ? '' : 'none'; });
+            Array.prototype.forEach.call(head.children, function (li, i) {
+                li.classList.toggle('on', i <= cur);
+            });
+            back.style.display = (cur === 0) ? 'none' : '';
+            next.textContent = (cur === LAST) ? T.create : T.next;
+        }
+
+        function validStep(i) {
+            var els = steps[i].querySelectorAll('input, select, textarea');
+            for (var k = 0; k < els.length; k++) {
+                var el = els[k];
+                if (el.type === 'hidden' || el.disabled || !el.willValidate) { continue; }
+                if (!el.checkValidity()) { el.reportValidity(); return false; }
+            }
+            return true;
+        }
+
+        next.addEventListener('click', function () {
+            if (!validStep(cur)) { return; }
+            if (cur === LAST) {
+                if (submitBtn) { submitBtn.click(); } else { form.submit(); }
+                return;
+            }
+            cur++; render();
+            if (root.scrollIntoView) { root.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+        });
+        back.addEventListener('click', function () { if (cur > 0) { cur--; render(); } });
+
+        // If Moodle re-rendered with a validation error, open its step.
+        var errsel = '.error, .has-danger, .is-invalid, [id^="id_error_"]';
+        for (var s = 0; s < steps.length; s++) {
+            var e = steps[s].querySelector(errsel);
+            if (e && e.textContent && e.textContent.trim() !== '') { cur = s; break; }
+        }
+        render();
+    } catch (e) {
+        // Any failure leaves Moodle's full signup form intact.
+    }
+})();
+</script>
