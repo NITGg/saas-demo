@@ -25,12 +25,32 @@
 // block, so nothing about its behaviour changes.
 // =============================================================================
 
+// Force the dashboard onto the LIGHT template ground. This academy (and any
+// dark-brand one) sets --nit-background to a dark colour, which the theme paints
+// on <body> + #topofscroll + the block surfaces — so the real block dashboard
+// inherits dark. The T1 rule is: structure is always light, only the accent is
+// brand. Override body/shell/blocks to the --t-* tokens with !important.
+body#page-my-index,
+#page-my-index #topofscroll,
+#page-my-index #topofscroll.main-inner,
+#page-my-index #page,
+#page-my-index #page-content,
+#page-my-index #region-main {
+    background: var(--t-surface, #FAFAF8) !important;
+}
+
 #page-my-index {
     $t-font: 'Manrope', 'IBM Plex Sans Arabic', system-ui, sans-serif;
 
-    &#page,
-    #page {
-        background: var(--t-surface, #FAFAF8);
+    // Block surfaces (Course overview etc.) → light cards, not the dark brand
+    // surface.
+    .block,
+    section.block,
+    .block .card,
+    [data-region="blocks-column"] .card,
+    .block_myoverview {
+        background: var(--t-bg, #FFFFFF) !important;
+        color: var(--t-ink, #16191D);
     }
 
     // Page + block headings in the T1 display style.

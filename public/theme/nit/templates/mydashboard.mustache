@@ -1,0 +1,57 @@
+{{!
+    @template theme_nit/mydashboard
+
+    NIT learner dashboard (/my) — the T1 "Welcome back" dashboard. Same shell as
+    theme_nit/fullwidth (Boost navbar + footer, edge-to-edge), but the main region
+    renders the dashboard HTML built in theme/nit/layout/mydashboard.php from the
+    user's REAL enrolled courses + completion progress (no blocks, no design-only
+    placeholders).
+
+    Context variables:
+    * output, bodyattributes, sitename, primarymoremenu, mobileprimarynav,
+      usermenu, langmenu - as theme_nit/fullwidth
+    * dashboardhtml - the rendered dashboard markup
+}}
+{{> theme_boost/head }}
+
+<body {{{ bodyattributes }}}>
+<style>
+    body.nit-fullwidth-page #page { padding: 0 !important; }
+    body.nit-fullwidth-page #page-wrapper { overflow-x: clip; }
+    body.nit-fullwidth-page #page.drawers .main-inner { max-width: 100% !important; width: 100%; margin: 0 !important; padding: 0 !important; background: transparent !important; border-radius: 0 !important; }
+    body.nit-fullwidth-page #page-content { padding: 0 !important; }
+    body.nit-fullwidth-page #region-main-box { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
+    body.nit-fullwidth-page #region-main { max-width: 100% !important; width: 100% !important; padding: 0 !important; margin: 0 !important; border: 0 !important; background: transparent !important; display: block !important; }
+</style>
+{{> core/local/toast/wrapper}}
+<div id="page-wrapper" class="d-print-block">
+    {{{ output.standard_top_of_body_html }}}
+    {{> theme_boost/navbar }}
+    <div id="page" data-region="mainpage" class="drawers drag-container">
+        <div id="topofscroll" class="main-inner">
+            <div id="page-content">
+                <div id="region-main-box">
+                    <div id="region-main">
+                        {{{ dashboardhtml }}}
+                        {{! Moodle requires every layout to output main_content(); the /my
+                            blocks render here but stay hidden — the T1 dashboard above is
+                            the real content. }}
+                        <div class="d-none" aria-hidden="true">{{{ output.main_content }}}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {{> theme_boost/footer }}
+    </div>
+    {{{ output.standard_after_main_region_html }}}
+</div>
+
+</body>
+</html>
+{{#js}}
+M.util.js_pending('theme_boost/loader');
+require(['theme_boost/loader', 'theme_boost/drawer'], function(Loader, Drawer) {
+    Drawer.init();
+    M.util.js_complete('theme_boost/loader');
+});
+{{/js}}

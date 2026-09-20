@@ -1,0 +1,92 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// =============================================================================
+// Inner-page chrome — put the REAL Moodle pages on the template ground.
+//
+// The problem: an academy's brand palette can set a DARK "Background" (this is
+// the hybrid-palette trap). The theme themes the whole Moodle chrome from that
+// palette, so every real page (course, dashboard, grades, profile, admin…) comes
+// out dark: <body>, #region-main and the card surfaces all take the dark brand
+// colour, with light text on top.
+//
+// The T1 rule is: STRUCTURE follows the active template, only the ACCENT is brand.
+// So on every page EXCEPT the homepage / login / embedded (which own their own
+// canvas), repoint the theme's structure tokens + Bootstrap's body variables onto
+// the active template's --t-* tokens, and light the content wrappers + cards.
+// Because it reads --t-*, a light template renders light and a dark template (t4)
+// renders dark — the chrome always matches the template, never the raw brand.
+// =============================================================================
+
+body:not(.pagelayout-frontpage):not(.pagelayout-login):not(.pagelayout-embedded):not(.path-site) {
+    // Structure tokens → template ground (accent tokens are left untouched).
+    --nit-background: var(--t-surface, #FAFAF8);
+    --nit-brand-background: var(--t-surface, #FAFAF8);
+    --nit-surface: var(--t-bg, #FFFFFF);
+    --nit-brand-surface: var(--t-bg, #FFFFFF);
+    --nit-textprimary: var(--t-ink, #16191D);
+    --nit-brand-textprimary: var(--t-ink, #16191D);
+    --nit-textsecondary: var(--t-muted, #6E7781);
+    --nit-brand-textsecondary: var(--t-muted, #6E7781);
+    --nit-border: var(--t-border, #EDEDE9);
+    --nit-brand-border: var(--t-border, #EDEDE9);
+
+    // Bootstrap body variables → same ground, so every BS component follows.
+    --bs-body-bg: var(--t-surface, #FAFAF8);
+    --bs-body-color: var(--t-ink, #16191D);
+    --bs-emphasis-color: var(--t-ink, #16191D);
+    --bs-heading-color: var(--t-ink, #16191D);
+    --bs-secondary-color: var(--t-muted, #6E7781);
+    --bs-tertiary-bg: var(--t-surface, #FAFAF8);
+    --bs-border-color: var(--t-border, #EDEDE9);
+
+    background: var(--t-surface, #FAFAF8) !important;
+    color: var(--t-ink, #16191D);
+
+    // The page wrappers can carry the dark brand ground directly — force them too.
+    #topofscroll,
+    #page,
+    #page-content,
+    #region-main,
+    #region-main-box {
+        background: var(--t-surface, #FAFAF8) !important;
+    }
+
+    // Card surfaces (blocks, activity cards, boxes) sit on the light surface.
+    .card {
+        background: var(--t-bg, #FFFFFF) !important;
+    }
+
+    // Form controls follow the template too (the theme's default inputs are dark).
+    .form-control,
+    .form-select,
+    .custom-select,
+    input[type="text"],
+    input[type="search"],
+    input[type="email"],
+    input[type="password"],
+    input[type="url"],
+    input[type="number"],
+    textarea,
+    select {
+        background: var(--t-bg, #FFFFFF) !important;
+        color: var(--t-ink, #16191D) !important;
+        border-color: var(--t-border2, #DCDCD7) !important;
+
+        &::placeholder {
+            color: var(--t-muted, #6E7781) !important;
+        }
+    }
+}
