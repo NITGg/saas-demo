@@ -101,7 +101,17 @@ class format_topics_renderer extends \format_topics\output\renderer {
             $format = course_get_format($this->page->course);
             // get_sectionid() is null on the "all sections" landing page.
             if (!$format->get_sectionid()) {
-                return $this->acad_render_page($format);
+                // The T1 course LANDING (with the Buy/Enrol card) is for prospective
+                // learners only. Enrolled learners and staff/managers see the normal
+                // Moodle course content (untouched) — never the buy landing on their
+                // own course.
+                $context = \context_course::instance($this->page->course->id);
+                $canaccesscontent = is_enrolled($context, null, '', true)
+                    || has_capability('moodle/course:update', $context)
+                    || is_siteadmin();
+                if (!$canaccesscontent) {
+                    return $this->acad_render_page($format);
+                }
             }
         }
         return parent::render($widget);
