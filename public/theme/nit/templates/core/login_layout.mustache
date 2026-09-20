@@ -119,8 +119,9 @@
     <div class="bg"></div>
     <div class="art" id="nit-auth-art"></div>
     <div class="quote">
-      <h2>{{#str}}welcometosite, theme_nit, {{sitename}}{{/str}}</h2>
-      <p>{{#str}}authsidetagline, theme_nit{{/str}}</p>
+      {{! Owner-editable via the homepage editor's "Auth pages" panel; lang-string defaults otherwise. }}
+      <h2>{{{ output.nit_auth_welcome }}}</h2>
+      <p>{{{ output.nit_auth_tagline }}}</p>
     </div>
   </aside>
 </div>

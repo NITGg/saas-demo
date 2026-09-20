@@ -241,8 +241,20 @@ class homepage_content {
     private static function normalise(array $m): array {
         $out = ['text' => [], 'href' => [], 'img' => []];
 
-        $textkeys = ['brand_name', 'hero_title', 'hero_subtitle', 'about_heading', 'about_text',
-            'footer_tagline', 'app_heading', 'app_text', 'contact_email', 'contact_phone', 'contact_address'];
+        // Every text / link / image key in the schema (fields()) is accepted — the
+        // in-page editor edits any hook a template carries, not a fixed subset.
+        $textkeys = [];
+        $linkkeys = [];
+        $imgkeys  = [];
+        foreach (self::fields() as $f) {
+            if ($f['type'] === 'text') {
+                $textkeys[] = $f['key'];
+            } else if ($f['type'] === 'link') {
+                $linkkeys[] = $f['key'];
+            } else if ($f['type'] === 'image') {
+                $imgkeys[] = $f['key'];
+            }
+        }
         $src = isset($m['text']) && is_array($m['text']) ? $m['text'] : $m;
         foreach ($textkeys as $k) {
             if (!array_key_exists($k, $src)) {
@@ -263,14 +275,14 @@ class homepage_content {
         }
 
         $hrefsrc = isset($m['href']) && is_array($m['href']) ? $m['href'] : $m;
-        foreach (['app_ios', 'app_android'] as $k) {
+        foreach ($linkkeys as $k) {
             if (!empty($hrefsrc[$k]) && is_string($hrefsrc[$k])) {
                 $out['href'][$k] = clean_param(trim($hrefsrc[$k]), PARAM_URL);
             }
         }
 
         $imgsrc = isset($m['images']) && is_array($m['images']) ? $m['images'] : (isset($m['img']) && is_array($m['img']) ? $m['img'] : []);
-        foreach (['hero', 'about', 'logo'] as $k) {
+        foreach ($imgkeys as $k) {
             if (!empty($imgsrc[$k]) && is_string($imgsrc[$k]) && strpos($imgsrc[$k], 'data:') === 0) {
                 $out['img'][$k] = $imgsrc[$k];
             }

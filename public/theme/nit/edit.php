@@ -449,6 +449,114 @@ try {
             nit_edit_respond(true);
             break;
 
+        // ── In-page content editor (design panel) ──────────────────────────────
+        // Save the REAL content hooks of the homepage sections: text (bilingual),
+        // links and images, through homepage_content::apply() — the same pipeline
+        // nit2 and the admin content page use.
+        case 'content':
+            $manifest = ['text' => [], 'href' => [], 'images' => []];
+            $rawtext = optional_param('text', '', PARAM_RAW);
+            if ($rawtext !== '') {
+                $t = json_decode($rawtext, true);
+                if (is_array($t)) {
+                    foreach ($t as $k => $v) {
+                        $k = clean_param((string) $k, PARAM_ALPHANUMEXT);
+                        if ($k === '') {
+                            continue;
+                        }
+                        if (is_array($v)) {
+                            $manifest['text'][$k] = [
+                                'en' => \core_text::substr(trim((string) ($v['en'] ?? '')), 0, 2000),
+                                'ar' => \core_text::substr(trim((string) ($v['ar'] ?? '')), 0, 2000),
+                            ];
+                        } else {
+                            $manifest['text'][$k] = \core_text::substr(trim((string) $v), 0, 2000);
+                        }
+                    }
+                }
+            }
+            $rawhref = optional_param('href', '', PARAM_RAW);
+            if ($rawhref !== '') {
+                $h = json_decode($rawhref, true);
+                if (is_array($h)) {
+                    foreach ($h as $k => $v) {
+                        $k = clean_param((string) $k, PARAM_ALPHANUMEXT);
+                        if ($k !== '' && is_string($v)) {
+                            $manifest['href'][$k] = trim($v);
+                        }
+                    }
+                }
+            }
+            foreach ($_FILES as $name => $file) {
+                if (strpos($name, 'image_') !== 0 || empty($file['tmp_name'])) {
+                    continue;
+                }
+                $k = clean_param(substr($name, 6), PARAM_ALPHANUMEXT);
+                $err = null;
+                $datauri = editor::uploaded_image_datauri($file, $err);
+                if ($datauri === null) {
+                    nit_edit_respond(false, ['error' => $err ?? 'image', 'field' => $k]);
+                }
+                $manifest['images'][$k] = $datauri;
+            }
+            $log = [];
+            \theme_nit\local\homepage_content::apply($manifest, $log);
+            nit_edit_respond(true, ['log' => $log]);
+            break;
+
+        // Show / hide a section (the eye toggle in PAGE SECTIONS).
+        case 'section_toggle':
+            $blockid = required_param('blockid', PARAM_INT);
+            $visible = (bool) required_param('visible', PARAM_INT);
+            \theme_nit\local\template_applier::set_section_visible($blockid, $visible);
+            nit_edit_respond(true);
+            break;
+
+        // Reorder a section one step (the drag handles → up/down).
+        case 'section_move':
+            $blockid = required_param('blockid', PARAM_INT);
+            $dir = required_param('dir', PARAM_ALPHA) === 'up' ? 'up' : 'down';
+            \theme_nit\local\template_applier::move_section($blockid, $dir);
+            nit_edit_respond(true);
+            break;
+
+        // "Add a section": create a missing section of the active template.
+        case 'section_add':
+            $key = required_param('section', PARAM_ALPHANUMEXT);
+            $newid = \theme_nit\local\template_applier::add_section($key);
+            if (!$newid) {
+                nit_edit_respond(false, ['error' => 'unknownsection']);
+            }
+            nit_edit_respond(true, ['blockid' => $newid]);
+            break;
+
+        // Auth pages (login / signup): the brand panel's welcome title + tagline,
+        // optionally the background image. Stored as theme_nit config; the login
+        // layout reads them with the lang-string defaults as fallback.
+        case 'auth':
+            foreach (['welcome', 'tagline'] as $k) {
+                $raw = optional_param($k, '', PARAM_RAW);
+                if ($raw === '') {
+                    continue;
+                }
+                $v = json_decode($raw, true);
+                $val = is_array($v)
+                    ? editor::mlang_build(\core_text::substr((string) ($v['en'] ?? ''), 0, 400), \core_text::substr((string) ($v['ar'] ?? ''), 0, 400))
+                    : \core_text::substr(trim($raw), 0, 400);
+                set_config('auth_' . $k, $val, 'theme_nit');
+            }
+            if (!empty($_FILES['image']['tmp_name'])) {
+                $err = null;
+                if (!editor::replace_stored_file('loginbackgroundimage', $_FILES['image'], $err)) {
+                    nit_edit_respond(false, ['error' => $err ?? 'image']);
+                }
+                editor::bust_theme_caches();
+            } else {
+                purge_all_caches();
+            }
+            nit_edit_respond(true);
+            break;
+
         default:
             nit_edit_respond(false, ['error' => 'unknownaction']);
     }

@@ -97,6 +97,146 @@ class template_applier {
         return true;
     }
 
+    // ── In-page editor support (design "PAGE SECTIONS" list) ────────────────────
+
+    /**
+     * The active template's sections with their live state on the Site home:
+     * which block holds each one (if any), its visibility and order.
+     *
+     * @return array<int, array{key:string,region:string,blockid:int,present:bool,visible:bool,weight:int}>
+     */
+    public static function sections_state(): array {
+        global $DB;
+        $blocks = $DB->get_records('block_instances', [
+            'blockname' => 'nit_section', 'pagetypepattern' => 'site-index',
+        ]);
+        $decoded = [];
+        foreach ($blocks as $bi) {
+            $decoded[$bi->id] = self::config_of($bi);
+        }
+        $ctx = \context_course::instance(SITEID);
+        $positions = $DB->get_records('block_positions', ['contextid' => $ctx->id, 'pagetype' => 'site-index', 'subpage' => '']);
+        $posbyblock = [];
+        foreach ($positions as $p) {
+            $posbyblock[(int) $p->blockinstanceid] = $p;
+        }
+        $claimed = [];
+        $out = [];
+        foreach (homepage_templates::sections() as $section) {
+            $target = self::match_block($blocks, $decoded, $claimed, $section['signatures']);
+            $row = ['key' => $section['key'], 'region' => $section['region'], 'blockid' => 0,
+                'present' => false, 'visible' => true, 'weight' => (int) $section['weight']];
+            if ($target) {
+                $claimed[$target->id] = true;
+                $pos = $posbyblock[(int) $target->id] ?? null;
+                $row['blockid'] = (int) $target->id;
+                $row['present'] = true;
+                $row['visible'] = $pos ? (bool) $pos->visible : true;
+                $row['weight']  = $pos ? (int) $pos->weight : (int) $target->defaultweight;
+                $row['region']  = $pos ? $pos->region : $target->defaultregion;
+            }
+            $out[] = $row;
+        }
+        usort($out, static fn($a, $b) => [$a['region'], $a['weight']] <=> [$b['region'], $b['weight']]);
+        return $out;
+    }
+
+    /**
+     * Add one section of the ACTIVE template to the Site home (the design's
+     * "Add a section"). If the section already exists it is just made visible.
+     *
+     * @param string $key a section key from homepage_templates::sections()
+     * @return int the block instance id, or 0 when the key/template file is unknown
+     */
+    public static function add_section(string $key): int {
+        global $DB;
+        $id = homepage_templates::current();
+        $section = null;
+        foreach (homepage_templates::sections() as $s) {
+            if ($s['key'] === $key) {
+                $section = $s;
+                break;
+            }
+        }
+        if (!$section) {
+            return 0;
+        }
+        $html = self::read_html($id, $section['file']);
+        if ($html === null) {
+            return 0;
+        }
+        foreach (self::sections_state() as $st) {
+            if ($st['key'] === $key && $st['present']) {
+                self::set_section_visible($st['blockid'], true);
+                return $st['blockid'];
+            }
+        }
+        $blocks = $DB->get_records('block_instances', ['blockname' => 'nit_section', 'pagetypepattern' => 'site-index']);
+        $proto = $blocks ? reset($blocks) : null;
+        $new = self::create_block($section, $html, $proto);
+        if ($section['key'] === 'footer') {
+            \theme_nit\local\editor::footer_to_bottom($new);
+        }
+        purge_all_caches();
+        return (int) $new->id;
+    }
+
+    /** Show / hide a section block on the Site home (a block_positions row, like core). */
+    public static function set_section_visible(int $blockid, bool $visible): void {
+        global $DB;
+        $bi = $DB->get_record('block_instances', ['id' => $blockid, 'blockname' => 'nit_section'], '*', MUST_EXIST);
+        $ctx = \context_course::instance(SITEID);
+        $pos = $DB->get_record('block_positions', ['blockinstanceid' => $blockid, 'contextid' => $ctx->id,
+            'pagetype' => 'site-index', 'subpage' => '']);
+        if ($pos) {
+            $DB->set_field('block_positions', 'visible', $visible ? 1 : 0, ['id' => $pos->id]);
+        } else {
+            $DB->insert_record('block_positions', (object) [
+                'blockinstanceid' => $blockid, 'contextid' => $ctx->id, 'pagetype' => 'site-index',
+                'subpage' => '', 'visible' => $visible ? 1 : 0,
+                'region' => $bi->defaultregion, 'weight' => $bi->defaultweight,
+            ]);
+        }
+        purge_all_caches();
+    }
+
+    /**
+     * Move a section one step up/down within its region. Re-numbers the region's
+     * section blocks 0..n on defaultweight and drops their Site-home position
+     * overrides so the default order is what renders.
+     */
+    public static function move_section(int $blockid, string $dir): void {
+        global $DB;
+        $bi = $DB->get_record('block_instances', ['id' => $blockid, 'blockname' => 'nit_section'], '*', MUST_EXIST);
+        $region = $bi->defaultregion;
+        $siblings = array_values($DB->get_records('block_instances', [
+            'blockname' => 'nit_section', 'pagetypepattern' => 'site-index', 'defaultregion' => $region,
+        ], 'defaultweight ASC, id ASC'));
+        $idx = null;
+        foreach ($siblings as $i => $s) {
+            if ((int) $s->id === $blockid) {
+                $idx = $i;
+                break;
+            }
+        }
+        if ($idx === null) {
+            return;
+        }
+        $swap = $dir === 'up' ? $idx - 1 : $idx + 1;
+        if ($swap < 0 || $swap >= count($siblings)) {
+            return;
+        }
+        [$siblings[$idx], $siblings[$swap]] = [$siblings[$swap], $siblings[$idx]];
+        $ctx = \context_course::instance(SITEID);
+        foreach ($siblings as $w => $s) {
+            $DB->set_field('block_instances', 'defaultweight', $w, ['id' => $s->id]);
+            // Keep visibility, but let the new default order win.
+            $DB->set_field('block_positions', 'weight', $w,
+                ['blockinstanceid' => $s->id, 'contextid' => $ctx->id, 'pagetype' => 'site-index', 'subpage' => '']);
+        }
+        purge_all_caches();
+    }
+
     /** Decode a block's configdata into a stdClass (empty object when absent). */
     private static function config_of(\stdClass $bi): \stdClass {
         $cfg = $bi->configdata ? @unserialize(base64_decode($bi->configdata)) : null;

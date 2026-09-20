@@ -77,6 +77,36 @@ class core_renderer extends \theme_boost\output\core_renderer {
      *
      * @return string HTML anchor, or '' when it should not show
      */
+    /**
+     * Auth pages (login/signup) brand-panel title — the owner's text from the
+     * homepage editor ("Auth pages"), falling back to the lang string. Multilang
+     * tags are resolved by the filter; output is escaped.
+     *
+     * @return string
+     */
+    public function nit_auth_welcome(): string {
+        global $SITE;
+        $v = trim((string) get_config('theme_nit', 'auth_welcome'));
+        if ($v === '') {
+            return get_string('welcometosite', 'theme_nit', format_string($SITE->shortname));
+        }
+        return format_text($v, FORMAT_HTML, ['filter' => true, 'noclean' => false, 'para' => false]);
+    }
+
+    /**
+     * Auth pages brand-panel tagline — owner text from the editor, else the
+     * lang-string default.
+     *
+     * @return string
+     */
+    public function nit_auth_tagline(): string {
+        $v = trim((string) get_config('theme_nit', 'auth_tagline'));
+        if ($v === '') {
+            return get_string('authsidetagline', 'theme_nit');
+        }
+        return format_text($v, FORMAT_HTML, ['filter' => true, 'noclean' => false, 'para' => false]);
+    }
+
     public function nit_account_link(): string {
         global $CFG;
         if (!\theme_nit\local\editor::can_edit()) {

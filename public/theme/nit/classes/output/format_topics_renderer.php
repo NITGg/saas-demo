@@ -992,13 +992,18 @@ class format_topics_renderer extends \format_topics\output\renderer {
         $enrolurl   = (new moodle_url('/local/nit_subscriptions/enrol.php',
             ['courseid' => $course->id, 'sesskey' => sesskey()]))->out(false);
 
-        // Preview thumbnail (course image) with a play glyph.
+        // Preview thumbnail: the course image, with a play glyph ONLY when the
+        // course actually has an introduction video (a video lesson exists) —
+        // otherwise a play button would promise something that isn't there.
         $thumbattrs = ['class' => 'acadt1__preview'];
         if ($data->image) {
             $thumbattrs['style'] = "background-image:url('" . s($data->image->out(false)) . "');";
         }
+        $hasvideo = $this->acad_has_video_lesson($course);
         $preview = html_writer::tag('div',
-            html_writer::tag('span', $this->acad_icon('play'), ['class' => 'acadt1__play', 'aria-hidden' => 'true']),
+            $hasvideo
+                ? html_writer::tag('span', $this->acad_icon('play'), ['class' => 'acadt1__play', 'aria-hidden' => 'true'])
+                : '',
             $thumbattrs
         );
 
@@ -1074,6 +1079,27 @@ class format_topics_renderer extends \format_topics\output\renderer {
             // Fall through to ''.
         }
         return '';
+    }
+
+    /**
+     * Does the course contain at least one video lesson (mod_vimeo / mod_vdocipher)?
+     * Checks visibility to anyone (not uservisible) so a prospect who cannot open
+     * the lesson still sees that an intro video exists.
+     *
+     * @param \stdClass $course
+     * @return bool
+     */
+    protected function acad_has_video_lesson($course): bool {
+        try {
+            foreach (get_fast_modinfo($course)->get_cms() as $cm) {
+                if (in_array($cm->modname, ['vimeo', 'vdocipher'], true) && $cm->visible && !$cm->deletioninprogress) {
+                    return true;
+                }
+            }
+        } catch (\Throwable $e) {
+            // Fall through to false.
+        }
+        return false;
     }
 
     /**

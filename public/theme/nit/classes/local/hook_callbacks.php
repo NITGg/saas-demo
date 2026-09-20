@@ -92,6 +92,24 @@ class hook_callbacks {
             redirect(new \moodle_url('/local/nit_category/index.php', $catid ? ['id' => $catid] : []));
         }
 
+        // Course view for ENROLLED learners → the player (their resume lesson).
+        // Design: entering a course you're enrolled in lands on the lesson player
+        // (video + curriculum sidebar), not a course page; prospects fall through to
+        // the T1 course detail (format renderer), and edit mode keeps the real
+        // Moodle course for management. Only video lessons make a "player", so a
+        // course without any video activity is left alone.
+        if (strpos($pt, 'course-view') === 0
+                && !empty($PAGE->course->id) && (int) $PAGE->course->id !== SITEID
+                && !(method_exists($PAGE, 'user_is_editing') && $PAGE->user_is_editing())
+                && optional_param('section', null, PARAM_INT) === null
+                && optional_param('sectionid', null, PARAM_INT) === null
+                && isloggedin() && !isguestuser()) {
+            $url = self::resume_lesson_url($PAGE->course);
+            if ($url !== '') {
+                redirect($url);
+            }
+        }
+
         // Route a user's OWN profile to the T1 "Profile & settings" page. Viewing
         // someone else's profile (an admin/teacher) is left on the core page.
         if ($pt === 'user-profile'
@@ -118,6 +136,45 @@ class hook_callbacks {
         $SESSION->theme_nit_appembed = 1;
 
         $PAGE->set_pagelayout('embedded');
+    }
+
+    /**
+     * The player URL an enrolled learner should land on for a course, or '' when
+     * the course view must stay as it is.
+     *
+     * '' for: staff (anyone who may update the course keeps the real Moodle
+     * course), users without content access (prospects → detail landing via the
+     * format renderer), and courses with no video lesson. Otherwise the first
+     * video lesson the user has not yet completed (their "resume" point), falling
+     * back to the first video lesson.
+     *
+     * @param \stdClass $course
+     * @return string
+     */
+    private static function resume_lesson_url(\stdClass $course): string {
+        global $USER;
+        $ctx = \context_course::instance($course->id);
+        if (has_capability('moodle/course:update', $ctx) || is_siteadmin()) {
+            return '';
+        }
+        if (!is_enrolled($ctx, $USER, '', true) && !has_capability('moodle/course:view', $ctx)) {
+            return '';
+        }
+        $modinfo = get_fast_modinfo($course);
+        $completion = new \completion_info($course);
+        $first = null;
+        foreach ($modinfo->get_cms() as $cm) {
+            if (!in_array($cm->modname, ['vimeo', 'vdocipher'], true) || !$cm->uservisible || $cm->deletioninprogress) {
+                continue;
+            }
+            if ($first === null) {
+                $first = $cm;
+            }
+            if ($completion->is_enabled($cm) && $completion->get_data($cm, false)->completionstate == COMPLETION_INCOMPLETE) {
+                return $cm->url ? $cm->url->out(false) : '';
+            }
+        }
+        return ($first && $first->url) ? $first->url->out(false) : '';
     }
 
     /**

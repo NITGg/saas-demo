@@ -335,6 +335,15 @@ if (\theme_nit\local\editor::can_edit()) {
             'tiktok'    => (string) get_config('theme_nit', 'social_tiktok'),
             'website'   => (string) get_config('theme_nit', 'social_website'),
         ],
+        // Design panel: the real content schema + current values + section state,
+        // so the in-page editor edits the SAME hooks nit2 / the admin page fill.
+        'contentFields' => \theme_nit\local\homepage_content::fields(),
+        'contentValues' => \theme_nit\local\homepage_content::read(),
+        'sections'      => \theme_nit\local\template_applier::sections_state(),
+        'auth'          => [
+            'welcome' => \theme_nit\local\editor::mlang_parse((string) get_config('theme_nit', 'auth_welcome')),
+            'tagline' => \theme_nit\local\editor::mlang_parse((string) get_config('theme_nit', 'auth_tagline')),
+        ],
         'str'           => [
             'editpage'      => get_string('edit_editpage', 'theme_nit'),
             'doneediting'   => get_string('edit_done', 'theme_nit'),
