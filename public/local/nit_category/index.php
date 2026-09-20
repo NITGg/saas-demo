@@ -448,7 +448,7 @@ echo $OUTPUT->header();
 // NIT: wire the course Buy buttons to the shared checkout modal (coupon + auto offer → Kashier).
 if ($nitcheckout) {
     $costr = local_nit_commerce_string_map([
-        'co_title', 'co_intro', 'co_total', 'co_offer', 'co_coupon', 'co_apply', 'co_discount',
+        'co_title', 'co_intro', 'co_total', 'co_total_sub', 'co_offer', 'co_coupon', 'co_apply', 'co_discount',
         'co_secure', 'co_proceed', 'co_cancel', 'co_loading', 'co_coupon_failed', 'co_currency',
     ]);
     echo html_writer::script('window.NIT_CO = ' . json_encode([

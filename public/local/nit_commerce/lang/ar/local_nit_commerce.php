@@ -146,6 +146,7 @@ $string['err_sessionexpired']      = 'انتهت الجلسة — من فضلك 
 $string['co_title']         = 'تأكيد عملية الشراء';
 $string['co_intro']         = 'سيتم تحويلك إلى صفحة دفع آمنة لإتمام العملية.';
 $string['co_total']         = 'الإجمالي';
+$string['co_total_sub']      = 'المجموع الفرعي';
 $string['co_offer']         = 'العرض';
 $string['co_coupon']        = 'كوبون';
 $string['co_apply']         = 'تطبيق';

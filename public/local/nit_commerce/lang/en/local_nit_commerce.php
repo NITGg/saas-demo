@@ -145,6 +145,7 @@ $string['err_sessionexpired']      = 'Session expired — please reload the page
 $string['co_title']         = 'Confirm your purchase';
 $string['co_intro']         = 'You will be taken to secure checkout to complete the payment.';
 $string['co_total']         = 'Total';
+$string['co_total_sub']      = 'Subtotal';
 $string['co_offer']         = 'Offer';
 $string['co_coupon']        = 'Coupon';
 $string['co_apply']         = 'Apply';
