@@ -51,10 +51,22 @@ $PAGE->set_pagelayout('nit_fullwidth');
 //   * a chosen subcat  -> just that one section.
 //   * no subcategories -> a single section for the (leaf) parent itself.
 // Each course's category is thus its enclosing section, matching the header above it.
-$fetchcourses = function (core_course_category $cat, bool $recursive): array {
+// Sort order from the catalog control (?sort=). Real, functional orderings —
+// nothing is decorative-only.
+$sort = optional_param('sort', 'recommended', PARAM_ALPHA);
+$sortmap = [
+    'recommended' => ['sortorder' => 1],       // the site's curated order
+    'newest'      => ['timecreated' => -1],     // most recently created first
+    'az'          => ['fullname' => 1],         // alphabetical
+];
+$sortorder = $sortmap[$sort] ?? $sortmap['recommended'];
+if (!isset($sortmap[$sort])) {
+    $sort = 'recommended';
+}
+$fetchcourses = function (core_course_category $cat, bool $recursive) use ($sortorder): array {
     return $cat->get_courses([
         'recursive'      => $recursive,
-        'sort'           => ['sortorder' => 1],
+        'sort'           => $sortorder,
         'summary'        => true,
         'coursecontacts' => true,
     ]);
@@ -215,420 +227,222 @@ $nitcourseinfo = function ($courseid) use ($nitcheckout) {
 
 echo $OUTPUT->header();
 ?>
+<style>
+  .nit-cat{
+    --t-accent: var(--nit-brand-primary); --t-accent-2: var(--nit-brand-accent); --t-on: var(--nit-brand-on-primary, #fff);
+    --t-accent-soft: color-mix(in srgb, var(--nit-brand-primary) 9%, transparent);
+    --t-ink: var(--nit-brand-textprimary); --t-bg: var(--nit-brand-background); --t-surface: var(--nit-brand-surface);
+    --t-muted: var(--nit-brand-textsecondary); --t-border: var(--nit-brand-borderprimary);
+    font-family:'Manrope','IBM Plex Sans Arabic',system-ui,sans-serif; background:var(--t-bg); color:var(--t-ink);
+    width:100vw; max-width:100vw; margin-inline:calc(50% - 50vw); min-height:100vh;
+  }
+  .nit-cat a{ text-decoration:none; }
+  .nit-cat-wrap{ max-width:1240px; margin:0 auto; padding:clamp(20px,3vw,40px) 20px 60px; }
+  .nit-cat-crumbs{ font-size:13px; color:var(--t-muted); display:flex; gap:8px; align-items:center; }
+  .nit-cat-crumbs a{ color:var(--t-muted); } .nit-cat-crumbs a:hover{ color:var(--t-accent); }
+  .nit-cat-head{ display:flex; align-items:flex-end; justify-content:space-between; gap:20px; flex-wrap:wrap; margin-top:18px; padding-bottom:26px; border-bottom:1px solid var(--t-border); }
+  .nit-cat-eyebrow{ font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:var(--t-accent); font-weight:700; }
+  .nit-cat-h1{ margin:12px 0 0; font-size:clamp(30px,4vw,48px); font-weight:250; letter-spacing:-0.03em; }
+  .nit-cat-desc{ margin:12px 0 0; font-size:15px; line-height:1.7; color:var(--t-muted); max-width:640px; }
+  .nit-cat-desc *{ font-size:15px !important; color:var(--t-muted); }
+  .nit-cat-count{ margin-top:14px; font-size:13px; color:var(--t-muted2, var(--t-muted)); }
+  .nit-cat-sort{ display:flex; align-items:center; gap:8px; }
+  .nit-cat-sort label{ font-size:12px; color:var(--t-muted); }
+  .nit-cat-sort select{ border:1px solid var(--t-border); border-radius:10px; padding:9px 12px; font-size:14px; font-weight:600; background:var(--t-bg); color:var(--t-ink); font-family:inherit; cursor:pointer; }
+  .nit-cat-body{ display:grid; grid-template-columns:240px 1fr; gap:32px; margin-top:30px; align-items:start; }
+  @media (max-width: 900px){ .nit-cat-body{ grid-template-columns:1fr; } .nit-cat-side{ position:static !important; } }
+  .nit-cat-side{ position:sticky; top:16px; border:1px solid var(--t-border); border-radius:16px; padding:18px; }
+  .nit-cat-side-head{ display:flex; align-items:center; justify-content:space-between; font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--t-muted); font-weight:700; margin-bottom:12px; }
+  .nit-cat-side-head a{ font-size:12px; color:var(--t-accent); font-weight:600; text-transform:none; letter-spacing:0; }
+  .nit-cat-filter{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:9px 12px; border-radius:10px; color:var(--t-ink); font-size:14px; }
+  .nit-cat-filter:hover{ background:var(--t-accent-soft); }
+  .nit-cat-filter.on{ background:var(--t-accent-soft); color:var(--t-accent); font-weight:700; }
+  .nit-cat-filter span{ font-size:12px; color:var(--t-muted); }
+  .nit-cat-filter.on span{ color:var(--t-accent); }
+  .nit-cat-pills{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom:22px; }
+  .nit-cat-pill{ font-size:13px; font-weight:600; padding:8px 16px; border-radius:40px; border:1px solid var(--t-border); color:var(--t-ink); }
+  .nit-cat-pill.on{ background:var(--t-ink); color:var(--t-bg); border-color:var(--t-ink); }
+  .nit-cat-secttitle{ font-size:clamp(20px,2.2vw,26px); font-weight:250; letter-spacing:-0.02em; margin:8px 0 20px; display:flex; align-items:baseline; gap:10px; }
+  .nit-cat-secttitle .c{ font-size:14px; color:var(--t-muted); font-weight:400; }
+  .nit-cat-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); gap:24px; align-items:stretch; }
+  .nit-cat-block{ margin-bottom:40px; }
+  .nit-cat-block--nested{ margin-inline-start:14px; }
+  .nit-t1-card{ background:var(--t-bg); border:1px solid var(--t-border); border-radius:16px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 14px 34px rgba(20,24,28,0.05); transition:box-shadow .25s ease, transform .25s ease; }
+  .nit-t1-card:hover{ box-shadow:0 22px 48px rgba(20,24,28,0.12); transform:translateY(-3px); }
+  .nit-t1-thumb{ aspect-ratio:16/9; background:repeating-linear-gradient(135deg,#EFEFEC 0 11px,#F7F7F5 11px 22px) center/cover no-repeat; position:relative; }
+  .nit-t1-badge{ position:absolute; top:12px; inset-inline-start:12px; background:var(--t-bg); color:var(--t-accent); font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:5px 9px; border-radius:6px; box-shadow:0 4px 12px rgba(20,24,28,.12); }
+  .nit-t1-cb{ padding:20px; display:flex; flex-direction:column; flex:1; }
+  .nit-t1-title{ font-size:18px; font-weight:550; line-height:1.35; letter-spacing:-0.015em; margin:0; color:var(--t-ink); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .nit-t1-teacher{ display:flex; align-items:center; gap:8px; margin-top:12px; font-size:13px; color:var(--t-muted); }
+  .nit-t1-foot{ margin-top:auto; padding-top:16px; border-top:1px solid color-mix(in srgb, var(--t-border) 80%, transparent); }
+  .nit-t1-priceslot{ min-height:26px; display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px; font-weight:650; }
+  .nit-t1-strike{ font-size:13px; color:var(--t-muted); text-decoration:line-through; opacity:.7; font-weight:400; }
+  .nit-t1-price{ font-size:17px; font-weight:650; letter-spacing:-0.02em; color:var(--t-ink); }
+  .nit-t1-offer{ background:var(--t-accent); color:var(--t-on); font-size:11px; font-weight:700; padding:3px 9px; border-radius:50px; }
+  .nit-t1-free{ font-size:13px; font-weight:700; color:var(--nit-brand-success); }
+  .nit-t1-chip{ display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:700; padding:4px 12px; border-radius:50px; }
+  .nit-t1-chip--enr{ background:color-mix(in srgb, var(--nit-brand-success) 15%, transparent); color:var(--nit-brand-success); }
+  .nit-t1-chip--cov{ background:var(--t-accent-soft); color:var(--t-accent); }
+  .nit-cat .nit-t1-foot .btn{ border-radius:10px !important; font-weight:600 !important; }
+  .nit-cat .nit-t1-foot .btn-primary{ background:var(--t-accent) !important; border-color:var(--t-accent) !important; color:var(--t-on) !important; }
+  .nit-cat .nit-t1-foot .btn-outline-primary{ border:1px solid var(--t-border) !important; color:var(--t-ink) !important; }
+  .nit-cat .lp-card-badge{ display:none !important; }
+</style>
+<div dir="auto" class="nit-cat<?= $brandgroupclass !== '' ? ' ' . $brandgroupclass : '' ?>" style="<?= $stylevars ?>">
+  <div class="nit-cat-wrap">
+    <nav class="nit-cat-crumbs">
+      <a href="<?= (new moodle_url('/'))->out() ?>"><?= $t('Home', 'الرئيسية') ?></a> /
+      <a href="<?= (new moodle_url('/course/index.php'))->out() ?>"><?= $t('Courses', 'الدورات') ?></a> /
+      <span style="color:var(--t-ink);"><?= $categoryname ?></span>
+    </nav>
 
-<div dir="auto" class="nit-cat-details<?= $brandgroupclass !== '' ? ' ' . $brandgroupclass : '' ?>" style="<?= $stylevars ?>background: var(--cbg1); min-height: 100vh; padding-bottom: 40px; width: 100vw; max-width: 100vw; margin-inline: calc(50% - 50vw); margin-top: 0;">
-
-  <!-- Category Hero Banner (X-Trade style) -->
-  <style>
-    @keyframes nit-gridshift { 0% { transform: translateY(0); } 100% { transform: translateY(60px); } }
-    @keyframes nit-hpulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-    @keyframes nit-fadeup { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes nit-fadedown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
-
-    .nit-hero {
-      background: var(--cbg2);
-      min-height: 85vh;
-      display: flex; align-items: center; justify-content: center; flex-direction: column;
-      text-align: center;
-      padding: 120px 5% 80px;
-      position: relative; overflow: hidden;
-      border-bottom: 1px solid color-mix(in srgb, var(--cbg4) 20%, transparent);
-    }
-    .nit-hero__grid {
-      content: ''; position: absolute; inset: 0; pointer-events: none;
-      background-image:
-        linear-gradient(color-mix(in srgb, var(--cbg4) 6%, transparent) 1px, transparent 1px),
-        linear-gradient(90deg, color-mix(in srgb, var(--cbg4) 6%, transparent) 1px, transparent 1px);
-      background-size: 60px 60px;
-      animation: nit-gridshift 20s linear infinite;
-    }
-    .nit-hero__glow-a {
-      position: absolute; top: -30%; left: 50%; transform: translateX(-50%);
-      width: 80%; height: 80%; pointer-events: none;
-      background: radial-gradient(ellipse 80% 60% at 50% 0%, color-mix(in srgb, var(--cborder) 30%, transparent) 0%, transparent 70%);
-    }
-    .nit-hero__glow-b {
-      position: absolute; bottom: -20%; inset-inline-end: -5%;
-      width: 35%; height: 70%; pointer-events: none;
-      background: radial-gradient(ellipse 40% 40% at 80% 80%, color-mix(in srgb, var(--cbg4) 12%, transparent) 0%, transparent 60%);
-    }
-    .nit-hero__inner { max-width: 860px; margin: 0 auto; position: relative; z-index: 1; }
-
-    /* Badge — X-Trade .hero-badge */
-    .nit-hero__badge {
-      display: inline-flex; align-items: center; gap: 0.5rem;
-      background: color-mix(in srgb, var(--cbg4) 12%, transparent);
-      border: 1px solid color-mix(in srgb, var(--cbg4) 30%, transparent);
-      border-radius: 50px; padding: 6px 19px;
-      font-size: 14px; color: var(--ctext3); font-weight: 600;
-      margin-bottom: 2rem;
-      animation: nit-fadedown 0.8s ease both;
-    }
-    .nit-hero__badge-dot {
-      width: 8px; height: 8px; background: var(--csuccess); border-radius: 50%;
-      animation: nit-hpulse 2s infinite; flex-shrink: 0;
-    }
-
-    /* H1 — X-Trade .hero h1 : clamp(2.4rem, 6vw, 4.5rem) @16px root = 38/72px */
-    .nit-hero__title {
-      font-size: clamp(38px, 6vw, 72px);
-      font-weight: 800; line-height: 1.15; margin: 0;
-      color: var(--ctext1);
-      animation: nit-fadeup 0.9s ease 0.1s both;
-    }
-    .nit-hero__title .nit-hero__n1 { color: var(--ctext3); }
-    .nit-hero__title .nit-hero__n2 { color: var(--ctext1); }
-
-    /* Description — X-Trade .hero-sub : clamp(1rem, 2vw, 1.25rem) = 16/20px.
-       format_text() wraps this in its own <div>/<p> that carries the theme's
-       default size, so force every descendant to the intended size. */
-    .nit-hero__sub {
-      max-width: 680px; margin: 1.5rem auto;
-      animation: nit-fadeup 0.9s ease 0.25s both;
-    }
-    .nit-hero__sub,
-    .nit-hero__sub * {
-      font-size: clamp(16px, 2vw, 20px) !important;
-      color: var(--ctext2);
-      line-height: 1.8;
-    }
-    .nit-hero__sub p, .nit-hero__sub div { margin: 0; }
-
-    /* Stats — X-Trade .hero-stats : gap 3rem, .stat-num 2.2rem, .stat-label 0.8rem */
-    .nit-hero__stats {
-      display: flex; gap: 48px; margin: 2.5rem 0;
-      justify-content: center; flex-wrap: wrap;
-      animation: nit-fadeup 0.9s ease 0.4s both;
-    }
-    .nit-hero__stat-num { font-size: 35px; font-weight: 800; color: var(--ctext3); display: block; line-height: 1; }
-    .nit-hero__stat-label { font-size: 13px; color: var(--ctext2); font-weight: 500; }
-
-    /* Buttons — reuse the site's .btn components (gallery.php); only size/shape
-       here, colour + hover come from the theme's Bootstrap button tokens. */
-    .nit-hero__btns {
-      display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
-      animation: nit-fadeup 0.9s ease 0.55s both;
-    }
-    .nit-hero__btns .btn {
-      padding: 14px 40px; border-radius: 8px;
-      font-size: 16px; font-weight: 700;
-    }
-  </style>
-  <div class="nit-hero">
-    <div class="nit-hero__grid"></div>
-    <div class="nit-hero__glow-a"></div>
-    <div class="nit-hero__glow-b"></div>
-
-    <div class="nit-hero__inner">
-
-      <!-- Badge: category name with pulsing dot -->
-      <div class="nit-hero__badge">
-        <span class="nit-hero__badge-dot"></span>
-        <?= $categoryname ?>
+    <div class="nit-cat-head">
+      <div>
+        <div class="nit-cat-eyebrow"><?= $t('Catalog', 'الكتالوج') ?></div>
+        <h1 class="nit-cat-h1"><?= $categoryname ?></h1>
+        <?php if (trim(strip_tags($description)) !== ''): ?>
+          <div class="nit-cat-desc"><?= $description ?></div>
+        <?php endif; ?>
+        <div class="nit-cat-count"><strong><?= $totalcourses ?></strong> <?= $t('courses', 'دورة') ?> · <?= $categoryname ?></div>
       </div>
-
-      <!-- H1: count in accent colour, subtitle with secondary accent -->
-      <h1 class="nit-hero__title">
-        <span class="nit-hero__n1"><?= $bannertotal ?> <?= $t('Training programs', 'برنامجًا تدريبيًا') ?></span><br>
-        <span><?= $t('Diplomas and certificates', 'دبلومات وشهادات') ?></span> <span class="nit-hero__n2"><?= $t('professional', 'احترافية') ?></span>
-      </h1>
-
-      <!-- Description -->
-      <?php if (trim(strip_tags($description)) !== ''): ?>
-      <div class="nit-hero__sub"><?= $description ?></div>
-      <?php endif; ?>
-
-      <!-- Stats: floating flex, no border box -->
-      <div class="nit-hero__stats">
-        <div>
-          <span class="nit-hero__stat-num"><?= $bannertotal ?></span>
-          <span class="nit-hero__stat-label"><?= $t('Courses and diplomas', 'دورة ودبلوم') ?></span>
-        </div>
-        <div>
-          <span class="nit-hero__stat-num"><?= count($subcategories) ?></span>
-          <span class="nit-hero__stat-label"><?= $t('Main specializations', 'تخصص رئيسي') ?></span>
-        </div>
-        <div>
-          <span class="nit-hero__stat-num">4</span>
-          <span class="nit-hero__stat-label"><?= $t('Educational levels', 'مستويات تعليمية') ?></span>
-        </div>
-      </div>
-
-      <!-- Buttons: the site's own .btn components -->
-      <div class="nit-hero__btns">
-        <a href="#nit-cat-filters" class="btn btn-primary"
-           onclick="event.preventDefault(); document.getElementById('nit-cat-filters').scrollIntoView({behavior:'smooth'});">
-          <?= $t('Explore specializations', 'استكشف التخصصات') ?>
-        </a>
-        <a href="#nit-cat-filters" class="btn btn-outline-primary"
-           onclick="event.preventDefault(); document.getElementById('nit-cat-filters').scrollIntoView({behavior:'smooth'});">
-          <?= $t('Flexible plans', 'خطط مرنة') ?>
-        </a>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- Subcategory Filter Bar (All + children) -->
-  <?php if (!empty($subcategories)): ?>
-  <div id="nit-cat-filters" style="padding: 32px 16px 0;">
-    <div style="max-width: 1200px; margin: 0 auto; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px;">
-      <?php
-        $allurl = new moodle_url('/local/nit_category/index.php', ['id' => $categoryid]);
-        echo $pill($allurl, $t('All', 'الكل'), $subid === 0);
-        foreach ($subcategories as $sc) {
-            $suburl = new moodle_url('/local/nit_category/index.php', ['id' => $categoryid, 'sub' => $sc->id]);
-            echo $pill($suburl, $sc->get_formatted_name(), $subid === (int) $sc->id);
-        }
-      ?>
+      <form method="get" class="nit-cat-sort" action="<?= (new moodle_url('/local/nit_category/index.php'))->out(false) ?>">
+        <input type="hidden" name="id" value="<?= (int) $categoryid ?>">
+        <?php if ($subid): ?><input type="hidden" name="sub" value="<?= (int) $subid ?>"><?php endif; ?>
+        <label for="nit-sort"><?= $t('Sort', 'ترتيب') ?></label>
+        <select id="nit-sort" name="sort" onchange="this.form.submit()">
+          <option value="recommended" <?= $sort === 'recommended' ? 'selected' : '' ?>><?= $t('Recommended', 'موصى به') ?></option>
+          <option value="newest" <?= $sort === 'newest' ? 'selected' : '' ?>><?= $t('Newest', 'الأحدث') ?></option>
+          <option value="az" <?= $sort === 'az' ? 'selected' : '' ?>><?= $t('A – Z', 'أ – ي') ?></option>
+        </select>
+      </form>
     </div>
 
-    <?php
-      // When a subcategory is selected, show its description.
-      if ($subid) {
-          $subdescription = format_text($targetcat->description, $targetcat->descriptionformat, ['context' => $targetcat->get_context()]);
-          if (trim(strip_tags($subdescription)) !== '') {
-              echo '<div style="max-width: 900px; margin: 24px auto 0; text-align: center; color: var(--ctext2); font-size: 15px; line-height: 1.7;">' . $subdescription . '</div>';
-          }
-      }
-    ?>
-  </div>
-  <?php endif; ?>
-
-  <!-- Courses Section -->
-  <div style="padding: 32px 16px 16px;">
-    <div style="max-width: 1200px; margin: 0 auto;">
-
-      <?php
-        // One card renderer, shared by every section. $sectionname is the category the
-        // card lives under (its header), so the card can show that category's name.
-        $rendercard = function (core_course_list_element $course, string $sectionname) use ($t, $nitcourseinfo) {
-            $courseurl  = new moodle_url('/course/view.php', ['id' => $course->id]);
-            $coursename = $course->get_formatted_name();
-
-            // Short plain-text summary (no course image is used in this design).
-            $summary = '';
-            if ($course->has_summary()) {
-                $coursecontext = context_course::instance($course->id);
-                $plain = html_to_text(
-                    format_text($course->summary, $course->summaryformat, ['context' => $coursecontext, 'noclean' => true]),
-                    0,
-                    false
-                );
-                $summary = shorten_text(trim($plain), 160);
-            }
-
-            $price      = function_exists('theme_nit_course_price') ? theme_nit_course_price((int) $course->id) : '';
-            $teacher    = function_exists('theme_nit_course_teacher') ? theme_nit_course_teacher((int) $course->id) : '';
-            $pricelabel = $price !== '' ? $price : $t('Free', 'مجانًا');
-            $info       = $nitcourseinfo($course->id);
-
-            $detailsurl = $courseurl->out();
-            $enrolurl   = (new moodle_url('/local/nit_subscriptions/enrol.php',
-                ['courseid' => $course->id, 'sesskey' => sesskey()]))->out(false);
-        ?>
-        <!-- Course Card: fixed min-height + stretch grid => every card is the same size. -->
-        <div style="background: var(--cbg2); border: 1px solid color-mix(in srgb, var(--cborder) 55%, transparent); border-radius: 16px; padding: 22px; display: flex; flex-direction: column; height: 100%; min-height: 320px; transition: box-shadow 0.3s ease;" onmouseover="this.style.boxShadow='0 12px 28px rgba(0,0,0,0.38)';" onmouseout="this.style.boxShadow='none';">
-
-          <!-- Category name pill: rounded tint + circle icon (matches nested titles) -->
-          <div class="nit-card-cat">
-            <span class="nit-card-cat-dot"></span>
-            <span><?= $sectionname ?></span>
-          </div>
-
-          <!-- Course name -->
-          <h3 style="font-size: 18px; font-weight: bold; color: var(--ctext1); margin: 0 0 10px; line-height: 1.4;">
-            <?= $coursename ?>
-          </h3>
-
-          <?php if ($teacher !== ''): ?>
-          <div style="font-size: 12px; color: var(--ctext2); margin: 0 0 10px;">
-            👤 <?= s($teacher) ?>
-          </div>
-          <?php endif; ?>
-
-          <!-- Course description -->
-          <?php if ($summary !== ''): ?>
-          <p style="font-size: 13px; color: var(--ctext2); line-height: 1.7; margin: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">
-            <?= s($summary) ?>
-          </p>
-          <?php endif; ?>
-
-          <!-- Footer: pinned to the bottom. A fixed-height status/price row sits above the
-               buttons so the buttons never move — a free course simply leaves it empty,
-               a paid course shows its price in the SAME reserved slot. -->
-          <div style="margin-top: auto; padding-top: 18px;">
-            <div style="min-height: 30px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
-              <?php if ($info['enrolled']): ?>
-                <span style="display: inline-flex; align-items: center; gap: 5px; background: color-mix(in srgb, var(--csuccess) 16%, transparent); color: var(--csuccess); border: 1px solid color-mix(in srgb, var(--csuccess) 45%, transparent); font-size: 12px; font-weight: bold; padding: 4px 12px; border-radius: 50px;">
-                  ✓ <?= $t('Enrolled', 'مُسجَّل') ?>
-                </span>
-              <?php elseif ($info['covered']): ?>
-                <span style="display: inline-flex; align-items: center; gap: 5px; background: color-mix(in srgb, var(--caccent) 16%, transparent); color: var(--ctext3); border: 1px solid color-mix(in srgb, var(--caccent) 45%, transparent); font-size: 12px; font-weight: bold; padding: 4px 12px; border-radius: 50px;">
-                  ★ <?= $t('In your subscription', 'ضمن اشتراكك') ?>
-                </span>
-              <?php elseif ($info['offerlabel'] !== '' && $info['offerfinal'] > 0): ?>
-                <span style="font-size: 13px; color: var(--ctext2); text-decoration: line-through; opacity: 0.7;"><?= s($pricelabel) ?></span>
-                <span style="font-size: 16px; font-weight: bold; color: var(--ctext1);"><?= s(number_format($info['offerfinal'], 0)) ?> <?= $t('EGP', 'ج.م') ?></span>
-                <span style="background: var(--cbg4); color: var(--ctext4); font-size: 11px; font-weight: bold; padding: 3px 10px; border-radius: 50px;"><?= s($info['offerlabel']) ?></span>
-              <?php elseif ($info['haspricing']): ?>
-                <span style="font-size: 16px; font-weight: bold; color: var(--ctext1);"><?= s($pricelabel) ?></span>
-              <?php else: // Free course: the slot stays empty (reserved) so buttons stay put. ?>
-                <span style="font-size: 13px; font-weight: bold; color: var(--csuccess);"><?= $t('Free', 'مجانًا') ?></span>
-              <?php endif; ?>
-            </div>
-
-            <!-- Actions: gallery button components (.btn-primary / .btn-outline-primary).
-                 Enrolled shows one button; every other state shows two. -->
-            <div class="d-grid gap-2">
-              <?php if ($info['enrolled']): ?>
-                <a href="<?= $detailsurl ?>" class="btn btn-outline-primary fw-bold"><?= $t('Course details', 'تفاصيل الكورس') ?></a>
-              <?php elseif ($info['covered']): ?>
-                <a href="<?= $enrolurl ?>" class="btn btn-primary fw-bold"><?= $t('Enroll', 'التحاق') ?></a>
-                <a href="<?= $detailsurl ?>" class="btn btn-outline-primary fw-bold"><?= $t('Course details', 'تفاصيل الكورس') ?></a>
-              <?php elseif ($info['haspricing']): ?>
-                <button type="button" class="btn btn-primary fw-bold" data-nit-buy-course
-                  data-courseid="<?= (int) $course->id ?>" data-name="<?= s($coursename) ?>"
-                  data-price="<?= s((string) $info['price']) ?>"><?= $t('Buy now', 'اشترِ الآن') ?></button>
-                <a href="<?= $detailsurl ?>" class="btn btn-outline-primary fw-bold"><?= $t('Course details', 'تفاصيل الكورس') ?></a>
-              <?php else: // Free course. ?>
-                <a href="<?= $enrolurl ?>" class="btn btn-primary fw-bold"><?= $t('Enroll', 'التحاق') ?></a>
-                <a href="<?= $detailsurl ?>" class="btn btn-outline-primary fw-bold"><?= $t('Course details', 'تفاصيل الكورس') ?></a>
-              <?php endif; ?>
-            </div>
-          </div>
+    <div class="nit-cat-body">
+      <aside class="nit-cat-side">
+        <div class="nit-cat-side-head">
+          <span><?= $t('Categories', 'التصنيفات') ?></span>
+          <?php if ($subid): ?><a href="<?= (new moodle_url('/local/nit_category/index.php', ['id' => $categoryid, 'sort' => $sort]))->out() ?>"><?= $t('Clear', 'مسح') ?></a><?php endif; ?>
         </div>
+        <a class="nit-cat-filter<?= $subid === 0 ? ' on' : '' ?>" href="<?= (new moodle_url('/local/nit_category/index.php', ['id' => $categoryid, 'sort' => $sort]))->out() ?>">
+          <span style="font-size:14px;color:inherit;"><?= $t('All', 'الكل') ?></span>
+          <span><?= (int) $bannertotal ?></span>
+        </a>
+        <?php foreach ($subcategories as $sc): ?>
+          <?php $sccount = (int) $sc->get_courses_count(['recursive' => true]); ?>
+          <a class="nit-cat-filter<?= $subid === (int) $sc->id ? ' on' : '' ?>" href="<?= (new moodle_url('/local/nit_category/index.php', ['id' => $categoryid, 'sub' => $sc->id, 'sort' => $sort]))->out() ?>">
+            <span style="font-size:14px;color:inherit;"><?= $sc->get_formatted_name() ?></span>
+            <span><?= $sccount ?></span>
+          </a>
+        <?php endforeach; ?>
+      </aside>
+
+      <main class="nit-cat-main">
         <?php
-        };
+          // T1 course card — restyled; the pricing/offer/enrolment display and the
+          // checkout trigger (data-nit-buy-course) are IDENTICAL to before.
+          $rendercard = function (core_course_list_element $course, string $sectionname) use ($t, $nitcourseinfo) {
+              $courseurl  = new moodle_url('/course/view.php', ['id' => $course->id]);
+              $coursename = $course->get_formatted_name();
+              $price      = function_exists('theme_nit_course_price') ? theme_nit_course_price((int) $course->id) : '';
+              $teacher    = function_exists('theme_nit_course_teacher') ? theme_nit_course_teacher((int) $course->id) : '';
+              $pricelabel = $price !== '' ? $price : $t('Free', 'مجانًا');
+              $info       = $nitcourseinfo($course->id);
+              $detailsurl = $courseurl->out();
+              $enrolurl   = (new moodle_url('/local/nit_subscriptions/enrol.php',
+                  ['courseid' => $course->id, 'sesskey' => sesskey()]))->out(false);
+              // Course thumbnail from the overview files (falls back to the striped placeholder).
+              $img = '';
+              foreach ($course->get_course_overviewfiles() as $f) {
+                  if ($f->is_valid_image()) {
+                      $img = moodle_url::make_pluginfile_url($f->get_contextid(), $f->get_component(),
+                          $f->get_filearea(), $f->get_itemid() ?: null, $f->get_filepath(), $f->get_filename())->out(false);
+                      break;
+                  }
+              }
+          ?>
+          <div class="nit-t1-card">
+            <div class="nit-t1-thumb"<?= $img !== '' ? ' style="background-image:url(\'' . s($img) . '\');"' : '' ?>>
+              <span class="nit-t1-badge"><?= $sectionname ?></span>
+            </div>
+            <div class="nit-t1-cb">
+              <a href="<?= $detailsurl ?>" style="color:inherit;"><h3 class="nit-t1-title"><?= $coursename ?></h3></a>
+              <?php if ($teacher !== ''): ?><div class="nit-t1-teacher">👤 <?= s($teacher) ?></div><?php endif; ?>
+              <div class="nit-t1-foot">
+                <div class="nit-t1-priceslot">
+                  <?php if ($info['enrolled']): ?>
+                    <span class="nit-t1-chip nit-t1-chip--enr">✓ <?= $t('Enrolled', 'مُسجَّل') ?></span>
+                  <?php elseif ($info['covered']): ?>
+                    <span class="nit-t1-chip nit-t1-chip--cov">★ <?= $t('In your subscription', 'ضمن اشتراكك') ?></span>
+                  <?php elseif ($info['offerlabel'] !== '' && $info['offerfinal'] > 0): ?>
+                    <span class="nit-t1-strike"><?= s($pricelabel) ?></span>
+                    <span class="nit-t1-price"><?= s(number_format($info['offerfinal'], 0)) ?> <?= $t('EGP', 'ج.م') ?></span>
+                    <span class="nit-t1-offer"><?= s($info['offerlabel']) ?></span>
+                  <?php elseif ($info['haspricing']): ?>
+                    <span class="nit-t1-price"><?= s($pricelabel) ?></span>
+                  <?php else: ?>
+                    <span class="nit-t1-free"><?= $t('Free', 'مجانًا') ?></span>
+                  <?php endif; ?>
+                </div>
+                <div class="d-grid gap-2">
+                  <?php if ($info['enrolled']): ?>
+                    <a href="<?= $detailsurl ?>" class="btn btn-outline-primary fw-bold"><?= $t('Course details', 'تفاصيل الكورس') ?></a>
+                  <?php elseif ($info['covered']): ?>
+                    <a href="<?= $enrolurl ?>" class="btn btn-primary fw-bold"><?= $t('Enroll', 'التحاق') ?></a>
+                    <a href="<?= $detailsurl ?>" class="btn btn-outline-primary fw-bold"><?= $t('Course details', 'تفاصيل الكورس') ?></a>
+                  <?php elseif ($info['haspricing']): ?>
+                    <button type="button" class="btn btn-primary fw-bold" data-nit-buy-course
+                      data-courseid="<?= (int) $course->id ?>" data-name="<?= s($coursename) ?>"
+                      data-price="<?= s((string) $info['price']) ?>"><?= $t('Buy now', 'اشترِ الآن') ?></button>
+                    <a href="<?= $detailsurl ?>" class="btn btn-outline-primary fw-bold"><?= $t('Course details', 'تفاصيل الكورس') ?></a>
+                  <?php else: ?>
+                    <a href="<?= $enrolurl ?>" class="btn btn-primary fw-bold"><?= $t('Enroll', 'التحاق') ?></a>
+                    <a href="<?= $detailsurl ?>" class="btn btn-outline-primary fw-bold"><?= $t('Course details', 'تفاصيل الكورس') ?></a>
+                  <?php endif; ?>
+                </div>
+              </div>
+            </div>
+          </div>
+          <?php
+          };
 
-        // Recursive section renderer: each category (at any depth) gets an X-Trade
-        // style "specialty" title — pin icon + gradient text + a coloured start-border —
-        // then its own course grid, then its child subcategories nested underneath with
-        // the same title UI (indented to show the hierarchy).
-        $rendernode = function (array $node, int $depth) use (&$rendernode, $rendercard, $counttree): void {
-            $cat   = $node['cat'];
-            $name  = $cat->get_formatted_name();
-            $count = $counttree($node);
-            $blockclass = 'nit-spec-block' . ($depth > 0 ? ' nit-spec-block--nested' : '');
-        ?>
-        <div class="<?= $blockclass ?>">
-          <div class="nit-spec-head">
-            <?php if ($depth === 0): ?>
-            <!-- Top-level subcategory: pin + gradient text + coloured start-border. -->
-            <h3 class="nit-spec-title">
-              <span class="nit-spec-pin">📌</span>
-              <span class="nit-spec-name"><?= $name ?></span>
-              <span class="nit-spec-count">(<?= $count ?>)</span>
-            </h3>
-            <?php else: ?>
-            <!-- Nested subcategory: rounded tint pill + circle icon. -->
-            <h3 class="nit-spec-title nit-spec-title--sub">
-              <span class="nit-spec-dot"></span>
-              <span class="nit-spec-subname"><?= $name ?></span>
-              <span class="nit-spec-count">(<?= $count ?>)</span>
-            </h3>
+          // Section renderer: a light T1 heading + the course grid, children nested.
+          $rendernode = function (array $node, int $depth) use (&$rendernode, $rendercard, $counttree): void {
+              $cat   = $node['cat'];
+              $name  = $cat->get_formatted_name();
+              $count = $counttree($node);
+          ?>
+          <div class="nit-cat-block<?= $depth > 0 ? ' nit-cat-block--nested' : '' ?>">
+            <h2 class="nit-cat-secttitle"><?= $name ?> <span class="c">(<?= $count ?>)</span></h2>
+            <?php if (!empty($node['courses'])): ?>
+              <div class="nit-cat-grid">
+                <?php foreach ($node['courses'] as $course): ?><?php $rendercard($course, $name); ?><?php endforeach; ?>
+              </div>
+            <?php endif; ?>
+            <?php if (!empty($node['children'])): ?>
+              <div class="nit-cat-children" style="margin-top:24px;">
+                <?php foreach ($node['children'] as $child): ?>
+                  <?php if ($counttree($child) > 0): ?><?php $rendernode($child, $depth + 1); ?><?php endif; ?>
+                <?php endforeach; ?>
+              </div>
             <?php endif; ?>
           </div>
+          <?php
+          };
 
-          <?php if (!empty($node['courses'])): ?>
-          <div class="nit-spec-grid">
-            <?php foreach ($node['courses'] as $course): ?>
-              <?php $rendercard($course, $name); ?>
-            <?php endforeach; ?>
-          </div>
-          <?php endif; ?>
-
-          <?php if (!empty($node['children'])): ?>
-          <div class="nit-spec-children">
-            <?php foreach ($node['children'] as $child): ?>
-              <?php if ($counttree($child) > 0): ?>
-                <?php $rendernode($child, $depth + 1); ?>
-              <?php endif; ?>
-            <?php endforeach; ?>
-          </div>
-          <?php endif; ?>
-        </div>
-        <?php
-        };
-      ?>
-
-      <style>
-        /* The local_payments course_cards.js appends its own price badge to the end
-           of every card with a /course/view.php link. This page already renders the
-           price in its footer status row (above the buttons), so that injected badge
-           is a redundant duplicate here — hide it (scoped to this page only, the
-           shared badge is untouched everywhere else). */
-        .nit-cat-details .lp-card-badge { display: none !important; }
-
-        /* Top-level subcategory title — X-Trade .specialty-title, on brand vars. */
-        .nit-spec-block { margin-bottom: 44px; }
-        .nit-spec-head { margin-bottom: 22px; }
-        .nit-spec-title {
-          display: inline-flex; align-items: center; gap: 10px;
-          margin: 0; font-size: 29px; font-weight: 800; line-height: 1.3;
-          border-inline-start: 4px solid var(--cbg4);
-          padding-inline-start: 14px;
-        }
-        .nit-spec-title .nit-spec-name {
-          color: var(--ctext3);
-        }
-        .nit-spec-title .nit-spec-pin { font-size: 24px; line-height: 1; }
-        .nit-spec-title .nit-spec-count { font-size: 15px; font-weight: 700; color: var(--ctext3); }
-
-        /* Nested subcategory title — rounded tint pill (50% of the accent) + circle
-           icon instead of the pin; no gradient / start-border so it reads as a chip. */
-        .nit-spec-title--sub {
-          border-inline-start: none; padding: 8px 20px; border-radius: 50px;
-          background: color-mix(in srgb, var(--caccent) 70%, transparent);
-          font-size: 20px; color: var(--ctext1);
-        }
-        .nit-spec-title--sub .nit-spec-subname { color: var(--ctext1); }
-        .nit-spec-title--sub .nit-spec-count { color: var(--ctext1); font-size: 14px; }
-        .nit-spec-title--sub .nit-spec-dot {
-          width: 12px; height: 12px; border-radius: 50%;
-          background: var(--ctext1); flex: 0 0 auto;
-        }
-
-        .nit-spec-grid {
-          display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-          gap: 24px; align-items: stretch;
-        }
-        /* Nested subcategory groups sit indented under their parent. */
-        .nit-spec-children { margin-top: 28px; display: flex; flex-direction: column; gap: 8px; }
-        .nit-spec-block--nested {
-          margin-bottom: 32px;
-          margin-inline-start: 20px; padding-inline-start: 16px;
-          border-inline-start: 2px solid color-mix(in srgb, var(--cbg4) 18%, transparent);
-        }
-
-        /* Course-card category chip — same tint pill + circle icon as nested titles. */
-        .nit-card-cat {
-          align-self: flex-start; display: inline-flex; align-items: center; gap: 8px;
-          background: color-mix(in srgb, var(--caccent) 70%, transparent);
-          color: var(--ctext1); padding: 6px 14px; border-radius: 4px;
-          font-size: 12px; font-weight: bold; margin-bottom: 16px;
-        }
-        .nit-card-cat-dot {
-          width: 9px; height: 9px; border-radius: 50%;
-          background: var(--ctext1); flex: 0 0 auto;
-        }
-      </style>
-
-      <?php if (!empty($rootnodes)): ?>
-        <?php foreach ($rootnodes as $node): ?>
-          <?php $rendernode($node, 0); ?>
-        <?php endforeach; ?>
-      <?php else: ?>
-      <div style="text-align: center; color: var(--ctext2); padding: 40px;">
-        <?= $t('No courses found in this category.', 'لا توجد دورات في هذا التصنيف.') ?>
-      </div>
-      <?php endif; ?>
-
+          if (!empty($rootnodes)) {
+              foreach ($rootnodes as $node) {
+                  $rendernode($node, 0);
+              }
+          } else {
+              echo '<div style="text-align:center; color:var(--t-muted); padding:40px;">' . $t('No courses found in this category.', 'لا توجد دورات في هذا التصنيف.') . '</div>';
+          }
+        ?>
+      </main>
     </div>
   </div>
 </div>
-
 <?php
+
 // NIT: wire the course Buy buttons to the shared checkout modal (coupon + auto offer → Kashier).
 if ($nitcheckout) {
     $costr = local_nit_commerce_string_map([
