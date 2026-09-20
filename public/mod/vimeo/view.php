@@ -232,8 +232,8 @@ try {
       <?php endif; ?>
     </div>
     <div class="nit-player__list">
-      <?php foreach ($sections as $sec): ?>
-        <div class="nit-player__seclabel"><?php echo $e(str_pad((string) max($sec['num'], 0), 2, '0', STR_PAD_LEFT) . ' · ' . $sec['name']); ?></div>
+      <?php foreach ($sections as $si => $sec): ?>
+        <div class="nit-player__seclabel"><?php echo $e(str_pad((string) ($si + 1), 2, '0', STR_PAD_LEFT) . ' · ' . $sec['name']); ?></div>
         <div class="nit-player__items">
           <?php foreach ($sec['items'] as $it): ?>
             <a class="nit-lesson <?php echo $it['current'] ? 'nit-lesson--current' : ($it['done'] ? 'nit-lesson--done' : ''); ?>" href="<?php echo $e($it['url']); ?>">
