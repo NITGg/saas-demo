@@ -10,12 +10,14 @@ if (!empty($CFG->forcelogin)) {
     require_login();
 }
 
-$categoryid = required_param('id', PARAM_INT);      // Parent category (drives header + labels).
+$categoryid = optional_param('id', 0, PARAM_INT);   // Parent category; 0 = the whole catalogue (all courses).
 $subid      = optional_param('sub', 0, PARAM_INT);  // 0 = "All" (every subcategory as its own section).
 
-// Parent category.
-$category = core_course_category::get($categoryid, MUST_EXIST);
-$context  = $category->get_context();
+// Parent category. id=0 → the top category, i.e. the global "All courses" catalogue
+// (every top-level category becomes a section).
+$istop    = ($categoryid === 0);
+$category = $istop ? core_course_category::top() : core_course_category::get($categoryid, MUST_EXIST);
+$context  = $istop ? context_system::instance() : $category->get_context();
 
 // Direct subcategories -> the clickable label bar.
 $subcategories = $category->get_children();
@@ -39,8 +41,9 @@ if ($subid) {
 
 $PAGE->set_url(new moodle_url('/local/nit_category/index.php', ['id' => $categoryid, 'sub' => $subid]));
 $PAGE->set_context($context);
-$PAGE->set_title($category->get_formatted_name());
-$PAGE->set_heading($category->get_formatted_name());
+$pagetitle = $istop ? get_string('courses') : $category->get_formatted_name();
+$PAGE->set_title($pagetitle);
+$PAGE->set_heading($pagetitle);
 // NIT full-width layout: navbar + footer only, no page heading / secondary nav.
 $PAGE->set_pagelayout('nit_fullwidth');
 
@@ -180,7 +183,7 @@ $stylevars =
 // class to the wrapper, so every --nit-brand-* the page reads (and hence every
 // --cbg*/--ctext* above) resolves from that group instead.
 $brandgroupclass = '';
-if (function_exists('theme_nit_category_brand_group')) {
+if (!$istop && function_exists('theme_nit_category_brand_group')) {
     $brandgroupclass = theme_nit_brand_group_class(theme_nit_category_brand_group((int) $category->id));
 }
 
@@ -197,8 +200,8 @@ $pill = function (moodle_url $url, string $label, bool $active): string {
     return '<a href="' . $url->out() . '" class="' . $cls . ' fw-bold">' . $label . '</a>';
 };
 
-$description  = format_text($category->description, $category->descriptionformat, ['context' => $context]);
-$categoryname = $category->get_formatted_name();
+$description  = $istop ? '' : format_text($category->description, $category->descriptionformat, ['context' => $context]);
+$categoryname = $istop ? $t('All courses', 'كل الدورات') : $category->get_formatted_name();
 
 // NIT: checkout modal + course offer/price support (guarded — degrade if the plugins are absent).
 $nitcheckout = class_exists('\local_payments\price_resolver')
@@ -316,8 +319,12 @@ echo $OUTPUT->header();
   <div class="nit-cat-wrap">
     <nav class="nit-cat-crumbs">
       <a href="<?= (new moodle_url('/'))->out() ?>"><?= $t('Home', 'الرئيسية') ?></a> /
-      <a href="<?= (new moodle_url('/course/index.php'))->out() ?>"><?= $t('Courses', 'الدورات') ?></a> /
-      <span style="color:var(--t-ink);"><?= $categoryname ?></span>
+      <?php if ($istop): ?>
+        <span style="color:var(--t-ink);"><?= $categoryname ?></span>
+      <?php else: ?>
+        <a href="<?= (new moodle_url('/local/nit_category/index.php'))->out() ?>"><?= $t('All courses', 'كل الدورات') ?></a> /
+        <span style="color:var(--t-ink);"><?= $categoryname ?></span>
+      <?php endif; ?>
     </nav>
 
     <div class="nit-cat-head">
