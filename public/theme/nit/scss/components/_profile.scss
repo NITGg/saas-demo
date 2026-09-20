@@ -1,0 +1,219 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// =============================================================================
+// Profile & settings — the T1 "Profile & settings" screen from the academy app
+// designs, applied to Moodle's REAL edit-profile form (/user/edit.php, pagetype
+// user-edit) with pure CSS. No core edit, no layout override: the form, all its
+// fields and its submit/cancel logic are Moodle's own — only the look changes.
+//
+// Per the T1 rule the structure is hardcoded LIGHT; only the accent comes from
+// the academy brand (--nit-brand-primary). So a dark-brand academy still gets a
+// clean light form whose buttons/links carry its accent — consistent with the
+// T1 homepage, catalog and dashboard.
+// =============================================================================
+
+#page-user-edit {
+    // T1 light tokens, local to this page.
+    --t-bg: #FFFFFF;
+    --t-surface: #FAFAF8;
+    --t-field: #FBFBF9;
+    --t-ink: #16191D;
+    --t-muted: #8A8A82;
+    --t-muted2: #6E7781;
+    --t-border: #EDEDE9;
+    --t-border2: #DCDCD7;
+    --t-line: #F1F1ED;
+    --t-accent: var(--nit-brand-primary, #0E7C66);
+    --t-accent-soft: color-mix(in srgb, var(--nit-brand-primary, #0E7C66) 8%, #FFFFFF);
+    --t-dark: #16191D;
+
+    $t-font: 'Manrope', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+
+    #page.drawers,
+    #page {
+        background: var(--t-surface);
+    }
+
+    // Page heading -> the big light-weight "Profile & settings" title.
+    .page-context-header .page-header-headings h1,
+    #page-content h1.h2,
+    .page-context-header h1 {
+        font-family: $t-font;
+        font-weight: 250;
+        letter-spacing: -0.03em;
+        color: var(--t-ink);
+    }
+
+    #region-main {
+        background: transparent;
+        border: 0;
+        box-shadow: none;
+        padding-inline: 0;
+    }
+
+    // ── Each mform fieldset becomes a T1 card ────────────────────────────────
+    .mform > fieldset {
+        background: var(--t-bg);
+        border: 1px solid var(--t-border);
+        border-radius: 16px;
+        overflow: hidden;
+        margin-bottom: 18px;
+        padding: 0;
+    }
+
+    // Section header (legend / collapsible header bar).
+    .mform > fieldset > legend,
+    .mform > fieldset .fheader,
+    .mform > fieldset > .fcontainer > .fheader {
+        display: block;
+        width: 100%;
+        margin: 0;
+        padding: 18px 22px;
+        border-bottom: 1px solid var(--t-line);
+        font-family: $t-font;
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        color: var(--t-ink);
+        background: var(--t-bg);
+
+        a,
+        .btn {
+            color: var(--t-ink);
+            text-decoration: none;
+        }
+    }
+
+    .fcontainer {
+        padding: 22px;
+    }
+
+    // ── Field rows ───────────────────────────────────────────────────────────
+    .fitem {
+        margin-bottom: 16px;
+    }
+
+    .col-form-label,
+    .fitemtitle label,
+    label.form-label {
+        font-family: $t-font;
+        font-size: 12px !important;
+        font-weight: 500;
+        color: var(--t-muted) !important;
+        margin-bottom: 6px;
+    }
+
+    // Inputs / selects / textareas -> the T1 light field (needs !important to
+    // beat the theme's global dark .form-control rule).
+    .form-control,
+    .form-select,
+    .custom-select,
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="url"],
+    input[type="tel"],
+    input[type="number"],
+    textarea,
+    select {
+        font-family: $t-font;
+        background: var(--t-field) !important;
+        border: 1px solid var(--t-border2) !important;
+        border-radius: 10px !important;
+        color: var(--t-ink) !important;
+        min-height: 46px;
+        padding: 0 14px;
+        box-shadow: none !important;
+
+        &:focus {
+            border-color: var(--t-accent) !important;
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--nit-brand-primary, #0E7C66) 16%, transparent) !important;
+        }
+
+        &::placeholder {
+            color: color-mix(in srgb, var(--t-muted) 80%, transparent);
+        }
+    }
+
+    textarea,
+    textarea.form-control {
+        min-height: 88px;
+        padding: 12px 14px;
+        line-height: 1.7;
+        color: var(--t-muted2) !important;
+    }
+
+    // Help icons / small print stay muted.
+    .form-text,
+    .text-muted {
+        color: var(--t-muted) !important;
+    }
+
+    // ── User-picture fieldset -> the identity card look ──────────────────────
+    #fitem_id_currentpicture,
+    .fitem_fpicker {
+        .felement img {
+            width: 78px;
+            height: 78px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+    }
+
+    // ── Action buttons ───────────────────────────────────────────────────────
+    // The form action row sits after the fieldsets.
+    .form-group.fitem #id_submitbutton,
+    #id_submitbutton,
+    .btn-primary {
+        font-family: $t-font;
+        background: var(--t-dark) !important;
+        border: 0 !important;
+        color: #fff !important;
+        font-weight: 600;
+        font-size: 14px;
+        padding: 12px 22px;
+        border-radius: 10px !important;
+        box-shadow: none !important;
+
+        &:hover {
+            filter: brightness(1.12);
+        }
+    }
+
+    #id_cancel,
+    .btn-secondary {
+        font-family: $t-font;
+        background: var(--t-bg) !important;
+        border: 1px solid var(--t-border2) !important;
+        color: var(--t-ink) !important;
+        font-weight: 600;
+        font-size: 14px;
+        padding: 12px 22px;
+        border-radius: 10px !important;
+        box-shadow: none !important;
+    }
+
+    // Links (e.g. "Change password", required-field notes) use the brand accent.
+    a:not(.btn) {
+        color: var(--t-accent);
+    }
+
+    // Required marker.
+    .req,
+    .text-danger {
+        color: var(--nit-brand-primary, #0E7C66) !important;
+    }
+}
