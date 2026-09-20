@@ -226,3 +226,17 @@ $string['homepagecontent'] = 'Homepage content';
 $string['homepagecontent_desc'] = 'Edit the text and images of this academy\'s homepage template. Bilingual fields have English + Arabic. Leave a field blank to keep the template default. Course/subscription/coupon content is dynamic and filled automatically.';
 $string['contentsaved'] = 'Homepage content saved.';
 $string['contentimghint'] = 'Choose an image to replace this one. Leave empty to keep the current image.';
+
+// Auth screens (login / signup) — theme_nit login_layout override.
+$string['welcometosite'] = 'Welcome to {$a}';
+$string['authsidetagline'] = 'Short, structured courses taught by working professionals. Learn at your own pace and earn a certificate.';
+$string['loginwelcomeback'] = 'Welcome back';
+$string['logincontinue'] = 'Sign in to continue learning.';
+$string['keepsignedin'] = 'Keep me signed in';
+
+// Signup screen (T1 "Create your account").
+$string['signupcreatetitle'] = 'Create your account';
+$string['signupsubtitle'] = 'Free to start — no card needed.';
+$string['signupstepaccount'] = 'Account';
+$string['signupstepverify'] = 'Verify';
+$string['signupstepdone'] = 'Done';

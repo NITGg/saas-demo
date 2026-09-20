@@ -1,23 +1,22 @@
 {{!
     @template theme_nit/core/signup_form_layout
 
-    Overrides core/signup_form_layout to add a prompt sending existing users
-    back to the login page. Layout otherwise matches core.
-
-    Example context (json):
-    {
-        "logourl": "https://moodle.org/logo/moodle-logo.svg",
-        "sitename": "Site name",
-        "formhtml": "<p>(Form html would go here)</p>"
-    }
+    NIT override of core/signup_form_layout — the T1 "Create your account" screen.
+    Renders inside theme_nit/core/login_layout (signup.php uses the 'login'
+    pagelayout), so it inherits the split screen + dark brand panel. The signup
+    form ({{{formhtml}}}) is Moodle's mform, styled by the .nit-auth CSS.
 }}
 <div class="signupform">
-    <h1 class="login-heading">{{#str}} newaccount {{/str}}</h1>
+    <ol class="nit-auth-steps" aria-hidden="true">
+        <li class="on"><span>1</span> {{#str}}signupstepaccount, theme_nit{{/str}}</li>
+        <li><span>2</span> {{#str}}signupstepverify, theme_nit{{/str}}</li>
+        <li><span>3</span> {{#str}}signupstepdone, theme_nit{{/str}}</li>
+    </ol>
+    <h1>{{#str}}signupcreatetitle, theme_nit{{/str}}</h1>
+    <p class="text-muted mb-4">{{#str}}signupsubtitle, theme_nit{{/str}}</p>
     {{{formhtml}}}
-    <div class="signup-haveaccount text-center mt-3">
-        <span class="signup-haveaccount-text">{{#str}} alreadyhaveaccount, theme_nit {{/str}}</span>
-        <a href="{{config.wwwroot}}/login/index.php" class="btn btn-outline-primary signup-login-link ml-2">
-            {{#str}} logintoaccount, theme_nit {{/str}}
-        </a>
+    <div class="signup-haveaccount text-center" style="margin-top:16px;">
+        <span class="text-muted me-1">{{#str}} alreadyhaveaccount, theme_nit {{/str}}</span>
+        <a href="{{config.wwwroot}}/login/index.php">{{#str}} logintoaccount, theme_nit {{/str}}</a>
     </div>
 </div>

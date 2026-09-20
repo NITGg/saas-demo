@@ -1,0 +1,137 @@
+{{!
+    @template theme_nit/core/loginform
+
+    NIT override of core/loginform — the T1 "Welcome back" sign-in card. Keeps
+    every Moodle mechanism (field names/ids, logintoken, forgot/signup urls,
+    identity providers, toggle-password JS, Submit.init) — only the structure and
+    styling change, and the OAuth providers move above the email/password form to
+    match the design. Rendered inside theme_nit/core/login_layout.
+}}
+<div class="loginform">
+    <h1>{{#str}}loginwelcomeback, theme_nit{{/str}}</h1>
+    <p class="text-muted mb-4">{{#str}}logincontinue, theme_nit{{/str}}</p>
+
+    {{#maintenance}}
+        <div class="alert alert-danger login-maintenance">{{{maintenance}}}</div>
+    {{/maintenance}}
+    {{#error}}
+        <div class="alert alert-danger" id="loginerrormessage" role="alert">
+            {{#errortitle}}<strong class="d-block mb-1">{{errortitle}}</strong>{{/errortitle}}
+            {{error}}
+        </div>
+    {{/error}}
+    {{#info}}
+        <div class="alert alert-info" id="logininfomessage" role="status">{{info}}</div>
+    {{/info}}
+
+    {{#hasidentityproviders}}
+        <div class="login-identityproviders">
+            {{#identityproviders}}
+                <a class="btn login-identityprovider-btn" href="{{url}}">
+                    {{#iconurl}}<img src="{{iconurl}}" alt="" width="20" height="20"/>{{/iconurl}}
+                    {{#str}}loginwith, core, {{name}}{{/str}}
+                </a>
+            {{/identityproviders}}
+        </div>
+        {{#showloginform}}<div class="login-separator">{{#str}}loginseparatoror{{/str}}</div>{{/showloginform}}
+    {{/hasidentityproviders}}
+
+    {{#showloginform}}
+        <form class="login-form" action="{{loginurl}}" method="post" id="login">
+            <input id="anchor" type="hidden" name="anchor" value="">
+            <script>document.getElementById('anchor').value = location.hash;</script>
+            <input type="hidden" name="logintoken" value="{{logintoken}}">
+            <div class="login-form-username">
+                <label for="username" class="form-label">
+                    {{^canloginbyemail}}{{#str}} username {{/str}}{{/canloginbyemail}}
+                    {{#canloginbyemail}}{{#str}} usernameemail {{/str}}{{/canloginbyemail}}
+                </label>
+                <input type="text" name="username" id="username" class="form-control" value="{{username}}" {{!
+                    !}}placeholder="{{^canloginbyemail}}{{#str}}enterusername{{/str}}{{/canloginbyemail}}{{!
+                    !}}{{#canloginbyemail}}{{#str}}loginenterusernameoremail{{/str}}{{/canloginbyemail}}" autocomplete="username">
+            </div>
+            <div class="login-form-password">
+                <label for="password" class="form-label">{{#str}} password {{/str}}
+                    <a href="{{forgotpasswordurl}}">{{#str}}loginforgotpassword{{/str}}</a>
+                </label>
+                <input type="password" name="password" id="password" value="" class="form-control" {{!
+                    !}}placeholder="{{#str}}loginenterpassword{{/str}}" autocomplete="current-password">
+            </div>
+            <label class="login-keepsignedin">
+                <input type="checkbox" name="rememberusername" value="1"> {{#str}}keepsignedin, theme_nit{{/str}}
+            </label>
+            {{#recaptcha}}<div class="login-form-recaptcha mb-3">{{{recaptcha}}}</div>{{/recaptcha}}
+            <div class="login-form-submit">
+                <button class="btn btn-primary" type="submit" id="loginbtn">{{#str}}login{{/str}}</button>
+            </div>
+        </form>
+    {{/showloginform}}
+
+    {{#cansignup}}
+        <div class="text-center small" style="margin-top:18px;">
+            {{#instructions}}<span class="text-muted me-1">{{{instructions}}}</span>{{/instructions}}
+            <a href="{{signupurl}}">{{#str}}loginstartsignup{{/str}}</a>
+        </div>
+    {{/cansignup}}
+
+    {{#canloginasguest}}
+        <form action="{{loginurl}}" method="post" id="guestlogin" class="mb-2" style="margin-top:12px;">
+            <input type="hidden" name="logintoken" value="{{logintoken}}">
+            <input type="hidden" name="username" value="guest" />
+            <input type="hidden" name="password" value="guest" />
+            <button class="btn login-identityprovider-btn" type="submit" id="loginguestbtn">{{#str}}loginasguest{{/str}}</button>
+        </form>
+    {{/canloginasguest}}
+
+    {{#languagemenu}}
+        <div class="login-languagemenu d-flex justify-content-center my-4">{{>core/action_menu}}</div>
+    {{/languagemenu}}
+
+    <div class="login-cookiesnotice text-center">
+        <button type="button" class="btn btn-link p-0" data-modal="alert" {{!
+        }} data-modal-title-str='["cookiesenabled", "core"]' {{!
+        }} data-modal-content-str='["cookiesenabled_help_html", "core"]'>{{#str}}cookiesnotice{{/str}}</button>
+    </div>
+</div>
+
+{{#js}}
+    {{^error}}
+        {{#autofocusform}}
+            require(['core_form/events'], function(FormEvent) {
+                function autoFocus() {
+                    const userNameField = document.getElementById('username');
+                    const passwordField = document.getElementById('password');
+                    if (userNameField && userNameField.value.length == 0) { userNameField.focus(); }
+                    else if (passwordField) { passwordField.focus(); }
+                }
+                autoFocus();
+                window.addEventListener(FormEvent.eventTypes.fieldStructureChanged, autoFocus);
+            });
+        {{/autofocusform}}
+    {{/error}}
+    require(['core/pending'], function(Pending) {
+        const errorMessageDiv = document.getElementById('loginerrormessage');
+        const infoMessageDiv = document.getElementById('logininfomessage');
+        const errorMessage = errorMessageDiv?.textContent.trim();
+        const infoMessage = infoMessageDiv?.textContent.trim();
+        if (errorMessage || infoMessage) {
+            const pendingJS = new Pending('login-move-focus');
+            const usernameField = document.getElementById('username');
+            setTimeout(function() {
+                if (errorMessage && usernameField) { usernameField.focus(); }
+                if (errorMessage) { errorMessageDiv.innerHTML += "&nbsp;"; }
+                if (infoMessage) { infoMessageDiv.innerHTML += "&nbsp;"; }
+                pendingJS.resolve();
+            }, 500);
+        }
+    });
+    {{#togglepassword}}
+        require(['core/togglesensitive'], function(ToggleSensitive) {
+            ToggleSensitive.init("password", {{smallscreensonly}});
+        });
+    {{/togglepassword}}
+    require(['core_form/submit'], function(Submit) {
+        Submit.init("loginbtn");
+        {{#canloginasguest}}Submit.init("loginguestbtn");{{/canloginasguest}}
+    });
+{{/js}}
