@@ -1445,6 +1445,68 @@ function theme_nit_get_pre_scss($theme) {
  * @param theme_config $theme the theme config object
  * @return string
  */
+/**
+ * The per-template structure token sets (Phase 2 "template token layer").
+ *
+ * Each of the 10 homepage templates carries its own STRUCTURE palette — page and
+ * surface backgrounds, text inks, borders, corner radius. The accent is never in
+ * here: it always comes from the academy brand (--nit-brand-*). The active
+ * template's set is emitted once on :root (see theme_nit_template_tokens_scss),
+ * so every NIT app screen (catalog, dashboard, course, checkout, profile, player,
+ * auth) reads the same --t-* tokens the homepage uses and reskins as a set when
+ * the template changes. Values mirror each template's own hero.html palette so a
+ * screen matches its homepage; light/dark flips are honoured (t4 is dark).
+ *
+ * @return array<string, array<string,string>> template id => token => CSS value
+ */
+function theme_nit_template_tokens(): array {
+    return [
+        // id  => [bg, surface, field, ink, muted, muted2, border, border2, line, radius]
+        't1'  => ['bg' => '#FFFFFF', 'surface' => '#FAFAF8', 'field' => '#FBFBF9', 'ink' => '#16191D', 'muted' => '#6E7781', 'muted2' => '#8A8A82', 'border' => '#EDEDE9', 'border2' => '#DCDCD7', 'line' => '#F1F1ED', 'radius' => '16px'],
+        't2'  => ['bg' => '#FFFFFF', 'surface' => '#F7F5FC', 'field' => '#FBFAFE', 'ink' => '#1B1035', 'muted' => '#5A5170', 'muted2' => '#7A7191', 'border' => '#EAE6F2', 'border2' => '#D9D2E8', 'line' => '#F1EEF8', 'radius' => '18px'],
+        't3'  => ['bg' => '#FBF9F4', 'surface' => '#FFFFFF', 'field' => '#FFFFFF', 'ink' => '#0B2545', 'muted' => '#33475F', 'muted2' => '#6A7789', 'border' => '#DED6C6', 'border2' => '#CFC5B2', 'line' => '#ECE6DA', 'radius' => '10px'],
+        't4'  => ['bg' => '#07090D', 'surface' => '#12151C', 'field' => '#171B24', 'ink' => '#E8ECF1', 'muted' => '#9AA5B4', 'muted2' => '#778393', 'border' => 'rgba(255,255,255,0.10)', 'border2' => 'rgba(255,255,255,0.16)', 'line' => 'rgba(255,255,255,0.07)', 'radius' => '16px'],
+        't5'  => ['bg' => '#FAF3E7', 'surface' => '#FFFDF7', 'field' => '#F3E8D5', 'ink' => '#241A12', 'muted' => '#5C4A3C', 'muted2' => '#8A7666', 'border' => '#D6C6B2', 'border2' => '#C7B49B', 'line' => '#E7DAC6', 'radius' => '12px'],
+        't6'  => ['bg' => '#FFFFFF', 'surface' => '#F5F7FB', 'field' => '#FAFBFD', 'ink' => '#10243E', 'muted' => '#5C6480', 'muted2' => '#8E93A8', 'border' => '#E6E9F0', 'border2' => '#D5DAE6', 'line' => '#F0F2F7', 'radius' => '20px'],
+        't7'  => ['bg' => '#FFFDF7', 'surface' => '#FFFFFF', 'field' => '#F5F9FE', 'ink' => '#2A2140', 'muted' => '#45618A', 'muted2' => '#6C86A6', 'border' => '#DCE5F0', 'border2' => '#C3D4E9', 'line' => '#EAF0F8', 'radius' => '12px'],
+        't8'  => ['bg' => '#FFFDF7', 'surface' => '#FFFFFF', 'field' => '#FBFAF6', 'ink' => '#2A2140', 'muted' => '#5A4E78', 'muted2' => '#8A8A82', 'border' => '#ECE6F2', 'border2' => '#D9CFE6', 'line' => '#F3EEF8', 'radius' => '22px'],
+        't9'  => ['bg' => '#F4F1EA', 'surface' => '#FFFFFF', 'field' => '#FAF8F3', 'ink' => '#14121F', 'muted' => '#5E5B54', 'muted2' => '#8F8B80', 'border' => '#DAD5C7', 'border2' => '#C9C3B2', 'line' => '#E9E4D7', 'radius' => '4px'],
+        't10' => ['bg' => '#F4F1EA', 'surface' => '#FFFFFF', 'field' => '#FAF8F3', 'ink' => '#14121F', 'muted' => '#5C5872', 'muted2' => '#8B87A3', 'border' => '#E2DDD2', 'border2' => '#332F47', 'line' => '#ECE7DC', 'radius' => '14px'],
+    ];
+}
+
+/**
+ * The active homepage template id (config theme_nit/homepage_template), validated
+ * against the token registry and defaulting to t1.
+ *
+ * @return string
+ */
+function theme_nit_active_template(): string {
+    $tpl = (string) (get_config('theme_nit', 'homepage_template') ?: 't1');
+    $sets = theme_nit_template_tokens();
+    return isset($sets[$tpl]) ? $tpl : 't1';
+}
+
+/**
+ * Emit the active template's structure tokens on :root as --t-* custom properties,
+ * so every app screen inherits them. Screens keep a T1 literal fallback
+ * (var(--t-bg, #FFFFFF)) so they render correctly even before this is compiled in.
+ *
+ * @return string a :root { … } CSS block (valid SCSS passthrough)
+ */
+function theme_nit_template_tokens_scss(): string {
+    $tpl = theme_nit_active_template();
+    $set = theme_nit_template_tokens()[$tpl];
+    $lines = ':root{';
+    foreach ($set as $key => $val) {
+        $lines .= '--t-' . $key . ':' . $val . ';';
+    }
+    // A scheme hint some screens use to keep on-dark elements consistent.
+    $lines .= '--t-scheme:' . ($tpl === 't4' ? 'dark' : 'light') . ';';
+    $lines .= '}';
+    return "\n/* NIT active-template structure tokens (" . $tpl . ") */\n" . $lines . "\n";
+}
+
 function theme_nit_get_extra_scss($theme) {
     $scss = '';
 
@@ -1454,6 +1516,10 @@ function theme_nit_get_extra_scss($theme) {
     $scss .= file_get_contents(__DIR__ . '/scss/foundation/_brand.scss');
     $scss .= file_get_contents(__DIR__ . '/scss/foundation/_root.scss');
     $scss .= file_get_contents(__DIR__ . '/scss/foundation/_fonts.scss');
+
+    // Phase 2: emit the active template's --t-* structure tokens on :root so the
+    // app screens reskin with the chosen template (see theme_nit_template_tokens).
+    $scss .= theme_nit_template_tokens_scss();
 
     // Admin-uploaded, per-language custom fonts (edited on the gallery page).
     $scss .= theme_nit_font_scss($theme);

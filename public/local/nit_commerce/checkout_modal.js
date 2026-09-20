@@ -32,20 +32,21 @@
     return e;
   }
 
-  // T1 keeps its LIGHT structure; only the accent (green in the mock) comes from the academy brand.
+  // Structure follows the ACTIVE TEMPLATE via the --t-* tokens on :root (Phase 2),
+  // with T1 literals as fallbacks; only the accent comes from the academy brand.
   var C = {
-    bg: '#FFFFFF',
-    surface: '#FAFAF8',
-    ink: '#16191D',
-    muted: '#6E7781',
-    faint: '#8A8A82',
-    line: '#F1F1ED',
-    border: '#EDEDE9',
-    field: '#FBFBF9',
+    bg: 'var(--t-bg, #FFFFFF)',
+    surface: 'var(--t-surface, #FAFAF8)',
+    ink: 'var(--t-ink, #16191D)',
+    muted: 'var(--t-muted, #6E7781)',
+    faint: 'var(--t-muted2, #8A8A82)',
+    line: 'var(--t-line, #F1F1ED)',
+    border: 'var(--t-border, #EDEDE9)',
+    field: 'var(--t-field, #FBFBF9)',
     accent: 'var(--nit-brand-primary, #0E7C66)',
     on: 'var(--nit-brand-on-primary, #ffffff)',
-    accentsoft: 'color-mix(in srgb, var(--nit-brand-primary, #0E7C66) 8%, #ffffff)',
-    accentwash: 'color-mix(in srgb, var(--nit-brand-primary, #0E7C66) 30%, #B9D8D0)',
+    accentsoft: 'color-mix(in srgb, var(--nit-brand-primary, #0E7C66) 8%, var(--t-bg, #ffffff))',
+    accentwash: 'color-mix(in srgb, var(--nit-brand-primary, #0E7C66) 30%, var(--t-border, #B9D8D0))',
     danger: '#B4402F'
   };
 
@@ -143,7 +144,7 @@
   }
 
   function row(label, valueEl) {
-    var r = el('div', 'display:flex; justify-content:space-between; font-size:14px; color:#55606B;');
+    var r = el('div', 'display:flex; justify-content:space-between; font-size:14px; color:' + C.muted + ';');
     r.appendChild(el('span', '', label));
     r.appendChild(valueEl);
     return r;
@@ -165,7 +166,7 @@
         els.original.textContent = money(d.original != null ? d.original : (current.price || 0)) + ' ' + cur();
         els.final.innerHTML = '';
         els.final.appendChild(document.createTextNode(money(d.final != null ? d.final : (current.price || 0)) + ' '));
-        els.final.appendChild(el('span', 'font-size:13px; color:#8A8A82; font-weight:500;', cur()));
+        els.final.appendChild(el('span', 'font-size:13px; color:' + C.faint + '; font-weight:500;', cur()));
         // Offer line (auto-applied), with its name if present.
         var offerDisc = Number(d.offer_discount || 0);
         if (offerDisc > 0) {
@@ -206,7 +207,7 @@
       els.original.textContent = base;
       els.final.innerHTML = '';
       els.final.appendChild(document.createTextNode(money(item.price || 0) + ' '));
-      els.final.appendChild(el('span', 'font-size:13px; color:#8A8A82; font-weight:500;', cur()));
+      els.final.appendChild(el('span', 'font-size:13px; color:' + C.faint + '; font-weight:500;', cur()));
       els.discountRow.style.display = 'none';
       els.offerRow.style.display = 'none';
       modal.style.display = 'flex';

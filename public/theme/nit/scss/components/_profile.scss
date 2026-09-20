@@ -26,19 +26,11 @@
 // =============================================================================
 
 #page-user-edit {
-    // T1 light tokens, local to this page.
-    --t-bg: #FFFFFF;
-    --t-surface: #FAFAF8;
-    --t-field: #FBFBF9;
-    --t-ink: #16191D;
-    --t-muted: #8A8A82;
-    --t-muted2: #6E7781;
-    --t-border: #EDEDE9;
-    --t-border2: #DCDCD7;
-    --t-line: #F1F1ED;
+    // Structure tokens (--t-bg/-surface/-field/-ink/-muted/-muted2/-border/
+    // -border2/-line) are inherited from the ACTIVE TEMPLATE on :root (Phase 2) —
+    // do NOT redefine them here. Only the accent comes from the academy brand.
     --t-accent: var(--nit-brand-primary, #0E7C66);
     --t-accent-soft: color-mix(in srgb, var(--nit-brand-primary, #0E7C66) 8%, #FFFFFF);
-    --t-dark: #16191D;
 
     $t-font: 'Manrope', 'IBM Plex Sans Arabic', system-ui, sans-serif;
 
@@ -179,9 +171,10 @@
     #id_submitbutton,
     .btn-primary {
         font-family: $t-font;
-        background: var(--t-dark) !important;
+        // Ink-on-bg so the button auto-inverts on dark templates (t4).
+        background: var(--t-ink, #16191D) !important;
         border: 0 !important;
-        color: #fff !important;
+        color: var(--t-bg, #FFFFFF) !important;
         font-weight: 600;
         font-size: 14px;
         padding: 12px 22px;

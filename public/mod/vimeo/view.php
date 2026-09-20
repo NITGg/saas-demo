@@ -151,16 +151,17 @@ try {
     ob_start();
     ?>
 <style>
-  .nit-player{ --t-ink:#16191D; --t-bg:#FFFFFF; --t-surface:#FAFAF8; --t-muted:#8A8A82; --t-muted2:#6E7781;
-    --t-border:#EDEDE9; --t-border2:#DCDCD7; --t-accent:var(--nit-brand-primary,#0E7C66);
-    --t-accent-soft:color-mix(in srgb, var(--nit-brand-primary,#0E7C66) 8%, #FFFFFF);
-    --t-accent-ring:color-mix(in srgb, var(--nit-brand-primary,#0E7C66) 30%, #DCE9E5);
+  /* Structure (--t-*) inherited from the active template on :root (Phase 2), T1
+     fallbacks; only the accent is brand. The video frame stays dark regardless. */
+  .nit-player{ --t-accent:var(--nit-brand-primary,#0E7C66);
+    --t-accent-soft:color-mix(in srgb, var(--nit-brand-primary,#0E7C66) 8%, var(--t-bg,#FFFFFF));
+    --t-accent-ring:color-mix(in srgb, var(--nit-brand-primary,#0E7C66) 30%, var(--t-border,#DCE9E5));
     --t-on:var(--nit-brand-on-primary,#fff);
-    font-family:'Manrope','IBM Plex Sans Arabic',system-ui,sans-serif; color:var(--t-ink);
+    font-family:'Manrope','IBM Plex Sans Arabic',system-ui,sans-serif; color:var(--t-ink,#16191D);
     display:grid; grid-template-columns:1fr 372px; align-items:stretch; min-height:70vh; }
-  .nit-player__main{ background:var(--t-ink); display:flex; flex-direction:column; }
+  .nit-player__main{ background:#0B0D11; display:flex; flex-direction:column; }
   .nit-player__video{ position:relative; aspect-ratio:16/9; background:#000; }
-  .nit-player__below{ background:var(--t-bg); flex:1; padding:28px clamp(20px,3vw,34px) 44px; }
+  .nit-player__below{ background:var(--t-bg,#FFFFFF); flex:1; padding:28px clamp(20px,3vw,34px) 44px; }
   .nit-player__head{ display:flex; align-items:flex-start; justify-content:space-between; gap:24px; flex-wrap:wrap; }
   .nit-player__eyebrow{ font-size:12px; color:var(--t-muted); }
   .nit-player__title{ margin:8px 0 0; font-size:clamp(22px,3vw,28px); font-weight:400; letter-spacing:-0.025em; color:var(--t-ink); }
@@ -169,7 +170,7 @@ try {
   .nit-btn:hover{ background:var(--t-surface); color:var(--t-ink); }
   .nit-btn--primary{ background:var(--t-accent); border:0; color:var(--t-on); }
   .nit-btn--primary:hover{ filter:brightness(1.08); color:var(--t-on); }
-  .nit-player__ov{ margin-top:24px; padding-top:22px; border-top:1px solid var(--t-border); font-size:15px; line-height:1.85; color:#3D4752; max-width:720px; }
+  .nit-player__ov{ margin-top:24px; padding-top:22px; border-top:1px solid var(--t-border); font-size:15px; line-height:1.85; color:var(--t-muted,#3D4752); max-width:720px; }
   .nit-player__ov :is(p,ul,ol){ margin:0 0 12px; }
   /* sidebar */
   .nit-player__aside{ border-inline-start:1px solid var(--t-border); background:var(--t-surface); display:flex; flex-direction:column; }
@@ -183,7 +184,7 @@ try {
   .nit-player__list{ flex:1; overflow:auto; padding-bottom:20px; }
   .nit-player__seclabel{ padding:16px 24px 8px; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--t-muted); font-weight:700; }
   .nit-player__items{ padding:0 12px; display:flex; flex-direction:column; gap:2px; }
-  .nit-lesson{ display:flex; align-items:center; gap:12px; padding:12px; border-radius:10px; text-decoration:none; color:#55606B; border:1px solid transparent; }
+  .nit-lesson{ display:flex; align-items:center; gap:12px; padding:12px; border-radius:10px; text-decoration:none; color:var(--t-muted,#55606B); border:1px solid transparent; }
   .nit-lesson:hover{ background:var(--t-bg); color:var(--t-ink); }
   .nit-lesson--current{ background:var(--t-bg); border-color:var(--t-accent-ring); }
   .nit-lesson__ic{ flex:none; width:22px; height:22px; border-radius:50%; display:grid; place-items:center; font-size:10px; background:var(--t-accent-soft); color:var(--t-accent); }

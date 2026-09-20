@@ -229,13 +229,13 @@ echo $OUTPUT->header();
 ?>
 <style>
   .nit-cat{
-    /* T1 keeps its LIGHT structure (like the homepage templates); only the accent
-       comes from the academy brand. This keeps the T1 look consistent on any brand. */
+    /* Structure (--t-*) is inherited from the ACTIVE TEMPLATE on :root (Phase 2),
+       with T1 literals as fallbacks; only the accent comes from the academy brand.
+       So the catalog matches whichever homepage template the academy runs. */
     --t-accent: var(--nit-brand-primary); --t-accent-2: var(--nit-brand-accent); --t-on: var(--nit-brand-on-primary, #fff);
     --t-accent-soft: color-mix(in srgb, var(--nit-brand-primary) 9%, transparent);
-    --t-ink: #16191D; --t-bg: #FFFFFF; --t-surface: #FAFAF8;
-    --t-muted: #6E7781; --t-border: #EDEDE9;
-    font-family:'Manrope','IBM Plex Sans Arabic',system-ui,sans-serif; background:var(--t-bg); color:var(--t-ink);
+    font-family:'Manrope','IBM Plex Sans Arabic',system-ui,sans-serif;
+    background:var(--t-bg, #FFFFFF); color:var(--t-ink, #16191D);
     width:100vw; max-width:100vw; margin-inline:calc(50% - 50vw); min-height:100vh;
   }
   .nit-cat a{ text-decoration:none; }

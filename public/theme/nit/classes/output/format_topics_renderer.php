@@ -1184,16 +1184,12 @@ JS
   --t-accent-2: var(--nit-brand-accent);
   --t-on: var(--nit-brand-on-primary, #fff);
   --t-accent-soft: color-mix(in srgb, var(--nit-brand-primary) 9%, transparent);
-  /* T1 keeps its LIGHT structure (like the homepage templates); only the accent
-     comes from the academy brand, so the T1 look stays consistent on any brand. */
-  --t-ink: #16191D;
-  --t-bg: #FFFFFF;
-  --t-surface: #FAFAF8;
-  --t-muted: #6E7781;
-  --t-border: #EDEDE9;
+  /* Structure (--t-*) is inherited from the ACTIVE TEMPLATE on :root (Phase 2),
+     with T1 literals as fallbacks; only the accent comes from the academy brand,
+     so the course page matches whichever homepage template the academy runs. */
   --t-success: var(--nit-brand-success);
   font-family: 'Manrope','IBM Plex Sans Arabic',system-ui,sans-serif;
-  background: var(--t-bg); color: var(--t-ink);
+  background: var(--t-bg, #FFFFFF); color: var(--t-ink, #16191D);
   width: 100vw; max-width: 100vw; margin-inline: calc(50% - 50vw); min-height: 100vh;
 }
 .acadt1 a{ text-decoration: none; color: inherit; }

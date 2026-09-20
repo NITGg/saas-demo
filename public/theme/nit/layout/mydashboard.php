@@ -104,12 +104,12 @@ ob_start();
 ?>
 <style>
   .nit-dash{
-    /* T1 keeps its LIGHT structure; only the accent comes from the academy brand. */
+    /* Structure tokens (--t-*) come from the ACTIVE TEMPLATE on :root (Phase 2);
+       only the accent comes from the academy brand. T1 literals are fallbacks. */
     --t-accent: var(--nit-brand-primary); --t-on: var(--nit-brand-on-primary, #fff);
     --t-accent-soft: color-mix(in srgb, var(--nit-brand-primary) 9%, transparent);
-    --t-ink: #16191D; --t-bg: #FFFFFF; --t-surface: #FAFAF8;
-    --t-muted: #6E7781; --t-border: #EDEDE9;
-    font-family:'Manrope','IBM Plex Sans Arabic',system-ui,sans-serif; background:var(--t-bg); color:var(--t-ink);
+    font-family:'Manrope','IBM Plex Sans Arabic',system-ui,sans-serif;
+    background:var(--t-bg, #FFFFFF); color:var(--t-ink, #16191D);
     min-height:100vh; padding:clamp(24px,4vw,48px) 20px 60px;
   }
   .nit-dash-wrap{ max-width:1180px; margin:0 auto; }
