@@ -33,6 +33,10 @@
                 <div id="region-main-box">
                     <div id="region-main">
                         {{{ dashboardhtml }}}
+                        {{! Moodle requires every layout to output main_content(); the /my
+                            blocks render here but stay hidden — the T1 dashboard above is
+                            the real content. }}
+                        <div class="d-none" aria-hidden="true">{{{ output.main_content }}}</div>
                     </div>
                 </div>
             </div>

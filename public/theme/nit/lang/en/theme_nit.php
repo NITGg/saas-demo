@@ -240,3 +240,5 @@ $string['signupsubtitle'] = 'Free to start — no card needed.';
 $string['signupstepaccount'] = 'Account';
 $string['signupstepverify'] = 'Verify';
 $string['signupstepdone'] = 'Done';
+
+$string['showpassword'] = 'Show password';

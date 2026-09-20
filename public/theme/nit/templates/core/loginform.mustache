@@ -54,8 +54,14 @@
                 <label for="password" class="form-label">{{#str}} password {{/str}}
                     <a href="{{forgotpasswordurl}}">{{#str}}loginforgotpassword{{/str}}</a>
                 </label>
-                <input type="password" name="password" id="password" value="" class="form-control" {{!
-                    !}}placeholder="{{#str}}loginenterpassword{{/str}}" autocomplete="current-password">
+                <div class="nit-pw-wrap">
+                    <input type="password" name="password" id="password" value="" class="form-control" {{!
+                        !}}placeholder="{{#str}}loginenterpassword{{/str}}" autocomplete="current-password">
+                    <button type="button" class="nit-pw-eye" aria-label="{{#str}}showpassword, theme_nit{{/str}}" {{!
+                        !}}onclick="var i=document.getElementById('password'); var on=i.type==='password'; i.type=on?'text':'password'; this.setAttribute('aria-pressed', on); this.classList.toggle('on', on);">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                </div>
             </div>
             <label class="login-keepsignedin">
                 <input type="checkbox" name="rememberusername" value="1"> {{#str}}keepsignedin, theme_nit{{/str}}
@@ -125,11 +131,6 @@
             }, 500);
         }
     });
-    {{#togglepassword}}
-        require(['core/togglesensitive'], function(ToggleSensitive) {
-            ToggleSensitive.init("password", {{smallscreensonly}});
-        });
-    {{/togglepassword}}
     require(['core_form/submit'], function(Submit) {
         Submit.init("loginbtn");
         {{#canloginasguest}}Submit.init("loginguestbtn");{{/canloginasguest}}

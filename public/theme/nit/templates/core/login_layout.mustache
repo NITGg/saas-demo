@@ -32,10 +32,18 @@
   .nit-auth .form-control, .nit-auth input.form-control, .nit-auth select.form-control, .nit-auth textarea.form-control{ width:100%; border:1px solid var(--a-border)!important; border-radius:12px!important; padding:13px 14px!important; font-size:15px!important; background:var(--a-bg)!important; color:var(--a-ink)!important; box-shadow:none!important; }
   .nit-auth .form-control::placeholder{ color:color-mix(in srgb, var(--a-muted) 75%, transparent); }
   .nit-auth .form-control:focus{ outline:none; border-color:var(--a-accent)!important; box-shadow:0 0 0 3px color-mix(in srgb, var(--a-accent) 18%, transparent)!important; }
-  .nit-auth .login-form-password{ position:relative; }
   .nit-auth .login-form-password label{ display:flex; justify-content:space-between; align-items:baseline; }
   .nit-auth .login-form-password label a{ color:var(--a-accent); font-size:12px; font-weight:600; text-decoration:none; }
-  .nit-auth [data-passwordunmask], .nit-auth .toggle-sensitive, .nit-auth button.btn-link.position-absolute{ color:var(--a-muted); }
+  .nit-auth .nit-pw-wrap{ position:relative; }
+  .nit-auth .nit-pw-wrap .form-control{ padding-inline-end:46px!important; }
+  .nit-auth .nit-pw-eye{ position:absolute; inset-inline-end:8px; top:50%; transform:translateY(-50%); display:flex; align-items:center; justify-content:center; width:32px; height:32px; background:none; border:0; border-radius:8px; color:var(--a-muted); cursor:pointer; padding:0; }
+  .nit-auth .nit-pw-eye:hover{ color:var(--a-ink); background:color-mix(in srgb, var(--a-ink) 5%, transparent); }
+  .nit-auth .nit-pw-eye.on{ color:var(--a-accent); }
+  /* Make muted / helper text legible on the light form panel (some academies' brand
+     secondary text is near-white). */
+  .nit-auth .text-muted{ color:var(--a-muted)!important; }
+  .nit-auth .signupform .form-text, .nit-auth .signupform small, .nit-auth .signupform .text-muted{ color:var(--a-muted)!important; }
+  .nit-auth .signupform, .nit-auth .loginform{ color:var(--a-ink); }
   .nit-auth .login-form-submit .btn, .nit-auth #loginbtn{ width:100%; background:var(--a-ink); border:0; color:#fff; padding:15px; border-radius:12px; font-weight:600; font-size:15px; }
   .nit-auth .login-form-submit .btn:hover, .nit-auth #loginbtn:hover{ filter:brightness(1.12); }
   .nit-auth .login-identityprovider-btn{ width:100%; display:flex; align-items:center; justify-content:center; gap:10px; border:1px solid var(--a-border)!important; border-radius:12px!important; padding:13px!important; font-weight:600!important; color:var(--a-ink)!important; background:var(--a-bg)!important; margin-bottom:10px!important; }
