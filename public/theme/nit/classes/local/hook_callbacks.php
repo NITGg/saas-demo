@@ -92,6 +92,18 @@ class hook_callbacks {
             redirect(new \moodle_url('/local/nit_category/index.php', $catid ? ['id' => $catid] : []));
         }
 
+        // Route a user's OWN profile to the T1 "Profile & settings" page. Viewing
+        // someone else's profile (an admin/teacher) is left on the core page.
+        if ($pt === 'user-profile'
+                && file_exists($GLOBALS['CFG']->dirroot . '/local/academy/profile.php')
+                && isloggedin() && !isguestuser()) {
+            global $USER;
+            $viewid = optional_param('id', (int) $USER->id, PARAM_INT);
+            if ($viewid === (int) $USER->id) {
+                redirect(new \moodle_url('/local/academy/profile.php'));
+            }
+        }
+
         // Is this the app's WebView? Sticky for the rest of the (WebView-only) session.
         $isapp = !empty($SESSION->theme_nit_appembed)
             || \core_useragent::is_moodle_app()
