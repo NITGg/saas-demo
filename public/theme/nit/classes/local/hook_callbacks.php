@@ -130,4 +130,61 @@ class hook_callbacks {
             . 'background-repeat:no-repeat!important;}';
         $hook->add_html('<style id="nit-login-bg-live">' . $css . '</style>');
     }
+
+    /**
+     * The T1 "Editing homepage" toolbar — the design's "Edit page" screen.
+     *
+     * Shown only on the site front page (pagetype site-index) while the owner has
+     * edit mode ON. It gives the branded "you are editing" indicator from the
+     * design plus two REAL controls: "View page" (opens the live homepage in a new
+     * tab, editing preserved) and "Done editing" (Moodle's edit=off toggle). There
+     * is deliberately no "Publish"/"Saved 2 min ago": Moodle's front-page block
+     * editing is live — changes persist immediately — so a draft/publish workflow
+     * would be design-only. The bar sits above the (kept) navbar, so it never
+     * removes an existing control. Structure is hardcoded dark (an editing chrome);
+     * only the primary action carries the academy accent.
+     *
+     * @param \core\hook\output\before_standard_top_of_body_html_generation $hook
+     */
+    public static function before_standard_top_of_body_html_generation(
+        \core\hook\output\before_standard_top_of_body_html_generation $hook
+    ): void {
+        global $PAGE;
+
+        if (($PAGE->pagetype ?? '') !== 'site-index') {
+            return;
+        }
+        if (!method_exists($PAGE, 'user_is_editing') || !$PAGE->user_is_editing()) {
+            return;
+        }
+
+        $isar = (strpos(current_language(), 'ar') === 0);
+        $t = fn(string $en, string $ar) => $isar ? $ar : $en;
+
+        $doneurl = (new \moodle_url('/', ['edit' => 'off', 'sesskey' => sesskey()]))->out(false);
+        $viewurl = (new \moodle_url('/'))->out(false);
+
+        $label = s($t('Editing homepage', 'تحرير الصفحة الرئيسية'));
+        $hint  = s($t('Drag sections to reorder — changes save automatically.',
+            'اسحب الأقسام لإعادة الترتيب — تُحفظ التغييرات تلقائيًا.'));
+        $view  = s($t('View page', 'معاينة'));
+        $done  = s($t('Done editing', 'إنهاء التحرير'));
+
+        $html = '<div id="nit-edit-toolbar" dir="' . ($isar ? 'rtl' : 'ltr') . '" style="'
+            . 'background:#16191D;color:#fff;font-family:\'Manrope\',\'IBM Plex Sans Arabic\',system-ui,sans-serif;">'
+            . '<div style="max-width:1240px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">'
+            . '<span style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;">'
+            . '<span style="width:7px;height:7px;border-radius:50%;background:#E0A100;display:block;"></span>' . $label . '</span>'
+            . '<span style="font-size:12px;color:#9CA3AA;">' . $hint . '</span>'
+            . '<span style="margin-inline-start:auto;display:flex;align-items:center;gap:10px;">'
+            . '<a href="' . $viewurl . '" target="_blank" rel="noopener" style="'
+            . 'font-size:13px;font-weight:600;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.18);'
+            . 'color:#fff;padding:9px 16px;border-radius:8px;text-decoration:none;">' . $view . '</a>'
+            . '<a href="' . $doneurl . '" style="'
+            . 'font-size:13px;font-weight:600;background:var(--nit-brand-primary,#0E7C66);border:0;'
+            . 'color:var(--nit-brand-on-primary,#fff);padding:10px 18px;border-radius:8px;text-decoration:none;">' . $done . '</a>'
+            . '</span></div></div>';
+
+        $hook->add_html($html);
+    }
 }

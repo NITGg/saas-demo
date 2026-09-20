@@ -36,4 +36,9 @@ $callbacks = [
         'hook'     => \core\hook\output\before_standard_head_html_generation::class,
         'callback' => \theme_nit\local\hook_callbacks::class . '::before_standard_head_html_generation',
     ],
+    [
+        // T1 "Editing homepage" banner on the site front page in edit mode.
+        'hook'     => \core\hook\output\before_standard_top_of_body_html_generation::class,
+        'callback' => \theme_nit\local\hook_callbacks::class . '::before_standard_top_of_body_html_generation',
+    ],
 ];
