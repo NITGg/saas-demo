@@ -44,6 +44,14 @@ $ADMIN->add('appearance', new admin_externalpage(
     'moodle/site:config'
 ));
 
+// Admin-only homepage content editor (fills the template's editable hooks).
+$ADMIN->add('appearance', new admin_externalpage(
+    'theme_nit_homepage_content',
+    get_string('homepagecontent', 'theme_nit'),
+    new moodle_url('/theme/nit/homepage_content.php'),
+    'moodle/site:config'
+));
+
 if ($ADMIN->fulltree) {
     $settings = new admin_settingpage('themesettingnit', get_string('configtitle', 'theme_nit'));
 

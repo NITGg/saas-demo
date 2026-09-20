@@ -62,6 +62,7 @@ class homepage_templates {
             ['key' => 'coupons',       'file' => 'coupons.html',       'region' => 'fullwidth-top',    'weight' => 5, 'signatures' => ['data-nit-coupons']],
             ['key' => 'gallery',       'file' => 'gallery.html',       'region' => 'fullwidth-top',    'weight' => 6, 'signatures' => ['data-nit-section="gallery"']],
             ['key' => 'contact',       'file' => 'contact.html',       'region' => 'fullwidth-top',    'weight' => 7, 'signatures' => ['data-nit-section="contact"']],
+            ['key' => 'appband',       'file' => 'appband.html',       'region' => 'fullwidth-top',    'weight' => 8, 'signatures' => ['data-nit-section="appband"']],
             ['key' => 'footer',        'file' => 'footer.html',        'region' => 'fullwidth-bottom', 'weight' => 0, 'signatures' => ['data-nit-section="footer"']],
         ];
     }

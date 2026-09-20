@@ -1,0 +1,18 @@
+<!-- NIT homepage template T1 · Modern Minimal — APP band (design's "Learn on the
+     move"). Replaces Moodle's auto download-apps band (hidden by the hero block's
+     chrome CSS). Store links carry data-nit-edit-href hooks (filled at creation /
+     editable in Moodle + nit2). -->
+<div dir="auto" data-nit-section="appband"
+  style="--t-accent: var(--nit-brand-primary); --t-on-accent: var(--nit-brand-on-primary, #fff); --t-ink: #16191D; --t-bg-alt: #FAFAF8; --t-muted: #6E7781; --t-border: #EDEDE9; --t-border2: #DCDCD7; font-family: 'Manrope','IBM Plex Sans Arabic',system-ui,sans-serif; background: var(--t-bg-alt); border-block: 1px solid var(--t-border); color: var(--t-ink);">
+  <div style="max-width: 1240px; margin: 0 auto; padding: clamp(48px,6vw,72px) 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: clamp(36px,5vw,60px); align-items: center;">
+    <div>
+      <h2 data-nit-edit="app_heading" style="margin: 0; font-size: clamp(26px,3vw,34px); font-weight: 250; letter-spacing: -0.03em;">{mlang en}Learn on the move{mlang}{mlang ar}تعلّم أثناء التنقّل{mlang}</h2>
+      <p data-nit-edit="app_text" style="margin: 14px 0 0; font-size: 15px; line-height: 1.75; color: var(--t-muted); max-width: 420px;">{mlang en}Download the app to continue lessons offline and get reminders.{mlang}{mlang ar}حمّل التطبيق لمتابعة الدروس دون اتصال واستلام التنبيهات.{mlang}</p>
+      <div style="display: flex; gap: 12px; margin-top: 26px; flex-wrap: wrap;">
+        <a data-nit-edit-href="app_ios" href="#" style="display: flex; align-items: center; gap: 10px; background: var(--t-ink); color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; text-decoration: none;"><span style="width: 18px; height: 18px; border-radius: 5px; background: rgba(255,255,255,0.18); display: block;"></span>App Store</a>
+        <a data-nit-edit-href="app_android" href="#" style="display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid var(--t-border2); color: var(--t-ink); padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; text-decoration: none;"><span style="width: 18px; height: 18px; border-radius: 5px; background: var(--t-border); display: block;"></span>Google Play</a>
+      </div>
+    </div>
+    <div style="justify-self: center; width: 210px; aspect-ratio: 9/17; border-radius: 26px; border: 8px solid var(--t-ink); background: repeating-linear-gradient(135deg, #EFEFEC 0 10px, #F7F7F5 10px 20px); display: grid; place-items: center; color: #7C7C74; font-size: 11px; text-align: center; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; box-shadow: 0 26px 56px rgba(20,24,28,0.16);">{mlang en}App screen{mlang}{mlang ar}شاشة التطبيق{mlang}</div>
+  </div>
+</div>

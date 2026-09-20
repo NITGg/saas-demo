@@ -220,3 +220,9 @@ $string['viewhomepage'] = 'View homepage';
 $string['applyconfirm'] = 'Apply the "{$a}" template? This replaces the current homepage sections. Any images or copy already added to those sections will be overwritten.';
 $string['applywarning'] = 'Applying a template replaces the homepage sections with the template\'s layout. Do this before the owner adds their images and content — re-applying later resets those sections.';
 $string['invalidtemplate'] = 'Unknown homepage template: {$a}';
+
+// Homepage content editor — theme/nit/homepage_content.php.
+$string['homepagecontent'] = 'Homepage content';
+$string['homepagecontent_desc'] = 'Edit the text and images of this academy\'s homepage template. Bilingual fields have English + Arabic. Leave a field blank to keep the template default. Course/subscription/coupon content is dynamic and filled automatically.';
+$string['contentsaved'] = 'Homepage content saved.';
+$string['contentimghint'] = 'Choose an image to replace this one. Leave empty to keep the current image.';
