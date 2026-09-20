@@ -96,6 +96,7 @@ class hook_callbacks {
         // renders chrome-free — this request only, no session flag.
         if (optional_param('nitplayer', 0, PARAM_BOOL) && $PAGE->cm !== null) {
             $PAGE->set_pagelayout('embedded');
+            $PAGE->add_body_class('nit-player-embed'); // light template chrome inside the frame
             return;
         }
 

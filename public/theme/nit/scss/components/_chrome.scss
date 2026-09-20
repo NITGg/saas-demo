@@ -30,7 +30,8 @@
 // renders dark — the chrome always matches the template, never the raw brand.
 // =============================================================================
 
-body:not(.pagelayout-frontpage):not(.pagelayout-login):not(.pagelayout-embedded):not(.path-site) {
+body:not(.pagelayout-frontpage):not(.pagelayout-login):not(.pagelayout-embedded):not(.path-site),
+body.pagelayout-embedded.nit-player-embed {
     // Structure tokens → template ground (accent tokens are left untouched).
     --nit-background: var(--t-surface, #FAFAF8);
     --nit-brand-background: var(--t-surface, #FAFAF8);
@@ -96,7 +97,8 @@ body:not(.pagelayout-frontpage):not(.pagelayout-login):not(.pagelayout-embedded)
 // course "Course / Participants / Grades" tabs), the drawers (course index,
 // blocks drawer), the more-menu dropdowns, tables and the sticky footer. Put
 // them on the template surface with template ink.
-body:not(.pagelayout-frontpage):not(.pagelayout-login):not(.pagelayout-embedded):not(.path-site) {
+body:not(.pagelayout-frontpage):not(.pagelayout-login):not(.pagelayout-embedded):not(.path-site),
+body.pagelayout-embedded.nit-player-embed {
     .secondary-navigation,
     .secondary-navigation .navigation,
     .secondary-navigation .moremenu,
