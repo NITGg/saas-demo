@@ -63,6 +63,13 @@ $sortorder = $sortmap[$sort] ?? $sortmap['recommended'];
 if (!isset($sortmap[$sort])) {
     $sort = 'recommended';
 }
+// Price filter (?price=) — REAL: a course is "paid" iff local_payments has pricing
+// for it, else "free". Only these two are Moodle-backed data, so the catalog has
+// no fabricated Level/Rating filters. No-op when the payments plugin is absent.
+$pricefilter = optional_param('price', 'all', PARAM_ALPHA);
+if (!in_array($pricefilter, ['all', 'free', 'paid'], true)) {
+    $pricefilter = 'all';
+}
 $fetchcourses = function (core_course_category $cat, bool $recursive) use ($sortorder): array {
     return $cat->get_courses([
         'recursive'      => $recursive,
@@ -114,6 +121,21 @@ if (empty($subcategories)) {
     foreach ($subcategories as $sc) {
         $rootnodes[] = $buildnode($sc);
     }
+}
+
+// Apply the price filter (recursively removes non-matching courses), then drop
+// empty subtrees. Uses local_payments pricing directly so counts stay correct.
+if ($pricefilter !== 'all' && class_exists('\local_payments\price_resolver')) {
+    $wantpaid = ($pricefilter === 'paid');
+    $filternode = function (array $node) use (&$filternode, $wantpaid): array {
+        $node['courses'] = array_values(array_filter($node['courses'], static function ($c) use ($wantpaid) {
+            $paid = (bool) \local_payments\price_resolver::has_pricing((int) $c->id);
+            return $wantpaid ? $paid : !$paid;
+        }));
+        $node['children'] = array_map($filternode, $node['children']);
+        return $node;
+    };
+    $rootnodes = array_map($filternode, $rootnodes);
 }
 
 // Drop empty subtrees and tally the visible total.
@@ -310,6 +332,7 @@ echo $OUTPUT->header();
       <form method="get" class="nit-cat-sort" action="<?= (new moodle_url('/local/nit_category/index.php'))->out(false) ?>">
         <input type="hidden" name="id" value="<?= (int) $categoryid ?>">
         <?php if ($subid): ?><input type="hidden" name="sub" value="<?= (int) $subid ?>"><?php endif; ?>
+        <?php if ($pricefilter !== 'all'): ?><input type="hidden" name="price" value="<?= s($pricefilter) ?>"><?php endif; ?>
         <label for="nit-sort"><?= $t('Sort', 'ترتيب') ?></label>
         <select id="nit-sort" name="sort" onchange="this.form.submit()">
           <option value="recommended" <?= $sort === 'recommended' ? 'selected' : '' ?>><?= $t('Recommended', 'موصى به') ?></option>
@@ -323,19 +346,45 @@ echo $OUTPUT->header();
       <aside class="nit-cat-side">
         <div class="nit-cat-side-head">
           <span><?= $t('Categories', 'التصنيفات') ?></span>
-          <?php if ($subid): ?><a href="<?= (new moodle_url('/local/nit_category/index.php', ['id' => $categoryid, 'sort' => $sort]))->out() ?>"><?= $t('Clear', 'مسح') ?></a><?php endif; ?>
+          <?php if ($subid): ?><a href="<?= (new moodle_url('/local/nit_category/index.php', array_filter(['id' => $categoryid, 'sort' => $sort, 'price' => $pricefilter !== 'all' ? $pricefilter : null])))->out() ?>"><?= $t('Clear', 'مسح') ?></a><?php endif; ?>
         </div>
-        <a class="nit-cat-filter<?= $subid === 0 ? ' on' : '' ?>" href="<?= (new moodle_url('/local/nit_category/index.php', ['id' => $categoryid, 'sort' => $sort]))->out() ?>">
+        <?php
+          // Preserve the active price filter across category switches, and vice versa.
+          $caturl = function (?int $sub) use ($categoryid, $sort, $pricefilter): string {
+              $p = ['id' => $categoryid, 'sort' => $sort];
+              if ($sub) { $p['sub'] = $sub; }
+              if ($pricefilter !== 'all') { $p['price'] = $pricefilter; }
+              return (new moodle_url('/local/nit_category/index.php', $p))->out();
+          };
+        ?>
+        <a class="nit-cat-filter<?= $subid === 0 ? ' on' : '' ?>" href="<?= $caturl(null) ?>">
           <span style="font-size:14px;color:inherit;"><?= $t('All', 'الكل') ?></span>
           <span><?= (int) $bannertotal ?></span>
         </a>
         <?php foreach ($subcategories as $sc): ?>
           <?php $sccount = (int) $sc->get_courses_count(['recursive' => true]); ?>
-          <a class="nit-cat-filter<?= $subid === (int) $sc->id ? ' on' : '' ?>" href="<?= (new moodle_url('/local/nit_category/index.php', ['id' => $categoryid, 'sub' => $sc->id, 'sort' => $sort]))->out() ?>">
+          <a class="nit-cat-filter<?= $subid === (int) $sc->id ? ' on' : '' ?>" href="<?= $caturl((int) $sc->id) ?>">
             <span style="font-size:14px;color:inherit;"><?= $sc->get_formatted_name() ?></span>
             <span><?= $sccount ?></span>
           </a>
         <?php endforeach; ?>
+
+        <?php if ($nitcheckout): // Price filter only makes sense when pricing exists. ?>
+          <div class="nit-cat-side-head" style="margin-top:24px;"><span><?= $t('Price', 'السعر') ?></span></div>
+          <?php
+            $priceopts = ['all' => $t('All', 'الكل'), 'free' => $t('Free', 'مجانًا'), 'paid' => $t('Paid', 'مدفوعة')];
+            $priceurl = function (string $pk) use ($categoryid, $subid, $sort): string {
+                $p = ['id' => $categoryid, 'sort' => $sort];
+                if ($subid) { $p['sub'] = $subid; }
+                if ($pk !== 'all') { $p['price'] = $pk; }
+                return (new moodle_url('/local/nit_category/index.php', $p))->out();
+            };
+            foreach ($priceopts as $pk => $plabel): ?>
+              <a class="nit-cat-filter<?= $pricefilter === $pk ? ' on' : '' ?>" href="<?= $priceurl($pk) ?>">
+                <span style="font-size:14px;color:inherit;"><?= $plabel ?></span>
+              </a>
+          <?php endforeach; ?>
+        <?php endif; ?>
       </aside>
 
       <main class="nit-cat-main">
