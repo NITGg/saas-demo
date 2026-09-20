@@ -133,7 +133,28 @@
             '.nit-add-course{display:inline-flex;align-items:center;justify-content:center;gap:8px;' +
             'min-height:44px;padding:12px 20px;margin:4px;border-radius:12px;text-decoration:none;' +
             'font:700 15px system-ui,sans-serif;background:#0B2923;color:#00FFB2;' +
-            'border:2px dashed rgba(0,255,178,.4)}';
+            'border:2px dashed rgba(0,255,178,.4)}' +
+            // ── Design-17 side panel ──
+            "#nit-side-panel{position:fixed;top:64px;inset-inline-end:0;width:340px;max-width:88vw;" +
+            "height:calc(100vh - 64px);background:#fff;border-inline-start:1px solid #EDEDE9;" +
+            "box-shadow:-12px 0 40px rgba(20,24,28,.08);z-index:1029;overflow:auto;" +
+            "font:14px 'Manrope',system-ui,sans-serif;color:#16191D;padding:18px 16px 40px}" +
+            "#nit-side-panel .nit-side-hd{font:700 11px 'Manrope',system-ui;letter-spacing:.12em;" +
+            "text-transform:uppercase;color:#8A8A82;margin:18px 4px 8px}" +
+            "#nit-side-panel .nit-side-hint{font-size:12px;color:#8A8A82;margin:0 4px 6px;line-height:1.5}" +
+            "#nit-side-panel .nit-side-list{display:flex;flex-direction:column;gap:2px}" +
+            "#nit-side-panel .nit-side-secrow{display:flex;align-items:center;gap:11px;width:100%;text-align:start;" +
+            "padding:11px 12px;border:1px solid transparent;border-radius:10px;background:none;cursor:pointer;" +
+            "font:600 14px 'Manrope',system-ui;color:#16191D}" +
+            "#nit-side-panel .nit-side-secrow:hover{background:#FAFAF8}" +
+            "#nit-side-panel .nit-side-secrow.on{background:color-mix(in srgb,var(--nit-brand-primary,#0E7C66) 9%,#fff);" +
+            "border-color:color-mix(in srgb,var(--nit-brand-primary,#0E7C66) 30%,#DCE9E5);color:var(--nit-brand-primary,#0E7C66)}" +
+            "#nit-side-panel .nit-side-secrow .h{color:#C4C4BD}" +
+            "#nit-side-panel .nit-side-content{border:1px solid #EDEDE9;border-radius:12px;padding:14px;background:#FAFAF8}" +
+            "#nit-side-panel .nit-side-content .nit-edit-row,#nit-side-panel .nit-side-content label{color:#16191D}" +
+            "#nit-side-panel .nit-side-btn,#nit-side-panel .nit-edit-btn{padding:10px 14px;border:0;border-radius:9px;" +
+            "font:600 13px 'Manrope',system-ui;cursor:pointer;background:#16191D;color:#fff}" +
+            "@media (max-width:820px){#nit-side-panel{width:100%;max-width:100%;top:auto;bottom:0;height:70vh;border-top:1px solid #EDEDE9}}";
         var el = document.createElement('style');
         el.id = 'nit-edit-styles';
         el.textContent = css;
@@ -1087,11 +1108,111 @@
         document.querySelectorAll('.nit-add-course').forEach(function (e) { e.remove(); });
     }
 
+    // ── Design-17 side panel: a persistent "PAGE SECTIONS" list where selecting a
+    // section docks its REAL editor (the same heroPanel/aboutPanel/… that save
+    // through edit.php). Coexists with the hover pencils. ─────────────────────
+    var sidePanel = null;
+    var SECTION_LABELS = {
+        hero: ['Hero', 'الغلاف'], categories: ['Categories', 'التصنيفات'],
+        courses: ['Courses', 'الدورات'], about: ['About', 'من نحن'],
+        subscriptions: ['Subscriptions', 'الاشتراكات'], coupons: ['Coupons', 'الكوبونات'],
+        gallery: ['Gallery', 'المعرض'], contact: ['Contact', 'تواصل'], footer: ['Footer', 'التذييل']
+    };
+    function secLabel(marker) {
+        var l = SECTION_LABELS[marker];
+        return l ? t('sec_' + marker, l[0]) : marker;
+    }
+    function sectionEditorFor(marker, sec) {
+        if (marker === 'hero') { return heroPanel('hero'); }
+        if (marker === 'about') { return aboutPanel(sec); }
+        if (marker === 'gallery') { return galleryPanel(sec); }
+        if (marker === 'contact') { return contactPanel(); }
+        if (marker === 'footer') { return footerPanel(sec); }
+        var d = document.createElement('div');
+        var b = document.createElement('button');
+        b.type = 'button'; b.className = 'nit-side-btn';
+        b.textContent = t('editimage', 'Replace background image');
+        b.addEventListener('click', function () { uploadImage('section_bg_image', { section: marker }, null); });
+        d.appendChild(b);
+        return d;
+    }
+    function buildSidePanel() {
+        if (sidePanel) { return; }
+        var secs = [].slice.call(document.querySelectorAll('[data-nit-section]'));
+        if (!secs.length) { return; }
+        sidePanel = document.createElement('aside');
+        sidePanel.id = 'nit-side-panel';
+        var content = document.createElement('div');
+        content.className = 'nit-side-content';
+        var hint = document.createElement('p');
+        hint.className = 'nit-side-hint';
+        hint.textContent = t('sidehint', 'Select a section to edit its content, or use a pencil on the page.');
+        content.appendChild(hint);
+
+        var listHd = document.createElement('div');
+        listHd.className = 'nit-side-hd';
+        listHd.textContent = t('pagesections', 'PAGE SECTIONS');
+        var list = document.createElement('div');
+        list.className = 'nit-side-list';
+        secs.forEach(function (sec) {
+            var marker = sec.getAttribute('data-nit-section');
+            var row = document.createElement('button');
+            row.type = 'button';
+            row.className = 'nit-side-secrow';
+            row.innerHTML = '<span class="h">≡</span><span class="n"></span>';
+            row.querySelector('.n').textContent = secLabel(marker);
+            row.addEventListener('click', function () {
+                list.querySelectorAll('.nit-side-secrow').forEach(function (x) { x.classList.remove('on'); });
+                row.classList.add('on');
+                if (sec.scrollIntoView) { sec.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+                content.innerHTML = '';
+                var st = document.createElement('div');
+                st.className = 'nit-side-hd';
+                st.textContent = secLabel(marker) + ' ' + t('settings', 'settings');
+                content.appendChild(st);
+                content.appendChild(sectionEditorFor(marker, sec));
+            });
+            list.appendChild(row);
+        });
+
+        // Design tools: colours + branding.
+        var designHd = document.createElement('div');
+        designHd.className = 'nit-side-hd';
+        designHd.textContent = t('design', 'DESIGN');
+        var designWrap = document.createElement('div');
+        designWrap.className = 'nit-side-list';
+        [['colours', t('colours', 'Colours'), palettePanel],
+         ['branding', t('editbrand', 'Branding'), brandingPanel]].forEach(function (d) {
+            var row = document.createElement('button');
+            row.type = 'button'; row.className = 'nit-side-secrow';
+            row.innerHTML = '<span class="h">✦</span><span class="n"></span>';
+            row.querySelector('.n').textContent = d[1];
+            row.addEventListener('click', function () {
+                content.innerHTML = '';
+                var st = document.createElement('div'); st.className = 'nit-side-hd'; st.textContent = d[1];
+                content.appendChild(st); content.appendChild(d[2]());
+            });
+            designWrap.appendChild(row);
+        });
+
+        sidePanel.appendChild(content);
+        sidePanel.appendChild(listHd);
+        sidePanel.appendChild(list);
+        sidePanel.appendChild(designHd);
+        sidePanel.appendChild(designWrap);
+        document.body.appendChild(sidePanel);
+        document.body.classList.add('nit-editing-panel');
+    }
+    function removeSidePanel() {
+        if (sidePanel) { sidePanel.remove(); sidePanel = null; }
+        document.body.classList.remove('nit-editing-panel');
+    }
+
     // Editing is driven by Moodle's NATIVE edit mode (body.editing) — one toggle,
     // and our pencils only touch our own regions.
     function setEditing(on) {
         if (on === editing) {
-            if (on) { addPencils(); addCourseButton(); } // re-ensure after DOM changes
+            if (on) { addPencils(); addCourseButton(); buildSidePanel(); } // re-ensure after DOM changes
             return;
         }
         editing = on;
@@ -1101,9 +1222,11 @@
         if (on) {
             addPencils();
             addCourseButton();
+            buildSidePanel();
         } else {
             removePencils();
             removeCourseButton();
+            removeSidePanel();
         }
     }
 
