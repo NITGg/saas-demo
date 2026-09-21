@@ -1667,12 +1667,10 @@ function theme_nit_site_pages(): array {
         ['key' => 'testimonials',  'label' => ['en' => 'Testimonials',    'ar' => 'آراء المتعلمين'],  'url' => '/#nit-testimonials'],
         ['key' => 'faq',           'label' => ['en' => 'FAQ',             'ar' => 'الأسئلة الشائعة'], 'url' => '/#nit-faq'],
         ['key' => 'contact',       'label' => ['en' => 'Contact',         'ar' => 'تواصل معنا'],      'url' => '/#nit-contact'],
-        ['key' => 'dashboard',     'label' => ['en' => 'My learning',     'ar' => 'تعلّمي'],          'url' => '/my/'],
         ['key' => 'certificates',  'label' => ['en' => 'Certificates',    'ar' => 'الشهادات'],        'url' => '/local/academy/certificate.php'],
-        ['key' => 'profile',       'label' => ['en' => 'Profile',         'ar' => 'الملف الشخصي'],    'url' => '/local/academy/profile.php'],
-        ['key' => 'login',         'label' => ['en' => 'Sign in',         'ar' => 'تسجيل الدخول'],    'url' => '/login/index.php'],
-        ['key' => 'signup',        'label' => ['en' => 'Create account',  'ar' => 'إنشاء حساب'],      'url' => '/login/signup.php'],
     ];
+    // Account / auth destinations (sign in, sign up, profile, dashboard) are NOT
+    // offered: the navbar's user menu and the auth buttons already own them.
     // Unlicensed features never become links.
     if (class_exists('\theme_nit\local\home_picks')) {
         $pages = array_values(array_filter($pages, static function ($p) {
@@ -1707,6 +1705,10 @@ function theme_nit_save_nav_pages(array $keys): void {
     }
     set_config('nav_pages', json_encode(array_values(array_unique($picked))), 'theme_nit');
     set_config('custommenuitems', implode("\n", $lines));
+    // With picked pages the navbar shows THOSE (Moodle's own Home / Dashboard /
+    // My courses items are hidden through core's own setting, so the bar never
+    // overflows); no pick → Moodle's default primary navigation returns.
+    set_config('hiddenprimarynavigationitems', $picked ? 'home,myhome,courses' : '');
     purge_all_caches();
 }
 

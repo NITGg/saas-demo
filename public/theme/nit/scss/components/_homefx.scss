@@ -49,3 +49,26 @@ body.pagelayout-frontpage {
         transform: translateY(-2px);
     }
 }
+
+// The homepage's page wrapper carried the raw brand ground: in edit mode the
+// gaps between section blocks (block headers / action bars) showed as a dark
+// band. The sections own their canvas, so the wrapper is the template ground.
+body.path-site,
+body.pagelayout-frontpage {
+    #page,
+    #page-content,
+    #region-main,
+    .nit-region,
+    .block_nit_section,
+    .block_nit_section .card-body {
+        background: var(--t-bg, #FFFFFF) !important;
+    }
+
+    // Editing controls of our section blocks: light, not the dark brand bar.
+    &.editing .block_nit_section .card-header,
+    &.editing .block_nit_section .block-controls,
+    &.editing .block-region .block-controls {
+        background: var(--t-surface, #FAFAF8) !important;
+        color: var(--t-ink, #16191D) !important;
+    }
+}

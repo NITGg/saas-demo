@@ -101,16 +101,43 @@
         line-height: 1;
         color: var(--t-muted, #55606B);
         text-decoration: none;
+        opacity: 1;
+        transition: color .15s ease;
+
+        // A clear hover: brand colour + an underline that slides in. (!important:
+        // the palette's generic link hover — near-white "Hover Text" on some
+        // academies — used to wash the link out instead.)
+        &::after {
+            content: "";
+            position: absolute;
+            inset-inline: 0;
+            bottom: 0;
+            height: 2px;
+            border-radius: 2px;
+            background: var(--nit-brand-primary, #0E7C66);
+            transform: scaleX(0);
+            transform-origin: start;
+            transition: transform .18s ease;
+        }
 
         &:hover,
-        &:focus {
-            color: var(--t-ink, #16191D);
+        &:focus-visible {
+            color: var(--nit-brand-primary, #0E7C66) !important;
+            opacity: 1 !important;
             text-decoration: none;
+
+            &::after {
+                transform: scaleX(1);
+            }
         }
 
         &.active {
             color: var(--t-ink, #16191D);
             font-weight: 600;
+
+            &::after {
+                transform: scaleX(1);
+            }
         }
 
         &.dropdown-toggle::after {
@@ -189,12 +216,52 @@
         }
     }
 
-    // Edit-mode switch — compact label on the bar.
+    // Edit-mode switch — an obvious pill: label + brand-coloured switch.
     .nit-navbar-editswitch {
+        .editmode-switch-form,
+        .form-check {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 12px 5px 14px;
+            border: 1px solid var(--t-border, #EDEDE9);
+            border-radius: 999px;
+            background: var(--t-bg, #FFFFFF);
+            margin: 0;
+        }
+
         .form-check-label {
             font-size: 13px;
-            color: var(--t-muted, #55606B);
+            font-weight: 600;
+            color: var(--t-ink, #16191D);
+            order: -1;
+            margin: 0;
         }
+
+        .form-check-input {
+            width: 38px;
+            height: 22px;
+            margin: 0;
+            cursor: pointer;
+            background-color: var(--t-border2, #DCDCD7);
+            border-color: var(--t-border2, #DCDCD7);
+            box-shadow: none;
+
+            &:checked {
+                background-color: var(--nit-brand-primary, #0E7C66);
+                border-color: var(--nit-brand-primary, #0E7C66);
+            }
+
+            &:focus-visible {
+                box-shadow: 0 0 0 3px color-mix(in srgb, var(--nit-brand-primary, #0E7C66) 25%, transparent);
+            }
+        }
+    }
+
+    // Editing: colour the whole pill so the state is unmistakable.
+    body.editing & .nit-navbar-editswitch .form-check {
+        border-color: var(--nit-brand-primary, #0E7C66);
+        background: color-mix(in srgb, var(--nit-brand-primary, #0E7C66) 8%, var(--t-bg, #FFFFFF));
     }
 
     // Avatar pill (user menu trigger).

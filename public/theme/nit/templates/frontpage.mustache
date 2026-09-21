@@ -124,10 +124,18 @@ window.NIT_REVIEWS = {{{ nitreviewsjson }}};
             // Category counts ("Specialities", "Programs") mean nothing to a
             // single academy — drop that stat tile wherever a template (or an
             // already-provisioned copy of one) still carries it.
-            if (key === 'categories' || key === 'topcategories' || key === 'subcategories') {
+            if (key === 'topcategories' || key === 'subcategories') {
                 var tile = el.parentElement && el.parentElement.parentElement;
                 if (tile && tile.querySelectorAll('[data-nit-stat]').length === 1) { tile.remove(); } else { el.textContent = ''; }
                 return;
+            }
+            if (key === 'categories') {
+                // Legacy copies label this tile "Specialities" — the academy's real
+                // term is Categories.
+                var lab = el.parentElement && el.parentElement.nextElementSibling;
+                if (lab && /Specialit|تخصص/.test(lab.textContent || '')) {
+                    lab.textContent = (document.documentElement.lang || '').indexOf('ar') === 0 ? 'تصنيف' : 'Categories';
+                }
             }
             if (stats[key] === undefined) { return; }
             var target = parseInt(stats[key], 10) || 0;
@@ -386,6 +394,14 @@ window.NIT_REVIEWS = {{{ nitreviewsjson }}};
             if (!root.getAttribute('data-nit-section')) { root.setAttribute('data-nit-section', k); }
             if (!root.id) { root.id = 'nit-' + k; }
         });
+        // The ids exist only now, so a /#nit-<section> link has to be honoured here.
+        var jump = function () {
+            var h = (window.location.hash || '').slice(1);
+            var target = h && /^nit-[a-z]+$/.test(h) ? document.getElementById(h) : null;
+            if (target) { target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+        };
+        jump();
+        window.addEventListener('hashchange', jump);
     }
     // Licence: sections whose feature is not in this academy's plan are removed.
     function applyLicence() {
