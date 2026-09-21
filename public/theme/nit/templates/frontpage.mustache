@@ -361,6 +361,27 @@ window.NIT_REVIEWS = {{{ nitreviewsjson }}};
     //  * a text hook whose inline markup (<br>, accent <span>) was stored escaped and
     //    renders as literal tags — re-interpret only that small whitelist.
     function repairHooks() {
+        // Newer hooks on older stored copies (same rules as homepage_content::retrofit_hooks).
+        var about = document.querySelector('[data-nit-section="about"]');
+        if (about && !about.querySelector('[data-nit-edit="about_stat_value"]')) {
+            Array.prototype.some.call(about.querySelectorAll('[style*="position: absolute"]'), function (b) {
+                var kids = Array.prototype.filter.call(b.children, function (c) { return c.tagName === 'DIV'; });
+                if (kids.length !== 2 || b.children.length !== 2) { return false; }
+                kids[0].setAttribute('data-nit-edit', 'about_stat_value');
+                kids[1].setAttribute('data-nit-edit', 'about_stat_label');
+                return true;
+            });
+        }
+        var band = document.querySelector('[data-nit-section="appband"]');
+        if (band && !band.querySelector('[data-nit-edit-img="app_screen"]')) {
+            var phone = band.querySelector('[style*="aspect-ratio: 9/17"]');
+            if (phone) { phone.setAttribute('data-nit-edit-img', 'app_screen'); }
+        }
+        var contact = document.querySelector('[data-nit-section="contact"]');
+        if (contact && !contact.querySelector('[data-nit-edit-href="contact_map"]')) {
+            var box = contact.querySelector('[style*="min-height: 130px"]');
+            if (box) { box.setAttribute('data-nit-edit-href', 'contact_map'); box.setAttribute('data-nit-map', ''); }
+        }
         Array.prototype.forEach.call(document.querySelectorAll('[data-nit-edit-img],[data-nit-logo]'), function (el) {
             var st = el.getAttribute('style') || '';
             if (!/background-image\s*:\s*url\(/i.test(st)) { return; }
@@ -406,11 +427,12 @@ window.NIT_REVIEWS = {{{ nitreviewsjson }}};
     // Licence: sections whose feature is not in this academy's plan are removed.
     function applyLicence() {
         var lic = window.NIT_LICENCE || {};
+        var sig = { subscriptions: '[data-nit-subs]', coupons: '[data-nit-coupons]' };
         Object.keys(lic).forEach(function (k) {
-            if (lic[k] === false) {
-                var s = document.getElementById('nit-' + k);
-                if (s) { s.remove(); }
-            }
+            if (lic[k] !== false) { return; }
+            var s = document.getElementById('nit-' + k) || document.querySelector('[data-nit-section="' + k + '"]');
+            if (!s && sig[k]) { var el = document.querySelector(sig[k]); s = el && (el.closest('.block_nit_section, [data-block]') || el); }
+            if (s) { (s.closest('.block_nit_section') || s).remove(); }
         });
     }
     // Plans / coupons render asynchronously from their own APIs; drop the cards
@@ -477,21 +499,31 @@ window.NIT_REVIEWS = {{{ nitreviewsjson }}};
             }
         });
         if (!pages) { return; }
-        var cols = Array.prototype.filter.call(footer.querySelectorAll('div'), function (d) {
-            var links = Array.prototype.filter.call(d.children, function (c) { return c.tagName === 'A'; });
-            return links.length >= 1 && links.length === d.children.length && !d.closest('[data-nit-edit]')
-                && !d.querySelector('a[href*="/login/"]');
-        });
-        if (!cols.length) { return; }
-        var first = cols[0];
-        var proto = first.querySelector('a');
-        first.innerHTML = '';
-        pages.forEach(function (p) {
-            var a = proto.cloneNode(false);
-            a.href = p.url; a.textContent = p.label;
-            first.appendChild(a);
-        });
-        cols.slice(1).forEach(function (c) { var wrap = c.parentElement; if (wrap && wrap !== footer) { wrap.remove(); } else { c.remove(); } });
+        window.nitFooterColumns = window.nitFooterColumns || function (footer) {
+            // Link columns = elements whose direct children include ≥1 <a> (headings
+            // allowed), outside the brand / copyright / account areas.
+            return Array.prototype.filter.call(footer.querySelectorAll('div, ul, nav'), function (d) {
+                var links = Array.prototype.filter.call(d.children, function (c) { return c.tagName === 'A' || (c.tagName === 'LI' && c.querySelector('a')); });
+                return links.length >= 1 && !d.closest('[data-nit-edit]') && !d.querySelector('[data-nit-edit]')
+                    && !d.querySelector('a[href*="/login/"]') && !/©/.test(d.textContent || '');
+            }).sort(function (a, b) { return b.querySelectorAll('a').length - a.querySelectorAll('a').length; });
+        };
+        window.nitFillFooterLinks = window.nitFillFooterLinks || function (footer, pages) {
+            var cols = window.nitFooterColumns(footer);
+            if (!cols.length) { return false; }
+            var col = cols[0];
+            var anchors = Array.prototype.filter.call(col.children, function (c) { return c.tagName === 'A' || c.tagName === 'LI'; });
+            var proto = anchors[0];
+            anchors.forEach(function (a) { a.remove(); });
+            pages.forEach(function (p) {
+                var n = proto.cloneNode(true);
+                var a = n.tagName === 'A' ? n : n.querySelector('a');
+                a.href = p.url; a.textContent = p.label;
+                col.appendChild(n);
+            });
+            return true;
+        };
+        window.nitFillFooterLinks(footer, pages);
     }
 
     function init() { repairHooks(); tagSections(); applyLicence(); fillStats(); renderCourses(); renderMyCourses(); renderCategories(); renderTestimonials(); wireSliders(); placeDownloadBand(); watchPicks(); wireContact(); renderFooterLinks(); }

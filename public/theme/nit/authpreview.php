@@ -15,11 +15,11 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Login-page preview for the homepage editor's "Auth pages" panel.
+ * Login / signup page preview for the homepage editor's "Auth pages" panel.
  *
  * A logged-in owner cannot open /login/index.php (it redirects), so this renders
- * the real login layout + form (same templates, same brand panel) in the editor's
- * preview frame. Editors only; the form is inert (no action).
+ * the real login layout + form — or, with ?signup=1, the real signup form — in
+ * the editor's preview frame. Editors only; every control is inert.
  *
  * @package    theme_nit
  * @copyright  2026 NIT
@@ -32,17 +32,30 @@ require_login(null, false);
 if (!\theme_nit\local\editor::can_edit()) {
     throw new required_capability_exception(context_system::instance(), 'moodle/site:manageblocks', 'nopermissions', '');
 }
+$signup = optional_param('signup', 0, PARAM_BOOL);
 
 $PAGE->set_context(context_system::instance());
-$PAGE->set_url(new moodle_url('/theme/nit/authpreview.php'));
+$PAGE->set_url(new moodle_url('/theme/nit/authpreview.php', $signup ? ['signup' => 1] : []));
 $PAGE->set_pagelayout('login');
-$PAGE->set_title(get_string('login'));
+$PAGE->set_title($signup ? get_string('newaccount') : get_string('login'));
 $PAGE->set_heading($SITE->fullname);
 
 echo $OUTPUT->header();
-$form = new \core_auth\output\login(get_enabled_auth_plugins(), '');
-echo $OUTPUT->render($form);
-// Inert: no form may submit from the preview.
+try {
+    if ($signup) {
+        require_once($CFG->dirroot . '/login/signup_form.php');
+        $mform = new login_signup_form(new moodle_url('/theme/nit/authpreview.php', ['signup' => 1]));
+        // Same template the real signup page renders through (theme override).
+        echo $OUTPUT->render_from_template('core/signup_form_layout', ['formhtml' => $mform->render()]);
+    } else {
+        $form = new \core_auth\output\login(get_enabled_auth_plugins(), '');
+        echo $OUTPUT->render_from_template('core/loginform', $form->export_for_template($OUTPUT));
+    }
+} catch (\Throwable $e) {
+    // Never a fatal page inside the preview frame: show the reason instead.
+    echo html_writer::div(s($e->getMessage()), 'alert alert-warning');
+}
+// Inert: nothing may submit or navigate from the preview.
 echo '<script>document.querySelectorAll("form").forEach(function(f){f.addEventListener("submit",function(e){e.preventDefault();});});'
     . 'document.querySelectorAll("a").forEach(function(a){a.addEventListener("click",function(e){e.preventDefault();});});</script>';
 echo $OUTPUT->footer();

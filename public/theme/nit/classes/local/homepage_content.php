@@ -77,6 +77,8 @@ class homepage_content {
             $t('about_heading', 'about', 'About heading', true),
             $t('about_text', 'about', 'About text', true),
             ['key' => 'about', 'type' => 'image', 'group' => 'about', 'label' => 'About image'],
+            $t('about_stat_value', 'about', 'Badge number (e.g. 12)'),
+            $t('about_stat_label', 'about', 'Badge label (e.g. years teaching)'),
             // Gallery.
             $t('gallery_eyebrow', 'gallery', 'Gallery eyebrow'),
             $t('gallery_heading', 'gallery', 'Gallery heading'),
@@ -115,7 +117,7 @@ class homepage_content {
             $t('contact_email', 'contact', 'Contact email'),
             $t('contact_phone', 'contact', 'Contact phone'),
             $t('contact_address', 'contact', 'Contact address', true),
-            ['key' => 'contact_map', 'type' => 'link', 'group' => 'contact', 'label' => 'Google Maps link (place or ?q=address)'],
+            ['key' => 'contact_map', 'type' => 'link', 'group' => 'contact', 'label' => 'Location — address or Google Maps link'],
             ['key' => 'social_facebook', 'type' => 'link', 'group' => 'contact', 'label' => 'Facebook'],
             ['key' => 'social_instagram', 'type' => 'link', 'group' => 'contact', 'label' => 'Instagram'],
             ['key' => 'social_youtube', 'type' => 'link', 'group' => 'contact', 'label' => 'YouTube'],
@@ -288,7 +290,13 @@ class homepage_content {
             if (array_key_exists($k, $hrefsrc) && is_string($hrefsrc[$k])) {
                 // '' is a valid value: it clears the link (the front page hides
                 // empty social / map hooks).
-                $out['href'][$k] = clean_param(trim($hrefsrc[$k]), PARAM_URL);
+                $raw = trim($hrefsrc[$k]);
+                if ($k === 'contact_map' && $raw !== '' && !preg_match('#^https?://#i', $raw)) {
+                    // A plain address / "lat,lng" → a Google Maps search link the
+                    // front page can embed.
+                    $raw = 'https://maps.google.com/maps?q=' . rawurlencode($raw);
+                }
+                $out['href'][$k] = clean_param($raw, PARAM_URL);
             }
         }
 
@@ -339,7 +347,7 @@ class homepage_content {
             return $html;
         }
         $xp = new \DOMXPath($dom);
-        $changed = false;
+        $changed = self::retrofit_hooks($dom, $xp);
 
         foreach ($content['text'] as $key => $val) {
             foreach (iterator_to_array($xp->query('//*[@data-nit-edit=' . self::xpath_lit($key) . ']')) as $node) {
@@ -384,6 +392,42 @@ class homepage_content {
             $out .= $dom->saveHTML($c);
         }
         return $out;
+    }
+
+    /**
+     * Hooks added to the templates AFTER an academy was provisioned do not exist
+     * in its stored section HTML. Recognise those elements by their template
+     * markup and tag them, so the editor can fill them without a section reset:
+     * the About badge (number + label), the App-band phone screen, the Contact
+     * map box. Returns true when anything was tagged.
+     */
+    public static function retrofit_hooks(\DOMDocument $dom, \DOMXPath $xp): bool {
+        $changed = false;
+        $tag = static function (?\DOMNode $n, string $attr, string $val) use (&$changed): void {
+            if ($n instanceof \DOMElement && !$n->hasAttribute($attr)) {
+                $n->setAttribute($attr, $val);
+                $changed = true;
+            }
+        };
+        if (!$xp->query('//*[@data-nit-edit="about_stat_value"]')->length) {
+            $badge = $xp->query('//*[@data-nit-section="about"]//*[contains(@style,"position: absolute")][count(div)=2]')->item(0);
+            if ($badge) {
+                $tag($xp->query('./div[1]', $badge)->item(0), 'data-nit-edit', 'about_stat_value');
+                $tag($xp->query('./div[2]', $badge)->item(0), 'data-nit-edit', 'about_stat_label');
+            }
+        }
+        if (!$xp->query('//*[@data-nit-edit-img="app_screen"]')->length) {
+            $tag($xp->query('//*[@data-nit-section="appband"]//*[contains(@style,"aspect-ratio: 9/17")]')->item(0),
+                'data-nit-edit-img', 'app_screen');
+        }
+        if (!$xp->query('//*[@data-nit-edit-href="contact_map"]')->length) {
+            $box = $xp->query('//*[@data-nit-section="contact"]//*[contains(@style,"min-height: 130px")]')->item(0);
+            if ($box) {
+                $tag($box, 'data-nit-edit-href', 'contact_map');
+                $tag($box, 'data-nit-map', '');
+            }
+        }
+        return $changed;
     }
 
     /**

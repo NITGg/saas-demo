@@ -968,7 +968,7 @@ function theme_nit_login_bg_scss($theme): string {
     // photo THERE ONLY — one clean side — with a dark scrim so the panel's white
     // copy stays legible. Do NOT also set it on #page, or the image bleeds across
     // the whole page behind the form.
-    return '.login-layout-left {'
+    return '.login-layout-left, .nit-auth-side .art {'
         . 'background-image: linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.55)), url("' . $url . '") !important;'
         . 'background-size: cover !important;'
         . 'background-position: center center !important;'
@@ -1668,6 +1668,7 @@ function theme_nit_site_pages(): array {
         ['key' => 'faq',           'label' => ['en' => 'FAQ',             'ar' => 'الأسئلة الشائعة'], 'url' => '/#nit-faq'],
         ['key' => 'contact',       'label' => ['en' => 'Contact',         'ar' => 'تواصل معنا'],      'url' => '/#nit-contact'],
         ['key' => 'certificates',  'label' => ['en' => 'Certificates',    'ar' => 'الشهادات'],        'url' => '/local/academy/certificate.php'],
+        ['key' => 'dashboard',     'label' => ['en' => 'Dashboard',       'ar' => 'لوحة التحكم'],     'url' => '/my/'],
     ];
     // Account / auth destinations (sign in, sign up, profile, dashboard) are NOT
     // offered: the navbar's user menu and the auth buttons already own them.

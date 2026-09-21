@@ -622,16 +622,16 @@ try {
         // optionally the background image. Stored as theme_nit config; the login
         // layout reads them with the lang-string defaults as fallback.
         case 'auth':
-            foreach (['welcome', 'tagline'] as $k) {
-                $raw = optional_param($k, '', PARAM_RAW);
-                if ($raw === '') {
+            foreach (['welcome', 'tagline', 'signup_welcome', 'signup_tagline'] as $k) {
+                $raw = optional_param($k, null, PARAM_RAW);
+                if ($raw === null) {
                     continue;
                 }
                 $v = json_decode($raw, true);
                 $val = is_array($v)
-                    ? editor::mlang_build(\core_text::substr((string) ($v['en'] ?? ''), 0, 400), \core_text::substr((string) ($v['ar'] ?? ''), 0, 400))
+                    ? editor::mlang_build(\core_text::substr(trim((string) ($v['en'] ?? '')), 0, 400), \core_text::substr(trim((string) ($v['ar'] ?? '')), 0, 400))
                     : \core_text::substr(trim($raw), 0, 400);
-                set_config('auth_' . $k, $val, 'theme_nit');
+                set_config('auth_' . $k, $val, 'theme_nit'); // '' clears (signup falls back to login texts)
             }
             if (!empty($_FILES['image']['tmp_name'])) {
                 $err = null;

@@ -84,9 +84,22 @@ class core_renderer extends \theme_boost\output\core_renderer {
      *
      * @return string
      */
+    /** Signup pages may carry their own texts (auth_signup_*), else the login ones. */
+    private function nit_auth_config(string $key): string {
+        $issignup = strpos((string) $this->page->pagetype, 'login-signup') === 0
+            || (string) $this->page->pagetype === 'theme-nit-authpreview' && optional_param('signup', 0, PARAM_BOOL);
+        if ($issignup) {
+            $v = trim((string) get_config('theme_nit', 'auth_signup_' . $key));
+            if ($v !== '') {
+                return $v;
+            }
+        }
+        return trim((string) get_config('theme_nit', 'auth_' . $key));
+    }
+
     public function nit_auth_welcome(): string {
         global $SITE;
-        $v = trim((string) get_config('theme_nit', 'auth_welcome'));
+        $v = $this->nit_auth_config('welcome');
         if ($v === '') {
             return get_string('welcometosite', 'theme_nit', format_string($SITE->shortname));
         }
@@ -100,7 +113,7 @@ class core_renderer extends \theme_boost\output\core_renderer {
      * @return string
      */
     public function nit_auth_tagline(): string {
-        $v = trim((string) get_config('theme_nit', 'auth_tagline'));
+        $v = $this->nit_auth_config('tagline');
         if ($v === '') {
             return get_string('authsidetagline', 'theme_nit');
         }

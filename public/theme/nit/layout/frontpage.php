@@ -362,6 +362,8 @@ if (\theme_nit\local\editor::can_edit()) {
         'auth'          => [
             'welcome' => \theme_nit\local\editor::mlang_parse((string) get_config('theme_nit', 'auth_welcome')),
             'tagline' => \theme_nit\local\editor::mlang_parse((string) get_config('theme_nit', 'auth_tagline')),
+            'signup_welcome' => \theme_nit\local\editor::mlang_parse((string) get_config('theme_nit', 'auth_signup_welcome')),
+            'signup_tagline' => \theme_nit\local\editor::mlang_parse((string) get_config('theme_nit', 'auth_signup_tagline')),
         ],
         'str'           => [
             'editpage'      => get_string('edit_editpage', 'theme_nit'),
@@ -421,6 +423,9 @@ if (\theme_nit\local\editor::can_edit()) {
             'col_text'      => get_string('edit_col_text', 'theme_nit'),
             'savefailed'    => get_string('edit_savefailed', 'theme_nit'),
             'imagetoolarge' => get_string('edit_imagetoolarge', 'theme_nit'),
+            'loginpage' => get_string('edit_loginpage', 'theme_nit'),
+            'signuppage' => get_string('edit_signuppage', 'theme_nit'),
+            'signuphint' => get_string('edit_signuphint', 'theme_nit'),
             'publish' => get_string('edit_publish', 'theme_nit'),
             'unpublished' => get_string('edit_unpublished', 'theme_nit'),
             'nochanges' => get_string('edit_nochanges', 'theme_nit'),

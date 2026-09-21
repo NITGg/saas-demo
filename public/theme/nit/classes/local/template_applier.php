@@ -130,6 +130,14 @@ class template_applier {
             if (!$target && !is_readable(homepage_templates::dir($tpl) . '/' . $section['file'])) {
                 continue;
             }
+            // A section whose feature the licence lacks does not exist for this
+            // academy: not listed, not addable (the front page hides it too).
+            if (!home_picks::licensed($section['key'])) {
+                if ($target) {
+                    $claimed[$target->id] = true;
+                }
+                continue;
+            }
             $row = ['key' => $section['key'], 'region' => $section['region'], 'blockid' => 0,
                 'present' => false, 'visible' => true, 'weight' => (int) $section['weight'],
                 'licensed' => home_picks::licensed($section['key'])];

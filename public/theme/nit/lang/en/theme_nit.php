@@ -300,3 +300,6 @@ $string['edit_selected'] = 'selected';
 $string['edit_pickatleast'] = 'pick at least';
 $string['edit_max'] = 'max';
 $string['edit_structurewarn'] = 'This changes the page structure now and discards your unpublished edits. Continue?';
+$string['edit_loginpage'] = 'Login page';
+$string['edit_signuppage'] = 'Signup page';
+$string['edit_signuphint'] = 'Leave empty to reuse the login texts.';

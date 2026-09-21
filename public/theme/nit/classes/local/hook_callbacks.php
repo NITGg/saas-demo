@@ -229,7 +229,7 @@ class hook_callbacks {
         $safe = str_replace(["\\", "'", "\r", "\n", '"'], ['\\5c ', '\\27 ', '', '', ''], $url);
         // Paint the LEFT panel only (the branded side of the two-column login) —
         // never the whole page, or the image bleeds behind the form.
-        $css = '.login-layout-left{'
+        $css = '.login-layout-left,.nit-auth-side .art{'
             . "background-image:linear-gradient(rgba(0,0,0,.45),rgba(0,0,0,.6)),url('" . $safe . "')!important;"
             . 'background-size:cover!important;background-position:center center!important;'
             . 'background-repeat:no-repeat!important;}';

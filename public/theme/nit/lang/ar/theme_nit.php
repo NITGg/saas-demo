@@ -255,3 +255,6 @@ $string['edit_selected'] = 'محدد';
 $string['edit_pickatleast'] = 'اختر على الأقل';
 $string['edit_max'] = 'الحد الأقصى';
 $string['edit_structurewarn'] = 'سيغيّر هذا بنية الصفحة الآن ويتجاهل تعديلاتك غير المنشورة. متابعة؟';
+$string['edit_loginpage'] = 'صفحة الدخول';
+$string['edit_signuppage'] = 'صفحة التسجيل';
+$string['edit_signuphint'] = 'اتركه فارغًا لاستخدام نصوص صفحة الدخول.';

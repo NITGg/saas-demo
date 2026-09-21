@@ -169,7 +169,7 @@
             "#nit-side-panel .nit-side-secrow .n{flex:1;text-align:start;background:none;border:0;padding:6px 4px;cursor:pointer;" +
             "font:600 14px 'Manrope',system-ui;color:inherit}" +
             ".nit-side-group{margin:18px 0 6px;padding-top:14px;border-top:1px solid #ECECE8}" +
-            ".nit-publishbar{position:sticky;top:-18px;z-index:2;background:#fff;border-bottom:1px solid #ECECE8;padding:12px 16px 10px;margin:-18px -16px 12px}" +
+            ".nit-publishbar{background:#F7F7F5;border:1px solid #ECECE8;border-radius:12px;padding:12px 14px 12px;margin:0 0 14px}" +
             ".nit-publishbar .nit-side-actions{margin-top:6px}" +
             ".nit-side-order{display:flex;flex-direction:column;gap:4px}" +
             ".nit-side-orow{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:8px;font-size:13px}" +
@@ -183,6 +183,7 @@
             ".nit-side-check input{margin-top:3px;flex:none}" +
             ".nit-side-mini{display:flex;gap:6px;margin-bottom:6px}" +
             ".nit-side-mini button{font:600 11px system-ui;padding:3px 9px;border-radius:999px;border:1px solid #DCDCD7;background:#fff;cursor:pointer}" +
+            ".nit-side-mini button.on{background:#16191D;color:#fff;border-color:#16191D}" +
             ".nit-side-card{position:relative;display:flex;flex-direction:column;gap:6px;padding:10px 34px 10px 10px;border:1px solid #ECECE8;border-radius:10px;margin-bottom:8px;background:#FAFAF8}" +
             ".nit-side-x{position:absolute;top:6px;inset-inline-end:6px;width:24px;height:24px;border-radius:50%;border:1px solid #DCDCD7;background:#fff;cursor:pointer;font-size:14px;line-height:1}" +
             ".nit-side-preview{border:1px solid #ECECE8;border-radius:10px;overflow:hidden;background:#fff;margin-bottom:12px;aspect-ratio:16/10}" +
@@ -935,17 +936,6 @@
         favBtn.addEventListener('click', function () { uploadImage('favicon', {}, favBtn); });
         body.appendChild(favBtn);
 
-        // Login-page background
-        body.appendChild(divider());
-        body.appendChild(label(t('loginbg', 'Login page background'), 4));
-        var hint = document.createElement('p');
-        hint.textContent = t('loginbghint', '');
-        hint.style.cssText = 'margin:0 0 8px;font-size:12px;color:#666';
-        body.appendChild(hint);
-        var lbBtn = pillBtn('🖼 ' + t('replaceimage', 'Replace image'));
-        lbBtn.addEventListener('click', function () { uploadImage('login_bg', {}, lbBtn); });
-        body.appendChild(lbBtn);
-
         return body;
     }
 
@@ -1212,12 +1202,12 @@
     function splitAccent(html) {
         var s = String(html || '');
         var m = s.match(/^([\s\S]*?)<span[^>]*>([\s\S]*?)<\/span>\s*$/i);
-        if (m) { return { main: plainOf(m[1]).replace(/\n$/, ''), accent: plainOf(m[2]) }; }
+        if (m) { return { main: plainOf(m[1]).replace(/[\s\n]+$/, ''), accent: plainOf(m[2]) }; }
         return { main: plainOf(s), accent: '' };
     }
     function joinAccent(main, accent) {
         var out = escapeHtml(main).replace(/\n/g, '<br>');
-        if (accent.trim()) { out += (main.trim() ? '<br>' : '') + ACCENT_SPAN + escapeHtml(accent.trim()) + '</span>'; }
+        if (accent.trim()) { out += (main.trim() ? ' ' : '') + ACCENT_SPAN + escapeHtml(accent.trim()) + '</span>'; }
         return out;
     }
     function storedText(key, el) {
@@ -1307,6 +1297,8 @@
             steps.push(function () {
                 var fd = new FormData(); fd.append('action', 'auth');
                 fd.append('welcome', JSON.stringify(draft.auth.welcome)); fd.append('tagline', JSON.stringify(draft.auth.tagline));
+                fd.append('signup_welcome', JSON.stringify(draft.auth.signup_welcome || { en: '', ar: '' }));
+                fd.append('signup_tagline', JSON.stringify(draft.auth.signup_tagline || { en: '', ar: '' }));
                 if (draft.auth.image) { fd.append('image', draft.auth.image); }
                 return post(fd);
             });
@@ -1709,17 +1701,7 @@
             } else {
                 window.NIT_FOOTER_LINKS = order.length ? order.map(function (k) { return { label: isAr ? byKey[k].label.ar : byKey[k].label.en, url: byKey[k].url }; }) : null;
                 var footer = document.querySelector('[data-nit-section="footer"]');
-                if (footer && order.length) {
-                    var cols = [].slice.call(footer.querySelectorAll('div')).filter(function (d) {
-                        var links = [].slice.call(d.children).filter(function (c) { return c.tagName === 'A'; });
-                        return links.length >= 1 && links.length === d.children.length && !d.closest('[data-nit-edit]') && !d.querySelector('a[href*="/login/"]');
-                    });
-                    if (cols.length) {
-                        var first = cols[0], protoA = first.querySelector('a');
-                        first.innerHTML = '';
-                        window.NIT_FOOTER_LINKS.forEach(function (p) { var a = protoA.cloneNode(false); a.href = p.url; a.textContent = p.label; first.appendChild(a); });
-                    }
-                }
+                if (footer && order.length && window.nitFillFooterLinks) { window.nitFillFooterLinks(footer, window.NIT_FOOTER_LINKS); }
             }
             touch();
         };
@@ -1734,14 +1716,35 @@
     function authEditor() {
         var body = document.createElement('div');
         var a = draft.auth || CFG.auth || {};
+        var base = (M.cfg && M.cfg.wwwroot ? M.cfg.wwwroot : '') + '/theme/nit/authpreview.php';
+        var mode = 'login';
+        var tabs = document.createElement('div'); tabs.className = 'nit-side-mini';
+        var tabL = document.createElement('button'); tabL.type = 'button'; tabL.textContent = t('loginpage', 'Login page'); tabL.className = 'on';
+        var tabS = document.createElement('button'); tabS.type = 'button'; tabS.textContent = t('signuppage', 'Signup page');
+        tabs.appendChild(tabL); tabs.appendChild(tabS);
+        body.appendChild(tabs);
         var frameWrap = document.createElement('div'); frameWrap.className = 'nit-side-preview';
         var frame = document.createElement('iframe');
-        frame.src = (M.cfg && M.cfg.wwwroot ? M.cfg.wwwroot : '') + '/theme/nit/authpreview.php';
+        frame.src = base;
         frame.title = t('loginpreview', 'Login preview');
         frameWrap.appendChild(frame);
         body.appendChild(frameWrap);
         var inDoc = function (fn) { try { var d = frame.contentDocument; if (d && d.body) { fn(d); } } catch (e) { /* ignore */ } };
-        var state = { welcome: { en: (a.welcome || {}).en || '', ar: (a.welcome || {}).ar || '' }, tagline: { en: (a.tagline || {}).en || '', ar: (a.tagline || {}).ar || '' }, image: (draft.auth && draft.auth.image) || null };
+        var pick = function (o, k) { return { en: (o[k] || {}).en || '', ar: (o[k] || {}).ar || '' }; };
+        var state = { welcome: pick(a, 'welcome'), tagline: pick(a, 'tagline'),
+            signup_welcome: pick(a, 'signup_welcome'), signup_tagline: pick(a, 'signup_tagline'),
+            image: (draft.auth && draft.auth.image) || null };
+        var groups = { login: document.createElement('div'), signup: document.createElement('div') };
+        var setMode = function (m) {
+            mode = m;
+            tabL.className = m === 'login' ? 'on' : ''; tabS.className = m === 'signup' ? 'on' : '';
+            groups.login.style.display = m === 'login' ? '' : 'none';
+            groups.signup.style.display = m === 'signup' ? '' : 'none';
+            frame.src = base + (m === 'signup' ? '?signup=1' : '');
+        };
+        tabL.addEventListener('click', function () { setMode('login'); });
+        tabS.addEventListener('click', function () { setMode('signup'); });
+        var current = body;
         function field(label, key, multiline, sel) {
             var row = fieldRow(label);
             var en = mkInput(multiline, state[key].en, CFG.bilingual ? 'English' : ''); row.appendChild(en);
@@ -1755,11 +1758,18 @@
                 touch();
             };
             en.addEventListener('input', live); if (ar) { ar.addEventListener('input', live); }
-            body.appendChild(row);
+            current.appendChild(row);
         }
+        current = groups.login;
         field(t('authwelcome', 'Welcome title'), 'welcome', false, '.nit-auth-side .quote h2');
         field(t('authtagline', 'Tagline'), 'tagline', true, '.nit-auth-side .quote p');
-        var imgrow = fieldRow(t('loginbg', 'Login background image'));
+        current = groups.signup;
+        var sh = document.createElement('p'); sh.className = 'nit-side-hint'; sh.textContent = t('signuphint', 'Leave empty to reuse the login texts.'); groups.signup.appendChild(sh);
+        field(t('authwelcome', 'Welcome title'), 'signup_welcome', false, '.nit-auth-side .quote h2');
+        field(t('authtagline', 'Tagline'), 'signup_tagline', true, '.nit-auth-side .quote p');
+        body.appendChild(groups.login); body.appendChild(groups.signup);
+        groups.signup.style.display = 'none';
+        var imgrow = fieldRow(t('loginbg', 'Login / signup background image'));
         var file = document.createElement('input'); file.type = 'file'; file.accept = 'image/*'; file.className = 'nit-side-file';
         file.addEventListener('change', function () {
             if (!(file.files && file.files[0])) { return; }
@@ -1804,6 +1814,7 @@
             });
         }
         showInPanel(secLabel(marker) + ' ' + t('settings', 'settings'), contentEditorFor(marker, root));
+        if (sidePanel) { sidePanel.scrollTop = 0; }
     }
 
     function buildSidePanel() {
@@ -1820,6 +1831,14 @@
         var missing = state.filter(function (s) { return !s.present && s.licensed !== false; });
         sidePanel = document.createElement('aside');
         sidePanel.id = 'nit-side-panel';
+        var dock = function () {
+            var nb = document.querySelector('.nit-navbar, .navbar.fixed-top, nav.navbar');
+            var top = nb ? Math.max(0, Math.round(nb.getBoundingClientRect().bottom)) : 64;
+            sidePanel.style.top = top + 'px';
+            sidePanel.style.height = 'calc(100vh - ' + top + 'px)';
+        };
+        dock();
+        window.addEventListener('resize', dock);
 
         sidePanel.appendChild(buildPublishBar());
 
