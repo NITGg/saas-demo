@@ -104,3 +104,10 @@ $THEME->layouts['mydashboard'] = [
     'file' => 'mydashboard.php',
     'regions' => [],
 ];
+
+// Navbar pages picked in the homepage editor REPLACE Moodle's built-in primary
+// items (Home / Dashboard / My courses) — otherwise both sets render and the
+// bar overflows. No pick → Moodle's defaults stay. (core reads this array in
+// core\navigation\views\primary::initialise.)
+$THEME->removedprimarynavitems = (string) get_config('theme_nit', 'nav_pages') !== ''
+    && (string) get_config('theme_nit', 'nav_pages') !== '[]' ? ['home', 'myhome', 'courses'] : [];

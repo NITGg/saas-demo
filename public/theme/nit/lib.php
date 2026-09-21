@@ -1706,10 +1706,9 @@ function theme_nit_save_nav_pages(array $keys): void {
     }
     set_config('nav_pages', json_encode(array_values(array_unique($picked))), 'theme_nit');
     set_config('custommenuitems', implode("\n", $lines));
-    // With picked pages the navbar shows THOSE (Moodle's own Home / Dashboard /
-    // My courses items are hidden through core's own setting, so the bar never
-    // overflows); no pick → Moodle's default primary navigation returns.
-    set_config('hiddenprimarynavigationitems', $picked ? 'home,myhome,courses' : '');
+    // With picked pages the navbar shows THOSE only — theme config.php sets
+    // $THEME->removedprimarynavitems from nav_pages (core's supported switch).
+    theme_reset_all_caches();
     purge_all_caches();
 }
 

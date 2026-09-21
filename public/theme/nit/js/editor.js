@@ -1647,8 +1647,9 @@
         var hd = document.createElement('div'); hd.className = 'nit-side-subhd'; hd.textContent = title;
         wrap.appendChild(hd);
         var pages = (CFG.pages || []).map(function (p) { return { key: p.key, label: isAr ? p.label.ar : p.label.en }; });
-        var order = (draft[which] || (which === 'nav' ? CFG.navPages : CFG.footerLinks) || []).slice()
-            .filter(function (k) { return pages.some(function (p) { return p.key === k; }); });
+        var saved = draft[which] || (which === 'nav' ? CFG.navPages : CFG.footerLinks) || [];
+        if (which === 'nav' && !saved.length) { saved = ['home', 'dashboard']; } // what Moodle shows by default
+        var order = saved.slice().filter(function (k) { return pages.some(function (p) { return p.key === k; }); });
         var list = document.createElement('div'); list.className = 'nit-side-order';
         var count = document.createElement('p'); count.className = 'nit-side-hint';
         var render = function () {

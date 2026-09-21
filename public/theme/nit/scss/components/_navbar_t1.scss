@@ -216,33 +216,32 @@
         }
     }
 
-    // Edit-mode switch — an obvious pill: label + brand-coloured switch.
+    // Edit-mode switch — only the (brand-coloured) switch shows; the label stays
+    // for screen readers / the tooltip.
     .nit-navbar-editswitch {
         .editmode-switch-form,
         .form-check {
             display: inline-flex;
             align-items: center;
-            gap: 7px;
-            padding: 3px 8px 3px 11px;
-            border: 1px solid var(--t-border, #EDEDE9);
-            border-radius: 999px;
-            background: var(--t-bg, #FFFFFF);
+            padding: 0;
+            border: 0;
+            background: none;
             margin: 0;
             min-height: 0;
         }
 
         .form-check-label {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--t-ink, #16191D);
-            order: -1;
-            margin: 0;
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+            clip: rect(0 0 0 0);
             white-space: nowrap;
         }
 
         .form-check-input {
-            width: 30px;
-            height: 17px;
+            width: 36px;
+            height: 20px;
             float: none;
             margin-inline-start: 0;
             margin: 0;
@@ -262,10 +261,9 @@
         }
     }
 
-    // Editing: colour the whole pill so the state is unmistakable.
-    body.editing & .nit-navbar-editswitch .form-check {
-        border-color: var(--nit-brand-primary, #0E7C66);
-        background: color-mix(in srgb, var(--nit-brand-primary, #0E7C66) 8%, var(--t-bg, #FFFFFF));
+    .nit-navbar-editswitch .form-check-input:not(:checked) {
+        background-color: var(--t-bg, #FFFFFF);
+        border-color: var(--t-border2, #DCDCD7);
     }
 
     // Avatar pill (user menu trigger).
