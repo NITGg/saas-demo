@@ -193,6 +193,26 @@ class hook_callbacks {
     ): void {
         global $PAGE, $CFG;
         $pagetype = $PAGE->pagetype ?? '';
+
+        // A lesson rendered inside the course player frame: every same-origin link
+        // and form inside it must stay chrome-free (carry nitplayer=1), and a link
+        // back to the course must leave the frame (the player breaks out itself).
+        if (optional_param('nitplayer', 0, PARAM_BOOL)) {
+            $hook->add_html('<style>body.nit-player-embed{background:var(--t-bg,#fff)!important}'
+                . 'body.nit-player-embed #page{padding:20px clamp(16px,3vw,36px) 32px;max-width:1100px;margin:0 auto}</style>'
+                . '<script>document.addEventListener("DOMContentLoaded",function(){'
+                . 'var o=window.location.origin;'
+                . 'document.querySelectorAll("a[href]").forEach(function(a){try{var u=new URL(a.href,o);'
+                . 'if(u.origin!==o||u.hash&&u.pathname===window.location.pathname&&u.search===window.location.search){return;}'
+                . 'if(/\/course\/view\.php$/.test(u.pathname)||/\/local\/academy\/player\.php$/.test(u.pathname)){a.target="_top";return;}'
+                . 'if(!u.searchParams.has("nitplayer")){u.searchParams.set("nitplayer","1");a.href=u.toString();}}catch(e){}});'
+                . 'document.querySelectorAll("form").forEach(function(f){try{var u=new URL(f.getAttribute("action")||window.location.href,o);'
+                . 'if(u.origin!==o){return;}if((f.method||"get").toLowerCase()==="get"){if(!f.querySelector("input[name=nitplayer]")){var i=document.createElement("input");i.type="hidden";i.name="nitplayer";i.value="1";f.appendChild(i);}}'
+                . 'else{if(!u.searchParams.has("nitplayer")){u.searchParams.set("nitplayer","1");f.setAttribute("action",u.toString());}}}catch(e){}});'
+                . '});</script>');
+            return;
+        }
+
         // login-index, login-signup, login-forgot_password, … all start with "login".
         if (strpos($pagetype, 'login') !== 0) {
             return;

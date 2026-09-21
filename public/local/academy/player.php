@@ -44,6 +44,9 @@ if ($cm->url === null) {
     redirect(new moodle_url('/course/view.php', ['id' => $course->id]));
 }
 
+// Lock-order: a lesson opens only after the earlier tracked lessons are complete.
+\local_academy\player::require_unlocked($course, (int) $cm->id);
+
 $PAGE->set_url(new moodle_url('/local/academy/player.php', ['cmid' => $cm->id]));
 $PAGE->set_context($context);
 $PAGE->set_title(format_string($cm->name));

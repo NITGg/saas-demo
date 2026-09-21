@@ -14,6 +14,9 @@ $course  = get_course($cm->course);
 $moduleinstance = $DB->get_record('vdocipher', ['id' => $cm->instance], '*', MUST_EXIST);
 
 require_login($course, true, $cm);
+if (class_exists('\local_academy\player')) {
+    \local_academy\player::require_unlocked($course, (int) $cm->id);
+}
 
 $context = context_module::instance($cm->id);
 require_capability('mod/vdocipher:view', $context);

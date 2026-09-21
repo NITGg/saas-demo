@@ -43,3 +43,16 @@ It is valid for {$a->mins} minutes. If you did not request this, you can ignore 
 
 // Quiz manager.
 $string['notenrolled'] = 'You are not enrolled in this course';
+
+// Course player.
+$string['player_heading'] = 'Course player';
+$string['player_heading_desc'] = 'How learners move through a course in the T1 player (every lesson type opens in the same frame).';
+$string['player_markcomplete'] = 'Show "Mark as complete"';
+$string['player_markcomplete_desc'] = 'For lessons with manual completion, show a Mark as complete button in the player header (and move to the next lesson).';
+$string['player_lockorder'] = 'Lock lessons in order';
+$string['player_lockorder_desc'] = 'A lesson opens only after every earlier lesson with completion tracking is complete. Locked lessons show a padlock in the curriculum.';
+$string['player_markcomplete_btn'] = 'Mark as complete';
+$string['player_completed'] = 'Completed';
+$string['player_locked'] = 'Complete the previous lessons first';
+$string['player_lesson'] = 'Lesson';
+$string['player_of'] = 'of';
