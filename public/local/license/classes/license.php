@@ -42,7 +42,7 @@ class license {
             'durationdays' => 365,
             'maxcourses'   => 10,
             'maxteachers'  => -1,
-            'videosource'  => 'vimeo',
+            'videosource'  => 'vdocipher', // Standard and above carry the DRM VdoCipher host.
             'features'     => [],
             'limits'       => ['quiz' => -1, 'video' => -1, 'pdf' => 10, 'default' => -1],
         ],
