@@ -15,8 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Parent accounts — link a parent to their child(ren) by phone number and let
- * them follow marks, quiz activity and events. See docs/parent-accounts.md.
+ * Hook callbacks for local_parent.
  *
  * @package    local_parent
  * @copyright  2026 NIT
@@ -25,9 +24,10 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_parent';
-$plugin->version   = 2026092801;
-$plugin->requires  = 2024100700; // Moodle 4.5+
-$plugin->supported = [405, 502];
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.1.0-foundation';
+$callbacks = [
+    [
+        // "My children" link in the primary navigation, for parents only.
+        'hook'     => \core\hook\navigation\primary_extend::class,
+        'callback' => \local_parent\hook_callbacks::class . '::primary_extend',
+    ],
+];

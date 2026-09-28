@@ -78,6 +78,10 @@
             {{#instructions}}<span class="text-muted me-1">{{{instructions}}}</span>{{/instructions}}
             <a href="{{signupurl}}">{{#str}}loginstartsignup{{/str}}</a>
         </div>
+        {{! Parents sign up through the phone gate, not the student form. }}
+        <div class="text-center small" style="margin-top:8px;">
+            <a href="{{config.wwwroot}}/local/parent/signup.php">{{#str}}parentsignup, local_parent{{/str}}</a>
+        </div>
     {{/cansignup}}
 
     {{#canloginasguest}}

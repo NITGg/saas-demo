@@ -64,5 +64,6 @@ $string['nomarks'] = 'No marks yet.';
 
 // Linking / flow messages.
 $string['err_noparentnumber'] = 'No student has listed this number. Ask your child to add it to their profile first.';
+$string['mychildren'] = 'My children';
 $string['linkedchildren'] = 'Linked children';
 $string['nochildren'] = 'No children are linked to your account yet.';

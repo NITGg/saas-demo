@@ -64,5 +64,6 @@ $string['nomarks'] = 'لسه مفيش درجات.';
 
 // Linking / flow messages.
 $string['err_noparentnumber'] = 'مفيش طالب سجّل الرقم ده. اطلب من ابنك يضيفه في ملفه الأول.';
+$string['mychildren'] = 'أولادي';
 $string['linkedchildren'] = 'الأبناء المرتبطون';
 $string['nochildren'] = 'لسه مفيش أبناء مرتبطين بحسابك.';
