@@ -51,7 +51,7 @@ class license {
             'durationdays' => 365,
             'maxcourses'   => -1,
             'maxteachers'  => -1,
-            'videosource'  => 'vimeo',
+            'videosource'  => 'vdocipher', // DRM VdoCipher host — the top tier carries the drm feature.
             'features'     => ['drm', 'coupons', 'offers', 'subscriptions', 'packages', 'jitsi'],
             'limits'       => ['quiz' => -1, 'video' => -1, 'pdf' => -1, 'default' => -1],
         ],
