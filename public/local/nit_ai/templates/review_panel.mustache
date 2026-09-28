@@ -1,0 +1,97 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_nit_ai/review_panel
+
+    The teacher's transcript review panel. Shown above the player to anyone who
+    can manage the activity; students never see it.
+
+    Context variables required for this template:
+    * title - panel heading
+    * empty - true when no transcript has been uploaded yet
+    * notranscript - message shown when empty
+
+    Example context (json):
+    {
+        "title": "AI assistant - transcript review",
+        "empty": true,
+        "notranscript": "No transcript uploaded yet."
+    }
+}}
+<div class="nitai-review card mb-3" data-region="nitai-review">
+    <div class="card-body">
+        <h3 class="h6 mb-2">{{title}}</h3>
+
+        {{#empty}}
+            <p class="text-muted mb-0">{{notranscript}}</p>
+        {{/empty}}
+
+        {{^empty}}
+            <p class="nitai-review-status {{#ready}}text-success{{/ready}}{{^ready}}text-muted{{/ready}} mb-3">
+                {{statustext}}
+            </p>
+
+            <dl class="nitai-facts mb-0">
+                {{#facts}}
+                    <div class="nitai-fact">
+                        <dt>{{label}}</dt>
+                        <dd class="{{#warn}}text-warning{{/warn}}">{{value}}</dd>
+                    </div>
+                {{/facts}}
+            </dl>
+
+            {{! Mustache has no .length on a PHP list, so the flag is passed in. }}
+            {{#hasproblems}}
+                <div class="alert alert-warning mt-3 mb-0" role="status">
+                    <strong class="d-block mb-1">{{problemstitle}}</strong>
+                    <ul class="mb-0 ps-3">
+                        {{#problems}}<li>{{.}}</li>{{/problems}}
+                    </ul>
+                </div>
+            {{/hasproblems}}
+
+            {{#canapprove}}
+                <div class="mt-3">
+                    <a href="{{approveurl}}" class="btn btn-primary btn-sm">{{approvelabel}}</a>
+                    <span class="text-muted small ms-2">{{intro}}</span>
+                </div>
+            {{/canapprove}}
+
+            {{#showquizgen}}
+                <div class="nitai-quizgen-offer mt-3 pt-3 border-top">
+                    <h4 class="h6 mb-2">{{quizgentitle}}</h4>
+
+                    {{#quizgenready}}
+                        <a href="{{quizgenurl}}" class="btn btn-secondary btn-sm">{{quizgenlabel}}</a>
+                    {{/quizgenready}}
+                    {{^quizgenready}}
+                        <p class="text-muted small mb-0">{{quizgenblocked}}</p>
+                    {{/quizgenready}}
+
+                    {{#haslastquiz}}
+                        {{#lastquiz}}
+                            <p class="small mt-2 mb-0">
+                                {{lastquizlabel}} <a href="{{url}}">{{name}}</a>
+                                {{#stale}}<span class="text-warning d-block">{{lastquizstale}}</span>{{/stale}}
+                            </p>
+                        {{/lastquiz}}
+                    {{/haslastquiz}}
+                </div>
+            {{/showquizgen}}
+        {{/empty}}
+    </div>
+</div>

@@ -57,12 +57,32 @@ class mod_vdocipher_mod_form extends moodleform_mod {
         $mform->setType('videoid', PARAM_ALPHANUMEXT);
         $mform->addHelpButton('videoid', 'videoid', 'vdocipher');
 
+        // ── AI assistant ─────────────────────────────────────────────────────
+        // Owned by local_nit_ai: the transcript is keyed on the course module,
+        // stamped with this video's id/duration when the activity is saved.
+        if (class_exists('\local_nit_ai\ui')) {
+            \local_nit_ai\ui::add_form_elements($mform, $this->_cm);
+        }
+
         // ── Standard elements ────────────────────────────────────────────────
         $this->standard_coursemodule_elements();
         $this->add_action_buttons();
 
         // Wire up the uploader (vanilla JS; no AMD build step needed).
         $mform->addElement('html', $this->uploader_script());
+    }
+
+    /**
+     * Load the stored AI transcript back into the form when editing.
+     */
+    public function data_preprocessing(&$defaultvalues) {
+        parent::data_preprocessing($defaultvalues);
+        if (!class_exists('\local_nit_ai\ui')) {
+            return;
+        }
+        $cmid = (int) ($this->_cm->id ?? 0);
+        $context = $cmid ? context_module::instance($cmid) : null;
+        \local_nit_ai\ui::prepare_form_defaults($defaultvalues, $context, $cmid);
     }
 
     /**

@@ -1,0 +1,41 @@
+<?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Plugin version and metadata for the NIT video assistant AI placement.
+ *
+ * A new subplugin directory, not a change to anything Moodle ships: it exists so
+ * the assistant appears on Site administration > AI > AI placements with the
+ * same switch as every other AI feature, instead of being a plugin only we know
+ * how to turn off.
+ *
+ * @package    aiplacement_nit_videoassist
+ * @copyright  2026 NIT
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+defined('MOODLE_INTERNAL') || die();
+
+$plugin->component = 'aiplacement_nit_videoassist';
+$plugin->version   = 2026090700;        // YYYYMMDDXX.
+$plugin->requires  = 2024100700;        // Moodle 4.5 LTS baseline.
+$plugin->supported = [405, 502];        // Supported branch range: 4.5 LTS .. 5.2.
+$plugin->maturity  = MATURITY_ALPHA;
+$plugin->release   = '0.1.0';
+
+$plugin->dependencies = [
+    'local_nit_ai' => ANY_VERSION, // Holds the transcripts, the chat and every rule.
+];

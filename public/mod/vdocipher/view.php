@@ -65,6 +65,16 @@ $iframe = '<iframe src="' . s($src) . '" title="' . s(format_string($moduleinsta
     . ' style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"'
     . ' allow="encrypted-media" allowfullscreen></iframe>';
 
+// AI assistant (local_nit_ai). The teacher's transcript review shows for
+// managers only; the student chat drawer is empty unless a transcript is
+// approved and in date. The drawer must sit next to the vdocipher iframe in the
+// DOM so its player API can attach — it rides inside the player markup below.
+$hasai = class_exists('\local_nit_ai\ui');
+if ($hasai) {
+    echo \local_nit_ai\ui::review_panel($cm, $context);
+}
+$chat = $hasai ? \local_nit_ai\ui::chat_drawer($cm, $context) : '';
+
 // The shared T1 player frame (local_academy\player); bare embed on any error.
 $rendered = false;
 try {
@@ -72,7 +82,7 @@ try {
     $overview = !empty($moduleinstance->intro)
         ? format_module_intro('vdocipher', $moduleinstance, $cm->id) : '';
     echo \local_academy\player::render($cminfo, $course,
-        '<div class="nit-player__video">' . $iframe . '</div>', $overview, true);
+        '<div class="nit-player__video">' . $iframe . '</div>' . $chat, $overview, true);
     $rendered = true;
 } catch (\Throwable $ex) {
     debugging('mod_vdocipher T1 player failed, using bare embed: ' . $ex->getMessage(), DEBUG_DEVELOPER);
@@ -81,7 +91,12 @@ if (!$rendered) {
     if (!empty($moduleinstance->intro)) {
         echo $OUTPUT->box(format_module_intro('vdocipher', $moduleinstance, $cm->id), 'generalbox', 'intro');
     }
-    echo '<div style="position:relative;width:100%;max-width:960px;margin:1rem auto;aspect-ratio:16/9;background:#000;">'
-        . $iframe . '</div>';
+    if ($chat !== '') {
+        echo html_writer::div('<div style="position:relative;width:100%;aspect-ratio:16/9;background:#000;">'
+            . $iframe . '</div>' . $chat, 'nitai-video-layout');
+    } else {
+        echo '<div style="position:relative;width:100%;max-width:960px;margin:1rem auto;aspect-ratio:16/9;background:#000;">'
+            . $iframe . '</div>';
+    }
 }
 echo $OUTPUT->footer();

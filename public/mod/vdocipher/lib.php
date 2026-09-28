@@ -53,6 +53,7 @@ function vdocipher_add_instance($data, $mform = null) {
     $id = $DB->insert_record('vdocipher', $data);
 
     vdocipher_sync_mapping((int) $data->coursemodule, (int) $data->course, $data->videoid, $data->name);
+    vdocipher_sync_assistant((int) $data->coursemodule, $id, $data);
     return $id;
 }
 
@@ -73,6 +74,7 @@ function vdocipher_update_instance($data, $mform = null) {
     $DB->update_record('vdocipher', $data);
 
     vdocipher_sync_mapping((int) $data->coursemodule, (int) $data->course, $data->videoid, $data->name);
+    vdocipher_sync_assistant((int) $data->coursemodule, (int) $data->id, $data);
     return true;
 }
 
@@ -91,9 +93,12 @@ function vdocipher_delete_instance($id) {
         return false;
     }
 
-    // Remove the shared mapping row(s) for this activity's course module.
+    // Remove the shared mapping row(s) and the assistant's transcript.
     if ($cm = get_coursemodule_from_instance('vdocipher', $id, 0, false, IGNORE_MISSING)) {
         $DB->delete_records('local_vdocipher_videos', ['cmid' => $cm->id]);
+        if (class_exists('\local_nit_ai\api')) {
+            \local_nit_ai\api::delete((int) $cm->id);
+        }
     }
 
     // Best-effort: delete the video from VdoCipher so it doesn't orphan.
@@ -122,6 +127,31 @@ function vdocipher_delete_instance($id) {
  */
 function vdocipher_resolve_videoid($data): string {
     return trim($data->videoid ?? '');
+}
+
+/**
+ * Hand the AI assistant's form fields to local_nit_ai.
+ *
+ * Called after the mapping is written, so the transcript is stamped with the
+ * video id and duration this activity is actually pointing at right now.
+ *
+ * @param int $cmid
+ * @param int $instanceid
+ * @param stdClass $data submitted form data
+ */
+function vdocipher_sync_assistant(int $cmid, int $instanceid, $data): void {
+    if (!$cmid || !class_exists('\local_nit_ai\api')) {
+        return;
+    }
+
+    $cm = (object) ['id' => $cmid, 'modname' => 'vdocipher', 'instance' => $instanceid];
+
+    try {
+        \local_nit_ai\api::save_from_module($cm, $data);
+    } catch (\Throwable $e) {
+        // The assistant is an add-on: never let it block saving the activity.
+        debugging('mod_vdocipher: could not save AI assistant settings: ' . $e->getMessage(), DEBUG_DEVELOPER);
+    }
 }
 
 /**

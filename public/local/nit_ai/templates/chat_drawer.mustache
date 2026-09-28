@@ -1,0 +1,65 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_nit_ai/chat_drawer
+
+    The student's chat panel, rendered beside the video player.
+
+    Context variables required for this template:
+    * cmid - course module id, read by the JS
+    * adapter - name of the player adapter to drive, or empty for none
+    * title - panel heading
+    * intro - first line shown in the empty transcript
+    * placeholder - input placeholder
+    * send - submit button label
+    * disclaimer - footer note
+    * strthinking, strerror, strjump - strings the JS needs at runtime
+
+    Example context (json):
+    {
+        "cmid": 49,
+        "adapter": "vdocipher",
+        "title": "Ask about this lesson",
+        "intro": "Ask anything about this video.",
+        "placeholder": "Ask a question...",
+        "send": "Send",
+        "disclaimer": "AI generated. This conversation is not saved.",
+        "strthinking": "Thinking...",
+        "strerror": "The assistant could not answer right now.",
+        "strjump": "Jump to {time}"
+    }
+}}
+<section class="nitai-chat" data-region="nitai-chat" data-cmid="{{cmid}}" data-adapter="{{adapter}}"
+         data-str-thinking="{{strthinking}}" data-str-error="{{strerror}}" data-str-jump="{{strjump}}"
+         aria-label="{{title}}">
+    <header class="nitai-chat-head">
+        <h3 class="nitai-chat-title">{{title}}</h3>
+    </header>
+
+    <div class="nitai-chat-log" data-region="log" role="log" aria-live="polite">
+        <p class="nitai-chat-intro">{{intro}}</p>
+    </div>
+
+    <form class="nitai-chat-form" data-region="form">
+        <label class="sr-only visually-hidden" for="nitai-input-{{cmid}}">{{placeholder}}</label>
+        <textarea id="nitai-input-{{cmid}}" class="nitai-chat-input" data-region="input"
+                  rows="1" placeholder="{{placeholder}}" maxlength="1000"></textarea>
+        <button type="submit" class="btn btn-primary btn-sm nitai-chat-send" data-region="send">{{send}}</button>
+    </form>
+
+    <p class="nitai-chat-note">{{disclaimer}}</p>
+</section>

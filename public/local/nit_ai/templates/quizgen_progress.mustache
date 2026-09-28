@@ -1,0 +1,85 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_nit_ai/quizgen_progress
+
+    The generator working through a video, one slice at a time.
+
+    The numbers are here rather than behind a spinner because a teacher who can
+    see the coverage climbing can tell a slow provider from a stuck one.
+
+    Context variables required for this template:
+    * runid - the generation run being filled
+    * cmid - course module id of the video
+    * batches - how many slices the video was cut into
+    * maxgaps - how many gap-filling passes are allowed
+    * reviewurl - where to go once every slice is done
+    * cancelurl - back to the activity
+
+    Example context (json):
+    {
+        "runid": 12,
+        "cmid": 49,
+        "batches": 8,
+        "maxgaps": 3,
+        "reviewurl": "/local/nit_ai/quizgen.php?cmid=49&run=12&review=1",
+        "cancelurl": "/mod/vdocipher/view.php?id=49",
+        "working": "Writing questions from the transcript",
+        "workingnote": "Leave this page open.",
+        "strslice": "Part {a} of {b}",
+        "strgaps": "Going back for what was missed",
+        "strquestions": "Questions so far",
+        "strcoverage": "Video covered",
+        "strcancel": "Cancel"
+    }
+}}
+<div class="nitai-quizgen-progress card mb-3"
+     data-region="nitai-quizgen"
+     data-cmid="{{cmid}}"
+     data-runid="{{runid}}"
+     data-batches="{{batches}}"
+     data-maxgaps="{{maxgaps}}"
+     data-reviewurl="{{reviewurl}}"
+     data-strslice="{{strslice}}"
+     data-strgaps="{{strgaps}}">
+    <div class="card-body">
+        <h3 class="h6 mb-1">{{working}}</h3>
+        <p class="text-muted small mb-3">{{workingnote}}</p>
+
+        <div class="progress mb-3" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <div class="progress-bar" data-region="bar" style="width: 0%"></div>
+        </div>
+
+        <p class="mb-3" data-region="step">&nbsp;</p>
+
+        <dl class="nitai-facts mb-3">
+            <div class="nitai-fact">
+                <dt>{{strquestions}}</dt>
+                <dd data-region="questions">0</dd>
+            </div>
+            <div class="nitai-fact">
+                <dt>{{strcoverage}}</dt>
+                <dd data-region="percent">0%</dd>
+            </div>
+        </dl>
+
+        <div class="alert alert-warning d-none" role="status" data-region="warning"></div>
+        <div class="alert alert-danger d-none" role="alert" data-region="error"></div>
+
+        <a href="{{cancelurl}}" class="btn btn-secondary btn-sm">{{strcancel}}</a>
+    </div>
+</div>
