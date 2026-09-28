@@ -310,4 +310,30 @@ class hook_callbacks {
 
         $hook->add_html($html);
     }
+
+    /**
+     * Carry the visitor's light/dark choice onto the <html> element.
+     *
+     * The switch owns no palette: it selects one of the Brand-Colors groups
+     * (mapped mode → group on the gallery "Change style" tab), so re-skinning the
+     * site is a matter of putting that group's switch class where every rule sees
+     * it. <html> is that place — scss/foundation/_root.scss aliases the legacy
+     * --nit-* properties on :root, so the class must sit on <html> or the page
+     * recolours only half-way. Rendered server-side so the first paint is already
+     * in the chosen mode.
+     *
+     * @param \core\hook\output\before_html_attributes $hook
+     */
+    public static function before_html_attributes(\core\hook\output\before_html_attributes $hook): void {
+        global $CFG;
+
+        require_once($CFG->dirroot . '/theme/nit/lib.php');
+
+        $classes = theme_nit_mode_classes();
+        if ($classes === '') {
+            return;
+        }
+        $existing = trim((string) ($hook->get_attributes()['class'] ?? ''));
+        $hook->add_attribute('class', trim($existing . ' ' . $classes));
+    }
 }

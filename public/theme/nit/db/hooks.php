@@ -41,4 +41,11 @@ $callbacks = [
         'hook'     => \core\hook\output\before_standard_top_of_body_html_generation::class,
         'callback' => \theme_nit\local\hook_callbacks::class . '::before_standard_top_of_body_html_generation',
     ],
+    [
+        // Carry the visitor's light/dark choice onto <html> as the chosen Brand
+        // Colors group's switch class, so "Display mode" (gallery → Change style)
+        // actually recolours the site.
+        'hook'     => \core\hook\output\before_html_attributes::class,
+        'callback' => \theme_nit\local\hook_callbacks::class . '::before_html_attributes',
+    ],
 ];

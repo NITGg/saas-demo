@@ -43,6 +43,25 @@ $string['parentphonefield_desc'] = 'The shortname of the student custom profile 
 // Student sign-up field.
 $string['parentphonelabel'] = 'Parent / guardian phone';
 
+// Parent phone-gate page.
+$string['parentsignup'] = 'Create a parent account';
+$string['parentsignupintro'] = 'Enter the phone number your child registered as their parent\'s number. We only let you continue if a student has already listed it.';
+$string['yourphone'] = 'Your phone number';
+$string['continuetosignup'] = 'Continue';
+
+// Parent dashboard.
+$string['dashboard'] = 'Parent dashboard';
+$string['marks'] = 'Marks';
+$string['quizactivity'] = 'Quiz activity';
+$string['col_course'] = 'Course';
+$string['col_grade'] = 'Grade';
+$string['col_quiz'] = 'Quiz';
+$string['col_score'] = 'Score';
+$string['col_taken'] = 'Taken';
+$string['col_duration'] = 'Duration';
+$string['noquizzes'] = 'No quiz attempts yet.';
+$string['nomarks'] = 'No marks yet.';
+
 // Linking / flow messages.
 $string['err_noparentnumber'] = 'No student has listed this number. Ask your child to add it to their profile first.';
 $string['linkedchildren'] = 'Linked children';

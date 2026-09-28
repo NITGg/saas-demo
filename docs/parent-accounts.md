@@ -19,10 +19,34 @@ the parent role and the linking logic. Next: signup wiring → APIs → parent f
   - `db/events.php` + `classes/observer.php` — on `user_created`/`user_updated`, read the
     field and call `record_parent_phone` (a pending link, or immediate link if the parent exists)
   - Pass `php -l`.
-- [ ] **Phase 2b — parent sign-up**: a parent sign-up page — `phone_exists` gate → create the
-      account → `link_parent`. (Account-creation flow + optional OTP — awaiting approach sign-off.)
-- [ ] **Phase 3 — APIs** (external functions, see §5)
-- [ ] **Phase 4 — parent frontend** (see §6)
+- [x] **Phase 2b — parent sign-up** (reuse Moodle's standard sign-up; **no OTP**)
+  - `signup.php` — a phone gate: `phone_exists()` → on pass, stash the number in the
+    session and hand off to `/login/signup.php` (no custom account-creation code)
+  - `classes/observer.php` — after the account is created, reads the session number and
+    calls `link_parent` (links every child that named it)
+  - Pass `php -l`.
+- [x] **Phase 3 — APIs** (external web-service functions, mobile-enabled)
+  - `classes/external/list_children.php` — `local_parent_list_children`
+  - `classes/external/child_grades.php` — `local_parent_child_grades` (per-course totals)
+  - `classes/external/child_quizzes.php` — `local_parent_child_quizzes` (score, start, duration)
+  - `db/services.php` — registers all three; each re-checks `is_linked` before returning data
+  - Pass `php -l`.
+- [x] **Phase 4 — parent dashboard** (`index.php`)
+  - Children switcher → per-child **Marks** (course totals) + **Quiz activity** (score, taken, duration)
+  - `classes/child_report.php` — shared `guard()` / `grades()` / `quizzes()`, used by both the
+    page and the web-service functions (one authorization path, no duplication)
+  - Pass `php -l` (16/16 plugin files clean).
+- [ ] **Phase 4b — notifications**: a `message` provider + event observers (grade posted, quiz
+      submitted, …) pushing to the linked parent — not built yet.
+
+## How to try it
+
+1. Install: `php admin/cli/upgrade.php` (creates the table + `parent` role + `parentphone`
+   sign-up field + web services), then `php admin/cli/purge_caches.php`.
+2. A **student** signs up and fills *Parent / guardian phone*.
+3. A **parent** opens `/local/parent/signup.php`, enters that number (blocked if no student
+   listed it), continues to the normal sign-up, confirms their email.
+4. The parent opens `/local/parent/index.php` — their child(ren), marks and quiz activity.
 
 **Assumptions taken** (from §7, to keep moving): one academy = one Moodle site, so a
 parent is scoped to a single academy (no cross-academy key). Verification (OTP) is

@@ -48,13 +48,25 @@ class observer {
      * @param int $userid
      */
     private static function sync(int $userid): void {
+        global $SESSION;
         if ($userid <= 0) {
             return;
         }
+
+        // Student side: the parent number this user named for themselves.
         $shortname = (string) (get_config('local_parent', 'parentphonefield') ?: 'parentphone');
         $phone = self::profile_field_value($userid, $shortname);
         if ($phone !== '') {
             link_manager::record_parent_phone($userid, $phone);
+        }
+
+        // Parent side: this account was created through the parent phone-gate
+        // (local/parent/signup.php verified the number exists and stashed it in
+        // the session). Link it to every child that named the number, then clear
+        // the flag so a later profile edit doesn't re-trigger it.
+        if (!empty($SESSION->local_parent_signup_phone)) {
+            link_manager::link_parent($userid, (string) $SESSION->local_parent_signup_phone);
+            unset($SESSION->local_parent_signup_phone);
         }
     }
 

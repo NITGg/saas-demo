@@ -43,7 +43,7 @@ class license {
             'maxcourses'   => 10,
             'maxteachers'  => -1,
             'videosource'  => 'vdocipher', // Standard and above carry the DRM VdoCipher host.
-            'features'     => [],
+            'features'     => ['drm'], // 'drm' unlocks the VdoCipher activity (FEATURE_MODULES).
             'limits'       => ['quiz' => -1, 'video' => -1, 'pdf' => 10, 'default' => -1],
         ],
         'professional' => [

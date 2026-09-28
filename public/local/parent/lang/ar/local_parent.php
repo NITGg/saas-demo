@@ -43,6 +43,25 @@ $string['parentphonefield_desc'] = 'الاسم المختصر لحقل البر�
 // Student sign-up field.
 $string['parentphonelabel'] = 'رقم ولي الأمر';
 
+// Parent phone-gate page.
+$string['parentsignup'] = 'إنشاء حساب ولي أمر';
+$string['parentsignupintro'] = 'اكتب رقم الموبايل اللي ابنك سجّله كرقم ولي أمره. مش هنكمّل غير لو طالب سجّل الرقم ده قبل كده.';
+$string['yourphone'] = 'رقم موبايلك';
+$string['continuetosignup'] = 'متابعة';
+
+// Parent dashboard.
+$string['dashboard'] = 'لوحة ولي الأمر';
+$string['marks'] = 'الدرجات';
+$string['quizactivity'] = 'نشاط الاختبارات';
+$string['col_course'] = 'الكورس';
+$string['col_grade'] = 'الدرجة';
+$string['col_quiz'] = 'الاختبار';
+$string['col_score'] = 'النتيجة';
+$string['col_taken'] = 'الوقت';
+$string['col_duration'] = 'المدة';
+$string['noquizzes'] = 'لسه مفيش محاولات اختبار.';
+$string['nomarks'] = 'لسه مفيش درجات.';
+
 // Linking / flow messages.
 $string['err_noparentnumber'] = 'مفيش طالب سجّل الرقم ده. اطلب من ابنك يضيفه في ملفه الأول.';
 $string['linkedchildren'] = 'الأبناء المرتبطون';
