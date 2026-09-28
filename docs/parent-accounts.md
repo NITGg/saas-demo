@@ -1,6 +1,34 @@
 # Parent accounts — design (v1)
 
-Status: **design only** (no code yet). Next: APIs → parent frontend.
+Status: **Phase 1 (foundation) built** — plugin `local_parent`, the link table,
+the parent role and the linking logic. Next: signup wiring → APIs → parent frontend.
+
+## Implementation progress
+
+- [x] **Phase 1 — foundation** (`public/local/parent/`)
+  - `version.php`, `settings.php` (default country code `20`, parent-phone field name)
+  - `db/install.xml` — table `local_parent_link` (phone, studentid, parentid, status, verified)
+  - `db/access.php` — capability `local/parent:view` (CONTEXT_USER)
+  - `db/install.php` — creates the **`parent`** role (user-context) + grants view/grade caps
+  - `lang/en` + `lang/ar`
+  - `classes/link_manager.php` — phone normalization + `record_parent_phone`,
+    `phone_exists`, `link_parent`, `list_children`, `is_linked`, role assign/unassign
+  - All files pass `php -l`. Install with `admin/cli/upgrade.php` (creates the table + role).
+- [x] **Phase 2a — student-side wiring**
+  - `db/install.php` also creates the **`parentphone`** custom profile field (shown on sign-up)
+  - `db/events.php` + `classes/observer.php` — on `user_created`/`user_updated`, read the
+    field and call `record_parent_phone` (a pending link, or immediate link if the parent exists)
+  - Pass `php -l`.
+- [ ] **Phase 2b — parent sign-up**: a parent sign-up page — `phone_exists` gate → create the
+      account → `link_parent`. (Account-creation flow + optional OTP — awaiting approach sign-off.)
+- [ ] **Phase 3 — APIs** (external functions, see §5)
+- [ ] **Phase 4 — parent frontend** (see §6)
+
+**Assumptions taken** (from §7, to keep moving): one academy = one Moodle site, so a
+parent is scoped to a single academy (no cross-academy key). Verification (OTP) is
+**deferred** — the `verified` column + status flow are in place; v1 trusts the phone
+match and OTP slots into parent sign-up later. Country code default `20` (Egypt),
+configurable. Role assigned per-child user context (Moodle mentor pattern).
 
 ## 1. Goal
 

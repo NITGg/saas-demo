@@ -1931,6 +1931,16 @@
             r.row.appendChild(h); r.row.appendChild(r.name);
             designWrap.appendChild(r.row);
         });
+        // Full design system — opens the complete gallery (Brand Colors + Change
+        // style + Fonts + Log-in & sign-up + Components). A separate page, so this
+        // row navigates rather than opening an in-place panel.
+        var gsWww = (window.M && M.cfg && M.cfg.wwwroot) || '';
+        var gsRow = rowFor('designsystem', isAr ? 'معرض التصميمات' : 'Design system', function () {
+            window.location.href = gsWww + '/theme/nit/gallery.php';
+        });
+        var gsH = document.createElement('span'); gsH.className = 'h'; gsH.textContent = '✦';
+        gsRow.row.appendChild(gsH); gsRow.row.appendChild(gsRow.name);
+        designWrap.appendChild(gsRow.row);
         sidePanel.appendChild(designWrap);
 
         document.body.appendChild(sidePanel);

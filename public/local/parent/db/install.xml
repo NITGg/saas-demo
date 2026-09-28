@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/parent/db" VERSION="2026092800"
+       COMMENT="Parent accounts: the parent&lt;-&gt;child links, keyed on the parent's phone number so a link can exist before the parent account does.">
+  <TABLES>
+    <TABLE NAME="local_parent_link" COMMENT="One row per parent-child relationship. The join key is the normalized parent phone, so a student can name a parent who has not signed up yet (parentid null, status pending); the parent's own sign-up fills parentid and flips the row to linked.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="parentphone" TYPE="char" LENGTH="32" NOTNULL="true" DEFAULT="" SEQUENCE="false" COMMENT="Normalized parent phone (E.164-ish, digits only with country code) — the join key."/>
+        <FIELD NAME="studentid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The child (a Moodle user id)."/>
+        <FIELD NAME="parentid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="The parent (a Moodle user id); NULL while the link is still pending (no parent account yet)."/>
+        <FIELD NAME="status" TYPE="char" LENGTH="16" NOTNULL="true" DEFAULT="pending" SEQUENCE="false" COMMENT="pending (no parent account yet) | linked (parent account exists and role assigned) | rejected."/>
+        <FIELD NAME="verified" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Whether the parent phone was verified (e.g. OTP) before the link was trusted. Reserved for the verification step."/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="parentphone_idx" UNIQUE="false" FIELDS="parentphone"/>
+        <INDEX NAME="parentid_idx" UNIQUE="false" FIELDS="parentid"/>
+        <INDEX NAME="phonestudent_uix" UNIQUE="true" FIELDS="parentphone, studentid" COMMENT="One link row per (parent phone, student) — a student naming the same number twice is not two links."/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>

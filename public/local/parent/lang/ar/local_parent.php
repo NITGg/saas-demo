@@ -1,0 +1,49 @@
+<?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Arabic strings for local_parent.
+ *
+ * @package    local_parent
+ * @copyright  2026 NIT
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+defined('MOODLE_INTERNAL') || die();
+
+$string['pluginname'] = 'حسابات أولياء الأمور';
+
+// Capability.
+$string['parent:view'] = 'الاطّلاع على تقدّم ابنه المرتبط';
+
+// The parent role.
+$string['parentrole'] = 'ولي أمر';
+$string['parentroledesc'] = 'ولي أمر يقدر يتابع درجات ابنه ونشاط اختباراته وأحداثه. بيتسند تلقائيًا في سياق كل ابن لما الحسابين يترابطوا بالرقم.';
+
+// Settings.
+$string['settingsheading'] = 'حسابات أولياء الأمور';
+$string['defaultcountrycode'] = 'كود الدولة الافتراضي';
+$string['defaultcountrycode_desc'] = 'أرقام بتتحط قبل الرقم المحلي اللي مفيهوش كود دولة، عشان 010… و +2010… يتطابقوا. مصر = 20.';
+$string['parentphonefield'] = 'حقل رقم ولي الأمر';
+$string['parentphonefield_desc'] = 'الاسم المختصر لحقل البروفايل المخصص للطالب اللي بيحمل رقم ولي الأمر (بيتملى وقت تسجيل الطالب).';
+
+// Student sign-up field.
+$string['parentphonelabel'] = 'رقم ولي الأمر';
+
+// Linking / flow messages.
+$string['err_noparentnumber'] = 'مفيش طالب سجّل الرقم ده. اطلب من ابنك يضيفه في ملفه الأول.';
+$string['linkedchildren'] = 'الأبناء المرتبطون';
+$string['nochildren'] = 'لسه مفيش أبناء مرتبطين بحسابك.';
