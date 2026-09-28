@@ -56,21 +56,64 @@ if (data_submitted() && confirm_sesskey()) {
     $upd->firstname = trim(required_param('firstname', PARAM_TEXT));
     $upd->lastname  = trim(required_param('lastname', PARAM_TEXT));
     $upd->phone1    = trim(optional_param('phone', '', PARAM_TEXT));
+    $parentphone    = trim(optional_param('parentphone', '', PARAM_TEXT));
     $upd->description = optional_param('bio', '', PARAM_TEXT);
     $upd->descriptionformat = FORMAT_HTML;
     $lang = optional_param('lang', '', PARAM_LANG);
     if ($lang !== '') {
         $upd->lang = $lang;
     }
+
+    // Validate phone fields: reject strings and invalid numbers.
+    if ($upd->phone1 !== '') {
+        $digits = preg_replace('/\D+/', '', $upd->phone1);
+        if (!preg_match('/^[+]?[0-9\s\-()]{7,25}$/', $upd->phone1) || strlen($digits) < 7) {
+            redirect($pageurl, $t('Please enter a valid phone number (e.g. 01012345678).', 'يرجى إدخال رقم هاتف صحيح (مثال: 01012345678).'),
+                null, \core\output\notification::NOTIFY_ERROR);
+        }
+    }
+    if ($parentphone !== '') {
+        $parentdigits = preg_replace('/\D+/', '', $parentphone);
+        if (!preg_match('/^[+]?[0-9\s\-()]{7,25}$/', $parentphone) || strlen($parentdigits) < 7) {
+            redirect($pageurl, $t('Please enter a valid parent phone number (e.g. 01012345678).', 'يرجى إدخال رقم هاتف ولي أمر صحيح (مثال: 01012345678).'),
+                null, \core\output\notification::NOTIFY_ERROR);
+        }
+    }
+
     if ($upd->firstname !== '' && $upd->lastname !== '') {
         try {
             user_update_user($upd, false, true);
             // Reflect immediately in this session.
             $USER->firstname = $upd->firstname;
             $USER->lastname  = $upd->lastname;
+            $USER->phone1    = $upd->phone1;
             if ($lang !== '') {
                 $USER->lang = $lang;
             }
+
+            // Save parent phone to custom profile field.
+            $parentfield = (string) (get_config('local_parent', 'parentphonefield') ?: 'parentphone');
+            $fieldid = $DB->get_field('user_info_field', 'id', ['shortname' => $parentfield]);
+            if ($fieldid) {
+                $existing = $DB->get_record('user_info_data', ['userid' => $USER->id, 'fieldid' => $fieldid]);
+                if ($existing) {
+                    $existing->data = $parentphone;
+                    $DB->update_record('user_info_data', $existing);
+                } else if ($parentphone !== '') {
+                    $DB->insert_record('user_info_data', (object) [
+                        'userid' => $USER->id,
+                        'fieldid' => $fieldid,
+                        'data' => $parentphone,
+                        'dataformat' => 0,
+                    ]);
+                }
+            }
+
+            // Sync with local_parent linking if available.
+            if (class_exists('\local_parent\link_manager') && $parentphone !== '') {
+                \local_parent\link_manager::record_parent_phone((int) $USER->id, $parentphone);
+            }
+
             redirect($pageurl, $t('Your changes were saved.', 'تم حفظ التغييرات.'),
                 null, \core\output\notification::NOTIFY_SUCCESS);
         } catch (\Throwable $ex) {
@@ -90,6 +133,17 @@ $userpic->size = 156;
 $picurl = $userpic->get_url($PAGE)->out(false);
 $hasrealpic = !empty($USER->picture);
 $e = fn($s) => s($s);
+
+// Current parent phone.
+$parentfield = (string) (get_config('local_parent', 'parentphonefield') ?: 'parentphone');
+$parentfieldid = $DB->get_field('user_info_field', 'id', ['shortname' => $parentfield]);
+$currentparentphone = '';
+if ($parentfieldid) {
+    $currentparentphone = (string) $DB->get_field('user_info_data', 'data', ['userid' => $USER->id, 'fieldid' => $parentfieldid]);
+}
+if ($currentparentphone === '' && $DB->get_manager()->table_exists('local_parent_link')) {
+    $currentparentphone = (string) $DB->get_field('local_parent_link', 'parentphone', ['studentid' => $USER->id]);
+}
 
 // Real destinations for the settings nav.
 $nav = [
@@ -196,7 +250,19 @@ echo $OUTPUT->header();
           </div>
           <div>
             <div class="nit-prof-lbl"><?php echo $e($t('Phone', 'الهاتف')); ?></div>
-            <input class="nit-prof-field" type="tel" name="phone" dir="ltr" value="<?php echo $e($USER->phone1 ?? ''); ?>">
+            <input class="nit-prof-field" type="tel" name="phone" dir="ltr"
+                   pattern="^[+]?[0-9\s\-()]{7,25}$"
+                   oninput="this.value = this.value.replace(/[^0-9+\s\-()]/g, '');"
+                   placeholder="<?php echo $e($t('e.g. 01012345678', 'مثال: 01012345678')); ?>"
+                   value="<?php echo $e($USER->phone1 ?? ''); ?>">
+          </div>
+          <div>
+            <div class="nit-prof-lbl"><?php echo $e($t('Parent phone', 'هاتف ولي الأمر')); ?></div>
+            <input class="nit-prof-field" type="tel" name="parentphone" dir="ltr"
+                   pattern="^[+]?[0-9\s\-()]{7,25}$"
+                   oninput="this.value = this.value.replace(/[^0-9+\s\-()]/g, '');"
+                   placeholder="<?php echo $e($t('Parent mobile number', 'رقم هاتف ولي الأمر')); ?>"
+                   value="<?php echo $e($currentparentphone); ?>">
           </div>
           <div class="full">
             <div class="nit-prof-lbl"><?php echo $e($t('Bio', 'نبذة')); ?></div>

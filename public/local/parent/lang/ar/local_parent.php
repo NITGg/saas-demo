@@ -64,6 +64,11 @@ $string['nomarks'] = 'لسه مفيش درجات.';
 
 // Linking / flow messages.
 $string['err_noparentnumber'] = 'مفيش طالب سجّل الرقم ده. اطلب من ابنك يضيفه في ملفه الأول.';
+$string['err_invalidphone'] = 'يرجى إدخال رقم هاتف صحيح (مثال: 01012345678). غير مسموح بالحروف أو النصوص.';
+$string['parentsignupbadge'] = 'إنشاء حساب ولي أمر (مرتبط برقم: {$a})';
+$string['parentsignupprompt'] = 'هل أنت ولي أمر وترغب في متابعة ابنك؟';
+$string['parentsignuplink'] = 'أنشئ حساب ولي أمر من هنا';
+$string['parentphonehint'] = 'اختياري: اكتب رقم ولي أمرك لكي يتمكن من متابعة درجاتك ونشاطك.';
 $string['mychildren'] = 'أولادي';
 $string['linkedchildren'] = 'الأبناء المرتبطون';
 $string['nochildren'] = 'لسه مفيش أبناء مرتبطين بحسابك.';

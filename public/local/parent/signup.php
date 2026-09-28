@@ -45,14 +45,18 @@ if (isloggedin() && !isguestuser()) {
 
 $error = '';
 if (data_submitted() && confirm_sesskey()) {
-    $rawphone = optional_param('parentphone', '', PARAM_TEXT);
-    if (link_manager::phone_exists($rawphone)) {
+    $rawphone = trim((string) optional_param('parentphone', '', PARAM_TEXT));
+    $digits = preg_replace('/\D+/', '', $rawphone);
+    if (!preg_match('/^[+]?[0-9\s\-()]{7,25}$/', $rawphone) || strlen($digits) < 7) {
+        $error = get_string('err_invalidphone', 'local_parent');
+    } else if (link_manager::phone_exists($rawphone)) {
         // Verified the number belongs to a student. Remember it for the observer,
         // then hand off to the standard sign-up form.
         $SESSION->local_parent_signup_phone = link_manager::normalize_phone($rawphone);
-        redirect(new moodle_url('/login/signup.php'));
+        redirect(new moodle_url('/login/signup.php', ['parent' => '1']));
+    } else {
+        $error = get_string('err_noparentnumber', 'local_parent');
     }
-    $error = get_string('err_noparentnumber', 'local_parent');
 }
 
 echo $OUTPUT->header();
@@ -72,6 +76,8 @@ echo html_writer::tag('label', get_string('yourphone', 'local_parent'),
 echo html_writer::empty_tag('input', [
     'type' => 'tel', 'id' => 'parentphone', 'name' => 'parentphone', 'inputmode' => 'tel',
     'class' => 'form-control mb-3', 'required' => 'required', 'autocomplete' => 'tel',
+    'pattern' => '^[+]?[0-9\s\-()]{7,25}$',
+    'oninput' => "this.value = this.value.replace(/[^0-9+\s\-()]/g, '');",
     'value' => optional_param('parentphone', '', PARAM_TEXT),
 ]);
 echo html_writer::tag('button', get_string('continuetosignup', 'local_parent'),

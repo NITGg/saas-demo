@@ -15,11 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Capabilities for local_parent.
- *
- * `view` is assigned to the parent role in each child's user context (see the
- * role created in db/install.php), so a parent can read that child's data and
- * nothing else.
+ * Upgrade script for local_parent.
  *
  * @package    local_parent
  * @copyright  2026 NIT
@@ -28,14 +24,22 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$capabilities = [
-    // A parent may view their linked child's overview (marks, quiz activity).
-    // Granted to the parent role per child user-context; managers can view by default.
-    'local/parent:view' => [
-        'captype'      => 'read',
-        'contextlevel' => CONTEXT_USER,
-        'archetypes'   => [
-            'manager' => CAP_ALLOW,
-        ],
-    ],
-];
+/**
+ * Execute local_parent upgrade tasks.
+ *
+ * @param int $oldversion
+ * @return bool
+ */
+function xmldb_local_parent_upgrade(int $oldversion): bool {
+    global $DB;
+
+    if ($oldversion < 2026092802) {
+        require_once(__DIR__ . '/install.php');
+        if (function_exists('xmldb_local_parent_install')) {
+            xmldb_local_parent_install();
+        }
+        upgrade_plugin_savepoint(true, 2026092802, 'local', 'parent');
+    }
+
+    return true;
+}

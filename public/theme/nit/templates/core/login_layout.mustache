@@ -96,7 +96,7 @@
   .nit-auth-steps li.on{ color:var(--a-ink); font-weight:600; }
   .nit-auth-steps li.on span{ background:var(--a-accent); color:var(--a-on-accent); border-color:var(--a-accent); }
   .nit-auth-steps li:not(:last-child)::after{ content:""; width:26px; height:1px; background:var(--a-border); }
-  .nit-auth .signupform .form-control, .nit-auth .signupform input[type=text], .nit-auth .signupform input[type=email], .nit-auth .signupform input[type=password], .nit-auth .signupform select{ width:100%; border:1px solid var(--a-border)!important; border-radius:12px!important; padding:13px 14px!important; font-size:15px!important; background:var(--a-bg)!important; color:var(--a-ink)!important; box-shadow:none!important; }
+  .nit-auth .signupform .form-control, .nit-auth .signupform input[type=text], .nit-auth .signupform input[type=email], .nit-auth .signupform input[type=password], .nit-auth .signupform input[type=tel], .nit-auth .signupform select{ width:100%; border:1px solid var(--a-border)!important; border-radius:12px!important; padding:13px 14px!important; font-size:15px!important; background:var(--a-bg)!important; color:var(--a-ink)!important; box-shadow:none!important; }
   .nit-auth .signupform input::placeholder{ color:color-mix(in srgb, var(--a-muted) 75%, transparent); }
   .nit-auth .signupform .col-form-label, .nit-auth .signupform label{ font-size:13px; color:var(--a-muted); font-weight:500; }
   .nit-auth .signupform .btn-primary, .nit-auth .signupform #id_submitbutton{ width:100%; background:var(--a-ink); border:0; color:#fff; padding:15px; border-radius:12px; font-weight:600; }
@@ -104,6 +104,8 @@
   .nit-auth .signupform .mform .fitem{ margin-bottom:14px; }
   .nit-auth .signupform fieldset{ border:0; padding:0; margin:0; }
   .nit-auth .signupform .fcontainer{ display:block; }
+  .nit-auth .signupform input.is-invalid, .nit-auth .signupform select.is-invalid{ border-color:#e03131!important; box-shadow:0 0 0 3px rgba(224,49,49,0.15)!important; }
+  .nit-auth .signupform .invalid-feedback, .nit-auth .signupform .form-control-feedback{ color:#e03131!important; font-size:13px!important; font-weight:500!important; margin-top:5px!important; display:block!important; }
 </style>
 <div class="nit-auth">
   <div class="nit-auth-form">

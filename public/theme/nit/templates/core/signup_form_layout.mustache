@@ -7,16 +7,73 @@
 
     The stepper is a PROGRESSIVE ENHANCEMENT over Moodle's real signup mform: the
     JS below groups the form's actual <fieldset>s into steps with Back/Next and a
-    progress header, and only advances when the current step's HTML5 constraints
-    pass. Nothing about the form is rebuilt — all fields, names, ids, the security
-    question / recaptcha and the real submit are Moodle's own, and if the JS does
-    not run (or there is only one fieldset) the full form shows and submits
-    normally. On a server-side validation error it opens the step holding the
-    first invalid field so the message is never hidden behind a later step.
+    progress header, and only advances when the current step passes client validation.
+    Nothing about the form is rebuilt — all fields, names, ids, the security
+    question / recaptcha and the real submit are Moodle's own.
 }}
+<style>
+  .nit-auth .signupform .invalid-feedback,
+  .nit-auth .signupform .form-control-feedback {
+    color: #e03131 !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    margin-top: 5px !important;
+    display: block !important;
+  }
+  .nit-auth .signupform input.is-invalid,
+  .nit-auth .signupform select.is-invalid {
+    border-color: #e03131 !important;
+    box-shadow: 0 0 0 3px rgba(224, 49, 49, 0.15) !important;
+  }
+  .nit-parent-badge {
+    background: color-mix(in srgb, var(--a-accent, #0E7C66) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--a-accent, #0E7C66) 30%, transparent);
+    color: var(--a-ink, #16191D);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    line-height: 1.5;
+  }
+  .nit-parent-badge .ic { font-size: 22px; flex: none; }
+  .nit-parent-prompt {
+    margin-top: 14px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: #f8f9fa;
+    border: 1px dashed #dcdcd7;
+    font-size: 13px;
+    text-align: center;
+    color: var(--a-muted, #6E7781);
+  }
+  .nit-parent-prompt a {
+    color: var(--a-accent, #0E7C66);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .nit-parent-prompt a:hover {
+    text-decoration: underline;
+  }
+  .nit-field-hint {
+    font-size: 12px;
+    color: var(--a-muted, #6E7781);
+    margin-top: 4px;
+  }
+</style>
+
 <div class="signupform">
+    <div id="nit-parent-badge-slot"></div>
     <h1>{{#str}}signupcreatetitle, theme_nit{{/str}}</h1>
     <p class="text-muted mb-4">{{#str}}signupsubtitle, theme_nit{{/str}}</p>
+
+    <div id="nit-parent-student-prompt" class="nit-parent-prompt mb-4" style="display:none;">
+        <span id="nit-parent-prompt-text">{{#str}}parentsignupprompt, local_parent{{/str}}</span>
+        <a href="{{config.wwwroot}}/local/parent/signup.php">{{#str}}parentsignuplink, local_parent{{/str}}</a>
+    </div>
+
     <ol class="nit-auth-steps" id="nit-signup-steps" hidden></ol>
     {{{formhtml}}}
     <div class="signup-haveaccount text-center" style="margin-top:16px;">
@@ -34,22 +91,69 @@
 
         var isar = (document.documentElement.getAttribute('lang') || '').indexOf('ar') === 0;
         var T = {
-            next:    isar ? 'التالي'         : 'Next',
-            back:    isar ? 'السابق'         : 'Back',
-            create:  isar ? 'إنشاء الحساب'   : 'Create account',
-            account: isar ? 'الحساب'         : 'Account',
-            details: isar ? 'بياناتك'        : 'Your details',
-            finish:  isar ? 'إنهاء'          : 'Finish'
+            next:        isar ? 'التالي'                   : 'Next',
+            back:        isar ? 'السابق'                   : 'Back',
+            create:      isar ? 'إنشاء الحساب'             : 'Create account',
+            creating:    isar ? 'جارٍ إنشاء الحساب...'     : 'Creating account...',
+            account:     isar ? 'الحساب'                   : 'Account',
+            details:     isar ? 'بياناتك'                  : 'Your details',
+            finish:      isar ? 'إنهاء'                    : 'Finish',
+            parentBadge: isar ? 'إنشاء حساب ولي أمر — سيتم ربط حسابك تلقائياً بأبنائك المسجلين برقم هاتفك.' : 'Creating Parent Account — Your account will be automatically linked to your children.',
+            parentHint:  isar ? 'اختياري: اكتب رقم ولي أمرك لكي يتمكن من متابعة درجاتك ونشاطك.' : 'Optional: Enter your parent\'s phone number to let them follow your progress.',
+            reqErr:      isar ? 'هذا الحقل مطلوب'          : 'This field is required',
+            userErr:     isar ? 'اسم المستخدم يجب أن يكون بحروف صغيرة فقط وبدون مسافات' : 'Username must be lowercase letters only with no spaces',
+            emailErr:    isar ? 'يرجى إدخال بريد إلكتروني صحيح' : 'Please enter a valid email address',
+            emailMatch:  isar ? 'البريد الإلكتروني غير متطابق' : 'Email addresses do not match',
+            phoneErr:    isar ? 'يرجى إدخال رقم هاتف صحيح (أرقام فقط)' : 'Please enter a valid phone number (digits only)'
         };
+
+        // Detect parent registration mode via URL (?parent=1).
+        var isParent = /[?&]parent=1\b/.test(window.location.search);
+        var parentPhoneField = form.querySelector('[name="profile_field_parentphone"]');
+        var parentPhoneRow = parentPhoneField && (parentPhoneField.closest('.fitem') || parentPhoneField.closest('.form-group') || parentPhoneField.closest('.row'));
+
+        if (isParent) {
+            // Display parent badge.
+            var badgeSlot = document.getElementById('nit-parent-badge-slot');
+            if (badgeSlot) {
+                badgeSlot.innerHTML = '<div class="nit-parent-badge"><span class="ic">👨‍👩‍👧</span><span>' + T.parentBadge + '</span></div>';
+            }
+            // Hide parent phone field because this user IS the parent.
+            if (parentPhoneRow) {
+                parentPhoneRow.style.display = 'none';
+            }
+        } else {
+            // Regular student signup: show link to parent registration.
+            var studentPrompt = document.getElementById('nit-parent-student-prompt');
+            if (studentPrompt) {
+                studentPrompt.style.display = 'block';
+            }
+            // Add helpful hint under parent phone field if present.
+            if (parentPhoneField && parentPhoneRow) {
+                var hint = document.createElement('div');
+                hint.className = 'nit-field-hint';
+                hint.textContent = T.parentHint;
+                parentPhoneField.parentNode.appendChild(hint);
+            }
+        }
+
+        // Restrict all phone fields to valid phone characters only (reject strings).
+        form.querySelectorAll('input[type="tel"], input[name*="phone"]').forEach(function (inp) {
+            inp.setAttribute('pattern', '^[+]?[0-9\\s\\-()]{7,25}$');
+            inp.setAttribute('inputmode', 'tel');
+            inp.addEventListener('input', function () {
+                var cleaned = this.value.replace(/[^0-9+\s\-()]/g, '');
+                if (this.value !== cleaned) {
+                    this.value = cleaned;
+                }
+            });
+        });
 
         // The real submit + its row — we drive it and hide the native row.
         var submitBtn = form.querySelector('#id_submitbutton') || form.querySelector('[type="submit"]');
         var submitRow = submitBtn && (submitBtn.closest('.fitem') || submitBtn.closest('.form-group') || submitBtn.closest('.row'));
 
-        // Moodle's signup form is FLAT (no fieldset grouping), so we partition its
-        // real field rows by field name into up to three steps. Account first
-        // (login + email), then the learner's details, then anything left
-        // (custom profile fields, agreement, security question) to finish.
+        // Partition form rows into up to three steps.
         var ACCOUNT = ['username', 'password', 'email', 'email2'];
         function fieldName(row) {
             var el = row.querySelector('input:not([type="hidden"]), select, textarea');
@@ -64,15 +168,18 @@
         var rows = Array.prototype.slice.call(form.querySelectorAll('.fitem, .form-group.row'))
             .filter(function (r) {
                 if (submitRow && (r === submitRow || submitRow.contains(r) || r.contains(submitRow))) { return false; }
-                // Keep only rows that actually carry a field or static help text.
+                // Exclude parent phone row in parent mode.
+                if (isParent && parentPhoneRow && (r === parentPhoneRow || parentPhoneRow.contains(r))) { return false; }
                 return r.querySelector('input, select, textarea') || r.querySelector('.form-control-static, .felement');
             });
-        if (rows.length < 3) { return; } // Too small to bother stepping.
+
+        if (rows.length < 3) { return; } // Too small to step.
 
         var buckets = [[], [], []];
         rows.forEach(function (r) { buckets[stepOf(fieldName(r))].push(r); });
         var steps = buckets.filter(function (b) { return b.length; });
         if (steps.length < 2) { return; }
+
         var labels = [];
         if (buckets[0].length) { labels.push(T.account); }
         if (buckets[1].length) { labels.push(T.details); }
@@ -101,7 +208,7 @@
         });
         head.hidden = false;
 
-        // Back / Next row.
+        // Back / Next nav row.
         var nav = document.createElement('div');
         nav.className = 'nit-auth-nav';
         var back = document.createElement('button');
@@ -121,38 +228,161 @@
             });
             back.style.display = (cur === 0) ? 'none' : '';
             next.textContent = (cur === LAST) ? T.create : T.next;
+            next.disabled = false;
         }
 
+        // Comprehensive step validator that checks both HTML5 and Moodle requirements.
         function validStep(i) {
             var els = containers[i].querySelectorAll('input, select, textarea');
+            var ok = true;
+            var firstInvalid = null;
+
             for (var k = 0; k < els.length; k++) {
                 var el = els[k];
-                if (el.type === 'hidden' || el.disabled || !el.willValidate) { continue; }
-                if (!el.checkValidity()) { el.reportValidity(); return false; }
+                if (el.type === 'hidden' || el.disabled) { continue; }
+
+                var name = (el.name || '').replace(/\[.*$/, '');
+                var val = (el.value || '').trim();
+                var row = el.closest('.fitem, .form-group') || el.parentElement;
+                var errDiv = row.querySelector('.invalid-feedback, [id^="id_error_"], .error');
+
+                var clearErr = function () {
+                    el.classList.remove('is-invalid');
+                    if (errDiv) {
+                        errDiv.textContent = '';
+                        errDiv.style.display = 'none';
+                    }
+                };
+
+                var setErr = function (msg) {
+                    ok = false;
+                    el.classList.add('is-invalid');
+                    if (errDiv) {
+                        errDiv.textContent = msg;
+                        errDiv.style.display = 'block';
+                    }
+                    if (!firstInvalid) { firstInvalid = el; }
+                };
+
+                clearErr();
+
+                // Check required / aria-required fields.
+                var isReq = el.required || el.getAttribute('aria-required') === 'true';
+                if (isReq && val === '') {
+                    setErr(T.reqErr);
+                    continue;
+                }
+
+                // Username rules: lowercase only, no spaces.
+                if (name === 'username' && val !== '') {
+                    if (val !== val.toLowerCase() || /\s/.test(val)) {
+                        setErr(T.userErr);
+                        continue;
+                    }
+                }
+
+                // Email format.
+                if ((name === 'email' || el.type === 'email') && val !== '') {
+                    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+                        setErr(T.emailErr);
+                        continue;
+                    }
+                }
+
+                // Email confirmation match.
+                if (name === 'email2' && val !== '') {
+                    var origEmail = form.querySelector('[name="email"]');
+                    if (origEmail && val.toLowerCase() !== (origEmail.value || '').trim().toLowerCase()) {
+                        setErr(T.emailMatch);
+                        continue;
+                    }
+                }
+
+                // Phone format.
+                if ((name.indexOf('phone') >= 0 || el.type === 'tel') && val !== '') {
+                    var digits = val.replace(/\D/g, '');
+                    if (!/^[+]?[0-9\s\-()]{7,25}$/.test(val) || digits.length < 7) {
+                        setErr(T.phoneErr);
+                        continue;
+                    }
+                }
+
+                if (el.willValidate && !el.checkValidity()) {
+                    setErr(el.validationMessage || T.reqErr);
+                }
             }
-            return true;
+
+            if (!ok && firstInvalid) {
+                firstInvalid.focus();
+            }
+            return ok;
         }
 
         next.addEventListener('click', function () {
             if (!validStep(cur)) { return; }
+
             if (cur === LAST) {
-                if (submitBtn) { submitBtn.click(); } else { form.submit(); }
+                // Before final submit, re-validate all steps to be 100% sure.
+                for (var s = 0; s < containers.length; s++) {
+                    if (!validStep(s)) {
+                        cur = s;
+                        render();
+                        return;
+                    }
+                }
+
+                next.disabled = true;
+                next.textContent = T.creating;
+
+                // Ensure all form elements are visible to the browser right before submit
+                // so constraint validation doesn't fail on hidden fields.
+                containers.forEach(function (c) { c.style.display = ''; });
+
+                if (submitBtn) {
+                    submitBtn.click();
+                } else {
+                    form.submit();
+                }
                 return;
             }
-            cur++; render();
-            if (root.scrollIntoView) { root.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
-        });
-        back.addEventListener('click', function () { if (cur > 0) { cur--; render(); } });
 
-        // If Moodle re-rendered with a validation error, open the step holding it.
-        var errsel = '.error, .has-danger, .is-invalid, [id^="id_error_"]';
+            cur++;
+            render();
+            if (root.scrollIntoView) {
+                root.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+
+        back.addEventListener('click', function () {
+            if (cur > 0) {
+                cur--;
+                render();
+            }
+        });
+
+        // If Moodle re-rendered with server-side validation error, open the first step holding it.
+        var errsel = '.is-invalid, .has-danger, [id^="id_error_"], .error, .invalid-feedback';
         for (var s = 0; s < containers.length; s++) {
-            var e = containers[s].querySelector(errsel);
-            if (e && e.textContent && e.textContent.trim() !== '') { cur = s; break; }
+            var errEls = containers[s].querySelectorAll(errsel);
+            var hasErr = false;
+            for (var k = 0; k < errEls.length; k++) {
+                var el = errEls[k];
+                if (el.classList.contains('is-invalid') ||
+                    (el.textContent && el.textContent.trim() !== '') ||
+                    (el.style.display && el.style.display !== 'none')) {
+                    hasErr = true;
+                    break;
+                }
+            }
+            if (hasErr) {
+                cur = s;
+                break;
+            }
         }
+
         render();
     } catch (e) {
-        // Any failure leaves Moodle's full signup form intact.
+        // Fallback: any failure leaves Moodle's full signup form intact.
     }
 })();
 </script>

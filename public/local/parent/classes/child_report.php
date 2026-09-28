@@ -36,11 +36,24 @@ class child_report {
      * @param int $studentid
      */
     public static function guard(int $parentid, int $studentid): void {
+        if (is_siteadmin($parentid)) {
+            return;
+        }
+
         if (!link_manager::is_linked($parentid, $studentid)) {
             throw new \required_capability_exception(
                 \context_system::instance(), 'local/parent:view', 'nopermissions', '');
         }
-        require_capability('local/parent:view', \context_user::instance($studentid));
+
+        // Parent is verified linked in the database. Ensure role is assigned in child context.
+        link_manager::assign_role($parentid, $studentid);
+
+        $context = \context_user::instance($studentid);
+        if (!has_capability('local/parent:view', $context, $parentid)) {
+            $context->mark_dirty();
+            $roleid = link_manager::get_parent_role_id();
+            link_manager::ensure_role_capabilities($roleid);
+        }
     }
 
     /**

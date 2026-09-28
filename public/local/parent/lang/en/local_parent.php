@@ -64,6 +64,11 @@ $string['nomarks'] = 'No marks yet.';
 
 // Linking / flow messages.
 $string['err_noparentnumber'] = 'No student has listed this number. Ask your child to add it to their profile first.';
+$string['err_invalidphone'] = 'Please enter a valid phone number (e.g. 01012345678). Letters and special characters are not allowed.';
+$string['parentsignupbadge'] = 'Creating a parent account (linked to: {$a})';
+$string['parentsignupprompt'] = 'Are you a parent or guardian?';
+$string['parentsignuplink'] = 'Create a parent account here';
+$string['parentphonehint'] = 'Optional: enter your parent\'s phone number so they can follow your progress and grades.';
 $string['mychildren'] = 'My children';
 $string['linkedchildren'] = 'Linked children';
 $string['nochildren'] = 'No children are linked to your account yet.';

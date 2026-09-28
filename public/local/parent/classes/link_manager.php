@@ -187,19 +187,94 @@ class link_manager {
     }
 
     /**
+     * Get or create the 'parent' role ID. Self-healing if configuration is missing.
+     *
+     * @return int
+     */
+    public static function get_parent_role_id(): int {
+        global $DB;
+        $roleid = (int) get_config('local_parent', 'roleid');
+        if ($roleid && $DB->record_exists('role', ['id' => $roleid])) {
+            return $roleid;
+        }
+
+        // Fall back to finding 'parent' role by shortname.
+        $roleid = (int) $DB->get_field('role', 'id', ['shortname' => 'parent']);
+        if (!$roleid) {
+            require_once(__DIR__ . '/../db/install.php');
+            if (function_exists('xmldb_local_parent_install')) {
+                xmldb_local_parent_install();
+                $roleid = (int) get_config('local_parent', 'roleid');
+            }
+            if (!$roleid) {
+                $roleid = (int) create_role(
+                    get_string('parentrole', 'local_parent'),
+                    'parent',
+                    get_string('parentroledesc', 'local_parent')
+                );
+            }
+        }
+
+        if ($roleid) {
+            set_config('roleid', $roleid, 'local_parent');
+            self::ensure_role_capabilities($roleid);
+        }
+
+        return (int) $roleid;
+    }
+
+    /**
+     * Ensure the parent role has the required capabilities in system context.
+     *
+     * @param int $roleid
+     */
+    public static function ensure_role_capabilities(int $roleid): void {
+        if ($roleid <= 0) {
+            return;
+        }
+        set_role_contextlevels($roleid, [CONTEXT_USER]);
+        $syscontext = \context_system::instance();
+        $caps = [
+            'local/parent:view',
+            'moodle/user:viewdetails',
+            'moodle/user:viewalldetails',
+            'moodle/grade:viewall',
+            'gradereport/user:view',
+        ];
+        foreach ($caps as $cap) {
+            if (get_capability_info($cap)) {
+                assign_capability($cap, CAP_ALLOW, $roleid, $syscontext->id, true);
+            }
+        }
+        $syscontext->mark_dirty();
+    }
+
+    /**
      * Assign the parent role to a parent in a child's user context (idempotent).
      *
      * @param int $parentid
      * @param int $studentid
      */
     public static function assign_role(int $parentid, int $studentid): void {
-        $roleid = (int) get_config('local_parent', 'roleid');
-        if (!$roleid || $parentid <= 0 || $studentid <= 0) {
+        if ($parentid <= 0 || $studentid <= 0) {
+            return;
+        }
+        $roleid = self::get_parent_role_id();
+        if (!$roleid) {
             return;
         }
         $context = \context_user::instance($studentid, IGNORE_MISSING);
         if ($context) {
-            role_assign($roleid, $parentid, $context->id, 'local_parent');
+            global $DB;
+            if (!$DB->record_exists('role_assignments', [
+                'roleid'    => $roleid,
+                'contextid' => $context->id,
+                'userid'    => $parentid,
+                'component' => 'local_parent',
+            ])) {
+                role_assign($roleid, $parentid, $context->id, 'local_parent');
+                $context->mark_dirty();
+            }
         }
     }
 
@@ -210,13 +285,14 @@ class link_manager {
      * @param int $studentid
      */
     public static function unassign_role(int $parentid, int $studentid): void {
-        $roleid = (int) get_config('local_parent', 'roleid');
+        $roleid = self::get_parent_role_id();
         if (!$roleid || $parentid <= 0 || $studentid <= 0) {
             return;
         }
         $context = \context_user::instance($studentid, IGNORE_MISSING);
         if ($context) {
             role_unassign($roleid, $parentid, $context->id, 'local_parent');
+            $context->mark_dirty();
         }
     }
 }
