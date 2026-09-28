@@ -72,3 +72,41 @@ $string['parentphonehint'] = 'اختياري: اكتب رقم ولي أمرك ل
 $string['mychildren'] = 'أولادي';
 $string['linkedchildren'] = 'الأبناء المرتبطون';
 $string['nochildren'] = 'لسه مفيش أبناء مرتبطين بحسابك.';
+
+// Notifications to parents.
+$string['messageprovider:child_activity'] = 'إشعارات تقدم الابن (الاختبارات والدرجات والأنشطة)';
+
+$string['notif_quiz_subject'] = 'تم تسليم اختبار: {$a->child} أنهى {$a->quiz}';
+$string['notif_quiz_body'] = 'مرحباً،
+
+أنهى ابنك/ابنتك {$a->child} الاختبار "{$a->quiz}" في كورس "{$a->course}".
+الدرجة: {$a->score}
+
+يمكنك الاطلاع على كافة التفاصيل ولوحة المتابعة من هنا:
+{$a->url}';
+
+$string['notif_grade_subject'] = 'درجة جديدة لابنك {$a->child}: {$a->item}';
+$string['notif_grade_body'] = 'مرحباً،
+
+تم رصد درجة جديدة لابنك/ابنتك {$a->child} في "{$a->item}" بكورس "{$a->course}".
+الدرجة: {$a->grade}
+
+تابع درجات ابنك ونشاطه عبر لوحة ولي الأمر:
+{$a->url}';
+
+$string['notif_course_completed_subject'] = 'مبروك! {$a->child} أتم كورس {$a->course}';
+$string['notif_course_completed_body'] = 'مرحباً،
+
+خبر رائع! أتم ابنك/ابنتك {$a->child} بنجاح كورس "{$a->course}".
+
+يمكنك مراجعة تقرير الإنجاز عبر لوحة ولي الأمر:
+{$a->url}';
+
+$string['notif_course_enrolled_subject'] = '{$a->child} انضم إلى كورس جديد: {$a->course}';
+$string['notif_course_enrolled_body'] = 'مرحباً،
+
+انضم ابنك/ابنتك {$a->child} إلى كورس "{$a->course}".
+
+يمكنك متابعة تقدمه أولاً بأول من لوحة ولي الأمر:
+{$a->url}';
+

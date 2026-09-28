@@ -173,6 +173,22 @@ class link_manager {
     }
 
     /**
+     * The parents linked to a student.
+     *
+     * @param int $studentid
+     * @return int[] parent user ids
+     */
+    public static function list_parents(int $studentid): array {
+        global $DB;
+        if ($studentid <= 0) {
+            return [];
+        }
+        return array_values($DB->get_fieldset_select(self::TABLE, 'parentid',
+            'studentid = :sid AND status = :st AND parentid IS NOT NULL',
+            ['sid' => $studentid, 'st' => 'linked']));
+    }
+
+    /**
      * Whether a parent is linked to a given child — the guard every parent-facing
      * API must run before returning that child's data.
      *

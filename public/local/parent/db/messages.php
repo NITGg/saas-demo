@@ -15,8 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Parent accounts — link a parent to their child(ren) by phone number and let
- * them follow marks, quiz activity and events. See docs/parent-accounts.md.
+ * Message providers for local_parent.
  *
  * @package    local_parent
  * @copyright  2026 NIT
@@ -25,9 +24,14 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_parent';
-$plugin->version   = 2026092803;
-$plugin->requires  = 2024100700; // Moodle 4.5+
-$plugin->supported = [405, 502];
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.1.0-foundation';
+$messageproviders = [
+    // Notification sent to parents when their linked child completes a quiz,
+    // receives a new grade, completes a course, or enrolls in a course.
+    'child_activity' => [
+        'capability' => 'local/parent:view',
+        'defaults' => [
+            'popup' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
+            'email' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
+        ],
+    ],
+];

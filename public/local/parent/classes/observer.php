@@ -42,6 +42,42 @@ class observer {
     }
 
     /**
+     * Notify parents when a linked student submits a quiz attempt.
+     *
+     * @param \mod_quiz\event\attempt_submitted $event
+     */
+    public static function quiz_attempt_submitted(\mod_quiz\event\attempt_submitted $event): void {
+        notification_manager::quiz_attempt_submitted($event);
+    }
+
+    /**
+     * Notify parents when a linked student receives a grade/mark.
+     *
+     * @param \core\event\user_graded $event
+     */
+    public static function user_graded(\core\event\user_graded $event): void {
+        notification_manager::user_graded($event);
+    }
+
+    /**
+     * Notify parents when a linked student completes a course.
+     *
+     * @param \core\event\course_completed $event
+     */
+    public static function course_completed(\core\event\course_completed $event): void {
+        notification_manager::course_completed($event);
+    }
+
+    /**
+     * Notify parents when a linked student enrolls in a course.
+     *
+     * @param \core\event\user_enrolment_created $event
+     */
+    public static function user_enrolment_created(\core\event\user_enrolment_created $event): void {
+        notification_manager::user_enrolment_created($event);
+    }
+
+    /**
      * Read the user's parent-phone profile field and (re)record the link.
      * Idempotent — record_parent_phone() upserts, so repeat updates are safe.
      *

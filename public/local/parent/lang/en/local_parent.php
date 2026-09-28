@@ -72,3 +72,41 @@ $string['parentphonehint'] = 'Optional: enter your parent\'s phone number so the
 $string['mychildren'] = 'My children';
 $string['linkedchildren'] = 'Linked children';
 $string['nochildren'] = 'No children are linked to your account yet.';
+
+// Notifications to parents.
+$string['messageprovider:child_activity'] = 'Updates about linked child (grades, quizzes, and activities)';
+
+$string['notif_quiz_subject'] = 'Quiz submitted: {$a->child} completed {$a->quiz}';
+$string['notif_quiz_body'] = 'Hello,
+
+Your child {$a->child} has completed the quiz "{$a->quiz}" in the course "{$a->course}".
+Score: {$a->score}
+
+You can view details and progress on your Parent Dashboard:
+{$a->url}';
+
+$string['notif_grade_subject'] = 'New grade for {$a->child}: {$a->item}';
+$string['notif_grade_body'] = 'Hello,
+
+A new grade has been posted for your child {$a->child} for "{$a->item}" in "{$a->course}".
+Grade: {$a->grade}
+
+View your child\'s full progress on your Parent Dashboard:
+{$a->url}';
+
+$string['notif_course_completed_subject'] = 'Congratulations! {$a->child} completed {$a->course}';
+$string['notif_course_completed_body'] = 'Hello,
+
+Great news! Your child {$a->child} has successfully completed the course "{$a->course}".
+
+View certificates and summary on your Parent Dashboard:
+{$a->url}';
+
+$string['notif_course_enrolled_subject'] = '{$a->child} enrolled in a new course: {$a->course}';
+$string['notif_course_enrolled_body'] = 'Hello,
+
+Your child {$a->child} has enrolled in the course "{$a->course}".
+
+Follow their progress anytime on your Parent Dashboard:
+{$a->url}';
+

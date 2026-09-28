@@ -38,4 +38,20 @@ $observers = [
         'eventname' => '\core\event\user_updated',
         'callback'  => '\local_parent\observer::user_updated',
     ],
+    [
+        'eventname' => '\mod_quiz\event\attempt_submitted',
+        'callback'  => '\local_parent\observer::quiz_attempt_submitted',
+    ],
+    [
+        'eventname' => '\core\event\user_graded',
+        'callback'  => '\local_parent\observer::user_graded',
+    ],
+    [
+        'eventname' => '\core\event\course_completed',
+        'callback'  => '\local_parent\observer::course_completed',
+    ],
+    [
+        'eventname' => '\core\event\user_enrolment_created',
+        'callback'  => '\local_parent\observer::user_enrolment_created',
+    ],
 ];
