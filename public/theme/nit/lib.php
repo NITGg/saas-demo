@@ -2580,6 +2580,11 @@ function theme_nit_footer_links_json(): string {
 // gallery.php admin page and the 17-group Brand Colors system depend on.
 // ─────────────────────────────────────────────────────────────────────────
 define('THEME_NIT_NAVBAR_BLUR', 'blur(18px) saturate(160%)');
+// The cookie the light/dark switch stores the visitor's mode in (read by
+// theme_nit_current_mode()). A cookie, not a preference, so it works logged-out.
+if (!defined('THEME_NIT_MODE_COOKIE')) {
+    define('THEME_NIT_MODE_COOKIE', 'nit_mode');
+}
 
 /**
  * The named sections the roles are grouped into, in display order.
