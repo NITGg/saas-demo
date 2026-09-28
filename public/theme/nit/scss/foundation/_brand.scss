@@ -16,89 +16,57 @@
 // =============================================================================
 // NIT Brand Colors — the semantic colour layer (gallery "Brand Colors" tab).
 //
-// A "group" is a complete named set of the 16 semantic roles (Primary, Surface,
+// A "group" is a complete named set of the semantic roles (Primary, Surface,
 // Text primary, …). Every component references a role by its ACTIVE name
 // (`--nit-brand-primary`) and, by default, resolves it from Group 1. Wrapping a
-// component in `.nit-brand-2` / `.nit-brand-3` re-points all 13 names at that
+// component in `.nit-brand-2` … `.nit-brand-17` re-points every name at that
 // group's values — same variable names, different palette.
 //
 // Emission order (one combined stream): pre_scss defines `$nit-b-<gkey>-<role>`
-// SCSS vars (saved value, else the Group 1 seed); this file republishes them as
-// custom properties; _root.scss then aliases the legacy `--nit-*` properties
-// onto the active layer here, so the whole existing site follows the brand.
+// SCSS vars (saved value, else the group's seed) AND the same values as one
+// nested map, `$nit-b-groups` (group key => (role => value)); this file loops
+// the map to republish every group as custom properties; _root.scss then
+// aliases the legacy `--nit-*` properties onto the active layer here, so the
+// whole existing site follows the brand.
+//
+// Nothing below names a group. It cannot: the groups are whatever
+// theme_nit_brand_groups() lists, and the six category pairs
+// (theme_nit_brand_hues()) are twelve more of them. Every rule that used to be
+// written once per group — the per-group reference tier, the switch class, the
+// Bootstrap bridge, the -rgb triplets, the checkbox pictures — is a loop over
+// the map, and a new group is a PHP change only. SCSS cannot build a variable
+// name from a string (`$nit-b-#{$g}-#{$role}` is not a thing), which is why the
+// map exists at all.
 // =============================================================================
+
+// Every switch selector, with the group it selects. `:root` carries Group 1
+// for pages with no class at all; `.nit-brand-1` exists as well because the
+// navbar scroll switch works by putting a group's class on the BAR, and a bar
+// scrolling INTO Group 1 needs a class to say that with. Built here once and
+// read by every loop below, so all of them agree on what a group is called.
+$nit-b-switchmap: (":root": "g1");
+$nit-b-switchselectors: ":root";
+@each $g, $roles in $nit-b-groups {
+    $sel: ".nit-brand-#{str-slice($g, 2)}";
+    $nit-b-switchmap: map-merge($nit-b-switchmap, ($sel: $g)) !global;
+    $nit-b-switchselectors: "#{$nit-b-switchselectors}, #{$sel}" !global;
+}
 
 :root {
     // --- Per-group raw palettes (reference values; the switch classes read
-    //     these). 16 roles × 3 groups. -------------------------------------
-    --nit-brand-g1-primary: #{$nit-b-g1-primary};
-    --nit-brand-g1-secondary: #{$nit-b-g1-secondary};
-    --nit-brand-g1-accent: #{$nit-b-g1-accent};
-    --nit-brand-g1-accenttext: #{$nit-b-g1-accenttext};
-    --nit-brand-g1-background: #{$nit-b-g1-background};
-    --nit-brand-g1-surface: #{$nit-b-g1-surface};
-    --nit-brand-g1-textprimary: #{$nit-b-g1-textprimary};
-    --nit-brand-g1-textsecondary: #{$nit-b-g1-textsecondary};
-    --nit-brand-g1-borderprimary: #{$nit-b-g1-borderprimary};
-    --nit-brand-g1-bordersecondary: #{$nit-b-g1-bordersecondary};
-    --nit-brand-g1-hoverbackground: #{$nit-b-g1-hoverbackground};
-    --nit-brand-g1-hovertext: #{$nit-b-g1-hovertext};
-    --nit-brand-g1-error: #{$nit-b-g1-error};
-    --nit-brand-g1-success: #{$nit-b-g1-success};
-    --nit-brand-g1-warning: #{$nit-b-g1-warning};
-    --nit-brand-g1-info: #{$nit-b-g1-info};
-
-    --nit-brand-g2-primary: #{$nit-b-g2-primary};
-    --nit-brand-g2-secondary: #{$nit-b-g2-secondary};
-    --nit-brand-g2-accent: #{$nit-b-g2-accent};
-    --nit-brand-g2-accenttext: #{$nit-b-g2-accenttext};
-    --nit-brand-g2-background: #{$nit-b-g2-background};
-    --nit-brand-g2-surface: #{$nit-b-g2-surface};
-    --nit-brand-g2-textprimary: #{$nit-b-g2-textprimary};
-    --nit-brand-g2-textsecondary: #{$nit-b-g2-textsecondary};
-    --nit-brand-g2-borderprimary: #{$nit-b-g2-borderprimary};
-    --nit-brand-g2-bordersecondary: #{$nit-b-g2-bordersecondary};
-    --nit-brand-g2-hoverbackground: #{$nit-b-g2-hoverbackground};
-    --nit-brand-g2-hovertext: #{$nit-b-g2-hovertext};
-    --nit-brand-g2-error: #{$nit-b-g2-error};
-    --nit-brand-g2-success: #{$nit-b-g2-success};
-    --nit-brand-g2-warning: #{$nit-b-g2-warning};
-    --nit-brand-g2-info: #{$nit-b-g2-info};
-
-    --nit-brand-g3-primary: #{$nit-b-g3-primary};
-    --nit-brand-g3-secondary: #{$nit-b-g3-secondary};
-    --nit-brand-g3-accent: #{$nit-b-g3-accent};
-    --nit-brand-g3-accenttext: #{$nit-b-g3-accenttext};
-    --nit-brand-g3-background: #{$nit-b-g3-background};
-    --nit-brand-g3-surface: #{$nit-b-g3-surface};
-    --nit-brand-g3-textprimary: #{$nit-b-g3-textprimary};
-    --nit-brand-g3-textsecondary: #{$nit-b-g3-textsecondary};
-    --nit-brand-g3-borderprimary: #{$nit-b-g3-borderprimary};
-    --nit-brand-g3-bordersecondary: #{$nit-b-g3-bordersecondary};
-    --nit-brand-g3-hoverbackground: #{$nit-b-g3-hoverbackground};
-    --nit-brand-g3-hovertext: #{$nit-b-g3-hovertext};
-    --nit-brand-g3-error: #{$nit-b-g3-error};
-    --nit-brand-g3-success: #{$nit-b-g3-success};
-    --nit-brand-g3-warning: #{$nit-b-g3-warning};
-    --nit-brand-g3-info: #{$nit-b-g3-info};
+    //     these): `--nit-brand-<gkey>-<role>`, every role of every group.
+    @each $g, $roles in $nit-b-groups {
+        @each $role, $value in $roles {
+            --nit-brand-#{$g}-#{$role}: #{$value};
+        }
+    }
 
     // --- Active layer — the names components actually use. Defaults to Group 1.
-    --nit-brand-primary: var(--nit-brand-g1-primary);
-    --nit-brand-secondary: var(--nit-brand-g1-secondary);
-    --nit-brand-accent: var(--nit-brand-g1-accent);
-    --nit-brand-accenttext: var(--nit-brand-g1-accenttext);
-    --nit-brand-background: var(--nit-brand-g1-background);
-    --nit-brand-surface: var(--nit-brand-g1-surface);
-    --nit-brand-textprimary: var(--nit-brand-g1-textprimary);
-    --nit-brand-textsecondary: var(--nit-brand-g1-textsecondary);
-    --nit-brand-borderprimary: var(--nit-brand-g1-borderprimary);
-    --nit-brand-bordersecondary: var(--nit-brand-g1-bordersecondary);
-    --nit-brand-hoverbackground: var(--nit-brand-g1-hoverbackground);
-    --nit-brand-hovertext: var(--nit-brand-g1-hovertext);
-    --nit-brand-error: var(--nit-brand-g1-error);
-    --nit-brand-success: var(--nit-brand-g1-success);
-    --nit-brand-warning: var(--nit-brand-g1-warning);
-    --nit-brand-info: var(--nit-brand-g1-info);
+    @each $role, $value in map-get($nit-b-groups, "g1") {
+        --nit-brand-#{$role}: var(--nit-brand-g1-#{$role});
+    }
+    // Legacy alias, kept because five component partials already read it.
+    --nit-brand-on-primary: var(--nit-brand-g1-onprimary);
 
     // --- Derived helpers. These reference the ACTIVE role vars, so they follow
     //     whichever group is in scope automatically (no per-group duplication).
@@ -116,62 +84,373 @@
     // in the RTL stylesheet, breaking every consumer (e.g. the navbar hover) in
     // Arabic only. Keep directional words out of custom-property names.
     --nit-brand-accent-vivid: color-mix(in srgb, var(--nit-brand-accent) 70%, #fff);
-    // Text-facing accent (links, important words, underlines). Its own hover/vivid
-    // companions so link and text-icon hover states track "Accent Text", not the
+    // Link ink ("Link Text"). Its own hover/vivid
+    // companions so link and text-icon hover states track the link role, not the
     // (now non-text) "Accent" role.
     --nit-brand-accenttext-hover: color-mix(in srgb, var(--nit-brand-accenttext) 16%, transparent);
     --nit-brand-accenttext-vivid: color-mix(in srgb, var(--nit-brand-accenttext) 70%, #fff);
+    // Important Words gets the same two companions, for the same reason: inline
+    // code sits on the raised Surface and a flat accent measures ~4.2 there, so
+    // the vivid mix is what the code role actually consumes.
+    --nit-brand-accentwords-hover: color-mix(in srgb, var(--nit-brand-accentwords) 16%, transparent);
+    --nit-brand-accentwords-vivid: color-mix(in srgb, var(--nit-brand-accentwords) 70%, #fff);
     --nit-brand-surface-2: color-mix(in srgb, var(--nit-brand-surface) 90%, #fff);
     --nit-brand-surface-translucent: color-mix(in srgb, var(--nit-brand-surface) 88%, transparent);
-    // Text/label that sits ON the primary fill (solid buttons, CTAs). Must
-    // CONTRAST with the primary — not follow the body Text primary, which on a
-    // light palette is near-black and vanishes on a dark primary. color-contrast()
-    // returns black or white for this academy's Group-1 primary.
-    @if $nit-b-g1-onprimary == auto {
-        --nit-brand-on-primary: #{color-contrast($nit-b-g1-primary)};
-    } @else {
-        --nit-brand-on-primary: #{$nit-b-g1-onprimary};
-    }
 }
 
 // --- Group switch classes. A component (or any wrapper) carrying one of these
 //     re-resolves every active role name to that group. Same names, different
 //     palette; the derived helpers above follow because they read the active
 //     vars, which are overridden here.
-.nit-brand-2 {
-    --nit-brand-primary: var(--nit-brand-g2-primary);
-    --nit-brand-secondary: var(--nit-brand-g2-secondary);
-    --nit-brand-accent: var(--nit-brand-g2-accent);
-    --nit-brand-accenttext: var(--nit-brand-g2-accenttext);
-    --nit-brand-background: var(--nit-brand-g2-background);
-    --nit-brand-surface: var(--nit-brand-g2-surface);
-    --nit-brand-textprimary: var(--nit-brand-g2-textprimary);
-    --nit-brand-textsecondary: var(--nit-brand-g2-textsecondary);
-    --nit-brand-borderprimary: var(--nit-brand-g2-borderprimary);
-    --nit-brand-bordersecondary: var(--nit-brand-g2-bordersecondary);
-    --nit-brand-hoverbackground: var(--nit-brand-g2-hoverbackground);
-    --nit-brand-hovertext: var(--nit-brand-g2-hovertext);
-    --nit-brand-error: var(--nit-brand-g2-error);
-    --nit-brand-success: var(--nit-brand-g2-success);
-    --nit-brand-warning: var(--nit-brand-g2-warning);
-    --nit-brand-info: var(--nit-brand-g2-info);
+// Group 1 is the site default and every role above already resolves to it, so
+// its class is a no-op on a page — and load-bearing on the navigation bar. The
+// scroll switch works by putting a group's class on the BAR
+// (theme_nit_navbar_scroll_group()), and a bar scrolling INTO Group 1 needs a
+// class to say that with; without one, "switch to Group 1" would be the single
+// combination the control could not express.
+//
+// Group 4 (Daylight) and the six light category groups are the light palettes;
+// nothing about them is special-cased here. The one thing a light group needs
+// that a dark one does not — its glass built from the other navbar colour — is
+// in _root.scss, keyed off `$nit-b-lightgroups`.
+@each $g, $roles in $nit-b-groups {
+    .nit-brand-#{str-slice($g, 2)} {
+        @each $role, $value in $roles {
+            --nit-brand-#{$role}: var(--nit-brand-#{$g}-#{$role});
+        }
+        // Legacy alias, kept because five component partials already read it.
+        --nit-brand-on-primary: var(--nit-brand-#{$g}-onprimary);
+    }
 }
 
-.nit-brand-3 {
-    --nit-brand-primary: var(--nit-brand-g3-primary);
-    --nit-brand-secondary: var(--nit-brand-g3-secondary);
-    --nit-brand-accent: var(--nit-brand-g3-accent);
-    --nit-brand-accenttext: var(--nit-brand-g3-accenttext);
-    --nit-brand-background: var(--nit-brand-g3-background);
-    --nit-brand-surface: var(--nit-brand-g3-surface);
-    --nit-brand-textprimary: var(--nit-brand-g3-textprimary);
-    --nit-brand-textsecondary: var(--nit-brand-g3-textsecondary);
-    --nit-brand-borderprimary: var(--nit-brand-g3-borderprimary);
-    --nit-brand-bordersecondary: var(--nit-brand-g3-bordersecondary);
-    --nit-brand-hoverbackground: var(--nit-brand-g3-hoverbackground);
-    --nit-brand-hovertext: var(--nit-brand-g3-hovertext);
-    --nit-brand-error: var(--nit-brand-g3-error);
-    --nit-brand-success: var(--nit-brand-g3-success);
-    --nit-brand-warning: var(--nit-brand-g3-warning);
-    --nit-brand-info: var(--nit-brand-g3-info);
+
+// --- Bootstrap bridge -------------------------------------------------------
+// Bootstrap 5.3 paints the page through its own custom properties
+// (`body { background-color: var(--bs-body-bg) }`), and pre_scss bakes those
+// from GROUP 1 — a literal hex that no group switch can reach. So the switch
+// classes above recoloured every component that reads a `--nit-brand-*` name and
+// left the page itself on Group 1's ground: content islands in the new palette
+// floating on the old one. Invisible while all the groups were dark and close in
+// value; impossible to miss the moment one of them (Group 4) is light.
+//
+// Re-pointing the three page-level Bootstrap properties at the ACTIVE brand
+// roles fixes that for every group at once, category styles included. Listed in
+// all five scopes rather than on `:root` alone on purpose: a custom property
+// holding a var() is substituted on the element that declares it, so a `:root`-
+// only declaration would freeze to Group 1 exactly the way the baked hex did.
+//
+// Under Group 1 these resolve to the same values pre_scss already baked, so the
+// default site is unchanged to the pixel.
+#{$nit-b-switchselectors} {
+    --bs-body-bg: var(--nit-brand-background);
+    --bs-body-color: var(--nit-brand-textprimary);
+    --bs-border-color: var(--nit-brand-borderprimary);
+    --bs-border-color-translucent: var(--nit-brand-borderprimary);
+
+    // Bootstrap 5.3's SECOND text tier, and the reason an admin page in Group 4
+    // came out near-white on near-white. `.text-muted` is no longer `$text-muted`
+    // — 5.3 redefined it as `--bs-secondary-color`, which Bootstrap derives as
+    // `rgba(var(--bs-body-color-rgb), .75)`, i.e. Group 1's near-white ink at 75%
+    // opacity, frozen. Every "dimmed" label, section hint and help text on a
+    // Moodle settings page reads it. Pointed at the brand's own "Text secondary"
+    // role it becomes the colour the theme always meant it to be — which is what
+    // pre_scss already sets `$text-muted` to, so Group 1 does not move.
+    --bs-secondary-color: var(--nit-brand-textsecondary);
+    --bs-tertiary-color: var(--nit-brand-textsecondary);
+    --bs-emphasis-color: var(--nit-brand-textprimary);
+    --bs-heading-color: var(--nit-brand-textprimary);
+    --bs-highlight-color: var(--nit-brand-textprimary);
+
+    // The two neutral fills. Bootstrap ships these as its own light-theme greys
+    // (#e9ecef / #f8f9fa) and pre_scss never touched them, so they were wrong in
+    // every group — light blocks on the dark brand, and the wrong light on the
+    // light one.
+    --bs-secondary-bg: var(--nit-brand-background2);
+    --bs-tertiary-bg: var(--nit-brand-hoverbackground);
+
+    --bs-link-color: var(--nit-brand-accenttext);
+    --bs-link-hover-color: var(--nit-brand-hovertext);
+}
+
+// The `-rgb` companions. Bootstrap keeps a bare "r, g, b" triplet beside several
+// of the colours above so rules can write `rgba(var(--bs-body-color-rgb), .5)`.
+// A triplet cannot be derived from a hex custom property in CSS, so each group
+// emits its own at compile time from the same SCSS variable the role is built
+// from — otherwise every translucent tint in Bootstrap stays on Group 1.
+@each $sel, $g in $nit-b-switchmap {
+    #{$sel} {
+        $roles: map-get($nit-b-groups, $g);
+        $ink: map-get($roles, "textprimary");
+        $bg: map-get($roles, "background");
+        $muted: map-get($roles, "textsecondary");
+        $link: map-get($roles, "accenttext");
+        $pri: map-get($roles, "primary");
+        // The two neutral fills need triplets of their own: `.bg-body-secondary`
+        // is `rgba(var(--bs-secondary-bg-rgb), var(--bs-bg-opacity))`, so setting
+        // only `--bs-secondary-bg` above left it on Bootstrap's own grey.
+        $bg2: map-get($roles, "background2");
+        $hov: map-get($roles, "hoverbackground");
+        // Bootstrap 5.3 paints `a:hover` by swapping `--bs-link-color-rgb` for
+        // `--bs-link-hover-color-rgb`, so `--bs-link-hover-color` above never
+        // reaches a hovered link: without its own triplet every link on the site
+        // hovered to the stock Bootstrap blue.
+        $hovtext: map-get($roles, "hovertext");
+
+        --bs-secondary-bg-rgb: #{red($bg2)}, #{green($bg2)}, #{blue($bg2)};
+        --bs-tertiary-bg-rgb: #{red($hov)}, #{green($hov)}, #{blue($hov)};
+        --bs-body-color-rgb: #{red($ink)}, #{green($ink)}, #{blue($ink)};
+        --bs-emphasis-color-rgb: #{red($ink)}, #{green($ink)}, #{blue($ink)};
+        --bs-body-bg-rgb: #{red($bg)}, #{green($bg)}, #{blue($bg)};
+        --bs-secondary-color-rgb: #{red($muted)}, #{green($muted)}, #{blue($muted)};
+        --bs-link-color-rgb: #{red($link)}, #{green($link)}, #{blue($link)};
+        --bs-link-hover-color-rgb: #{red($hovtext)}, #{green($hovtext)}, #{blue($hovtext)};
+        --bs-primary-rgb: #{red($pri)}, #{green($pri)}, #{blue($pri)};
+    }
+}
+
+// The same story one level down: Bootstrap scopes the surface of a card, a
+// dropdown and a form control to the component, again baked from Group 1. These
+// are declared ON the components, which sit inside whatever group wrapper is in
+// scope, so the active role resolves correctly there.
+.card {
+    --bs-card-bg: var(--nit-brand-surface);
+    --bs-card-color: var(--nit-brand-textprimary);
+    --bs-card-border-color: var(--nit-brand-borderprimary);
+}
+
+.dropdown-menu {
+    --bs-dropdown-bg: var(--nit-brand-surface);
+    --bs-dropdown-color: var(--nit-brand-textprimary);
+    --bs-dropdown-border-color: var(--nit-brand-borderprimary);
+    --bs-dropdown-link-color: var(--nit-brand-textprimary);
+}
+
+// The same bridge for the two things that carry the brand hardest: the primary
+// button and content links. Bootstrap 5.3 exposes both as component-scoped
+// custom properties, but `$primary` and `$link-color` were baked from Group 1 in
+// pre_scss — which is why a page in any other group still showed the Group 1 blue
+// button and the Group 1 blue link.
+//
+// The mix ratios are not invented: they are the exact tints Bootstrap computed
+// for these states (85% / 90% / 80% against white), read back off the compiled
+// stylesheet, so under Group 1 every one of these resolves to the same colour
+// that is already on the page. Only the group being different makes them differ.
+#{$nit-b-switchselectors} {
+    --bs-link-color: var(--nit-brand-accenttext);
+    // Inline <code> anywhere on the site. Bootstrap ships a raw magenta that no
+    // brand group has ever contained; a code span is an emphasised word, so it
+    // takes the Important Words role. The vivid mix (not the flat role) because
+    // code is set small and sits on the raised Surface as often as on the page.
+    // theme/nit/scss/components/_gallery.scss said the same thing scoped to one
+    // admin page — this is that decision made once, for every page.
+    --bs-code-color: var(--nit-brand-accentwords-vivid);
+    // Text-decoration colour for the anchors Bootstrap itself underlines. The
+    // site-wide rule in post.scss covers content links; this reaches the ones
+    // core styles through its own custom property.
+    --bs-link-underline-color: var(--nit-brand-accentunderline);
+}
+
+// The three brand buttons, each wired to its own six roles: background, text and
+// border, and the same three again for hover. The colours used to be derived
+// here — the border WAS the fill and the hover was the fill mixed 85% with white
+// — which is a fair guess and not something an administrator could disagree
+// with. Every role seeds to the colour that derivation produced, so this is a
+// change of vocabulary and not of appearance.
+//
+// `active` (the pressed state) reads the same three hover roles rather than a
+// fourth set. Pressing is the tail end of hovering: the cursor is already on the
+// button, and a third colour there buys a frame or two of difference in exchange
+// for six more cards per group.
+.btn-primary {
+    --bs-btn-bg: var(--nit-brand-primary);
+    --bs-btn-border-color: var(--nit-brand-btnprimaryborder);
+    --bs-btn-color: var(--nit-brand-onprimary);
+    --bs-btn-hover-bg: var(--nit-brand-btnprimaryhoverbg);
+    --bs-btn-hover-border-color: var(--nit-brand-btnprimaryhoverborder);
+    --bs-btn-hover-color: var(--nit-brand-btnprimaryhovertext);
+    --bs-btn-active-bg: var(--nit-brand-btnprimaryhoverbg);
+    --bs-btn-active-border-color: var(--nit-brand-btnprimaryhoverborder);
+    --bs-btn-active-color: var(--nit-brand-btnprimaryhovertext);
+    --bs-btn-disabled-bg: var(--nit-brand-primary);
+    --bs-btn-disabled-border-color: var(--nit-brand-btnprimaryborder);
+    --bs-btn-disabled-color: var(--nit-brand-onprimary);
+}
+
+// The secondary button, which until now was not merely underspecified but
+// FROZEN: pre_scss bakes `$secondary` from Group 1, so a page in any other group
+// still drew Group 1's dark navy — the same bug the bridge above was written to
+// undo for the primary. Group 4 is where it showed, a near-black button on a
+// near-white page.
+.btn-secondary {
+    --bs-btn-bg: var(--nit-brand-secondary);
+    --bs-btn-border-color: var(--nit-brand-btnsecondaryborder);
+    --bs-btn-color: var(--nit-brand-onsecondary);
+    --bs-btn-hover-bg: var(--nit-brand-btnsecondaryhoverbg);
+    --bs-btn-hover-border-color: var(--nit-brand-btnsecondaryhoverborder);
+    --bs-btn-hover-color: var(--nit-brand-btnsecondaryhovertext);
+    --bs-btn-active-bg: var(--nit-brand-btnsecondaryhoverbg);
+    --bs-btn-active-border-color: var(--nit-brand-btnsecondaryhoverborder);
+    --bs-btn-active-color: var(--nit-brand-btnsecondaryhovertext);
+    --bs-btn-disabled-bg: var(--nit-brand-secondary);
+    --bs-btn-disabled-border-color: var(--nit-brand-btnsecondaryborder);
+    --bs-btn-disabled-color: var(--nit-brand-onsecondary);
+}
+
+// The two outline buttons, six roles each. They are two blocks and not one
+// because the site has always drawn them differently and both looks are load-
+// bearing: the BRAND one carries the public pages (the category hero CTAs, the
+// filter pills, "Course details" on every card) and the NEUTRAL one is
+// back-office chrome. A single shared block would have had to repaint one of
+// them — either a Cancel picks up the brand ring and stops reading differently
+// from the Save beside it, or every public CTA goes grey.
+//
+// The status outlines (`-danger`, `-success`, `-warning`, `-info`) belong to
+// neither: their whole job is to BE the status colour.
+//
+// In both, the resting background is the one role that is usually not a colour
+// at all — it comes through as `transparent` unless that block's Fill switch is
+// on, which is what keeps an outline button looking right on the page ground and
+// on a card alike. See theme_nit_button_outline_fill().
+//
+// `.btn-outline-primary` was bridged in scss/foundation/_corebridge.scss until
+// these roles existed. That block had to GO, not be re-pointed: _corebridge.scss
+// is emitted after this file, so at equal specificity it would have overwritten
+// every card an admin set here.
+.btn-outline-primary {
+    --bs-btn-bg: var(--nit-brand-btnoutlineprimarybg);
+    --bs-btn-border-color: var(--nit-brand-btnoutlineprimaryborder);
+    --bs-btn-color: var(--nit-brand-btnoutlineprimarytext);
+    --bs-btn-hover-bg: var(--nit-brand-btnoutlineprimaryhoverbg);
+    --bs-btn-hover-border-color: var(--nit-brand-btnoutlineprimaryhoverborder);
+    --bs-btn-hover-color: var(--nit-brand-btnoutlineprimaryhovertext);
+    --bs-btn-active-bg: var(--nit-brand-btnoutlineprimaryhoverbg);
+    --bs-btn-active-border-color: var(--nit-brand-btnoutlineprimaryhoverborder);
+    --bs-btn-active-color: var(--nit-brand-btnoutlineprimaryhovertext);
+    --bs-btn-disabled-color: var(--nit-brand-btnoutlineprimarytext);
+    --bs-btn-disabled-border-color: var(--nit-brand-btnoutlineprimaryborder);
+
+    // Core carries a direct `border-color` on the outline variants (not only the
+    // --bs-btn-border-color var), so the RESTING border needs an explicit brand
+    // value to win. The state borders follow the vars above.
+    border-color: var(--nit-brand-btnoutlineprimaryborder);
+}
+
+// `.btn-outline-dark` rides along with the neutral one. Bootstrap generates an
+// outline variant for every theme colour, and core reaches for the "dark" one in
+// a few back-office places — the question bank's "Reset columns" / "Add column" /
+// "Save widths" controls (qbank_columnsortorder) and mod_bigbluebuttonbn's end-
+// session button. It has no role of its own, and on a dark brand it renders as a
+// near-black label on a near-black page (measured 1.14:1 on question/edit.php).
+// It is the same job as the neutral ghost button it sits beside, so it takes the
+// same six roles rather than a seventh set nobody would know to look for.
+.btn-outline-secondary,
+.btn-outline-dark {
+    --bs-btn-bg: var(--nit-brand-btnoutlinebg);
+    --bs-btn-border-color: var(--nit-brand-btnoutlineborder);
+    --bs-btn-color: var(--nit-brand-btnoutlinetext);
+    --bs-btn-hover-bg: var(--nit-brand-btnoutlinehoverbg);
+    --bs-btn-hover-border-color: var(--nit-brand-btnoutlinehoverborder);
+    --bs-btn-hover-color: var(--nit-brand-btnoutlinehovertext);
+    --bs-btn-active-bg: var(--nit-brand-btnoutlinehoverbg);
+    --bs-btn-active-border-color: var(--nit-brand-btnoutlinehoverborder);
+    --bs-btn-active-color: var(--nit-brand-btnoutlinehovertext);
+    --bs-btn-disabled-color: var(--nit-brand-btnoutlinetext);
+    --bs-btn-disabled-border-color: var(--nit-brand-btnoutlineborder);
+
+    // Core carries a direct `border-color` on the outline variants (not only the
+    // --bs-btn-border-color var), so the RESTING border needs an explicit brand
+    // value to win. The state borders follow the vars above.
+    border-color: var(--nit-brand-btnoutlineborder);
+}
+
+// --- Checkboxes, radios and switches ------------------------------------------
+// One element, `.form-check-input`; `.form-switch` only changes the picture
+// drawn on it. Six roles under Brand → Checkbox & switch, and this is the one
+// door: the box used to be assembled from four places — the resting fill from
+// `$input-bg` (Group 1's Surface, baked), the resting border in _forms.scss, the
+// checked fill in _corebridge.scss, and the tick and the switch knob from
+// Bootstrap's own SVGs, fixed white and black-at-25% — and the last two were
+// beyond an administrator's reach entirely. Every role seeds to the colour that
+// arrangement produced, so this is a change of vocabulary, not of appearance
+// (the OFF knob excepted: it had no hex to seed from, and on a dark track was
+// invisible).
+//
+// `--bs-form-check-bg` is the property Bootstrap paints the fill from, so
+// re-pointing it reaches the resting state; `:checked` and `:focus` carry
+// literal colours in core and are overridden at equal specificity, which this
+// file wins by coming later. `:active` (pressed) reads the same roles as rest —
+// Bootstrap's pressed tint is `$form-check-input-active-filter`, a brightness
+// filter, so it needs nothing of its own.
+.form-check-input {
+    --bs-form-check-bg: var(--nit-brand-checkbg);
+    border-color: var(--nit-brand-checkborder);
+
+    &:checked,
+    &[type="checkbox"]:indeterminate {
+        background-color: var(--nit-brand-checkcheckedbg);
+        border-color: var(--nit-brand-checkcheckedborder);
+    }
+
+}
+
+// The focus ring. Written with the element name on purpose: Boost paints its
+// own ring on `input[type="checkbox"]:focus` (0,2,1), baked from Group 1's
+// primary, and `.form-check-input:focus` (0,2,0) loses to it however late it is
+// emitted. Same 35% Boost uses, so under Group 1 the ring does not move.
+input.form-check-input:focus {
+    border-color: var(--nit-brand-checkcheckedborder);
+    box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--nit-brand-checkcheckedbg) 35%, transparent);
+}
+
+
+// The pictures: the tick, the radio dot, the half-ticked dash, and the switch
+// knob in its off and on states. All five are SVG data-URIs, and a data-URI is a
+// string — it cannot contain `var()`. So each is compiled once per group from
+// the same `$nit-b-*` value the card saved, and scoped to that group's switch
+// class, which lives on <html> (theme_nit_brand_group_class()) and so reaches
+// every box on the page. `:root` carries Group 1 for pages with no class at all;
+// a group's own rule is emitted after it and wins at equal specificity.
+//
+// The shapes are Bootstrap's own (`$form-check-input-checked-bg-image` and
+// friends), colour swapped and nothing else, run through the same escape-svg()
+// core uses — a raw `#` inside a data-URI ends the URL.
+//
+// The focus picture of an OFF switch is Bootstrap's focus-tinted knob; here it
+// stays the knob role so the ring alone says "focused", the way it does on a
+// tick box.
+@each $sel, $g in $nit-b-switchmap {
+    $mark: map-get(map-get($nit-b-groups, $g), "checkcheckedmark");
+    $knob: map-get(map-get($nit-b-groups, $g), "checkknob");
+
+    $tick: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path fill='none' stroke='#{$mark}' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 10 3 3 6-6'/></svg>");
+    $dot: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'><circle r='2' fill='#{$mark}'/></svg>");
+    $dash: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path fill='none' stroke='#{$mark}' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10h8'/></svg>");
+    $knoboff: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'><circle r='3' fill='#{$knob}'/></svg>");
+    $knobon: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'><circle r='3' fill='#{$mark}'/></svg>");
+
+    #{$sel} .form-check-input {
+        &:checked[type="checkbox"] {
+            --bs-form-check-bg-image: #{escape-svg($tick)};
+        }
+
+        &:checked[type="radio"] {
+            --bs-form-check-bg-image: #{escape-svg($dot)};
+        }
+
+        &[type="checkbox"]:indeterminate {
+            --bs-form-check-bg-image: #{escape-svg($dash)};
+        }
+    }
+
+    #{$sel} .form-switch .form-check-input {
+        --bs-form-switch-bg: #{escape-svg($knoboff)};
+
+        &:focus {
+            --bs-form-switch-bg: #{escape-svg($knoboff)};
+        }
+
+        &:checked {
+            --bs-form-switch-bg: #{escape-svg($knobon)};
+        }
+    }
 }

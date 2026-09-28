@@ -21,11 +21,11 @@
 // Page chrome that core paints off-brand on this admin surface.
 .nit-gallery {
     // Inline <code> (the CSS-var names in the intro, font filenames). Bootstrap's
-    // --bs-code-color is a raw magenta; point it at the Accent Text role (code is
-    // text). Use the brighter accent-text tint so red code clears 4.5:1 on the
-    // dark Background (flat Accent Text measures ~4.2). The colour editor's own
+    // --bs-code-color is a raw magenta; point it at the Important Words role (a
+    // code span is an emphasised word, not a link). Use the brighter tint so it
+    // clears 4.5:1 on the dark Background (flat measures ~4.2). The editor's own
     // .nit-colour-config keeps its Text-secondary colour via its more specific rule.
-    --bs-code-color: var(--nit-brand-accenttext-vivid);
+    --bs-code-color: var(--nit-brand-accentwords-vivid);
 
     // Muted descriptive copy — the per-tab intro paragraphs and the "GROUP n"
     // labels. Core's `.text-muted` resolves to a translucent white here; point it
@@ -43,6 +43,163 @@
     #nit-gallery-tabs.nav-tabs {
         background-color: transparent;
         --bs-nav-tabs-border-color: var(--nit-brand-borderprimary);
+    }
+}
+
+// =============================================================================
+// Brand Colors: the group switcher and the per-group section strip.
+//
+// The tab holds five complete palettes of 59 roles. Printed end to end that is
+// 295 colour wells in one column, and the only way from one group to another was
+// the scrollbar. One group and one section are on screen at a time now; these
+// two strips are what move between them, and both stay put while the grid under
+// them scrolls — on a long section the Save button used to be off the bottom of
+// the screen by the time a colour had been picked.
+// =============================================================================
+
+// The whole header: which group, which section, and the two buttons. ONE sticky
+// element carrying all three — two stacked sticky bars would need the second to
+// know the exact height of the first, which is a number that changes with the
+// type size and with how many pills fit on a line.
+.nit-brand-toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: $nit-space-2;
+    position: sticky;
+    // Under the site's own fixed bar, not behind it — `$navbar-height` is what
+    // that bar is drawn at (scss/tokens/_semantic.scss), and it is also what
+    // Moodle offsets the page content by.
+    top: $navbar-height;
+    z-index: 2;
+    padding: $nit-space-2 0;
+    margin-bottom: $nit-space-3;
+    background: var(--nit-brand-background);
+    border-bottom: 1px solid var(--nit-brand-borderprimary);
+}
+
+// Section pills on one side, Save / Reset on the other. They stack rather than
+// squeeze when the row runs out of room.
+.nit-brand-toolbar-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: $nit-space-2;
+}
+
+// Which group is being edited. A row of pills rather than a <select> because the
+// choice is worth showing: each pill wears its group's own bar / page / button /
+// link colours, so the strip is also the answer to "which one is the teal one".
+.nit-brand-switch {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $nit-space-2;
+}
+
+.nit-brand-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border: 1px solid var(--nit-brand-borderprimary);
+    border-radius: 999px;
+    background: var(--nit-brand-surface);
+    color: var(--nit-brand-textsecondary);
+    font-size: $nit-fs-sm;
+    font-weight: 600;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+
+    &:hover,
+    &:focus {
+        background: var(--nit-brand-hoverbackground);
+        color: var(--nit-brand-textprimary);
+    }
+
+    // The selected group. A filled pill, and the one place on this page that
+    // uses the on-primary role — a raw primary fill under near-white text is
+    // only about 3.5:1.
+    &.active {
+        background: var(--nit-brand-primary);
+        border-color: var(--nit-brand-primary);
+        color: var(--nit-brand-onprimary);
+    }
+}
+
+.nit-brand-pill-dots {
+    display: inline-flex;
+    // Overlapped, so four colours cost the width of about two and a half.
+    align-items: center;
+}
+
+.nit-brand-pill-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 1px solid var(--nit-brand-borderprimary);
+    margin-inline-start: -4px;
+
+    &:first-child {
+        margin-inline-start: 0;
+    }
+}
+
+.nit-brand-sections {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.nit-brand-actions {
+    display: flex;
+    gap: $nit-space-2;
+}
+
+// A block heading inside a section — Background / Titles / Icons / Login within
+// the Navbar. Deliberately quiet: it is a third level down, its job is to break
+// twenty cards into four runs of five, and a heading loud enough to compete with
+// the card names would make the grid harder to read rather than easier.
+.nit-brand-blockhead {
+    margin: $nit-space-4 0 $nit-space-2;
+    font-size: $nit-fs-sm;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--nit-brand-textsecondary);
+
+    // The first heading sits directly under the sticky toolbar, which already
+    // provides the gap.
+    &:first-child {
+        margin-top: 0;
+    }
+}
+
+// A section within one group. Quieter than the group pills — this is a second
+// level of the same choice, and two equally loud strips read as one confusing
+// one.
+.nit-brand-sectionpill {
+    padding: 5px 12px;
+    border: 1px solid transparent;
+    border-radius: $nit-radius-md;
+    background: transparent;
+    color: var(--nit-brand-textsecondary);
+    font-size: $nit-fs-sm;
+    font-weight: 600;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+
+    &:hover,
+    &:focus {
+        background: var(--nit-brand-hoverbackground);
+        color: var(--nit-brand-textprimary);
+    }
+
+    &.active {
+        background: var(--nit-brand-surface);
+        border-color: var(--nit-brand-borderprimary);
+        color: var(--nit-brand-textprimary);
     }
 }
 
@@ -116,7 +273,11 @@
         background: var(--nit-brand-background);
         border: 1px solid var(--nit-brand-borderprimary);
         color: var(--nit-brand-textsecondary);
-        white-space: nowrap;
+        // Wraps rather than clipping. A usage line is a sentence ("navbar icons
+        // — search, language, messages, notifications, gear"), and `nowrap` cut
+        // the longer ones off at the edge of the card.
+        white-space: normal;
+        overflow-wrap: anywhere;
     }
 
     // The swatch + hex + default sit in one horizontal row under the name.
@@ -173,6 +334,126 @@
     .nit-colour-default {
         flex: 0 0 auto;
     }
+
+    // The size and weight controls, on the same field ground the hex boxes use.
+    .nit-type-weight,
+    .nit-type-size {
+        background-color: var(--nit-brand-background);
+        color: var(--nit-brand-textprimary);
+        border-color: var(--nit-brand-borderprimary);
+    }
+
+    // The shape cards are a <fieldset>, which browsers give their own min-width
+    // and default box. Reset it back to the card the colour rows use.
+    .nit-shape-row {
+        min-width: 0;
+        border: 1px solid var(--nit-brand-borderprimary);
+        margin: 0;
+        padding: $nit-space-3;
+
+        // A <legend> is not a normal block: left alone it floats out of the
+        // fieldset's border and sizes itself to its text.
+        .nit-colour-name {
+            float: none;
+            width: auto;
+            padding: 0;
+            margin: 0;
+        }
+    }
+
+    // The three treatment ticks. A column, not a row: "Square background" is
+    // wider than a third of a 20rem card, and a row would either wrap unevenly
+    // or squeeze the labels to two lines each.
+    .nit-shape-options {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .nit-shape-option {
+        margin: 0;
+        // Bootstrap's own check spacing assumes an LTR page; the logical
+        // property keeps the tick beside its label in Arabic too.
+        padding-inline-start: 1.6em;
+
+        // No colours here: the box reads the Checkbox & switch cards like every
+        // other tick box (scss/foundation/_brand.scss), so the ones on this
+        // page are a live preview of what those cards do.
+        .form-check-input {
+            margin-inline-start: -1.6em;
+        }
+
+        .form-check-label {
+            color: var(--nit-brand-textprimary);
+            cursor: pointer;
+        }
+    }
+
+    // Size + weight in one card. They wrap onto a second line before either is
+    // squeezed — a 3-character number field and a "Semi-bold (600)" select do not
+    // both fit on one line of a 20rem card.
+    .nit-type-controls {
+        flex-wrap: wrap;
+        gap: $nit-space-2;
+    }
+
+    // The px field and its unit read as one control. The unit sits BESIDE the
+    // field rather than over its trailing edge, which is where the browser draws
+    // a number input's own spinner — the two would have shared the same corner.
+    .nit-type-field {
+        flex: 0 0 auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .nit-type-size {
+        width: 4.75rem;
+        font-family: $font-family-monospace;
+    }
+
+    .nit-type-unit {
+        font-size: $nit-fs-xs;
+        color: var(--nit-brand-textsecondary);
+    }
+
+    .nit-type-weight {
+        flex: 1 1 8rem;
+        min-width: 8rem;
+    }
+
+    .nit-scroll-select {
+        flex: 1 1 auto;
+        min-width: 0;
+        background-color: var(--nit-brand-background);
+        color: var(--nit-brand-textprimary);
+        border-color: var(--nit-brand-borderprimary);
+    }
+
+    // The transparency card: a switch and a percentage. They wrap onto separate
+    // lines before either is squeezed.
+    .nit-glass-controls {
+        flex-wrap: wrap;
+        gap: $nit-space-2;
+    }
+
+    .nit-glass-switch {
+        flex: 1 0 100%;
+        min-height: 0;
+        margin: 0;
+        padding-inline-start: 2.5em;
+
+        // Colours come from the Checkbox & switch cards (see the shape options
+        // above) — this is the switch an admin will look at while editing them.
+        .form-check-input {
+            margin-inline-start: -2.5em;
+        }
+
+        .form-check-label {
+            color: var(--nit-brand-textprimary);
+            cursor: pointer;
+        }
+    }
 }
 
 // Category styles tab — the category → brand-group table. Bootstrap's `.table`
@@ -205,4 +486,24 @@
         color: var(--nit-brand-textprimary);
         border-color: var(--nit-brand-borderprimary);
     }
+
+    // The per-category logo uploads, given the same treatment for the same
+    // reason: Bootstrap paints a file field and its "Browse" button from its own
+    // light-theme variables, which on this page reads as a white island in the
+    // middle of a branded table. The `::file-selector-button` needs saying
+    // separately — it does not inherit the control's own colours.
+    .form-control {
+        background-color: var(--nit-brand-surface);
+        color: var(--nit-brand-textprimary);
+        border-color: var(--nit-brand-borderprimary);
+
+        &::file-selector-button {
+            background-color: var(--nit-brand-background2);
+            color: var(--nit-brand-textprimary);
+            border-color: var(--nit-brand-borderprimary);
+        }
+    }
+
+    // The "Remove" tick beside a logo that is already set reads the Checkbox &
+    // switch cards like every other box — nothing to override here.
 }

@@ -303,3 +303,160 @@ $string['edit_structurewarn'] = 'This changes the page structure now and discard
 $string['edit_loginpage'] = 'Login page';
 $string['edit_signuppage'] = 'Signup page';
 $string['edit_signuphint'] = 'Leave empty to reuse the login texts.';
+
+// ── Design Gallery / Brand Colors suite (navbar, category, mode, logo, fonts, auth) — ported from EAAC ──
+$string['brandgroupswitch'] = 'Which group to edit';
+$string['navbarshape_usage'] = 'tick any, or none — the ticked marks are drawn together';
+$string['navbarsize'] = 'size in pixels';
+$string['navbarweight'] = 'font weight';
+$string['navbarglass'] = 'Background transparency';
+$string['navbarglass_usage'] = 'let the page show through the bar, and by how much';
+$string['navbarglass_on'] = 'Apply transparency';
+$string['navbarglass_degree'] = 'transparency percentage';
+$string['navbarscroll'] = 'Style once scrolled';
+$string['navbarscroll_usage'] = 'the bar wears this group\'s navbar style from the moment the page moves';
+$string['navbarscroll_same'] = 'Same as this group (no change)';
+$string['btnoutlinefill'] = 'Fill the background';
+$string['btnoutlinefill_usage'] = 'off = transparent, so the button takes the colour of whatever it sits on';
+$string['categorystyles_col_stylefor'] = 'Style — {$a}';
+$string['categorystyles_col_logofor'] = 'Logo — {$a}';
+$string['categorystyles_col_logolight'] = 'Logo — light mode';
+$string['categorystyles_col_logodark'] = 'Logo — dark mode';
+$string['categorystyles_sitedefault'] = 'Site default';
+$string['categorystyles_nologo'] = 'Site logo';
+$string['categorystyles_removelogo'] = 'Remove';
+$string['categorystyles_col_image'] = 'Image';
+$string['categorystyles_noimage'] = 'No image';
+$string['categorystyles_editimage'] = 'Set image';
+$string['categorylogouploaderror'] = 'Could not upload {$a}. Please try again.';
+$string['categorylogoinvalidtype'] = '{$a} must be a PNG, JPG, WebP, GIF or SVG image.';
+$string['categorylogotoomany'] = '{$a} logo file(s) were not saved: this server accepts only a limited number of uploads in one request. Upload a few categories at a time.';
+$string['sitestyles'] = 'Site styles';
+$string['sitestyles_desc'] = 'Choose which Brand Colors group the site uses in each display mode. The light/dark button in the navigation bar switches between the two — it carries no palette of its own, it selects one of the groups below, so a visitor pressing it sees exactly the colours you tuned on the Brand Colors tab. Give the two modes different groups; when they are the same the button changes nothing and is not shown. "Default" is the mode a visitor who has never pressed the button opens in; once pressed, the browser remembers their choice. Pages inside a category that has its own styles use those instead, and the button moves between that category\'s pair.';
+$string['sitestyles_col_mode'] = 'Display mode';
+$string['sitestyles_col_group'] = 'Brand group';
+$string['sitestyles_col_default'] = 'Default';
+$string['sitestyles_default_aria'] = 'Open the site in {$a} for visitors who have not chosen a mode';
+$string['savesitestyles'] = 'Save site styles';
+$string['sitestylessaved'] = 'Site styles saved.';
+$string['homechrome'] = 'Home page chrome';
+$string['homechrome_desc'] = 'Choose whether the navigation bar and the site footer are shown on the home page. This affects the home page only — every other page keeps both. A part that is switched off is left out of the page entirely, so it takes up no room. Both are always shown while edit mode is on, because the edit-mode switch and the user menu are on the navigation bar.';
+$string['homechrome_navbar'] = 'Show the navigation bar on the home page';
+$string['homechrome_navbar_desc'] = 'Off: the home page starts at the top of the screen with the first block; the navigation bar (logo, menu, search, language, log in) is not drawn there.';
+$string['homechrome_footer'] = 'Show the footer on the home page';
+$string['homechrome_footer_desc'] = 'Off: the home page ends with its last block; the site footer band (contact details, link columns, copyright) is not drawn there.';
+$string['savehomechrome'] = 'Save home page chrome';
+$string['homechromesaved'] = 'Home page chrome saved.';
+$string['modelight'] = 'Light mode';
+$string['modedark'] = 'Dark mode';
+$string['modeswitchtolight'] = 'Switch to light mode';
+$string['modeswitchtodark'] = 'Switch to dark mode';
+$string['tab_changestyle'] = 'Change style';
+$string['tab_authscreens'] = 'Log-in &amp; sign-up';
+$string['authscreens_desc'] = 'The picture beside the log-in and sign-up cards, and the quote drawn over it. The site logo is drawn there too — it is the same logo the navigation bar shows (Site administration → Appearance → Logos), so it never needs setting twice and never goes stale. Nothing here appears below 992px wide: the panel is hidden on phones and tablets, where the form fills the screen.';
+$string['authimagelogin'] = 'Log-in page picture';
+$string['authimagelogin_desc'] = 'Shown on the log-in screen — and on the rest of the account flow (forgotten password, e-mail confirmation) unless a sign-up picture below overrides it. Leave empty to keep Moodle\'s bundled default photo, which carries an "AI-generated image" caption.';
+$string['authimagesignup'] = 'Sign-up page picture';
+$string['authimagesignup_desc'] = 'Shown on the create-account screen only. Leave empty to use the log-in picture there as well.';
+$string['authimageactive'] = 'In use';
+$string['authimagenone'] = 'No picture uploaded.';
+$string['authimageremove'] = 'Remove this picture when saving';
+$string['authimageinvalidtype'] = 'The {$a} was ignored: only .jpg, .png and .webp images are accepted.';
+$string['authimageuploaderror'] = 'The {$a} could not be uploaded. Please try again.';
+$string['authquote'] = 'Quote';
+$string['authquote_desc'] = 'Drawn in a card at the foot of the picture. Write it in each site language — a learner reading the site in Arabic should not be shown English here. Either language may be left empty; whichever is filled in is used for both. Leave both empty and no card is drawn at all. Type any quotation marks you want — none are added for you.';
+$string['authquotetext'] = 'Quote text';
+$string['authquoteauthor'] = 'Attribution';
+$string['authquoteauthorplaceholder'] = 'Brian Herbert · Educational Leader';
+$string['saveauthscreens'] = 'Save log-in &amp; sign-up';
+$string['authscreenssaved'] = 'Log-in and sign-up screens saved. The theme CSS has been rebuilt.';
+$string['acad_level'] = 'Level';
+$string['acad_whatlearn_q'] = 'What will you learn in this course?';
+$string['acad_videolength'] = 'Video length';
+$string['acad_instructorlabel'] = 'Instructor';
+$string['acad_watchpromo'] = 'Watch the promo';
+$string['acad_closevideo'] = 'Close the video';
+$string['acad_hascert'] = 'Certificate included';
+$string['acad_startson'] = 'Starts {$a}';
+$string['acad_nenrolled'] = '{$a} enrolled';
+$string['acad_ilos'] = 'Intended learning outcomes';
+$string['acad_bytheend'] = 'By the end of this program you will be able to';
+$string['acad_aboutinstructor'] = 'About the instructor';
+$string['acad_nyearsexp'] = '{$a} years of experience';
+$string['acad_1yearexp'] = '1 year of experience';
+$string['acad_yearsexp'] = 'Years of experience';
+$string['acad_speaks'] = 'Teaches in';
+$string['acad_specialization'] = 'Specialization';
+$string['passwordstrength'] = 'Password strength';
+$string['passwordstrengthweak'] = 'Weak password';
+$string['passwordstrengthfair'] = 'Fair password';
+$string['passwordstrengthgood'] = 'Good password';
+$string['passwordstrengthstrong'] = 'Strong password';
+$string['hidepassword'] = 'Hide password';
+$string['gatehint'] = 'Please complete every required field first.';
+$string['createaccount'] = 'Create your account';
+$string['createaccountsub'] = 'Start learning with the academy.';
+$string['or'] = 'or';
+$string['continuewith'] = 'Continue with {$a}';
+$string['welcomeback'] = 'Welcome back';
+$string['welcomebacksub'] = 'Log in to continue learning';
+$string['loginemail'] = 'Email address';
+$string['loginemailplaceholder'] = 'name@example.com';
+$string['forgotyourpassword'] = 'Forgot your password?';
+$string['eitherorlockedbyusername'] = 'Locked while a username is entered — search by one or the other.';
+$string['eitherorlockedbyemail'] = 'Locked while an email address is entered — search by one or the other.';
+$string['eitherorclearusername'] = 'Clear the username';
+$string['eitherorclearemail'] = 'Clear the email address';
+$string['noaccount'] = 'Don\'t have an account?';
+$string['signupnow'] = 'Sign up';
+$string['continueasguest'] = 'Continue as a guest';
+$string['navmanagement'] = 'Management';
+$string['navgallery'] = 'Design gallery';
+$string['gearmenu'] = 'Navigation bar gear menu';
+$string['gearmenu_desc'] = 'The gear icon on the navigation bar opens a list of groups, each a heading over a few pages — <em>Navigation</em> (My courses, Site administration) and <em>Management</em> (coupons, offers, subscriptions and the other administration screens). The groups, their names in both languages, the pages under each one, their order and who sees each one are all set by the text below, written the same way as Custom menu items above. The Edit mode switch, for users who have one, sits after the first group.';
+$string['gearmenuitems'] = 'Gear menu items';
+$string['gearmenuitems_desc'] = '<p>One line per item, the parts separated by <code>|</code>:</p>
+<ul>
+<li>A line <b>without</b> a hyphen starts a group: <code>English name|Arabic name</code></li>
+<li>A line <b>starting with a hyphen</b> is a page in that group: <code>-English name|Arabic name|link|who</code></li>
+</ul>
+<p>The link is a page on this site (<code>/my/courses.php</code>) or a full address. Give one name only and it is used in both languages.</p>
+<p><b>who</b> says who sees the page: <code>guest</code> (a visitor who is not logged in), <code>user</code> (a logged-in user who is not an administrator), <code>admin</code> (an administrator), or <code>all</code>. Combine with commas: <code>guest,user</code>. Leave it out and it is worked out from the link: management screens and Site administration pages for administrators, anything else for everyone. Whatever you write, a management screen is never shown to someone who cannot open it.</p>
+<p>Leave the box empty to show no groups. For example:</p>
+<pre>Navigation|التصفح
+-My courses|مقرراتي الدراسية|/my/courses.php|user,admin
+-Site administration|إدارة الموقع|/admin/search.php|admin
+-Log in|تسجيل الدخول|/login/index.php|guest
+Management|الإدارة
+-Manage coupons|إدارة الكوبونات|/local/nit_commerce/manage_coupons.php|admin
+-Calendar|التقويم|/calendar/view.php|all</pre>';
+$string['gearmenuerrornolink'] = 'Line {$a->line} has no link, so nothing was saved: "{$a->text}". Write a page as -English name|Arabic name|link, with a | before the link.';
+$string['gearmenuerrornoname'] = 'Line {$a->line} has a link but no name, so nothing was saved: "{$a->text}".';
+$string['gearmenuerroraudience'] = 'Line {$a->line} says "{$a->word}" for who sees the page, which is not a known word, so nothing was saved: "{$a->text}". Use guest, user, admin or all — or leave that part out.';
+$string['logosize'] = 'Logo size';
+$string['logosize_desc'] = 'How large the logo above is drawn. <strong>Logo size</strong> is the only control most sites need: it resizes every logo on the site at once and keeps the proportions between them. The heights beneath it set each place individually, and are multiplied by it.';
+$string['logoscale'] = 'Logo size';
+$string['logoscale_desc'] = 'A percentage applied to every logo on the site — the navigation bar, the mobile menu, the footer and the log-in screens. 100% draws them at the heights below; 150% makes them half as large again. Allowed range 25–400.';
+$string['logoheightnavbar'] = 'Navigation bar logo height';
+$string['logoheightnavbar_desc'] = 'Height in pixels of the logo in the top bar of every page. The bar grows taller when the logo needs the room, so a large value here makes the whole header taller rather than spilling out of it.';
+$string['logoheightdrawer'] = 'Mobile menu logo height';
+$string['logoheightdrawer_desc'] = 'Height in pixels of the logo at the top of the slide-out menu, which is what replaces the navigation bar\'s links on a phone.';
+$string['logoheightfooter'] = 'Footer logo height';
+$string['logoheightfooter_desc'] = 'Maximum height in pixels of the logo in the site footer. A wide wordmark will hit the width of its column before it reaches this height.';
+$string['logoheightauthpanel'] = 'Log-in panel logo height';
+$string['logoheightauthpanel_desc'] = 'Maximum height in pixels of the logo drawn over the picture beside the log-in and sign-up forms.';
+$string['logoheightauthcard'] = 'Log-in form logo height';
+$string['logoheightauthcard_desc'] = 'Maximum height in pixels of the logo inside the log-in and sign-up cards, above the heading.';
+$string['logomode'] = 'Logos for light and dark mode';
+$string['logomode_desc'] = 'The navigation bar changes colour with the light/dark switch, and a logo drawn for one of them will not read on the other — a white mark disappears on a white bar. Say below which mode the logos above were drawn for, then upload the versions for the other mode. Leave the setting on <em>Not set</em> and nothing is ever swapped: the site uses the logos above everywhere, exactly as before.';
+$string['logosfor'] = 'The logos above are drawn for';
+$string['logosfor_desc'] = 'Which display mode the Logo, Compact logo and Favicon above suit. Pages rendering in the other mode use the uploads below instead — and still use the ones above for any slot left empty.';
+$string['logosfor_unset'] = 'Not set — never swap';
+$string['logosfor_dark'] = 'Dark mode (a light mark on a dark bar)';
+$string['logosfor_light'] = 'Light mode (a dark mark on a light bar)';
+$string['altlogo'] = 'Logo for the other mode';
+$string['altlogo_desc'] = 'The full logo, drawn for whichever mode the ones above are not. Leave empty to use the logo above in both modes.';
+$string['altlogocompact'] = 'Compact logo for the other mode';
+$string['altlogocompact_desc'] = 'The mark shown in the navigation bar. This is the one that matters most — it is the logo on every page. Leave empty to use the compact logo above in both modes.';
+$string['altfavicon'] = 'Favicon for the other mode';
+$string['altfavicon_desc'] = 'The browser-tab icon. Leave empty to use the favicon above in both modes.';

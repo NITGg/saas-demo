@@ -44,24 +44,108 @@
     --nit-accentgolddark: #{$nit-c-accentgolddark};
     --nit-accentteal: #{$nit-c-accentteal};
 
-    --nit-navbarbg: var(--nit-brand-background);
+}
+
+// =============================================================================
+// The bar's own alias layer.
+//
+// Declared on `.nit-navbar` AS WELL AS on `:root`, and that second selector is
+// load-bearing rather than defensive. A custom property holding a `var()` is
+// substituted on the element that DECLARES it, so a `:root`-only block freezes
+// these to whatever brand group `<html>` is wearing — which is right until the
+// bar is asked to wear a different one from the page it sits on. It is: an
+// administrator can give a group a second group to switch to once the page
+// scrolls (theme_nit_navbar_scroll_group()), and the switch works by putting
+// that group's class on the BAR. Declared here too, every name below re-resolves
+// there against the group the bar is actually wearing.
+//
+// The two selectors tie on specificity (`:root` and `.nit-navbar` are both one
+// class-level), so on an unscrolled bar with no class of its own they compute to
+// the same values and nothing moves.
+// =============================================================================
+:root,
+.nit-navbar {
+    // The bar has its own pair of Brand Colors roles rather than borrowing the
+    // page ground, so an admin can lift the navbar off the page without moving
+    // every other surface with it. Only colour 1 is painted today; colour 2 is
+    // published for the components that will want a second stop.
+    --nit-navbarbg: var(--nit-brand-navbarbackground1);
+    --nit-navbarbg2: var(--nit-brand-navbarbackground2);
+    // Frosted-glass bar. "Navbar background 1" seeds to the same value as the
+    // page Background in every group, so the bar painted the exact colour of the
+    // ground under it and read as "no bar at all". The glass layer is built on
+    // "Navbar background 2" instead — the reserved second navbar colour, one
+    // step lighter than the page in all five groups (including the light
+    // Group 4) — held at an admin-set opacity so the bar lifts off the page while
+    // still reading as glass, with the backdrop blurred behind it
+    // (--nit-navbarblur) so scrolled content never shows through as clutter.
+    //
+    // How see-through, and whether to frost at all, are per-group settings now
+    // (theme_nit_navbar_style_scss() publishes both). Turning transparency OFF is
+    // not a separate code path: it is this same mix at 100% with the blur set to
+    // `none`, which is a solid bar. The literals here are the values the rule
+    // carried before either was editable.
+    --nit-navbaropacity: 72%;
+    --nit-navbarglass: color-mix(in srgb, var(--nit-navbarbg2) var(--nit-navbaropacity, 72%), transparent);
+    --nit-navbarblur: blur(18px) saturate(160%);
     --nit-navbarsurface: var(--nit-brand-surface);
     --nit-navbarborder: var(--nit-brand-borderprimary);
     // Navbar TEXT accent (site name / wordmark, dropdown section headers, the
     // "see all" link) — reads from the text-facing "Accent Text" role.
     --nit-navbaraccent: var(--nit-brand-accenttext);
     --nit-navbaraccenthover: var(--nit-brand-accenttext-vivid);
-    // Navbar ICON accent (the round bell + gear buttons and the notification
-    // action icons) — these are glyphs, not text, so they read from the
-    // non-text "Accent" role, keeping icon and link colours independently tunable.
-    --nit-navbariconaccent: var(--nit-brand-accent);
-    --nit-navbariconaccenthover: var(--nit-brand-accent-vivid);
-    --nit-navbartext: var(--nit-brand-textprimary);
+    // ---- The bar's own three-part palette -----------------------------------
+    // Everything drawn on the navigation bar reads from a NAVBAR role, never
+    // from a page role. That is the whole point of the group: the bar sits on
+    // its own background, at its own size, over content that scrolls under it,
+    // so "the same blue as a body link" is almost never the right answer there —
+    // and an admin has to be able to move one of the three things on the bar
+    // without dragging the other two (or the rest of the site) along.
+    //
+    // Three subjects — the site TITLES, the ICON cluster, the LOG-IN link — each
+    // with a rest / hover / active colour of its own.
+
+    // Titles: the admin-managed links across the bar (Home, Courses, …).
+    --nit-navbartitle: var(--nit-brand-navbartitlecolor);
+    --nit-navbartitlehover: var(--nit-brand-navbartitlehovercolor);
+    --nit-navbartitleactive: var(--nit-brand-navbartitleactivecolor);
+
+    // Icons: search, language, messages, notifications, gear, the light/dark
+    // switch — and the notification panel's own action icons, which are the same
+    // glyphs one layer down. The resting state paints no chrome at all; the
+    // hover pad is derived from the hover colour rather than being a role of its
+    // own, so an admin who picks a hover colour gets a pad that matches it
+    // instead of having to tune a second value to agree with the first.
+    --nit-navbariconaccent: var(--nit-brand-navbariconcolor);
+    --nit-navbariconaccenthover: var(--nit-brand-navbariconhovercolor);
+    --nit-navbariconactive: var(--nit-brand-navbariconactivecolor);
+    // The two soft pads — the "square background" shape, one per state. A tint
+    // of the state's own colour rather than a flat fill: a solid accent behind a
+    // 22px glyph is a badge, not a hover, and it takes the glyph's contrast with
+    // it. Which state actually paints one is the admin's shape choice, resolved
+    // in theme_nit_navbar_style_scss().
+    --nit-navbariconbg: color-mix(in srgb, var(--nit-brand-navbariconhovercolor) 14%, transparent);
+    --nit-navbariconactivebg: color-mix(in srgb, var(--nit-brand-navbariconactivecolor) 14%, transparent);
+
+    // The log-in link (signed-out visitors only).
+    --nit-navbarlogin: var(--nit-brand-navbarlogincolor);
+    --nit-navbarloginhover: var(--nit-brand-navbarloginhovercolor);
+    --nit-navbarloginactive: var(--nit-brand-navbarloginactivecolor);
+
+    // Everything ELSE that is a word on the bar — the user-menu name, the
+    // edit-mode label, the accessible site name — follows the TITLE colour. It
+    // must not follow the body ink: a group whose page is light and whose bar is
+    // dark (or the reverse) would paint those words into their own background.
+    --nit-navbartext: var(--nit-brand-navbartitlecolor);
     --nit-navbarpanel: var(--nit-brand-surface);
     --nit-navbarpaneltext: var(--nit-brand-textsecondary);
     --nit-navbarpanelborder: var(--nit-brand-borderprimary);
+}
+
+:root {
 
     --nit-background: var(--nit-brand-background);
+    --nit-background2: var(--nit-brand-background2);
     --nit-fill: var(--nit-brand-surface);
     --nit-textprimary: var(--nit-brand-textprimary);
     --nit-textsecondary: var(--nit-brand-textsecondary);
@@ -113,6 +197,32 @@
     --nit-cat-style3-bg3: #{$nit-c-cat_style3_bg3};
     --nit-cat-style3-bg4: #{$nit-c-cat_style3_bg4};
 
+    // Footer band (AC-4.7.13) — aliased onto the Brand Colors layer exactly like
+    // the navbar above it, so the band is the site's brand and not a second
+    // palette to keep in step. A `.nit-brand-2/3` group switch recolours it with
+    // everything else, and editing a brand role on the gallery page moves it.
+    // The band has its OWN three roles now (Footer heading / Footer link /
+    // Footer icon), editable per group on the gallery page. It used to borrow
+    // Accent Text and Primary from the page, so recolouring a footer heading
+    // moved every link on the site with it. Only the prose still reads a page role.
+    --nit-footerbg: var(--nit-brand-footerbackground1);
+    // Second footer colour — published, not yet painted (see the navbar note).
+    --nit-footerbg2: var(--nit-brand-footerbackground2);
+    --nit-footerheading: var(--nit-brand-footerheading);
+    // The link columns are their own colour; the contact prose beside them stays
+    // the body ink, which is why they can no longer share --nit-footertext.
+    --nit-footerlink: var(--nit-brand-footerlink);
+    --nit-footertext: var(--nit-brand-textprimary);
+    --nit-footermuted: var(--nit-brand-textsecondary);
+    --nit-footericon: var(--nit-brand-footericon);
+    --nit-footericonhover: var(--nit-brand-hovertext);
+    --nit-footerhover: var(--nit-brand-hovertext);
+    --nit-footerborder: var(--nit-brand-borderprimary);
+    // The arc across the top of the band is the only thing separating the footer
+    // from the page above it, so it reads from the lighter of the two border
+    // roles - the primary hairline all but vanishes against the brand ground.
+    --nit-footerarc: var(--nit-brand-bordersecondary);
+
     // Legacy aliases kept for existing consumers (stat-tile, welcome_panel).
     // In the brand era these card surfaces are the brand surface (dark), not the
     // page background.
@@ -128,8 +238,55 @@
     --nit-shadow-2: #{$nit-shadow-2};
 }
 
+// Light-group correction for the frosted bar.
+//
+// The dark and the light groups arrange their two navbar colours the opposite
+// way round:
+//
+//   group                     page bg    navbar bg1   navbar bg2
+//   1 / 2 / 3 / 5 (dark)      == page    one step lighter   -> bg2 separates
+//   4 (Daylight) and the six  #f6f8fb    #ffffff      == page            -> bg1 separates
+//   light category groups
+//
+// So the glass above is built on colour 2, which is right for a dark group and
+// exactly wrong for a light one — there bg2 seeds to the page colour and a
+// translucent pane of it would melt into the ground, the very thing this change
+// set out to fix. A light group therefore builds its glass from colour 1
+// (#ffffff against an off-white page), which is already the distinct one there.
+// `:root.nit-brand-4` and not a bare `.nit-brand-4`: _brand.scss is
+// concatenated BEFORE this file, so a single-class selector ties with `:root`
+// on specificity and loses on source order.
+//
+// `.nit-navbar.nit-brand-4` is the same correction for the bar wearing Group 4
+// on its own — the scroll switch puts a group class on the BAR, so a bar that
+// scrolls into Group 4 needs this as much as a page rendered in it does.
+//
+// Which groups are light is not written here: `$nit-b-lightgroups` is emitted
+// by theme_nit_get_pre_scss() from theme_nit_brand_group_scheme(), which
+// measures each group's own page Background against its Text primary — so a
+// group an admin re-tunes to the other scheme moves to the right side of this
+// rule by itself, and the six light category groups (theme_nit_brand_hues())
+// are covered without being named.
+@each $g in $nit-b-lightgroups {
+    $n: str-slice($g, 2);
+
+    :root.nit-brand-#{$n},
+    .nit-navbar.nit-brand-#{$n} {
+        --nit-navbarglass: color-mix(in srgb, var(--nit-navbarbg) var(--nit-navbaropacity, 72%), transparent);
+    }
+}
+
 // No prefers-color-scheme override: Group 1 of the Brand Colors palette is
 // itself the dark brand (dark-blue background, white text), so the site renders
 // in the brand regardless of the OS light/dark preference. The legacy
 // Dark-palette tokens (--nit-dark*) remain published above for the always-dark
 // marketing bands that read them directly.
+
+// Group 4 needs no footer override any more. It used to: the group ran a DARK
+// navigation bar and footer under a light page (so the white site logo stayed
+// readable), which meant the footer's seven aliases above — all reading page
+// roles — painted dark text on a dark band. The group is now light throughout,
+// so every alias is right again, and the block that corrected them is gone. If a
+// group ever mixes light and dark that way again, the fix is here, not in the
+// footer partial: point --nit-footertext at "Navbar icon color" and mix the
+// heading and icon colours out of the accent.

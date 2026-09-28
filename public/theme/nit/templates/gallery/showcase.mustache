@@ -22,19 +22,54 @@
     Context variables required for this template:
     * sesskey - session key for the editor forms
     * actionurl - POST target for the editor forms
-    * colourgroups - array of { name, colours: [ { key, label, configname, value, default, isdefault } ] }
+    * brandgroups - array of { name, groupkey, isfirst, swatches: [ { value } ],
+        sections: [ { key, paneid, label, isfirst,
+          blocks: [ { label, hasheading,
+                      roles: [ { key, label, cssvar, value, default, isdefault,
+                                 usage: [ { label } ] } ],
+                      typography: [ { label, usage: [ { label } ], sizeinput, sizevalue,
+                                      sizemin, sizemax, sizedefault, weightinput,
+                                      weightoptions: [ { value, label, selected } ] } ],
+                      shapes: [ { input, label,
+                                  options: [ { id, value, label, checked } ] } ],
+                      switches: [ { input, id, label, usage, on } ] } ] } ] }
+        One editor per group; one section of it visible at a time; the section's
+        cards grouped into blocks. `typography` and `shapes` are non-empty only in
+        the Navbar section, `switches` only in the Brand section's Outline button
+        block, and a section with nothing to group has one block with
+        `hasheading` false.
+    * categorygroups - array of { id, name, image, hasimage, imageurl,
+        modes: [ { mode, label, select, options: [ { value, label, selected } ],
+                   logoinput, logoremove, haslogo, logourl } ] } (one entry per display mode)
+    * catmodecolumns - array of { mode, label, stylelabel, logolabel } - the per-mode column headings
+    * catlogofields - comma-separated names of every category-logo file input on the form
+    * modegroups - array of { mode, label, isdefault, options: [ { value, label, selected } ] } (light / dark)
+    * homechrome - array of { key, label, description, checked } (navbar / footer on the Site home)
     * fonts - array of { input, label, family, sample, rtl, hasfont, filename }
+    * authimages - array of { key, input, label, description, hasimage, filename, url }
+    * authtexts - array of { lang, label, rtl, quote, author }
     * stats - array of { label, value, trend, up }
 
     Example context (json):
     {
         "sesskey": "abc123",
         "actionurl": "/theme/nit/gallery.php",
-        "colourgroups": [
-            { "name": "Brand", "colours": [
-                { "key": "primary", "label": "Primary", "configname": "theme_nit | colour_primary",
-                  "value": "#2a50c8", "default": "#2a50c8", "isdefault": true }
-            ] }
+        "brandgroups": [
+            { "name": "Group 1", "groupkey": "g1", "isfirst": true,
+              "swatches": [ { "value": "#0c141f" } ],
+              "sections": [
+                { "key": "brand", "paneid": "nit-brand-g1-brand", "label": "Brand",
+                  "isfirst": true,
+                  "blocks": [
+                    { "label": "Main button", "hasheading": true, "typography": [],
+                      "shapes": [], "switches": [],
+                      "roles": [
+                        { "key": "g1_primary", "label": "Background", "cssvar": "--nit-brand-primary",
+                          "value": "#5488c4", "default": "#5488c4", "isdefault": true,
+                          "usage": [ { "label": "background main button" } ] }
+                      ] }
+                  ] }
+              ] }
         ],
         "fonts": [
             { "input": "fontfile_en", "label": "English font", "family": "NIT Site Font EN",
@@ -57,7 +92,7 @@
             <button class="nav-link" id="nit-tab-catstyles-btn" data-bs-toggle="tab"
                     data-bs-target="#nit-tab-catstyles" type="button" role="tab"
                     aria-controls="nit-tab-catstyles" aria-selected="false">
-                {{#str}}tab_categorystyles, theme_nit{{/str}}
+                {{#str}}tab_changestyle, theme_nit{{/str}}
             </button>
         </li>
         <li class="nav-item" role="presentation">
@@ -65,6 +100,13 @@
                     data-bs-target="#nit-tab-fonts" type="button" role="tab"
                     aria-controls="nit-tab-fonts" aria-selected="false">
                 {{#str}}tab_fonts, theme_nit{{/str}}
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="nit-tab-authscreens-btn" data-bs-toggle="tab"
+                    data-bs-target="#nit-tab-authscreens" type="button" role="tab"
+                    aria-controls="nit-tab-authscreens" aria-selected="false">
+                {{#str}}tab_authscreens, theme_nit{{/str}}
             </button>
         </li>
         <li class="nav-item" role="presentation">
@@ -79,82 +121,350 @@
     <div class="tab-content pt-4" id="nit-gallery-tabs-content">
 
         {{! ---------------------------------------------------------------- }}
-        {{! Brand Colors tab — the new semantic palette (3 groups × 13 roles) }}
+        {{! Brand Colors tab — the semantic palette (5 groups × 59 roles)    }}
         {{! ---------------------------------------------------------------- }}
         <div class="tab-pane fade show active" id="nit-tab-brand" role="tabpanel"
              aria-labelledby="nit-tab-brand-btn" tabindex="0">
             <h3>Brand Colors</h3>
             <p class="text-muted">{{#str}}brandcolours_desc, theme_nit{{/str}}</p>
+
             {{! Each group is its own form so Save / Reset act on that group only. }}
             {{#brandgroups}}
-            <form method="post" action="{{actionurl}}" class="nit-colour-editor mb-4">
+            <form method="post" action="{{actionurl}}"
+                  class="nit-colour-editor mb-4{{^isfirst}} d-none{{/isfirst}}"
+                  data-nit-brand-pane="{{groupkey}}">
                 <input type="hidden" name="sesskey" value="{{sesskey}}">
                 <input type="hidden" name="brandgroup" value="{{groupkey}}">
-                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-4 mb-2">
-                    <h4 class="h6 text-uppercase text-muted mb-0">{{name}}</h4>
-                    <div class="d-flex gap-2">
-                        <button type="submit" name="savebrand" value="1" class="btn btn-sm btn-primary">
-                            {{#str}}savebrandcolours, theme_nit{{/str}}
+                {{! Which section was open when Save was pressed. Kept current by }}
+                {{! the section strip (see gallery.php) and handed back by the     }}
+                {{! redirect, so a save returns to the work, not to the top of it. }}
+                <input type="hidden" name="brandsection" value="" data-nit-brand-sectionfield>
+
+                {{! --------------------------------------------------------- }}
+                {{! One sticky header holding both choices and both buttons.   }}
+                {{!                                                            }}
+                {{! Seventeen groups of 69 roles is 1,173 colour wells. Printed }}
+                {{! end to end - which is what this tab did - the only way from  }}
+                {{! one group to another was the scrollbar, and the Save       }}
+                {{! button for the group being edited was somewhere off the    }}
+                {{! bottom of the screen. One group and one section are on     }}
+                {{! screen at a time now, and this header follows the page so  }}
+                {{! both are always a click away.                              }}
+                {{!                                                            }}
+                {{! It is repeated inside every group's form rather than       }}
+                {{! standing above them, so it is ONE sticky element and not   }}
+                {{! two stacked ones needing a hard-coded offset between them  }}
+                {{! - and so the Save button is inside the form it submits.    }}
+                {{! Only one form is ever visible, so only one copy is shown.  }}
+                {{! --------------------------------------------------------- }}
+                <div class="nit-brand-toolbar">
+                    {{! The dots on a pill are that group's bar / page / button }}
+                    {{! / link colours, so the strip says which palette each    }}
+                    {{! button leads to and not only "Group 3".                 }}
+                    <div class="nit-brand-switch" role="tablist" aria-label="{{#str}}brandgroupswitch, theme_nit{{/str}}">
+                        {{#groupswitch}}
+                        <button type="button" role="tab" class="nit-brand-pill{{#iscurrent}} active{{/iscurrent}}"
+                                data-nit-brand-group="{{groupkey}}"
+                                aria-selected="{{#iscurrent}}true{{/iscurrent}}{{^iscurrent}}false{{/iscurrent}}">
+                            <span class="nit-brand-pill-dots" aria-hidden="true">
+                                {{#swatches}}<span class="nit-brand-pill-dot" style="background: {{value}};"></span>{{/swatches}}
+                            </span>
+                            <span class="nit-brand-pill-name">{{name}}</span>
                         </button>
-                        <button type="submit" name="resetbrand" value="1" class="btn btn-sm btn-outline-secondary">
-                            {{#str}}resetbrandcolours, theme_nit{{/str}}
-                        </button>
+                        {{/groupswitch}}
+                    </div>
+
+                    <div class="nit-brand-toolbar-row">
+                        <div class="nit-brand-sections" role="tablist" aria-label="{{name}}">
+                            {{#sections}}
+                            <button type="button" role="tab" class="nit-brand-sectionpill{{#isfirst}} active{{/isfirst}}"
+                                    data-nit-brand-section="{{paneid}}"
+                                    data-nit-brand-sectionkey="{{key}}"
+                                    aria-controls="{{paneid}}"
+                                    aria-selected="{{#isfirst}}true{{/isfirst}}{{^isfirst}}false{{/isfirst}}">{{label}}</button>
+                            {{/sections}}
+                        </div>
+                        <div class="nit-brand-actions">
+                            <button type="submit" name="savebrand" value="1" class="btn btn-sm btn-primary">
+                                {{#str}}savebrandcolours, theme_nit{{/str}}
+                            </button>
+                            <button type="submit" name="resetbrand" value="1" class="btn btn-sm btn-outline-secondary">
+                                {{#str}}resetbrandcolours, theme_nit{{/str}}
+                            </button>
+                        </div>
                     </div>
                 </div>
-                <div class="nit-colour-grid">
-                    {{#roles}}
-                        <div class="nit-colour-row" data-nit-colour>
-                            <div class="nit-colour-meta">
-                                <label class="nit-colour-name" for="nit-brand-{{key}}">{{label}}</label>
-                                <code class="nit-colour-config">{{cssvar}}</code>
-                                <span class="nit-colour-usage">
-                                    {{#usage}}<span class="nit-colour-usage-item">{{label}}</span>{{/usage}}
-                                </span>
+
+                {{! Every section stays IN the form even while hidden — the save }}
+                {{! button saves the whole group, not the section on screen.     }}
+                {{#sections}}
+                <div class="nit-brand-section{{^isfirst}} d-none{{/isfirst}}" id="{{paneid}}"
+                     role="tabpanel" data-nit-brand-sectionpane>
+                    {{! One block per thing the section is made of — for the      }}
+                    {{! Navbar that is Background / Titles / Icons / Login, and    }}
+                    {{! every card about a subject (its colours, its size and      }}
+                    {{! weight, its shapes) sits under that subject's heading      }}
+                    {{! rather than in one flat grid of twenty. A section that was }}
+                    {{! never broken up has a single unnamed block and renders     }}
+                    {{! exactly as it did before.                                  }}
+                    {{#blocks}}
+                    {{#hasheading}}<h4 class="nit-brand-blockhead">{{label}}</h4>{{/hasheading}}
+                    <div class="nit-colour-grid">
+                        {{#roles}}
+                            <div class="nit-colour-row" data-nit-colour>
+                                <div class="nit-colour-meta">
+                                    <label class="nit-colour-name" for="nit-brand-{{key}}">{{label}}</label>
+                                    <code class="nit-colour-config">{{cssvar}}</code>
+                                    <span class="nit-colour-usage">
+                                        {{#usage}}<span class="nit-colour-usage-item">{{label}}</span>{{/usage}}
+                                    </span>
+                                </div>
+                                <div class="nit-colour-controls">
+                                    <input type="color" id="nit-brand-{{key}}" name="brandcolour_{{key}}" value="{{value}}"
+                                           class="nit-colour-swatch" aria-label="{{label}}">
+                                    <input type="text" name="brandcolour_{{key}}_hex" value="{{value}}"
+                                           class="form-control nit-colour-hex" aria-label="{{label}} hex value"
+                                           pattern="#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})" maxlength="7">
+                                    <span class="nit-colour-default">Default: {{default}}</span>
+                                </div>
                             </div>
-                            <div class="nit-colour-controls">
-                                <input type="color" id="nit-brand-{{key}}" name="brandcolour_{{key}}" value="{{value}}"
-                                       class="nit-colour-swatch" aria-label="{{label}}">
-                                <input type="text" name="brandcolour_{{key}}_hex" value="{{value}}"
-                                       class="form-control nit-colour-hex" aria-label="{{label}} hex value"
-                                       pattern="#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})" maxlength="7">
-                                <span class="nit-colour-default">Default: {{default}}</span>
+                        {{/roles}}
+
+                        {{! A plain yes/no about the block it sits in — today   }}
+                        {{! only "fill the outline button", which decides       }}
+                        {{! whether the Background card above it is drawn at    }}
+                        {{! all. Same card shape as a colour so it reads as one }}
+                        {{! more property of the button, not a setting off to   }}
+                        {{! the side.                                           }}
+                        {{#switches}}
+                            <div class="nit-colour-row nit-switch-row">
+                                <div class="nit-colour-meta">
+                                    <label class="nit-colour-name" for="{{id}}">{{label}}</label>
+                                    <span class="nit-colour-usage">
+                                        <span class="nit-colour-usage-item">{{usage}}</span>
+                                    </span>
+                                </div>
+                                <div class="nit-colour-controls">
+                                    <div class="form-check form-switch nit-glass-switch">
+                                        <input class="form-check-input" type="checkbox" role="switch"
+                                               id="{{id}}" name="{{input}}" value="1" {{#on}}checked{{/on}}>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    {{/roles}}
+                        {{/switches}}
+
+                        {{! Whether the bar is see-through, and by how much. Both }}
+                        {{! on one card: the degree is meaningless with the switch}}
+                        {{! off, and the switch alone leaves nothing to tune.     }}
+                        {{#glass}}
+                            <div class="nit-colour-row nit-glass-row">
+                                <div class="nit-colour-meta">
+                                    <span class="nit-colour-name">{{#str}}navbarglass, theme_nit{{/str}}</span>
+                                    <span class="nit-colour-usage">
+                                        <span class="nit-colour-usage-item">{{#str}}navbarglass_usage, theme_nit{{/str}}</span>
+                                    </span>
+                                </div>
+                                <div class="nit-colour-controls nit-glass-controls">
+                                    <div class="form-check form-switch nit-glass-switch">
+                                        <input class="form-check-input" type="checkbox" role="switch"
+                                               id="{{onid}}" name="{{oninput}}" value="1" {{#on}}checked{{/on}}>
+                                        <label class="form-check-label" for="{{onid}}">
+                                            {{#str}}navbarglass_on, theme_nit{{/str}}
+                                        </label>
+                                    </div>
+                                    <span class="nit-type-field">
+                                        <input type="number" class="form-control nit-type-size" id="{{valueid}}"
+                                               name="{{valueinput}}" value="{{value}}" min="0" max="90" step="1"
+                                               aria-label="{{#str}}navbarglass_degree, theme_nit{{/str}}">
+                                        <span class="nit-type-unit" aria-hidden="true">%</span>
+                                    </span>
+                                    <span class="nit-colour-default">Default: 28%</span>
+                                </div>
+                            </div>
+                        {{/glass}}
+
+                        {{! How big and how heavy the bar sets each of its three  }}
+                        {{! subjects. Both controls share one card because "16px" }}
+                        {{! and "Semi-bold" are one decision about one thing.     }}
+                        {{#typography}}
+                            <div class="nit-colour-row nit-type-row">
+                                <div class="nit-colour-meta">
+                                    <label class="nit-colour-name" for="nit-{{sizeinput}}">{{label}}</label>
+                                    <span class="nit-colour-usage">
+                                        {{#usage}}<span class="nit-colour-usage-item">{{label}}</span>{{/usage}}
+                                    </span>
+                                </div>
+                                <div class="nit-colour-controls nit-type-controls">
+                                    <span class="nit-type-field">
+                                        <input type="number" class="form-control nit-type-size" id="nit-{{sizeinput}}"
+                                               name="{{sizeinput}}" value="{{sizevalue}}"
+                                               min="{{sizemin}}" max="{{sizemax}}" step="1"
+                                               aria-label="{{label}} — {{#str}}navbarsize, theme_nit{{/str}}">
+                                        <span class="nit-type-unit" aria-hidden="true">px</span>
+                                    </span>
+                                    <select class="form-select nit-type-weight" name="{{weightinput}}"
+                                            aria-label="{{label}} — {{#str}}navbarweight, theme_nit{{/str}}">
+                                        {{#weightoptions}}
+                                        <option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>
+                                        {{/weightoptions}}
+                                    </select>
+                                    <span class="nit-colour-default">Default: {{sizedefault}}px</span>
+                                </div>
+                            </div>
+                        {{/typography}}
+
+                        {{! The shapes. Same card as a colour role and in the same }}
+                        {{! grid, because they are the other half of one decision: }}
+                        {{! the "style color" role above says what colour the shape}}
+                        {{! is drawn in, and this says which shapes those are.     }}
+                        {{!                                                        }}
+                        {{! Tick boxes and not a picker: the three treatments are  }}
+                        {{! independent, so any combination is a valid answer and  }}
+                        {{! so is none — which a list of named looks could not say }}
+                        {{! without one entry per combination. They are also the   }}
+                        {{! one control here that has to be readable at a glance,  }}
+                        {{! and a multi-select listbox hides its state behind a    }}
+                        {{! scroll and a ctrl-click.                                }}
+                        {{#shapes}}
+                            <fieldset class="nit-colour-row nit-shape-row">
+                                <div class="nit-colour-meta">
+                                    <legend class="nit-colour-name">{{label}}</legend>
+                                    <span class="nit-colour-usage">
+                                        <span class="nit-colour-usage-item">{{#str}}navbarshape_usage, theme_nit{{/str}}</span>
+                                    </span>
+                                </div>
+                                <div class="nit-shape-options">
+                                    {{#options}}
+                                    <div class="form-check nit-shape-option">
+                                        <input class="form-check-input" type="checkbox" id="{{id}}"
+                                               name="{{input}}[]" value="{{value}}" {{#checked}}checked{{/checked}}>
+                                        <label class="form-check-label" for="{{id}}">{{label}}</label>
+                                    </div>
+                                    {{/options}}
+                                </div>
+                            </fieldset>
+                        {{/shapes}}
+
+                        {{! The group the bar wears once the page moves. "Same as }}
+                        {{! this group" means the bar does not change — and then  }}
+                        {{! nothing is emitted or scripted for it at all.         }}
+                        {{#scrollgroup}}
+                            <div class="nit-colour-row nit-shape-row">
+                                <div class="nit-colour-meta">
+                                    <label class="nit-colour-name" for="{{id}}">
+                                        {{#str}}navbarscroll, theme_nit{{/str}}
+                                    </label>
+                                    <span class="nit-colour-usage">
+                                        <span class="nit-colour-usage-item">{{#str}}navbarscroll_usage, theme_nit{{/str}}</span>
+                                    </span>
+                                </div>
+                                <div class="nit-colour-controls">
+                                    <select class="form-select nit-scroll-select" id="{{id}}" name="{{input}}">
+                                        {{#options}}
+                                        <option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>
+                                        {{/options}}
+                                    </select>
+                                </div>
+                            </div>
+                        {{/scrollgroup}}
+                    </div>
+                    {{/blocks}}
                 </div>
+                {{/sections}}
             </form>
             {{/brandgroups}}
         </div>
 
         {{! ---------------------------------------------------------------- }}
-        {{! Category styles tab — assign a brand group to each category page  }}
+        {{! Change style tab — which brand group a given surface renders in.   }}
+        {{! Two sections, the same decision about two different subjects:      }}
+        {{!   * Category styles — the group each category's pages use.         }}
+        {{!   * Site styles — the group each display mode (the navbar          }}
+        {{!     light/dark button) uses site-wide.                             }}
         {{! ---------------------------------------------------------------- }}
         <div class="tab-pane fade" id="nit-tab-catstyles" role="tabpanel"
              aria-labelledby="nit-tab-catstyles-btn" tabindex="0">
             <h3>{{#str}}tab_categorystyles, theme_nit{{/str}}</h3>
             <p class="text-muted">{{#str}}categorystyles_desc, theme_nit{{/str}}</p>
             {{#hascategorygroups}}
-            <form method="post" action="{{actionurl}}" class="nit-catstyles-editor mb-4">
+            <form method="post" action="{{actionurl}}" enctype="multipart/form-data"
+                  class="nit-catstyles-editor mb-4" data-nit-catstyles-form>
                 <input type="hidden" name="sesskey" value="{{sesskey}}">
+                {{! Which file fields are on their way. Rewritten by the pruning }}
+                {{! script in gallery.php, and read back there to spot uploads   }}
+                {{! that PHP's max_file_uploads cap threw away.                  }}
+                <input type="hidden" name="catlogofields" value="{{catlogofields}}" data-nit-catlogo-fields>
                 <div class="table-responsive">
                     <table class="table table-sm align-middle nit-catstyles-table">
                         <thead>
                             <tr>
+                                <th scope="col" style="width: 5rem;">{{#str}}categorystyles_col_image, theme_nit{{/str}}</th>
                                 <th scope="col">{{#str}}categorystyles_col_category, theme_nit{{/str}}</th>
-                                <th scope="col" style="width: 12rem;">{{#str}}categorystyles_col_group, theme_nit{{/str}}</th>
+                                {{! One style column and one logo column per display mode, in switch order. }}
+                                {{#catmodecolumns}}
+                                <th scope="col" style="width: 12rem;">
+                                    {{stylelabel}}
+                                </th>
+                                {{/catmodecolumns}}
+                                {{#catmodecolumns}}
+                                <th scope="col" style="width: 13rem;">
+                                    {{logolabel}}
+                                </th>
+                                {{/catmodecolumns}}
                             </tr>
                         </thead>
                         <tbody>
                             {{#categorygroups}}
                             <tr>
-                                <td>{{name}}</td>
                                 <td>
-                                    <select class="form-select form-select-sm" name="catgroup[{{id}}]" aria-label="{{name}}">
+                                    <a href="{{imageurl}}" title="{{#str}}categorystyles_editimage, theme_nit{{/str}}">
+                                        {{#hasimage}}
+                                        <img src="{{image}}" alt="{{name}}" class="rounded border"
+                                             style="width: 48px; height: 48px; object-fit: contain; background: var(--nit-brand-surface); padding: 3px;">
+                                        {{/hasimage}}
+                                        {{^hasimage}}
+                                        <span class="text-muted small fst-italic">{{#str}}categorystyles_noimage, theme_nit{{/str}}</span>
+                                        {{/hasimage}}
+                                    </a>
+                                </td>
+                                <td>{{name}}</td>
+                                {{! The brand group this category renders in, per mode. }}
+                                {{#modes}}
+                                <td>
+                                    <select class="form-select form-select-sm" name="{{select}}"
+                                            aria-label="{{name}} — {{label}}">
                                         {{#options}}
                                         <option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>
                                         {{/options}}
                                     </select>
                                 </td>
+                                {{/modes}}
+                                {{! The navbar logo this category draws, per mode. Empty = the site logo. }}
+                                {{#modes}}
+                                <td>
+                                    {{#haslogo}}
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <img src="{{logourl}}" alt="{{name}} — {{label}}" class="rounded border"
+                                             style="height: 32px; max-width: 96px; object-fit: contain; background: var(--nit-brand-surface); padding: 2px;">
+                                        <div class="form-check mb-0">
+                                            <input class="form-check-input" type="checkbox" value="1"
+                                                   name="{{logoremove}}" id="{{logoinput}}_remove">
+                                            <label class="form-check-label small text-muted" for="{{logoinput}}_remove">
+                                                {{#str}}categorystyles_removelogo, theme_nit{{/str}}
+                                            </label>
+                                        </div>
+                                    </div>
+                                    {{/haslogo}}
+                                    {{^haslogo}}
+                                    <div class="small text-muted fst-italic mb-1">
+                                        {{#str}}categorystyles_nologo, theme_nit{{/str}}
+                                    </div>
+                                    {{/haslogo}}
+                                    <input type="file" class="form-control form-control-sm" name="{{logoinput}}"
+                                           id="{{logoinput}}" accept=".png,.jpg,.jpeg,.webp,.gif,.svg"
+                                           aria-label="{{name}} — {{label}}">
+                                </td>
+                                {{/modes}}
                             </tr>
                             {{/categorygroups}}
                         </tbody>
@@ -170,6 +480,75 @@
             {{^hascategorygroups}}
             <p class="text-muted fst-italic">{{#str}}categorystyles_none, theme_nit{{/str}}</p>
             {{/hascategorygroups}}
+
+            {{! ------------------------------------------------------------ }}
+            {{! Site styles — the group behind each display mode. This is what }}
+            {{! the navbar light/dark button switches between.                 }}
+            {{! ------------------------------------------------------------ }}
+            <h3 class="mt-5">{{#str}}sitestyles, theme_nit{{/str}}</h3>
+            <p class="text-muted">{{#str}}sitestyles_desc, theme_nit{{/str}}</p>
+            <form method="post" action="{{actionurl}}" class="nit-catstyles-editor mb-4">
+                <input type="hidden" name="sesskey" value="{{sesskey}}">
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle nit-catstyles-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">{{#str}}sitestyles_col_mode, theme_nit{{/str}}</th>
+                                <th scope="col" style="width: 12rem;">{{#str}}sitestyles_col_group, theme_nit{{/str}}</th>
+                                <th scope="col" class="text-center" style="width: 8rem;">{{#str}}sitestyles_col_default, theme_nit{{/str}}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{#modegroups}}
+                            <tr>
+                                <td>{{label}}</td>
+                                <td>
+                                    <select class="form-select form-select-sm" name="modegroup[{{mode}}]" aria-label="{{label}}">
+                                        {{#options}}
+                                        <option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>
+                                        {{/options}}
+                                    </select>
+                                </td>
+                                <td class="text-center">
+                                    <input type="radio" class="form-check-input" name="modedefault" value="{{mode}}"
+                                           {{#isdefault}}checked{{/isdefault}}
+                                           aria-label="{{#str}}sitestyles_default_aria, theme_nit, {{label}}{{/str}}">
+                                </td>
+                            </tr>
+                            {{/modegroups}}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" name="savemodegroups" value="1" class="btn btn-primary">
+                        {{#str}}savesitestyles, theme_nit{{/str}}
+                    </button>
+                </div>
+            </form>
+
+            {{! ------------------------------------------------------------ }}
+            {{! Home page chrome — the navigation bar and the site footer on }}
+            {{! the Site home only. Every other page keeps both.             }}
+            {{! ------------------------------------------------------------ }}
+            <h3 class="mt-5">{{#str}}homechrome, theme_nit{{/str}}</h3>
+            <p class="text-muted">{{#str}}homechrome_desc, theme_nit{{/str}}</p>
+            <form method="post" action="{{actionurl}}" class="nit-catstyles-editor mb-4">
+                <input type="hidden" name="sesskey" value="{{sesskey}}">
+                {{#homechrome}}
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" role="switch"
+                           id="nit-homechrome-{{key}}" name="homechrome[{{key}}]" value="1"
+                           {{#checked}}checked{{/checked}}>
+                    <label class="form-check-label fw-semibold" for="nit-homechrome-{{key}}">{{label}}</label>
+                    <div class="form-text">{{description}}</div>
+                </div>
+                {{/homechrome}}
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" name="savehomechrome" value="1" class="btn btn-primary">
+                        {{#str}}savehomechrome, theme_nit{{/str}}
+                    </button>
+                </div>
+            </form>
         </div>
 
         {{! ---------------------------------------------------------------- }}
@@ -205,6 +584,106 @@
                     </button>
                     <button type="submit" name="resetfonts" value="1" class="btn btn-outline-secondary">
                         {{#str}}resetfonts, theme_nit{{/str}}
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        {{! ---------------------------------------------------------------- }}
+        {{! Log-in & sign-up tab                                             }}
+        {{!                                                                  }}
+        {{! The two things about the account screens that are a branding      }}
+        {{! decision rather than a layout one: the picture beside each card,  }}
+        {{! and the quote drawn over it. Both used to be baked into a single  }}
+        {{! shared photograph - one image for both screens, with the logo and }}
+        {{! the words inside the JPEG - so a typo meant re-exporting an asset }}
+        {{! and the logo went stale the moment the site's changed.            }}
+        {{! ---------------------------------------------------------------- }}
+        <div class="tab-pane fade" id="nit-tab-authscreens" role="tabpanel"
+             aria-labelledby="nit-tab-authscreens-btn" tabindex="0">
+            <h3>{{#str}}tab_authscreens, theme_nit{{/str}}</h3>
+            <p class="text-muted">{{#str}}authscreens_desc, theme_nit{{/str}}</p>
+
+            <form method="post" action="{{actionurl}}" enctype="multipart/form-data" class="nit-auth-editor mb-4">
+                <input type="hidden" name="sesskey" value="{{sesskey}}">
+
+                {{! ------------------------------------------------------- }}
+                {{! One picture per screen                                   }}
+                {{! ------------------------------------------------------- }}
+                {{#authimages}}
+                    <div class="nit-authimage-slot mb-4 pb-3 border-bottom">
+                        <h4 class="h6 mb-1">{{label}}</h4>
+                        <p class="text-muted small mb-2">{{description}}</p>
+
+                        {{#hasimage}}
+                            {{! The live URL the compiled CSS uses - what is on }}
+                            {{! the screen right now, not a guess at it.        }}
+                            <div class="nit-authimage-preview mb-2">
+                                <img src="{{url}}" alt="{{label}}" class="img-fluid rounded border">
+                            </div>
+                            <p class="mb-2">
+                                <span class="badge text-bg-success">{{#str}}authimageactive, theme_nit{{/str}}</span>
+                                <code>{{filename}}</code>
+                            </p>
+                        {{/hasimage}}
+                        {{^hasimage}}
+                            <p class="text-muted mb-2">{{#str}}authimagenone, theme_nit{{/str}}</p>
+                        {{/hasimage}}
+
+                        <input type="file" name="{{input}}" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                               class="form-control nit-authimage-input" aria-label="{{label}}">
+
+                        {{#hasimage}}
+                            <div class="form-check mt-2">
+                                <input class="form-check-input" type="checkbox" value="1"
+                                       name="removeauthimage[{{key}}]" id="removeauthimage-{{key}}">
+                                <label class="form-check-label" for="removeauthimage-{{key}}">
+                                    {{#str}}authimageremove, theme_nit{{/str}}
+                                </label>
+                            </div>
+                        {{/hasimage}}
+                    </div>
+                {{/authimages}}
+
+                {{! ------------------------------------------------------- }}
+                {{! The quote, once per language                             }}
+                {{!                                                          }}
+                {{! Two languages because the site has two. A learner who     }}
+                {{! switched the interface to Arabic should not be read to in }}
+                {{! English by the one piece of copy on the screen an admin   }}
+                {{! wrote rather than translated. Either may be left blank -  }}
+                {{! whichever is filled in is used for both.                  }}
+                {{! ------------------------------------------------------- }}
+                <h4 class="h6 mb-1">{{#str}}authquote, theme_nit{{/str}}</h4>
+                <p class="text-muted small mb-3">{{#str}}authquote_desc, theme_nit{{/str}}</p>
+
+                {{#authtexts}}
+                    <div class="nit-authtext-slot mb-4 pb-3 border-bottom">
+                        <h5 class="h6 text-muted mb-2">{{label}}</h5>
+
+                        <div class="mb-2">
+                            <label class="form-label" for="authquote-{{lang}}">
+                                {{#str}}authquotetext, theme_nit{{/str}}
+                            </label>
+                            <textarea class="form-control" rows="3" id="authquote-{{lang}}"
+                                      name="authquote_{{lang}}" {{#rtl}}dir="rtl"{{/rtl}}>{{quote}}</textarea>
+                        </div>
+
+                        <div>
+                            <label class="form-label" for="authauthor-{{lang}}">
+                                {{#str}}authquoteauthor, theme_nit{{/str}}
+                            </label>
+                            <input type="text" class="form-control" id="authauthor-{{lang}}"
+                                   name="authauthor_{{lang}}" value="{{author}}"
+                                   placeholder="{{#cleanstr}}authquoteauthorplaceholder, theme_nit{{/cleanstr}}"
+                                   {{#rtl}}dir="rtl"{{/rtl}}>
+                        </div>
+                    </div>
+                {{/authtexts}}
+
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" name="saveauth" value="1" class="btn btn-primary">
+                        {{#str}}saveauthscreens, theme_nit{{/str}}
                     </button>
                 </div>
             </form>
