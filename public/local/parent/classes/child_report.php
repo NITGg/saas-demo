@@ -65,17 +65,19 @@ class child_report {
     public static function grades(int $studentid): array {
         global $CFG;
         require_once($CFG->libdir . '/gradelib.php');
+        require_once($CFG->dirroot . '/grade/querylib.php');
 
         $out = [];
         foreach (enrol_get_all_users_courses($studentid, true, 'id, fullname') as $course) {
-            $cg = grade_get_course_grades($course->id, $studentid);
-            $g = $cg->grades[$studentid] ?? null;
+            $cg = \grade_get_course_grades($course->id, $studentid);
+            $g = ($cg && !empty($cg->grades[$studentid])) ? $cg->grades[$studentid] : null;
+            $grademax = ($cg && !empty($cg->grademax)) ? (float) $cg->grademax : 0.0;
             $out[] = [
                 'courseid'   => (int) $course->id,
                 'coursename' => format_string($course->fullname),
                 'grade'      => ($g && $g->str_grade !== null) ? $g->str_grade : '-',
-                'percentage' => ($g && $g->grade !== null && $cg->grade_item->grademax > 0)
-                    ? round(($g->grade / $cg->grade_item->grademax) * 100, 1) : null,
+                'percentage' => ($g && $g->grade !== null && $grademax > 0)
+                    ? round(($g->grade / $grademax) * 100, 1) : null,
             ];
         }
         return $out;
