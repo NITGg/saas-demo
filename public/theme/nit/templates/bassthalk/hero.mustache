@@ -1,0 +1,96 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_nit/bassthalk/hero
+
+    Bassthalk home — hero: a full-screen gradient section with a two-line title
+    (part of line 2 highlighted), a paragraph, the "start" button
+    (local/academy/start.php decides where it leads) and the illustration
+    pinned to the bottom. Measured 1:1 against bassthalk.com at 1280×832.
+    Colours: Brand Colors "Bassthalk" group, Home page block (bthhero* roles).
+
+    Example context (json):
+    {
+        "titleline1": "منصة متكاملة بها كل ما", "hastitleline1": true,
+        "titlebefore": "يحتاجه ", "titlehighlight": "الطالب ليتفوق", "hashighlight": true,
+        "titleafter": "", "hastitleline2": true,
+        "text": "منصة متكاملة بتساعدك تذاكر صح", "hastext": true,
+        "button": "ابدأ رحلتك", "hasbutton": true, "buttonurl": "#",
+        "imageurl": "https://example.com/hero.png", "imagemobileurl": "", "hasimagemobile": false
+    }
+}}
+<style id="nit-bassthalk-hero">
+  .nit-bth-hero{ position:relative; width:100%; min-height:100vh; overflow:hidden; display:flex; flex-direction:column;
+    background:linear-gradient(to bottom, var(--nit-brand-bthherobgtop), var(--nit-brand-bthherobgbottom)); }
+  .nit-bth-hero-inner{ position:relative; z-index:10; width:100%; min-height:480px; flex:1 1 0%; display:flex;
+    align-items:center; justify-content:center; padding:80px 24px 0; font-family:'Tajawal',sans-serif; }
+  .nit-bth-hero-block{ display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%;
+    max-width:896px; text-align:center; }
+  .nit-bth-hero-block > * + *{ margin-top:24px; }
+  .nit-bth-hero-title{ margin:0; font-family:'Tajawal',sans-serif; font-size:30px; line-height:1.375; font-weight:500;
+    color:var(--nit-brand-bthherotext); transition:.4s; }
+  .nit-bth-hero-title b{ font-weight:700; color:var(--nit-brand-bthherohighlight); transition:.4s; }
+  .nit-bth-hero-textwrap{ display:flex; align-items:center; justify-content:center; }
+  .nit-bth-hero-text{ width:91.666667%; margin:0; font-size:18px; line-height:1.625; color:var(--nit-brand-bthherotext); transition:.4s; }
+  .nit-bth-hero-cta{ padding-top:8px; }
+  /* Inline (not inline-block) like the original, so the padded button overlaps
+     the gap above it exactly as it does there. */
+  .nit-bth-hero a.nit-bth-hero-btn, .nit-bth-hero a.nit-bth-hero-btn:visited{ display:inline; padding:16px 40px; border:2px solid var(--nit-brand-bthherobtn);
+    border-radius:12px; background:var(--nit-brand-bthherobtn)!important; color:var(--nit-brand-bthherobtntext)!important;
+    font-family:'Tajawal',sans-serif; font-size:16px; line-height:24px; font-weight:700; text-decoration:none!important;
+    filter:saturate(.5); transition:.4s; }
+  .nit-bth-hero a.nit-bth-hero-btn:hover, .nit-bth-hero a.nit-bth-hero-btn:focus-visible{ background:transparent!important;
+    color:var(--nit-brand-bthherobtn)!important; }
+  .nit-bth-hero-art{ position:relative; display:flex; align-items:center; justify-content:center; margin-top:auto; transition:all .5s; }
+  .nit-bth-hero-art-inner{ width:100%; max-width:1024px; padding:0 40px; }
+  .nit-bth-hero-art img{ display:block; width:100%; height:auto; max-width:none; margin:0; }
+  @media (min-width:768px){
+    .nit-bth-hero{ display:block; height:100vh; }
+    .nit-bth-hero-inner{ flex:none; min-height:500px; padding:80px 0 0; }
+    .nit-bth-hero-title{ font-size:36px; line-height:40px; }
+    .nit-bth-hero-text{ width:75%; font-size:20px; line-height:28px; }
+    .nit-bth-hero-art{ position:absolute; left:0; right:0; bottom:-40px; margin-top:0; }
+    .nit-bth-hero-art-inner{ padding:0; }
+    /* The original draws a 1121×535 box at full width and fits the art inside
+       it; the same box keeps the art at the same height and offset. */
+    .nit-bth-hero-art img{ height:535px; object-fit:contain; }
+  }
+  @media (min-width:1280px){
+    .nit-bth-hero-title{ font-size:60px; line-height:60px; }
+  }
+</style>
+<section class="nit-bth-hero" aria-labelledby="nit-bth-hero-title">
+    <div class="nit-bth-hero-inner">
+        <div class="nit-bth-hero-block">
+            <h1 class="nit-bth-hero-title" id="nit-bth-hero-title">{{#hastitleline1}}{{titleline1}}{{/hastitleline1}}{{#hastitleline1}}{{#hastitleline2}}<br>{{/hastitleline2}}{{/hastitleline1}}{{#hastitleline2}}<span>{{titlebefore}}{{#hashighlight}}<b>{{titlehighlight}}</b>{{/hashighlight}}{{titleafter}}</span>{{/hastitleline2}}</h1>
+            {{#hastext}}
+            <div class="nit-bth-hero-textwrap"><p class="nit-bth-hero-text">{{text}}</p></div>
+            {{/hastext}}
+            {{#hasbutton}}
+            <div class="nit-bth-hero-cta"><a class="nit-bth-hero-btn" href="{{buttonurl}}">{{button}}</a></div>
+            {{/hasbutton}}
+        </div>
+    </div>
+    <div class="nit-bth-hero-art">
+        <div class="nit-bth-hero-art-inner">
+            <picture>
+                {{#hasimagemobile}}<source media="(max-width: 767.98px)" srcset="{{imagemobileurl}}">{{/hasimagemobile}}
+                <img src="{{imageurl}}" alt="" width="1121" height="535" fetchpriority="high">
+            </picture>
+        </div>
+    </div>
+</section>

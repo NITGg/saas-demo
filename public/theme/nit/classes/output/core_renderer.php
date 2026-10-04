@@ -120,6 +120,25 @@ class core_renderer extends \theme_boost\output\core_renderer {
         return format_text($v, FORMAT_HTML, ['filter' => true, 'noclean' => false, 'para' => false]);
     }
 
+    /**
+     * The coloured (light-background) logo — footer, log-in card, registration card.
+     *
+     * @return string absolute URL (bundled wordmark when none is uploaded)
+     */
+    public function nit_brand_logo_url(): string {
+        return \theme_nit_brand_logo_url();
+    }
+
+    /**
+     * The site footer view-model (texts, pages and social links set on
+     * Site administration → Appearance → Site footer).
+     *
+     * @return array see theme_nit_footer_context()
+     */
+    public function nit_footer(): array {
+        return \theme_nit_footer_context();
+    }
+
     public function nit_account_link(): string {
         global $CFG;
         if (!\theme_nit\local\editor::can_edit()) {

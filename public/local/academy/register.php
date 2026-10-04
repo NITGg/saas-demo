@@ -20,6 +20,7 @@
  */
 
 require(__DIR__ . '/../../config.php');
+require_once($CFG->dirroot . '/theme/nit/lib.php'); // theme_nit_brand_logo_url().
 
 $PAGE->set_url(new moodle_url('/local/academy/register.php'));
 $PAGE->set_context(context_system::instance());
@@ -90,10 +91,18 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&family=Tajawal:wght@400;500;700&display=swap');
   /* reset the embedded layout wrapper */
-  body, #page, #page-content, #region-main, [role="main"], .main-inner, div[role="main"] { margin:0!important; padding:0!important; max-width:none!important; width:auto!important; background:#fff!important; }
+  body, #page, #page-content, #region-main, [role="main"], .main-inner, div[role="main"] { margin:0!important; padding:0!important; max-width:none!important; width:auto!important; background:var(--nit-brand-g18-background)!important; }
 
-  .nit-reg{ --ink:#111827; --muted:#6B7280; --border:#D1D5DB; --accent:#0EA5E9; --accent2:#38BDF8; --icon:#06B6D4; --card:#F3F4F6; --imgteal:#01B4B8; --yellow:#F4B30C;
-    min-height:100vh; display:flex; gap:20px; padding:clamp(16px,3vw,40px); background:#fff; color:var(--ink);
+  /* Every colour reads the Brand Colors "Bassthalk" group (g18) via .nit-brand-18
+     (Appearance → NIT Design System → Bassthalk). */
+  .nit-reg, .reg-modal-ov{ --ink:var(--nit-brand-textprimary); --muted:var(--nit-brand-textsecondary); --border:var(--nit-brand-borderprimary);
+    --line:var(--nit-brand-bordersecondary); --field:var(--nit-brand-surface); --page:var(--nit-brand-background); --hover:var(--nit-brand-hoverbackground);
+    --accent:var(--nit-brand-bthregisteraccent); --onaccent:var(--nit-brand-bthprevtext); --accent2:var(--nit-brand-bthregisterprogress);
+    --icon:var(--nit-brand-bthfieldicon); --card:var(--nit-brand-background2); --imgteal:var(--nit-brand-bthregisterimagebg);
+    --yellow:var(--nit-brand-bthprevbg); --onyellow:var(--nit-brand-bthprevtext); --err:var(--nit-brand-error);
+    --ph:color-mix(in srgb, var(--nit-brand-textsecondary) 75%, var(--nit-brand-surface)); }
+  .nit-reg{
+    min-height:100vh; display:flex; gap:20px; padding:clamp(16px,3vw,40px); background:var(--page); color:var(--ink);
     direction:rtl; align-items:flex-start; font-family:'Tajawal','Almarai',system-ui,sans-serif; box-sizing:border-box; }
   .nit-reg *, .nit-reg *::before, .nit-reg *::after{ box-sizing:border-box; }
 
@@ -101,19 +110,19 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
   .nit-reg-inner{ width:100%; max-width:512px; margin:0 auto; }
 
   .nit-reg-back{ position:absolute; top:24px; inset-inline-start:24px; display:inline-flex; align-items:center; gap:8px;
-    border:1px solid #E5E7EB; border-radius:10px; padding:9px 16px; background:#fff; font-family:'Almarai',sans-serif;
+    border:1px solid var(--line); border-radius:10px; padding:9px 16px; background:var(--field); font-family:'Almarai',sans-serif;
     font-weight:700; font-size:14px; color:var(--ink); text-decoration:none; }
-  .nit-reg-back:hover{ background:#F9FAFB; color:var(--ink); text-decoration:none; }
+  .nit-reg-back:hover{ background:var(--hover)!important; color:var(--ink)!important; text-decoration:none; }
 
   .nit-reg-progress{ margin:52px 0 10px; }
   .nit-reg-progrow{ display:flex; justify-content:space-between; align-items:center; font-size:14px; font-family:'Tajawal'; margin-bottom:6px; }
   .nit-reg-progrow .pct{ color:var(--muted); }
   .nit-reg-progrow .step{ color:var(--accent); font-weight:700; }
-  .nit-reg-track{ height:4px; background:#E5E7EB; border-radius:4px; overflow:hidden; }
+  .nit-reg-track{ height:4px; background:var(--line); border-radius:4px; overflow:hidden; }
   .nit-reg-fill{ height:100%; background:var(--accent2); border-radius:4px; transition:width .25s ease; }
 
   .nit-reg-logo{ display:flex; justify-content:center; margin:14px 0 6px; }
-  .nit-reg-logo img, .nit-reg-logo img.icon{ width:170px!important; height:44px!important; max-width:170px!important; max-height:44px!important; object-fit:contain!important; }
+  .nit-reg-logo img{ width:170px; height:44px; max-width:170px; max-height:44px; object-fit:contain; }
   .nit-reg h1{ font-family:'Tajawal'; font-weight:700; font-size:24px; color:var(--ink); text-align:center; margin:10px 0 0; }
   .nit-reg-sub{ font-family:'Tajawal'; font-weight:400; font-size:16px; color:var(--muted); text-align:center; line-height:1.7; margin:10px 0 24px; }
 
@@ -123,8 +132,8 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
 
   .reg-field{ position:relative; }
   .reg-field input, .reg-field select{ width:100%; height:63px; border:1px solid var(--border); border-radius:14px;
-    background:#fff; color:var(--ink); font-family:'Tajawal'; font-size:18px; padding:0 16px; text-align:start; direction:rtl; }
-  .reg-field input:focus, .reg-field select:focus{ outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(14,165,233,.15); }
+    background:var(--field); color:var(--ink); font-family:'Tajawal'; font-size:18px; padding:0 16px; text-align:start; direction:rtl; }
+  .reg-field input:focus, .reg-field select:focus{ outline:none; border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent); }
   .reg-field.reg-haspw input{ padding-inline-end:48px; }
   .reg-eye{ position:absolute; inset-inline-end:14px; top:50%; transform:translateY(-50%); width:28px; height:28px;
     display:flex; align-items:center; justify-content:center; border:0; background:none; color:var(--muted); cursor:pointer; padding:0; }
@@ -134,51 +143,52 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
     color:var(--muted); font-family:'Tajawal'; font-size:18px; pointer-events:none; transition:.15s ease; background:transparent; padding:0; }
   .reg-lab svg{ color:var(--icon); flex:none; }
   .reg-field input:focus ~ .reg-lab,
-  .reg-field input:not(:placeholder-shown) ~ .reg-lab{ top:0; font-size:13px; background:#fff; padding:0 6px; color:var(--icon); }
+  .reg-field input:not(:placeholder-shown) ~ .reg-lab{ top:0; font-size:13px; background:var(--field); padding:0 6px; color:var(--icon); }
   .reg-hint{ font-family:'Tajawal'; font-size:12.5px; color:var(--muted); text-align:start; margin:6px 2px 0; line-height:1.5; }
 
   /* validation */
-  .reg-field.invalid input, .reg-field.invalid select{ border-color:#E03131; box-shadow:0 0 0 3px rgba(224,49,49,.12); }
-  .reg-err{ font-family:'Tajawal'; font-size:12.5px; color:#E03131; text-align:start; margin:6px 2px 0; display:none; }
+  .reg-field.invalid input, .reg-field.invalid select{ border-color:var(--err); box-shadow:0 0 0 3px color-mix(in srgb, var(--err) 12%, transparent); }
+  .reg-err{ font-family:'Tajawal'; font-size:12.5px; color:var(--err); text-align:start; margin:6px 2px 0; display:none; }
   .reg-cell.invalid .reg-err{ display:block; }
 
   /* terms modal */
-  .reg-modal-ov{ position:fixed; inset:0; background:rgba(17,24,39,.55); display:none; align-items:center; justify-content:center; z-index:9999; padding:20px; }
+  .reg-modal-ov{ position:fixed; inset:0; background:color-mix(in srgb, var(--ink) 55%, transparent); display:none; align-items:center; justify-content:center; z-index:9999; padding:20px; }
   .reg-modal-ov.open{ display:flex; }
-  .reg-modal{ background:#fff; border-radius:16px; width:100%; max-width:640px; max-height:86vh; display:flex; flex-direction:column; overflow:hidden; direction:rtl; font-family:'Tajawal'; }
-  .reg-modal-head{ background:var(--accent); color:#fff; padding:20px 22px; display:flex; align-items:flex-start; gap:12px; }
+  .reg-modal{ background:var(--field); border-radius:16px; width:100%; max-width:640px; max-height:86vh; display:flex; flex-direction:column; overflow:hidden; direction:rtl; font-family:'Tajawal'; }
+  .reg-modal-head{ background:var(--accent); color:var(--onaccent); padding:20px 22px; display:flex; align-items:flex-start; gap:12px; }
   .reg-modal-head .t{ font-weight:700; font-size:20px; }
   .reg-modal-head .s{ font-size:13px; opacity:.92; margin-top:4px; }
-  .reg-modal-x{ margin-inline-start:auto; width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,.2); border:0; color:#fff; cursor:pointer; font-size:18px; line-height:1; flex:none; }
+  .reg-modal-x{ margin-inline-start:auto; width:34px; height:34px; border-radius:50%; background:color-mix(in srgb, var(--onaccent) 20%, transparent); border:0; color:var(--onaccent); cursor:pointer; font-size:18px; line-height:1; flex:none; }
   .reg-modal-body{ padding:18px 22px; overflow-y:auto; display:flex; flex-direction:column; gap:14px; }
-  .reg-modal-sec{ border:1px solid #E5E7EB; border-radius:12px; padding:16px; }
+  .reg-modal-sec{ border:1px solid var(--line); border-radius:12px; padding:16px; }
   .reg-modal-sec h4{ font-weight:700; font-size:16px; color:var(--ink); margin:0 0 8px; }
-  .reg-modal-sec p{ font-size:14px; color:#374151; line-height:1.8; margin:0 0 6px; }
-  .reg-modal-foot{ padding:14px 22px 18px; border-top:1px solid #E5E7EB; }
-  .reg-modal-agree{ width:100%; height:50px; border:0; border-radius:12px; background:var(--accent); color:#fff; font-family:'Tajawal'; font-weight:700; font-size:16px; cursor:pointer; }
+  .reg-modal-sec p{ font-size:14px; color:var(--ink); line-height:1.8; margin:0 0 6px; }
+  .reg-modal-foot{ padding:14px 22px 18px; border-top:1px solid var(--line); }
+  .reg-modal-agree{ width:100%; height:50px; border:0; border-radius:12px; background:var(--accent); color:var(--onaccent); font-family:'Tajawal'; font-weight:700; font-size:16px; cursor:pointer; }
 
   /* selects */
   .reg-field.reg-sel select{ appearance:none; -webkit-appearance:none; color:var(--ink); padding-inline-end:44px; }
-  .reg-field.reg-sel select:required:invalid{ color:#9CA3AF; }
+  .reg-field.reg-sel select:required:invalid{ color:var(--ph); }
   .reg-field.reg-sel select option{ color:var(--ink); }
   .reg-chevron{ position:absolute; inset-inline-end:14px; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none; display:flex; }
 
   .nit-reg-row{ margin-top:18px; }
   .nit-reg-btns{ display:flex; gap:12px; margin-top:26px; }
-  .btn-next{ flex:1; height:52px; border-radius:12px; border:2px solid var(--accent); background:var(--accent); color:#fff;
+  .btn-next{ flex:1; height:52px; border-radius:12px; border:2px solid var(--accent); background:var(--accent); color:var(--onaccent);
     font-family:'Tajawal'; font-weight:500; font-size:16px; cursor:pointer; }
-  .btn-next:hover{ background:#0b8ec9; border-color:#0b8ec9; }
-  .btn-prev{ flex:0 0 32%; height:52px; border-radius:12px; border:2px solid var(--yellow); background:var(--yellow); color:#fff;
+  .btn-next:hover{ background:color-mix(in srgb, var(--accent) 88%, black); border-color:color-mix(in srgb, var(--accent) 88%, black); }
+  .btn-prev{ flex:0 0 32%; height:52px; border-radius:12px; border:2px solid var(--yellow); background:var(--yellow); color:var(--onyellow);
     font-family:'Tajawal'; font-weight:500; font-size:16px; cursor:pointer; }
   .btn-prev:hover{ filter:brightness(.96); }
 
-  .nit-reg-terms{ display:flex; align-items:center; gap:10px; margin-top:20px; border:1px solid #BAE6FD; background:#F0F9FF;
+  .nit-reg-terms{ display:flex; align-items:center; gap:10px; margin-top:20px;
+    border:1px solid color-mix(in srgb, var(--accent) 30%, var(--field)); background:color-mix(in srgb, var(--accent) 6%, var(--field));
     border-radius:10px; padding:12px 14px; font-family:'Tajawal'; font-size:14px; color:var(--ink); }
   .nit-reg-terms input{ width:18px; height:18px; accent-color:var(--accent); flex:none; }
-  .nit-reg-terms a{ color:var(--accent); font-weight:700; text-decoration:none; }
+  .nit-reg-terms a, .nit-reg-terms a:hover{ color:var(--accent)!important; font-weight:700; text-decoration:none; }
 
   .nit-reg-bottom{ text-align:center; margin-top:18px; font-family:'Tajawal'; font-size:16px; color:var(--muted); }
-  .nit-reg-bottom a{ color:var(--muted); text-decoration:none; }
+  .nit-reg-bottom a, .nit-reg-bottom a:hover{ color:var(--muted)!important; text-decoration:none; }
 
   .reg-step{ display:none; }
   .reg-step.active{ display:block; }
@@ -191,7 +201,7 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
   @media (max-width:991px){ .nit-reg-side{ display:none; } .nit-reg-form{ flex-basis:100%; } }
 </style>
 
-<div class="nit-reg">
+<div class="nit-reg nit-brand-18">
   <div class="nit-reg-form">
     <a class="nit-reg-back" href="<?php echo $homeurl; ?>"><span>الرجوع للرئيسية</span>
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
@@ -202,7 +212,7 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
         <div class="nit-reg-track"><div class="nit-reg-fill" id="reg-fill" style="width:30%"></div></div>
       </div>
 
-      <div class="nit-reg-logo"><?php echo $OUTPUT->image_icon('bassthalk_logo', '', 'theme_nit'); ?></div>
+      <div class="nit-reg-logo"><img src="<?php echo s(theme_nit_brand_logo_url()); ?>" alt="<?php echo s(format_string($SITE->fullname)); ?>"></div>
       <h1>طلب انشاء حساب :</h1>
       <p class="nit-reg-sub">ادخل بياناتك بشكل صحيح وسيتم مراجعة طلبك خلال ساعات لـ بضع ايام, وتقدر تسجل دخول عشان تشوف حالة الطلب بتاعك</p>
 
@@ -265,7 +275,7 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
   <aside class="nit-reg-side"><?php echo $OUTPUT->image_icon('bassthalk_register', '', 'theme_nit'); ?></aside>
 </div>
 
-<div class="reg-modal-ov" id="reg-terms-modal">
+<div class="reg-modal-ov nit-brand-18" id="reg-terms-modal">
   <div class="reg-modal" role="dialog" aria-modal="true">
     <div class="reg-modal-head">
       <div><div class="t">اتفاقية شراء الكورس</div><div class="s">اقرأ البنود كويس قبل ما توافق، موافقتك الإلكترونية ملزمة.</div></div>
@@ -349,7 +359,7 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
   document.querySelectorAll('.reg-sel select').forEach(function(sel){
     var ph = sel.getAttribute('data-ph');
     var o0 = sel.querySelector('option[value=""]'); if(o0){ o0.textContent = ph; }
-    function sync(){ sel.style.color = sel.value ? 'var(--ink)' : '#9CA3AF'; }
+    function sync(){ sel.style.color = sel.value ? 'var(--ink)' : 'var(--ph)'; }
     sel.addEventListener('change', sync); sync();
   });
 
@@ -360,7 +370,7 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
     var list = DIV[sysSel.value] || [];
     var ph = divSel.getAttribute('data-ph');
     divSel.innerHTML = '<option value="" selected disabled hidden>'+ph+'</option>' + list.map(function(d){ return '<option value="'+d+'">'+d+'</option>'; }).join('');
-    divSel.style.color = '#9CA3AF';
+    divSel.style.color = 'var(--ph)';
   }
   if(sysSel && divSel){
     sysSel.addEventListener('change', fillDivisions);

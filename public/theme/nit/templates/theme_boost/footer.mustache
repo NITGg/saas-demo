@@ -1,0 +1,191 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_boost/footer
+
+    NIT override of the Boost page footer.
+
+    1. A Bassthalk-style site footer (logo + description + copyright, a "pages"
+       column and a "social media" column). Content comes from Site
+       administration → Appearance → Site footer (output.nit_footer): each page
+       row says who sees it (everyone / visitors / signed-in users) and a social
+       network shows only when its link is filled in. The logo is the "Coloured
+       logo" from Appearance → Logos. Colours read the Brand Colors "Bassthalk"
+       group (.nit-brand-18). Hidden on the login page layout.
+    2. Boost's original footer, kept verbatim — it carries
+       output.standard_end_of_body_html (all page JS) and the "?" popover.
+
+    Re-diff section 2 against theme/boost/templates/footer.mustache on each
+    Moodle upgrade.
+
+    Example context (json):
+    {
+        "output": {
+            "page_doc_link": "Documentation for this page",
+            "supportemail": "<a href=\"#\">Contact site support</a>",
+            "has_popover_links": true,
+            "services_support": "Services and support",
+            "login_info": "You are logged in as cute kitten",
+            "moodle_release": "90210",
+            "has_communication_links": true,
+            "communication_url": "https://element:8081/#/room/#yourroom:synapse",
+            "communication_link": "<a href=\"#\">Communication room</a>"
+        }
+    }
+}}
+<style id="nit-bassthalk-footer">
+  /* Every colour reads the Brand Colors "Bassthalk" group (g18) via .nit-brand-18. */
+  .nit-site-footer{ background:var(--nit-brand-footerbackground1); direction:rtl; font-family:'Tajawal','Almarai',sans-serif;
+    color:var(--nit-brand-textprimary); border-top:1px solid var(--nit-brand-bordersecondary); }
+  body.pagelayout-login .nit-site-footer{ display:none; }
+  .nit-sf-inner{ max-width:1280px; margin:0 auto; padding:40px 56px 48px; display:flex; align-items:center; gap:56px; }
+  .nit-sf-brand{ flex:0 1 520px; display:flex; flex-direction:column; align-items:flex-start; gap:12px; }
+  .nit-sf-logo{ display:inline-flex; text-decoration:none!important; }
+  .nit-sf-logo img{ width:170px; height:44px; max-width:none; object-fit:contain; object-position:right center; margin:0; }
+  .nit-sf-desc{ color:var(--nit-brand-footerheading); font-size:16px; line-height:1.5; max-width:390px; margin:4px 0 0; }
+  .nit-sf-copy{ font-weight:700; font-size:16px; margin:0; color:var(--nit-brand-textprimary); }
+  .nit-sf-cols{ display:flex; gap:32px; }
+  .nit-sf-col{ width:171px; }
+  .nit-sf-col h4{ color:var(--nit-brand-footerheading); font-family:'Tajawal',sans-serif; font-size:16px; font-weight:700; margin:0 0 14px; }
+  .nit-sf-col ul{ list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:10px; }
+  .nit-sf-col a{ color:var(--nit-brand-footerlink); font-size:16px; text-decoration:none!important; display:inline-flex; align-items:center; gap:8px; transition:color .2s ease; }
+  .nit-sf-col a:hover, .nit-sf-col a:focus{ color:var(--nit-brand-hovertext); }
+  /* Social icons are the networks' own marks, so they keep the networks' colours. */
+  .nit-sf-col a svg{ width:20px; height:20px; flex:none; }
+  @media (max-width:767px){
+    .nit-sf-inner{ flex-direction:column; align-items:flex-start; padding:32px 20px 40px; gap:28px; }
+    .nit-sf-cols{ gap:40px; }
+  }
+</style>
+{{#output.nit_footer}}
+<div class="nit-site-footer nit-brand-18" role="contentinfo">
+    <div class="nit-sf-inner">
+        <div class="nit-sf-brand">
+            <a class="nit-sf-logo" href="{{ config.wwwroot }}/" aria-label="{{sitename}}"><img src="{{logourl}}" alt="{{sitename}}"></a>
+            {{#hasdescription}}<p class="nit-sf-desc">{{{description}}}</p>{{/hasdescription}}
+            {{#hascopyright}}<p class="nit-sf-copy">{{{copyright}}}</p>{{/hascopyright}}
+        </div>
+        <div class="nit-sf-cols">
+            {{#haspages}}
+            <div class="nit-sf-col">
+                <h4>الصفحات</h4>
+                <ul>
+                    {{#pages}}<li><a href="{{{url}}}">{{{name}}}</a></li>{{/pages}}
+                </ul>
+            </div>
+            {{/haspages}}
+            {{#hassocials}}
+            <div class="nit-sf-col">
+                <h4>السوشيال ميديا</h4>
+                <ul>
+                    {{#socials}}<li><a href="{{{url}}}" target="_blank" rel="noopener">{{{icon}}}{{label}}</a></li>{{/socials}}
+                </ul>
+            </div>
+            {{/hassocials}}
+        </div>
+    </div>
+</div>
+{{/output.nit_footer}}
+<script>(function(){
+  // Full-bleed: cancel the parent's horizontal padding (Boost's #page.drawers padding varies by breakpoint).
+  function bleed(){
+    document.querySelectorAll('.nit-site-footer').forEach(function(f){
+      var p = f.parentElement; if(!p){ return; }
+      var s = getComputedStyle(p);
+      f.style.marginLeft = '-' + s.paddingLeft;
+      f.style.marginRight = '-' + s.paddingRight;
+    });
+  }
+  bleed(); window.addEventListener('resize', bleed);
+})();</script>
+
+<footer id="page-footer" class="footer-popover bg-white">
+    <div data-region="footer-container-popover">
+        {{#output.has_communication_links}}
+            <button onclick="window.open('{{output.communication_url}}', '_blank', 'noreferrer')" class="btn btn-icon rounded-circle bg-primary text-white btn-footer-communication" aria-label="{{#str}}communicationroomlink, course{{/str}}">
+                {{#pix}}t/messages-o, core{{/pix}}
+            </button>
+        {{/output.has_communication_links}}
+        <button class="btn btn-icon rounded-circle bg-secondary btn-footer-popover" data-action="footer-popover" aria-label="{{#str}}showfooter, theme_boost{{/str}}">
+            {{#pix}}e/question, core{{/pix}}
+        </button>
+    </div>
+    <div class="footer-content-popover container" data-region="footer-content-popover">
+        {{#output.has_communication_links}}
+            <div class="footer-section p-3 border-bottom footer-link-communication">
+                <div class="footer-support-link">{{{ output.communication_link }}}</div>
+            </div>
+        {{/output.has_communication_links}}
+        {{# output.has_popover_links }}
+            <div class="footer-section p-3 border-bottom">
+                {{# output.page_doc_link }}
+                    <div class="footer-support-link">{{{ output.page_doc_link }}}</div>
+                {{/ output.page_doc_link }}
+
+                {{# output.services_support_link }}
+                    <div class="footer-support-link">{{{ output.services_support_link }}}</div>
+                {{/ output.services_support_link }}
+
+                {{# output.supportemail }}
+                    <div class="footer-support-link">{{{ output.supportemail }}}</div>
+                {{/ output.supportemail }}
+            </div>
+        {{/ output.has_popover_links }}
+        <div class="footer-section p-3 border-bottom">
+            <div class="logininfo">
+                {{{ output.login_info }}}
+            </div>
+            <div class="tool_usertours-resettourcontainer">
+            </div>
+            {{# output.telemetry_traceid }}
+                <div>
+                    <span id="telemetry_traceid" class="d-none">
+                        {{{ output.telemetry_traceid }}}
+                    </span>
+                    <a href="#" data-action="copytoclipboard" data-clipboard-target="#telemetry_traceid"
+                            data-clipboard-success-message="{{#str}}telemetrytraceidfooterlinkcopied, core{{/str}}">
+                        {{#str}}telemetrytraceidfooterlink, core{{/str}}
+                    </a>
+                </div>
+            {{/ output.telemetry_traceid }}
+            {{{ output.standard_footer_html }}}
+            {{{ output.standard_end_of_body_html }}}
+        </div>
+        <div class="footer-section p-3">
+            <div>{{#str}}poweredbymoodle, core{{/str}}</div>
+            {{#output.moodle_release}}
+                <div>
+                    {{#str}}version, core{{/str}} {{{ output.moodle_release }}}
+                </div>
+            {{/output.moodle_release}}
+        </div>
+    </div>
+
+    <div class="footer-content-debugging footer-dark bg-dark text-light">
+        <div class="container-fluid footer-dark-inner">
+            {{{ output.debug_footer_html }}}
+        </div>
+    </div>
+</footer>
+{{#js}}
+require([
+    'theme_boost/footer-popover',
+    'core/copy_to_clipboard',
+], function(FooterPopover) {
+    FooterPopover.init();
+});
+{{/js}}

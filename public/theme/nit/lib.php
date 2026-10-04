@@ -457,6 +457,32 @@ function theme_nit_brand_roles(): array {
         'success'           => ['section' => 'status', 'label' => 'Success', 'usage' => ['Success', 'enrolled / active / paid', 'positive states'], 'default' => '#3fa877'],
         'warning'           => ['section' => 'status', 'label' => 'Warning', 'usage' => ['Warnings', 'caution', 'pending / expiring'], 'default' => '#d8c24e'],
         'info'              => ['section' => 'status', 'label' => 'Info', 'usage' => ['Neutral notices', 'tips', 'hints'], 'default' => '#5fb0c9'],
+
+        // --- Bassthalk --------------------------------------------------------
+        // The colours the Bassthalk-style screens draw that no role above
+        // covers: the visitor sign-up button and search pill on the navbar, the
+        // scroll progress bar inside it, the two illustration panels, and the
+        // registration wizard's own accent set. Every group carries them (a role
+        // is global); only the Bassthalk group (g18) is tuned for them, and the
+        // screens that use them opt into that group with `.nit-brand-18`.
+        'bthsignupbg'       => ['section' => 'bassthalk', 'sub' => 'bthnavbar', 'label' => 'Sign-up button background', 'short' => 'Sign-up button background', 'usage' => ['the "حساب جديد" button on the navbar (visitors)', 'the notification count badge'], 'default' => '#4bf7a1'],
+        'bthsignuptext'     => ['section' => 'bassthalk', 'sub' => 'bthnavbar', 'label' => 'Sign-up button text', 'short' => 'Sign-up button text', 'usage' => ['the label of the "حساب جديد" button', 'the number on the notification badge'], 'default' => '#0e335d'],
+        'bthsearchbg'       => ['section' => 'bassthalk', 'sub' => 'bthnavbar', 'label' => 'Search pill background', 'short' => 'Search pill background', 'usage' => ['the "ابحث في الموقع" pill next to the logo (its hover is derived)'], 'default' => '#d1d5db'],
+        'bthprogresstrack'  => ['section' => 'bassthalk', 'sub' => 'bthnavbar', 'label' => 'Scroll progress track', 'short' => 'Progress track', 'usage' => ['the thin bar along the bottom of the navbar while the page is scrolled'], 'default' => '#38bdf8'],
+        'bthprogressfill'   => ['section' => 'bassthalk', 'sub' => 'bthnavbar', 'label' => 'Scroll progress fill', 'short' => 'Progress fill', 'usage' => ['the part of the scroll bar already read'], 'default' => '#0369a1'],
+        'bthloginimagebg'   => ['section' => 'bassthalk', 'sub' => 'bthauth', 'label' => 'Log-in illustration background', 'short' => 'Log-in illustration', 'usage' => ['the panel behind the log-in illustration — match the picture\'s own blue'], 'default' => '#0080ff'],
+        'bthregisterimagebg' => ['section' => 'bassthalk', 'sub' => 'bthauth', 'label' => 'Registration illustration background', 'short' => 'Registration illustration', 'usage' => ['the panel behind the registration illustration — match the picture\'s own teal'], 'default' => '#01b4b8'],
+        'bthregisteraccent' => ['section' => 'bassthalk', 'sub' => 'bthauth', 'label' => 'Registration accent', 'short' => 'Registration accent', 'usage' => ['the "التالي" and "طلب انشاء حساب" buttons', 'the step name above the progress bar', 'the terms box, its link and the terms dialog header', 'focused fields on the registration form'], 'default' => '#0ea5e9'],
+        'bthregisterprogress' => ['section' => 'bassthalk', 'sub' => 'bthauth', 'label' => 'Registration progress', 'short' => 'Registration progress', 'usage' => ['the filled part of the registration step bar'], 'default' => '#38bdf8'],
+        'bthfieldicon'      => ['section' => 'bassthalk', 'sub' => 'bthauth', 'label' => 'Field icon & floating label', 'short' => 'Field icon', 'usage' => ['the icons inside the registration fields', 'a field label once it floats up', 'the search dialog\'s label, icon and focus line'], 'default' => '#06b6d4'],
+        'bthprevbg'         => ['section' => 'bassthalk', 'sub' => 'bthauth', 'label' => 'Back button background', 'short' => 'Back button background', 'usage' => ['the yellow "السابق" button on the registration steps'], 'default' => '#f4b30c'],
+        'bthprevtext'       => ['section' => 'bassthalk', 'sub' => 'bthauth', 'label' => 'Back button text', 'short' => 'Back button text', 'usage' => ['the label of the "السابق" button', 'text on the registration accent (buttons, dialog header)'], 'default' => '#ffffff'],
+        'bthherobgtop'      => ['section' => 'bassthalk', 'sub' => 'bthhome', 'label' => 'Hero background (top)', 'short' => 'Hero top', 'usage' => ['the top colour of the home-page hero gradient'], 'default' => '#ffffff'],
+        'bthherobgbottom'   => ['section' => 'bassthalk', 'sub' => 'bthhome', 'label' => 'Hero background (bottom)', 'short' => 'Hero bottom', 'usage' => ['the bottom colour of the home-page hero gradient'], 'default' => '#bfdfff'],
+        'bthherotext'       => ['section' => 'bassthalk', 'sub' => 'bthhome', 'label' => 'Hero text', 'short' => 'Hero text', 'usage' => ['the hero title and paragraph on the home page'], 'default' => '#111827'],
+        'bthherohighlight'  => ['section' => 'bassthalk', 'sub' => 'bthhome', 'label' => 'Hero highlighted words', 'short' => 'Hero highlight', 'usage' => ['the bold highlighted words in the hero title ("الطالب ليتفوق")'], 'default' => '#0d549b'],
+        'bthherobtn'        => ['section' => 'bassthalk', 'sub' => 'bthhome', 'label' => 'Hero button', 'short' => 'Hero button', 'usage' => ['the "ابدأ رحلتك" button fill and border (drawn at half saturation)', 'its label colour on hover, when the fill turns transparent'], 'default' => '#14d80a'],
+        'bthherobtntext'    => ['section' => 'bassthalk', 'sub' => 'bthhome', 'label' => 'Hero button text', 'short' => 'Hero button text', 'usage' => ['the label of the "ابدأ رحلتك" button'], 'default' => '#ffffff'],
     ];
 }
 
@@ -492,6 +518,9 @@ function theme_nit_brand_groups(): array {
         $groups[$hue['light']] = 'Group ' . substr($hue['light'], 1) . ' (' . $hue['name'] . ' — light)';
         $groups[$hue['dark']] = 'Group ' . substr($hue['dark'], 1) . ' (' . $hue['name'] . ' — dark)';
     }
+    // The Bassthalk palette: the log-in and registration screens, the navbar
+    // and the site footer opt into it with `.nit-brand-18`.
+    $groups['g18'] = 'Bassthalk';
     return $groups;
 }
 
@@ -1058,6 +1087,104 @@ function theme_nit_brand_group_defaults(): array {
         $defaults[$hue['light']] = theme_nit_brand_rehue($templates['light'], $hue['rungs']);
         $defaults[$hue['dark']] = theme_nit_brand_rehue($templates['dark'], $hue['rungs']);
     }
+
+    // --- Group 18 : Bassthalk (LIGHT). ---------------------------------------
+    // Seeded from Daylight (g4, the light palette) so every role it does not
+    // name below still has a sane light value, then set to the colours measured
+    // on bassthalk.com for the screens that use it.
+    $defaults['g18'] = array_merge($defaults['g4'], [
+        // Brand — the main button is the log-in / search submit blue; the
+        // secondary button is the navbar "تسجيل الدخول" navy.
+        'accent'            => '#0861c5',
+        'accenttext'        => '#0861c5',
+        'accentwords'       => '#013399',
+        'accentunderline'   => '#6b7280',
+        'primary'           => '#0861c5',
+        'onprimary'         => '#ffffff',
+        'btnprimaryborder'  => '#0861c5',
+        'btnprimaryhoverbg' => '#074ea0',
+        'btnprimaryhovertext' => '#ffffff',
+        'btnprimaryhoverborder' => '#074ea0',
+        'secondary'         => '#0e335d',
+        'onsecondary'       => '#ffffff',
+        'btnsecondaryborder' => '#0e335d',
+        'btnsecondaryhoverbg' => '#0b2a4d',
+        'btnsecondaryhovertext' => '#ffffff',
+        'btnsecondaryhoverborder' => '#0b2a4d',
+        // Neutral outline button — "إنشاء حساب ولي أمر" on the log-in card.
+        'btnoutlinebg'      => '#ffffff',
+        'btnoutlinetext'    => '#111827',
+        'btnoutlineborder'  => '#d1d5db',
+        'btnoutlinehoverbg' => '#f9fafb',
+        'btnoutlinehovertext' => '#111827',
+        'btnoutlinehoverborder' => '#0861c5',
+        // Checkbox & switch — the navbar edit-mode switch.
+        'checkbg'           => '#ffffff',
+        'checkborder'       => '#d1d5db',
+        'checkknob'         => '#9ca3af',
+        'checkcheckedbg'    => '#4bf7a1',
+        'checkcheckedborder' => '#4bf7a1',
+        'checkcheckedmark'  => '#ffffff',
+        // Navbar — white ink on the blue pill; hover keeps the ink (no colour
+        // change on hover), the soft pads are these whites mixed down in CSS.
+        'navbarbackground1' => '#0080ff',
+        'navbarbackground2' => '#0080ff',
+        'navbartitlecolor'  => '#ffffff',
+        'navbartitlehovercolor' => '#ffffff',
+        'navbartitleactivecolor' => '#ffffff',
+        'navbartitlehoverstylecolor' => '#ffffff',
+        'navbartitleactivestylecolor' => '#ffffff',
+        'navbariconcolor'   => '#ffffff',
+        'navbariconhovercolor' => '#ffffff',
+        'navbariconactivecolor' => '#ffffff',
+        'navbarlogincolor'  => '#ffffff',
+        'navbarloginhovercolor' => '#ffffff',
+        'navbarloginactivecolor' => '#ffffff',
+        'navbarloginhoverstylecolor' => '#ffffff',
+        'navbarloginactivestylecolor' => '#ffffff',
+        // Footer.
+        'footerbackground1' => '#ffffff',
+        'footerbackground2' => '#ffffff',
+        'footerheading'     => '#013399',
+        'footerlink'        => '#111827',
+        'footericon'        => '#0861c5',
+        // Surfaces & text.
+        'background'        => '#ffffff',
+        'background2'       => '#f3f4f6',
+        'surface'           => '#ffffff',
+        'textprimary'       => '#111827',
+        'textsecondary'     => '#6b7280',
+        'borderprimary'     => '#d1d5db',
+        'bordersecondary'   => '#e5e7eb',
+        'hoverbackground'   => '#f9fafb',
+        'hoverbackgroundsecondary' => '#f3f4f6',
+        'hovertext'         => '#0861c5',
+        'hovertextsecondary' => '#374151',
+        // Status.
+        'error'             => '#e03131',
+        'success'           => '#16a34a',
+        'warning'           => '#f4b30c',
+        'info'              => '#0ea5e9',
+        // Bassthalk extras.
+        'bthsignupbg'       => '#4bf7a1',
+        'bthsignuptext'     => '#0e335d',
+        'bthsearchbg'       => '#d1d5db',
+        'bthprogresstrack'  => '#38bdf8',
+        'bthprogressfill'   => '#0369a1',
+        'bthloginimagebg'   => '#0080ff',
+        'bthregisterimagebg' => '#01b4b8',
+        'bthregisteraccent' => '#0ea5e9',
+        'bthregisterprogress' => '#38bdf8',
+        'bthfieldicon'      => '#06b6d4',
+        'bthprevbg'         => '#f4b30c',
+        'bthprevtext'       => '#ffffff',
+        'bthherobgtop'      => '#ffffff',
+        'bthherobgbottom'   => '#bfdfff',
+        'bthherotext'       => '#111827',
+        'bthherohighlight'  => '#0d549b',
+        'bthherobtn'        => '#14d80a',
+        'bthherobtntext'    => '#ffffff',
+    ]);
     return $defaults;
 }
 
@@ -2430,7 +2557,7 @@ function theme_nit_get_extra_scss($theme) {
 function theme_nit_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload, array $options = []) {
     $fontareas = array_map(static fn($slot) => $slot['filearea'], theme_nit_font_slots());
     // Image file areas served exactly like the fonts (system context, itemid 0).
-    $imageareas = ['loginbackgroundimage'];
+    $imageareas = ['loginbackgroundimage', 'brandlogo', 'bthheroimage', 'bthheroimagemobile'];
     $servable = array_merge($fontareas, $imageareas);
 
     if ($context->contextlevel == CONTEXT_SYSTEM && in_array($filearea, $servable, true)) {
@@ -2443,6 +2570,254 @@ function theme_nit_pluginfile($course, $cm, $context, $filearea, $args, $forcedo
     }
 
     send_file_not_found();
+}
+
+/**
+ * The coloured (light-background) logo URL.
+ *
+ * Uploaded on Site administration → Appearance → Logos ("Coloured logo",
+ * theme_nit/brandlogo). Drawn where the background is light: the site footer,
+ * the log-in card and the registration card. Falls back to the bundled
+ * Bassthalk wordmark when nothing is uploaded.
+ *
+ * @return string absolute URL
+ */
+function theme_nit_brand_logo_url(): string {
+    global $OUTPUT;
+    $theme = theme_config::load('nit');
+    $url = $theme->setting_file_url('brandlogo', 'brandlogo');
+    if ($url) {
+        return ($url instanceof moodle_url) ? $url->out(false) : (string) $url;
+    }
+    return $OUTPUT->image_url('bassthalk_logo', 'theme_nit')->out(false);
+}
+
+/**
+ * The social networks the site footer can link to, in display order.
+ *
+ * Each has its own URL setting (theme_nit/footer_<key>); a network shows only
+ * when its URL is filled in. The icons are the networks' own marks, so they keep
+ * the networks' own colours.
+ *
+ * @return array<string, array{label:string, icon:string}>
+ */
+function theme_nit_footer_social_networks(): array {
+    return [
+        'facebook' => ['label' => 'فيسبوك', 'icon' => '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="5" fill="#1877F2"/><path fill="#fff" d="M15.6 12.6h-2.3V20h-3v-7.4H8.6v-2.6h1.7V8.4c0-2.1 1-3.4 3.4-3.4h2v2.6h-1.3c-.9 0-1.1.4-1.1 1.1v1.3h2.4z"/></svg>'],
+        'instagram' => ['label' => 'انستجرام', 'icon' => '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#E4405F"/><rect x="5.5" y="5.5" width="13" height="13" rx="4" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="12" cy="12" r="3.2" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="16.2" cy="7.8" r="1" fill="#fff"/></svg>'],
+        'tiktok' => ['label' => 'تيك توك', 'icon' => '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#111827"/><path fill="#fff" d="M16.6 8.3a3.6 3.6 0 0 1-2.2-.8v5.6a3.9 3.9 0 1 1-3.4-3.9v2a1.9 1.9 0 1 0 1.4 1.9V4.5h2a3.6 3.6 0 0 0 2.2 2.6z"/></svg>'],
+        'youtube' => ['label' => 'يوتيوب', 'icon' => '<svg viewBox="0 0 24 24" aria-hidden="true"><rect y="3.5" width="24" height="17" rx="5" fill="#FF0000"/><path fill="#fff" d="M10 8.5v7l6-3.5z"/></svg>'],
+        'whatsapp' => ['label' => 'واتساب', 'icon' => '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#25D366"/><path fill="#fff" d="M12 5.2a6.7 6.7 0 0 0-5.8 10.1L5.3 18.8l3.6-.9A6.7 6.7 0 1 0 12 5.2zm3.9 9.4c-.2.5-1 1-1.4 1-.4.1-.8.1-2.6-.6-2.2-.9-3.6-3.1-3.7-3.3-.1-.1-.9-1.2-.9-2.3s.6-1.6.8-1.8c.2-.2.4-.3.6-.3h.4c.1 0 .3 0 .5.4l.7 1.6c.1.1.1.3 0 .4l-.3.4-.3.3c-.1.1-.2.2-.1.5.1.2.6 1 1.3 1.6.9.8 1.6 1 1.8 1.1.2.1.4.1.5-.1l.7-.8c.2-.2.3-.2.5-.1l1.5.7c.2.1.4.2.4.3.1.2.1.6-.1 1z"/></svg>'],
+        'telegram' => ['label' => 'تليجرام', 'icon' => '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#229ED9"/><path fill="#fff" d="M17.8 6.6 5.9 11.2c-.8.3-.8.8-.1 1l3 .9 1.2 3.6c.1.4.3.5.6.5.2 0 .4-.1.6-.3l1.5-1.4 3 2.2c.6.3 1 .2 1.1-.5l2-9.6c.2-.9-.3-1.3-1-1z"/></svg>'],
+    ];
+}
+
+/**
+ * The default rows of the footer "pages" column (used until an admin saves the list).
+ *
+ * `show` is who sees the row: all | guest (signed-out visitors) | user (signed in).
+ *
+ * @return array<int, array{name:string, url:string, show:string}>
+ */
+function theme_nit_footer_pages_default(): array {
+    return [
+        ['name' => 'الرئيسية', 'url' => '/', 'show' => 'all'],
+        ['name' => 'المساعدة', 'url' => '/user/contactsitesupport.php', 'show' => 'all'],
+        ['name' => 'انشاء حساب جديد', 'url' => '/local/academy/register.php', 'show' => 'guest'],
+        ['name' => 'تسجيل الدخول', 'url' => '/login/index.php', 'show' => 'guest'],
+        ['name' => 'لوحة التحكم', 'url' => '/my/', 'show' => 'user'],
+        ['name' => 'الملف الشخصي', 'url' => '/user/profile.php', 'show' => 'user'],
+    ];
+}
+
+/**
+ * The saved footer pages (theme_nit/footer_pages, JSON), else the defaults.
+ *
+ * @return array<int, array{name:string, url:string, show:string}>
+ */
+function theme_nit_footer_pages(): array {
+    $raw = get_config('theme_nit', 'footer_pages');
+    if ($raw === false || $raw === null) {
+        return theme_nit_footer_pages_default();
+    }
+    $rows = json_decode((string) $raw, true);
+    return is_array($rows) ? $rows : [];
+}
+
+/**
+ * Turn a footer link as typed by the admin into an absolute URL.
+ *
+ * A link starting with "/" is relative to the site; anything else must already
+ * be an http(s) URL.
+ *
+ * @param string $url the stored link
+ * @return string absolute URL ('' when unusable)
+ */
+function theme_nit_footer_absolute_url(string $url): string {
+    global $CFG;
+    $url = trim($url);
+    if ($url === '') {
+        return '';
+    }
+    if ($url[0] === '/') {
+        return $CFG->wwwroot . $url;
+    }
+    return preg_match('~^https?://~i', $url) ? $url : '';
+}
+
+/**
+ * Everything the site footer template draws (theme_boost/footer override).
+ *
+ * @return array view-model: logourl, description, copyright, pages[], socials[]
+ */
+function theme_nit_footer_context(): array {
+    $isguest = !isloggedin() || isguestuser();
+
+    $pages = [];
+    foreach (theme_nit_footer_pages() as $row) {
+        $show = $row['show'] ?? 'all';
+        if (($show === 'guest' && !$isguest) || ($show === 'user' && $isguest)) {
+            continue;
+        }
+        $url = theme_nit_footer_absolute_url((string) ($row['url'] ?? ''));
+        $name = trim((string) ($row['name'] ?? ''));
+        if ($url === '' || $name === '') {
+            continue;
+        }
+        $pages[] = ['name' => format_string($name), 'url' => $url];
+    }
+
+    $socials = [];
+    foreach (theme_nit_footer_social_networks() as $key => $net) {
+        $url = theme_nit_footer_absolute_url((string) get_config('theme_nit', 'footer_' . $key));
+        if ($url !== '') {
+            $socials[] = ['label' => $net['label'], 'url' => $url, 'icon' => $net['icon']];
+        }
+    }
+
+    $desc = get_config('theme_nit', 'footer_description');
+    if ($desc === false) {
+        $desc = 'تم صنع هذه المنصة بهدف تهيئة الطالب لـ كامل جوانب الثانوية العامة و ما بعدها';
+    }
+    $copy = get_config('theme_nit', 'footer_copyright');
+    if ($copy === false) {
+        $copy = 'جميع الحقوق محفوظة © {year}';
+    }
+    $copy = str_replace('{year}', date('Y'), (string) $copy);
+
+    return [
+        'logourl' => theme_nit_brand_logo_url(),
+        'description' => format_string((string) $desc),
+        'hasdescription' => trim((string) $desc) !== '',
+        'copyright' => format_string($copy),
+        'hascopyright' => trim($copy) !== '',
+        'pages' => $pages,
+        'haspages' => !empty($pages),
+        'socials' => $socials,
+        'hassocials' => !empty($socials),
+    ];
+}
+
+/**
+ * Default texts of the Bassthalk home sections (Appearance → Bassthalk home).
+ *
+ * Shared by the admin page (as the settings' defaults) and by
+ * theme_nit_bthhome_context(), which uses them while a setting was never saved.
+ *
+ * @return array<string, string> setting key (without the bthhome_ prefix) => text
+ */
+function theme_nit_bthhome_defaults(): array {
+    return [
+        'hero_title1' => 'منصة متكاملة بها كل ما',
+        'hero_title2' => 'يحتاجه الطالب ليتفوق',
+        'hero_highlight' => 'الطالب ليتفوق',
+        'hero_text' => 'منصة متكاملة بتساعدك تذاكر صح، تختار مدرسينك، وتوصل لأعلى درجاتك في الثانوية العامة بكل سهولة وراحة.',
+        'hero_button' => 'ابدأ رحلتك',
+    ];
+}
+
+/**
+ * Whether the home page draws the code-owned Bassthalk sections.
+ *
+ * On by default (the setting is unset until the admin page is first saved).
+ *
+ * @return bool
+ */
+function theme_nit_bthhome_enabled(): bool {
+    $value = get_config('theme_nit', 'bthhome_enabled');
+    return $value === false || (bool) $value;
+}
+
+/**
+ * A Bassthalk home text: the saved setting, or its default while never saved.
+ *
+ * @param string $key setting key without the bthhome_ prefix
+ * @return string raw text (not escaped)
+ */
+function theme_nit_bthhome_text(string $key): string {
+    $value = get_config('theme_nit', 'bthhome_' . $key);
+    if ($value === false) {
+        $value = theme_nit_bthhome_defaults()[$key] ?? '';
+    }
+    return trim((string) $value);
+}
+
+/**
+ * Everything the Bassthalk home sections draw (theme_nit/bassthalk/home).
+ *
+ * @return array view-model: hero{titleline1, titlebefore, titlehighlight, titleafter, text, button, buttonurl, imageurl, imagemobileurl}
+ */
+function theme_nit_bthhome_context(): array {
+    global $OUTPUT;
+
+    // The second title line is split around the highlighted words so the
+    // template can wrap just that part; a highlight that is not in the line is
+    // ignored rather than shown twice.
+    $line2 = theme_nit_bthhome_text('hero_title2');
+    $highlight = theme_nit_bthhome_text('hero_highlight');
+    $before = $line2;
+    $after = '';
+    $hashighlight = ($highlight !== '' && ($pos = core_text::strpos($line2, $highlight)) !== false);
+    if ($hashighlight) {
+        $before = core_text::substr($line2, 0, $pos);
+        $after = core_text::substr($line2, $pos + core_text::strlen($highlight));
+    }
+
+    $theme = theme_config::load('nit');
+    $fileurl = static function (string $setting, string $area) use ($theme): string {
+        $url = $theme->setting_file_url($setting, $area);
+        return $url ? (($url instanceof moodle_url) ? $url->out(false) : (string) $url) : '';
+    };
+    $imageurl = $fileurl('bthhome_hero_image', 'bthheroimage');
+    if ($imageurl === '') {
+        $imageurl = $OUTPUT->image_url('bassthalk_hero', 'theme_nit')->out(false);
+    }
+    // Phones get their own (portrait) picture when one is uploaded.
+    $imagemobileurl = $fileurl('bthhome_hero_imagemobile', 'bthheroimagemobile');
+
+    $title1 = theme_nit_bthhome_text('hero_title1');
+    $text = theme_nit_bthhome_text('hero_text');
+    $button = theme_nit_bthhome_text('hero_button');
+
+    return [
+        'hero' => [
+            'titleline1' => format_string($title1),
+            'hastitleline1' => $title1 !== '',
+            'titlebefore' => format_string($before),
+            'titlehighlight' => $hashighlight ? format_string($highlight) : '',
+            'hashighlight' => $hashighlight,
+            'titleafter' => format_string($after),
+            'hastitleline2' => $line2 !== '',
+            'text' => format_string($text),
+            'hastext' => $text !== '',
+            'button' => format_string($button),
+            'hasbutton' => $button !== '',
+            'buttonurl' => (new moodle_url('/local/academy/start.php'))->out(false),
+            'imageurl' => $imageurl,
+            'imagemobileurl' => $imagemobileurl,
+            'hasimagemobile' => $imagemobileurl !== '',
+        ],
+    ];
 }
 
 /**
@@ -2604,6 +2979,7 @@ function theme_nit_brand_role_sections(): array {
         'footer'  => 'Footer',
         'surface' => 'Surfaces & text',
         'status'  => 'Status',
+        'bassthalk' => 'Bassthalk',
     ];
 }
 
@@ -2653,6 +3029,10 @@ function theme_nit_brand_role_subsections(): array {
         'icon'       => 'Icons',
         'login'      => 'Login',
         'scroll'     => 'On scroll',
+        // Bassthalk.
+        'bthnavbar'  => 'Navbar extras',
+        'bthauth'    => 'Log-in & registration',
+        'bthhome'    => 'Home page',
     ];
 }
 
@@ -2697,7 +3077,14 @@ function theme_nit_button_outline_variants(): array {
  * @return bool true if that variant's Background role should be painted
  */
 function theme_nit_button_outline_fill(string $group, string $variant): bool {
-    return theme_nit_group_setting($group, $variant . 'fill_') === '1';
+    $value = theme_nit_group_setting($group, $variant . 'fill_');
+    // Bassthalk (g18) draws its neutral outline button ("إنشاء حساب ولي أمر" on
+    // the log-in card) filled white on the grey card, so the switch starts ON
+    // there until an admin un-ticks it on the gallery.
+    if (!is_string($value) && $group === 'g18' && $variant === 'btnoutline') {
+        return true;
+    }
+    return $value === '1';
 }
 
 /**

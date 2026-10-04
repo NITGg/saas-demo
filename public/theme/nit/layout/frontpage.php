@@ -80,6 +80,23 @@ $hasbelowcontent = $editing || (strpos($belowcontent, 'data-block=') !== false);
 $hasfullwidthbottom = $editing || (strpos($fullwidthbottom, 'data-block=') !== false);
 // NIT: end full-width regions.
 
+// NIT: Bassthalk home — the code-owned sections (theme_nit/bassthalk/home) replace
+// the old nit_section blocks, so outside edit mode those blocks are hidden: a
+// region holding nothing else is not drawn at all, and in a mixed region the
+// body class hides just the nit_section blocks (see bassthalk/home.mustache).
+$bthhome = theme_nit_bthhome_enabled();
+if ($bthhome && !$editing) {
+    $extraclasses[] = 'nit-bth-home';
+    $nitonlysections = static function (string $html): bool {
+        return substr_count($html, 'data-block=') === substr_count($html, 'data-block="nit_section"');
+    };
+    $hasfullwidthtop = $hasfullwidthtop && !$nitonlysections($fullwidthtop);
+    $hasabovecontent = $hasabovecontent && !$nitonlysections($abovecontent);
+    $hasbelowcontent = $hasbelowcontent && !$nitonlysections($belowcontent);
+    $hasfullwidthbottom = $hasfullwidthbottom && !$nitonlysections($fullwidthbottom);
+}
+// NIT: end Bassthalk home.
+
 $courseindex = core_course_drawer();
 if (!$courseindex) {
     $courseindexopen = false;
@@ -260,6 +277,8 @@ $templatecontext = [
     'hasbelowcontent' => $hasbelowcontent,
     'fullwidthbottom' => $fullwidthbottom,
     'hasfullwidthbottom' => $hasfullwidthbottom,
+    // NIT: Bassthalk home sections (false when switched off).
+    'bthhome' => $bthhome ? theme_nit_bthhome_context() : false,
     // NIT: end.
 ];
 

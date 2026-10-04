@@ -1,0 +1,57 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_nit/bassthalk/home
+
+    The Bassthalk home page: the code-owned sections drawn at the top of the
+    Site home (theme_nit/frontpage) while Appearance → Bassthalk home is on.
+    Texts and images come from that admin page (theme_nit_bthhome_context());
+    every colour reads the Brand Colors "Bassthalk" group via .nit-brand-18.
+
+    Example context (json):
+    {
+        "hero": {
+            "titleline1": "منصة متكاملة بها كل ما", "hastitleline1": true,
+            "titlebefore": "يحتاجه ", "titlehighlight": "الطالب ليتفوق", "hashighlight": true,
+            "titleafter": "", "hastitleline2": true,
+            "text": "منصة متكاملة بتساعدك تذاكر صح", "hastext": true,
+            "button": "ابدأ رحلتك", "hasbutton": true, "buttonurl": "#",
+            "imageurl": "https://example.com/hero.png", "imagemobileurl": "", "hasimagemobile": false
+        }
+    }
+}}
+<style id="nit-bassthalk-home">
+  @import url('https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&family=Tajawal:wght@400;500;700&display=swap');
+  /* The sections run up behind the floating navbar, so the page drops its
+     navbar offset while they are on it. */
+  #page.drawers:has(> .nit-bth-sections){ margin-top:0; }
+  /* The old nit_section blocks are replaced by these sections (outside edit mode). */
+  body.nit-bth-home .block_nit_section{ display:none!important; }
+  .nit-bth-sections{ direction:rtl; font-family:'Almarai',sans-serif; }
+  /* Edge to edge: cancel #page's side padding (mirrors Boost's #page.drawers rules). */
+  @media (min-width:768px){
+    #page.drawers > .nit-bth-sections{ margin-left:-3rem; margin-right:-3rem; }
+    body.drawer-open-left #page.drawers > .nit-bth-sections{ margin-left:-1rem; }
+  }
+  @media (min-width:992px){
+    #page.drawers.show-drawer-left > .nit-bth-sections{ margin-left:-1rem; }
+    #page.drawers.show-drawer-right > .nit-bth-sections{ margin-right:-1rem; }
+  }
+</style>
+<div class="nit-bth-sections nit-brand-18" dir="rtl" lang="ar">
+    {{#hero}}{{> theme_nit/bassthalk/hero }}{{/hero}}
+</div>

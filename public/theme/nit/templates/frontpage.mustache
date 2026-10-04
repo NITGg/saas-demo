@@ -624,6 +624,10 @@ window.NIT_REVIEWS = {{{ nitreviewsjson }}};
         {{/ theme_boost/drawer}}
     {{/hasblocks}}
     <div id="page" data-region="mainpage" data-usertour="scroller" class="drawers {{#courseindexopen}}show-drawer-left{{/courseindexopen}} {{#blockdraweropen}}show-drawer-right{{/blockdraweropen}} drag-container">
+        {{! NIT: Bassthalk home sections — first, so the hero runs up behind the floating navbar. }}
+        {{#bthhome}}
+            {{> theme_nit/bassthalk/home }}
+        {{/bthhome}}
         {{! NIT: prominent "Add a block" entry — visible only in edit mode. }}
         {{#addblockbutton}}
             <div class="nit-addblock-top d-print-none">

@@ -28,6 +28,10 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+// The footer settings below use theme helpers; the admin tree can be built
+// (e.g. on a settings save) before the theme library has been loaded.
+require_once(__DIR__ . '/lib.php');
+
 // Admin-only link to the design-system gallery (not shown to end users).
 $ADMIN->add('appearance', new admin_externalpage(
     'theme_nit_gallery',
@@ -51,6 +55,122 @@ $ADMIN->add('appearance', new admin_externalpage(
     new moodle_url('/theme/nit/homepage_content.php'),
     'moodle/site:config'
 ));
+
+// Site footer content (Bassthalk-style footer on every page): texts, the pages
+// column and the social links. Read by theme_nit_footer_context().
+$footerpage = new admin_settingpage('theme_nit_footer', get_string('footersettings', 'theme_nit'));
+if ($ADMIN->fulltree) {
+    $footerpage->add(new admin_setting_configtextarea(
+        'theme_nit/footer_description',
+        get_string('footerdescription', 'theme_nit'),
+        get_string('footerdescription_desc', 'theme_nit'),
+        'تم صنع هذه المنصة بهدف تهيئة الطالب لـ كامل جوانب الثانوية العامة و ما بعدها',
+        PARAM_TEXT, 60, 3
+    ));
+    $footerpage->add(new admin_setting_configtext(
+        'theme_nit/footer_copyright',
+        get_string('footercopyright', 'theme_nit'),
+        get_string('footercopyright_desc', 'theme_nit'),
+        'جميع الحقوق محفوظة © {year}',
+        PARAM_TEXT
+    ));
+    $footerpage->add(new \theme_nit\admin_setting_footerpages(
+        'theme_nit/footer_pages',
+        get_string('footerpages', 'theme_nit'),
+        get_string('footerpages_desc', 'theme_nit'),
+        json_encode(theme_nit_footer_pages_default(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+    ));
+    $footerpage->add(new admin_setting_heading(
+        'theme_nit/footer_socialheading',
+        get_string('footersocial', 'theme_nit'),
+        get_string('footersocial_desc', 'theme_nit')
+    ));
+    foreach (theme_nit_footer_social_networks() as $key => $net) {
+        $footerpage->add(new admin_setting_configtext(
+            'theme_nit/footer_' . $key,
+            get_string('footersocial_' . $key, 'theme_nit'),
+            '',
+            '',
+            PARAM_URL
+        ));
+    }
+}
+$ADMIN->add('appearance', $footerpage);
+
+// Bassthalk home: the code-owned front-page sections (theme_nit/bassthalk/*)
+// and their texts/images. Read by theme_nit_bthhome_context().
+$bthhomepage = new admin_settingpage('theme_nit_bthhome', get_string('bthhome', 'theme_nit'));
+if ($ADMIN->fulltree) {
+    $bthdefaults = theme_nit_bthhome_defaults();
+    $bthhomepage->add(new admin_setting_configcheckbox(
+        'theme_nit/bthhome_enabled',
+        get_string('bthhome_enabled', 'theme_nit'),
+        get_string('bthhome_enabled_desc', 'theme_nit'),
+        1
+    ));
+    $bthhomepage->add(new admin_setting_heading(
+        'theme_nit/bthhome_heroheading',
+        get_string('bthhome_hero', 'theme_nit'),
+        get_string('bthhome_hero_desc', 'theme_nit')
+    ));
+    foreach (['hero_title1', 'hero_title2', 'hero_highlight'] as $key) {
+        $bthhomepage->add(new admin_setting_configtext(
+            'theme_nit/bthhome_' . $key,
+            get_string('bthhome_' . $key, 'theme_nit'),
+            get_string('bthhome_' . $key . '_desc', 'theme_nit'),
+            $bthdefaults[$key]
+        ));
+    }
+    $bthhomepage->add(new admin_setting_configtextarea(
+        'theme_nit/bthhome_hero_text',
+        get_string('bthhome_hero_text', 'theme_nit'),
+        get_string('bthhome_hero_text_desc', 'theme_nit'),
+        $bthdefaults['hero_text']
+    ));
+    $bthhomepage->add(new admin_setting_configtext(
+        'theme_nit/bthhome_hero_button',
+        get_string('bthhome_hero_button', 'theme_nit'),
+        get_string('bthhome_hero_button_desc', 'theme_nit'),
+        $bthdefaults['hero_button']
+    ));
+    $heroimage = new admin_setting_configstoredfile(
+        'theme_nit/bthhome_hero_image',
+        get_string('bthhome_hero_image', 'theme_nit'),
+        get_string('bthhome_hero_image_desc', 'theme_nit'),
+        'bthheroimage', 0,
+        ['maxfiles' => 1, 'accepted_types' => ['.jpg', '.jpeg', '.png', '.svg', '.webp']]
+    );
+    $heroimage->set_updatedcallback('theme_reset_all_caches');
+    $bthhomepage->add($heroimage);
+    $heroimagemobile = new admin_setting_configstoredfile(
+        'theme_nit/bthhome_hero_imagemobile',
+        get_string('bthhome_hero_imagemobile', 'theme_nit'),
+        get_string('bthhome_hero_imagemobile_desc', 'theme_nit'),
+        'bthheroimagemobile', 0,
+        ['maxfiles' => 1, 'accepted_types' => ['.jpg', '.jpeg', '.png', '.svg', '.webp']]
+    );
+    $heroimagemobile->set_updatedcallback('theme_reset_all_caches');
+    $bthhomepage->add($heroimagemobile);
+}
+$ADMIN->add('appearance', $bthhomepage);
+
+// A second, coloured logo on the core Logos page (Appearance → Logos), for the
+// light backgrounds: the site footer, the log-in card and the registration card.
+// Added to the existing core page through the admin tree — core is not edited.
+if ($ADMIN->fulltree) {
+    $logospage = $ADMIN->locate('logos');
+    if ($logospage instanceof admin_settingpage) {
+        $brandlogo = new admin_setting_configstoredfile(
+            'theme_nit/brandlogo',
+            get_string('brandlogo', 'theme_nit'),
+            get_string('brandlogo_desc', 'theme_nit'),
+            'brandlogo', 0,
+            ['maxfiles' => 1, 'accepted_types' => ['.jpg', '.jpeg', '.png', '.svg', '.webp']]
+        );
+        $brandlogo->set_updatedcallback('theme_reset_all_caches');
+        $logospage->add($brandlogo);
+    }
+}
 
 if ($ADMIN->fulltree) {
     $settings = new admin_settingpage('themesettingnit', get_string('configtitle', 'theme_nit'));

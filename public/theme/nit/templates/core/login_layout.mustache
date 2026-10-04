@@ -3,30 +3,36 @@
 
     NIT override of core/login_layout — Bassthalk-style auth screen (measured 1:1).
     Two equal rounded cards in a padded full-height row (Arabic / RTL):
-      - right = grey form card (#F3F4F6) with brand logo + core/loginform
-      - left  = brand illustration card (#0080FF, image shown in full / contain)
+      - right = form card with the coloured logo + core/loginform
+      - left  = illustration card (image shown in full / contain)
+    Colours read the Brand Colors "Bassthalk" group (g18) via `.nit-brand-18`
+    (Appearance → NIT Design System → Bassthalk). The logo is the "Coloured logo"
+    from Appearance → Logos (output.nit_brand_logo_url).
     The form itself is core/loginform (also overridden by theme_nit).
 }}
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&family=Tajawal:wght@400;500;700&display=swap');
 
-  .nit-auth{ --a-ink:#111827; --a-muted:#6B7280; --a-border:#D1D5DB; --a-blue:#0861C5; --a-card:#F3F4F6; --a-imgblue:#0080FF;
-    min-height:100vh; display:flex; gap:20px; padding:clamp(16px,3vw,40px); background:#fff; color:var(--a-ink);
+  .nit-auth{ --a-ink:var(--nit-brand-textprimary); --a-muted:var(--nit-brand-textsecondary); --a-border:var(--nit-brand-borderprimary);
+    --a-blue:var(--nit-brand-primary); --a-card:var(--nit-brand-background2); --a-imgblue:var(--nit-brand-bthloginimagebg);
+    --a-field:var(--nit-brand-surface); --a-line:var(--nit-brand-bordersecondary);
+    --a-placeholder:color-mix(in srgb, var(--nit-brand-textsecondary) 75%, var(--nit-brand-surface));
+    min-height:100vh; display:flex; gap:20px; padding:clamp(16px,3vw,40px); background:var(--nit-brand-background); color:var(--a-ink);
     direction:rtl; align-items:stretch; font-family:'Tajawal','Almarai',system-ui,sans-serif; }
 
   /* ---- Form card (right in RTL) ---- */
   .nit-auth-form{ flex:1 1 50%; background:var(--a-card); border-radius:12px; position:relative;
     display:flex; align-items:center; justify-content:center; padding:56px clamp(20px,2.8vw,36px); }
   .nit-auth-back{ position:absolute; top:24px; inset-inline-start:24px; display:inline-flex; align-items:center; gap:8px;
-    border:1px solid #E5E7EB; border-radius:10px; padding:9px 16px; background:#fff;
+    border:1px solid var(--a-line); border-radius:10px; padding:9px 16px; background:var(--a-field);
     font-family:'Almarai',sans-serif; font-weight:700; font-size:14px; color:var(--a-ink);
     text-decoration:none!important; transition:background .15s ease,border-color .15s ease; }
-  .nit-auth-back:hover{ background:#F9FAFB; border-color:#D1D5DB; color:var(--a-ink); text-decoration:none!important; }
+  .nit-auth-back:hover{ background:var(--nit-brand-hoverbackground)!important; border-color:var(--a-border); color:var(--a-ink)!important; text-decoration:none!important; }
   .nit-auth-inner{ width:100%; max-width:512px; display:flex; flex-direction:column; }
   .nit-auth-logo{ display:flex; justify-content:center; margin-bottom:6px; }
-  .nit-auth-logo img, .nit-auth-logo img.icon{ width:170px!important; height:44px!important; max-width:170px!important; max-height:44px!important; object-fit:contain!important; }
+  .nit-auth-logo img{ width:170px; height:44px; max-width:170px; max-height:44px; object-fit:contain; }
 
-  /* ---- Illustration card (left in RTL) — show the WHOLE image, seamless blue fill ---- */
+  /* ---- Illustration card (left in RTL) — show the WHOLE image, seamless fill ---- */
   .nit-auth-side{ flex:1 1 50%; position:relative; border-radius:12px; overflow:hidden; background:var(--a-imgblue); }
   .nit-auth-side img, .nit-auth-side img.icon{ position:absolute!important; top:0!important; bottom:0!important;
     left:0!important; right:0!important; width:100%!important; height:100%!important;
@@ -43,14 +49,14 @@
   .nit-auth .login-form{ margin-top:26px; }
   .nit-auth .login-field{ position:relative; margin-bottom:20px; text-align:start; }
   .nit-auth .login-field .login-field-icon{ position:absolute; inset-inline-start:18px; top:50%; transform:translateY(-50%);
-    color:var(--a-blue); display:flex; pointer-events:none; }
+    color:var(--nit-brand-accent); display:flex; pointer-events:none; }
   .nit-auth .form-control{ width:100%; height:63px; border:1px solid var(--a-border)!important; border-radius:14px!important;
     padding-inline-start:52px!important; padding-inline-end:20px!important; font-family:'Tajawal',sans-serif;
-    font-size:18px!important; background:#fff!important; color:var(--a-ink)!important; box-shadow:none!important;
+    font-size:18px!important; background:var(--a-field)!important; color:var(--a-ink)!important; box-shadow:none!important;
     direction:rtl; text-align:start; }
-  .nit-auth .form-control::placeholder{ color:#9CA3AF; }
+  .nit-auth .form-control::placeholder{ color:var(--a-placeholder); }
   .nit-auth .form-control:focus{ outline:none; border-color:var(--a-blue)!important;
-    box-shadow:0 0 0 3px rgba(8,97,197,0.15)!important; }
+    box-shadow:0 0 0 3px color-mix(in srgb, var(--a-blue) 15%, transparent)!important; }
   .nit-auth .nit-pw-wrap .form-control{ padding-inline-end:52px!important; }
   .nit-auth .nit-pw-eye{ position:absolute; inset-inline-end:14px; top:50%; transform:translateY(-50%);
     display:flex; align-items:center; justify-content:center; width:28px; height:28px; background:none; border:0;
@@ -65,21 +71,23 @@
   .nit-auth .login-form-submit{ margin-top:24px; }
   .nit-auth .login-form-submit .btn, .nit-auth #loginbtn{
     width:100%; display:flex; align-items:center; justify-content:center; height:52px; padding:12px 16px;
-    border-radius:12px; border:2px solid var(--a-blue); background:var(--a-blue); color:#fff;
+    border-radius:12px; border:2px solid var(--nit-brand-btnprimaryborder); background:var(--nit-brand-primary); color:var(--nit-brand-onprimary);
     font-family:'Tajawal',sans-serif; font-weight:500; font-size:16px; cursor:pointer;
     text-decoration:none!important; transition:background .15s ease; }
-  .nit-auth .login-form-submit .btn:hover, .nit-auth #loginbtn:hover{ background:#074ea0; border-color:#074ea0; text-decoration:none!important; }
+  .nit-auth .login-form-submit .btn:hover, .nit-auth #loginbtn:hover{ background:var(--nit-brand-btnprimaryhoverbg); border-color:var(--nit-brand-btnprimaryhoverborder);
+    color:var(--nit-brand-btnprimaryhovertext); text-decoration:none!important; }
 
-  /* Secondary buttons (identity providers, parent account) */
+  /* Secondary buttons (identity providers, parent account) — the neutral outline button */
   .nit-auth .login-identityprovider-btn, .nit-auth .btn-secondary-auth{
     width:100%; display:flex; align-items:center; justify-content:center; gap:10px; height:52px; padding:12px 16px;
-    border-radius:12px; border:1px solid var(--a-border); background:#fff; color:var(--a-ink);
+    border-radius:12px; border:1px solid var(--nit-brand-btnoutlineborder); background:var(--nit-brand-btnoutlinebg); color:var(--nit-brand-btnoutlinetext);
     font-family:'Tajawal',sans-serif; font-weight:700; font-size:16px; text-decoration:none!important; cursor:pointer;
     transition:background .15s ease,border-color .15s ease; }
-  .nit-auth .login-identityprovider-btn:hover, .nit-auth .btn-secondary-auth:hover{ background:#F9FAFB; border-color:var(--a-blue); color:var(--a-ink); text-decoration:none!important; }
+  .nit-auth .login-identityprovider-btn:hover, .nit-auth .btn-secondary-auth:hover{ background:var(--nit-brand-btnoutlinehoverbg)!important;
+    border-color:var(--nit-brand-btnoutlinehoverborder); color:var(--nit-brand-btnoutlinehovertext)!important; text-decoration:none!important; }
 
   .nit-auth .login-separator{ display:flex; align-items:center; text-align:center; color:var(--a-muted); font-size:13px; margin:20px 0; }
-  .nit-auth .login-separator::before, .nit-auth .login-separator::after{ content:""; flex:1; height:1px; background:#E5E7EB; }
+  .nit-auth .login-separator::before, .nit-auth .login-separator::after{ content:""; flex:1; height:1px; background:var(--a-line); }
   .nit-auth .login-separator::before{ margin-inline-end:14px; } .nit-auth .login-separator::after{ margin-inline-start:14px; }
 
   /* Signup line — grey, with a permanent underline on the action, no hover change. */
@@ -90,14 +98,14 @@
   .nit-auth .alert{ text-align:start; border-radius:12px; }
 </style>
 
-<div class="nit-auth">
+<div class="nit-auth nit-brand-18">
   <div class="nit-auth-form">
     <a class="nit-auth-back" href="{{config.wwwroot}}/">
       <span>الرجوع للرئيسية</span>
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
     </a>
     <div class="nit-auth-inner">
-      <div class="nit-auth-logo">{{#pix}}bassthalk_logo, theme_nit, {{/pix}}</div>
+      <div class="nit-auth-logo"><img src="{{output.nit_brand_logo_url}}" alt="{{sitename}}"></div>
       {{{ output.main_content }}}
     </div>
   </div>
