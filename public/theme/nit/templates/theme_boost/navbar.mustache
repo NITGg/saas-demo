@@ -45,6 +45,54 @@
     * usermenu - User menu context (from the primary output).
     * mobileprimarynav - Array of primary nav items ({text, url, isactive, haschildren, children}).
 }}
+<div class="nit-scrollbar" id="nit-scrollbar" aria-hidden="true"></div>
+<style id="nit-bassthalk-navbar">
+  @import url('https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&family=Tajawal:wght@400;500;700&display=swap');
+  /* ===== Bassthalk-style floating pill navbar (site-wide, RTL) ===== */
+  .nit-navbar.nit-navbar{ background:transparent!important; box-shadow:none!important; border:0!important;
+    padding:16px clamp(12px,2.5vw,32px) 0!important; direction:rtl; font-family:'Tajawal','Almarai',sans-serif; }
+  .nit-navbar .nit-navbar-inner{ background:#0080FF!important; border-radius:9999px; max-width:none; width:100%;
+    min-height:80px; padding-inline:clamp(16px,2vw,28px); gap:clamp(10px,1.6vw,20px);
+    box-shadow:0 10px 28px rgba(0,128,255,.22); }
+  /* brand (right) */
+  .nit-navbar .nit-navbar-logo{ height:46px!important; width:auto!important; }
+  .nit-navbar .nit-navbar-title{ display:none!important; }
+  .nit-navbar .nit-navbar-mark{ background:#fff; }
+  /* inline links -> white */
+  .nit-navbar .nit-navbar-link{ color:#fff!important; font-weight:500; }
+  .nit-navbar .nit-navbar-link.active, .nit-navbar .nit-navbar-link:hover{ color:#eafff4!important; }
+  /* search pill */
+  .nit-navbar .nit-navbar-search{ background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.28);
+    border-radius:9999px; padding:8px 16px; gap:8px; color:#fff; }
+  .nit-navbar .nit-navbar-search .icon{ color:#fff; }
+  .nit-navbar .nit-navbar-search-input{ color:#fff; background:transparent; border:0; font-family:'Tajawal'; font-size:14px; min-width:150px; }
+  .nit-navbar .nit-navbar-search-input::placeholder{ color:rgba(255,255,255,.85); }
+  /* right cluster */
+  .nit-navbar .nit-navbar-right{ gap:clamp(8px,1.2vw,14px); }
+  /* theme (dark mode) toggle */
+  .nit-navbar-themebtn{ width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,.18);
+    border:0; color:#fff; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; flex:none; }
+  .nit-navbar-themebtn:hover{ background:rgba(255,255,255,.3); }
+  /* visitor buttons */
+  .nit-navbar-guest{ display:none; align-items:center; gap:10px; }
+  body.notloggedin .nit-navbar-guest{ display:inline-flex; }
+  body.notloggedin .nit-navbar .usermenu-container,
+  body.notloggedin .nit-navbar .nit-navbar-editswitch,
+  body.notloggedin .nit-navbar .nit-navbar-lang{ display:none!important; }
+  .nit-navbar-btn{ height:40px; border-radius:7px; padding:8px 18px; font-family:'Tajawal'; font-size:14px; font-weight:700;
+    display:inline-flex; align-items:center; justify-content:center; text-decoration:none!important; border:2px solid transparent; white-space:nowrap; }
+  .nit-navbar-btn.login{ background:#0E335D; border-color:#0E335D; color:#fff; }
+  .nit-navbar-btn.login:hover{ background:#0b2a4d; }
+  .nit-navbar-btn.signup{ background:#4BF7A1; border-color:#4BF7A1; color:#0E335D; }
+  .nit-navbar-btn.signup:hover{ filter:brightness(.96); }
+  /* user menu (logged in) -> white text on blue */
+  .nit-navbar .usermenu-container .usertext, .nit-navbar .usermenu-container a{ color:#fff!important; }
+  /* scroll progress bar */
+  .nit-scrollbar{ position:fixed!important; top:0!important; inset-inline-start:0; height:4px; width:0; background:#0E335D;
+    z-index:1051; opacity:0!important; transition:opacity .35s ease, width .1s linear; display:block!important; pointer-events:none; }
+  .nit-scrollbar.show{ opacity:1!important; }
+  @media (max-width:991px){ .nit-navbar .nit-navbar-inner{ border-radius:20px; min-height:64px; } .nit-navbar .nit-navbar-logo{ height:38px!important; } }
+</style>
 <nav class="navbar fixed-top navbar-expand-lg nit-navbar" aria-label="{{#str}}sitemenubar, admin{{/str}}">
     <div class="container-fluid nit-navbar-inner">
         {{! Mobile: open Moodle's primary drawer (holds the nav on small screens). }}
@@ -91,8 +139,13 @@
             {{! Course search — posts to Moodle's real course search. }}
             <form class="nit-navbar-search d-none d-md-flex align-items-center" action="{{ config.wwwroot }}/course/search.php" method="get" role="search">
                 <i class="icon fa fa-search fa-fw m-0" aria-hidden="true"></i>
-                <input type="text" name="search" class="nit-navbar-search-input" placeholder="{{#str}}searchcourses{{/str}}" aria-label="{{#str}}searchcourses{{/str}}" autocomplete="off">
+                <input type="text" name="search" class="nit-navbar-search-input" placeholder="ابحث في الموقع" aria-label="{{#str}}searchcourses{{/str}}" autocomplete="off">
             </form>
+
+            {{! Dark-mode toggle (Bassthalk sun). }}
+            <button type="button" class="nit-navbar-themebtn" id="nit-theme-toggle" aria-label="Toggle dark mode" title="الوضع الليلي">
+                <svg class="nit-ico-sun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.5 1.5M17.5 17.5 19 19M19 5l-1.5 1.5M6.5 17.5 5 19"/></svg>
+            </button>
 
             {{! Language menu (shows for logged-in users too). }}
             <div class="nit-navbar-lang langmenu d-none d-md-flex align-items-center">
@@ -119,8 +172,36 @@
                     {{> core/user_menu }}
                 </div>
             {{/usermenu}}
+
+            {{! Visitor-only buttons (hidden for logged-in users via body.notloggedin). }}
+            <div class="nit-navbar-guest">
+                <a class="nit-navbar-btn login" href="{{ config.wwwroot }}/login/index.php">تسجيل الدخول</a>
+                <a class="nit-navbar-btn signup" href="{{ config.wwwroot }}/local/academy/register.php">حساب جديد</a>
+            </div>
         </div>
     </div>
 </nav>
+
+<script>
+(function(){
+  // ---- scroll progress bar: appears on scroll, hides at top ----
+  var bar = document.getElementById('nit-scrollbar');
+  function onScroll(){
+    var st = window.pageYOffset || document.documentElement.scrollTop;
+    var h = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    var pct = h > 0 ? (st / h) * 100 : 0;
+    if(bar){ bar.style.width = pct + '%'; bar.classList.toggle('show', st > 8); }
+  }
+  window.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+  // ---- dark-mode toggle (basic: toggles a class + remembers choice) ----
+  var tbtn = document.getElementById('nit-theme-toggle');
+  try{ if(localStorage.getItem('nit-dark')==='1'){ document.documentElement.classList.add('nit-dark'); } }catch(e){}
+  if(tbtn){ tbtn.addEventListener('click', function(){
+    var on = document.documentElement.classList.toggle('nit-dark');
+    try{ localStorage.setItem('nit-dark', on?'1':'0'); }catch(e){}
+  }); }
+})();
+</script>
 
 {{> theme_boost/primary-drawer-mobile }}
