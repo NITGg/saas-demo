@@ -46,5 +46,16 @@ function xmldb_theme_nit_upgrade($oldversion) {
         cache_helper::purge_by_definition('core', 'config');
         upgrade_plugin_savepoint(true, 2026100401, 'theme', 'nit');
     }
+
+    if ($oldversion < 2026100500) {
+        // A fresh server has no Site-home sections (they're nit_section blocks)
+        // and sits on the default template, which also hides "Add a block": give
+        // it the Bassthalk home. Sites that already have sections are left alone.
+        global $DB;
+        if (!$DB->record_exists('block_instances', ['blockname' => 'nit_section', 'pagetypepattern' => 'site-index'])) {
+            \theme_nit\local\template_applier::apply('bassthalk');
+        }
+        upgrade_plugin_savepoint(true, 2026100500, 'theme', 'nit');
+    }
     return true;
 }
