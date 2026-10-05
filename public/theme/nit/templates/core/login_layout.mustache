@@ -28,6 +28,7 @@
     font-family:'Almarai',sans-serif; font-weight:700; font-size:14px; color:var(--a-ink);
     text-decoration:none!important; transition:background .15s ease,border-color .15s ease; }
   .nit-auth-back:hover{ background:var(--nit-brand-hoverbackground)!important; border-color:var(--a-border); color:var(--a-ink)!important; text-decoration:none!important; }
+  [dir="ltr"] .nit-auth-back svg{ transform:scaleX(-1); } /* the arrow points back toward the start edge */
   .nit-auth-inner{ width:100%; max-width:512px; display:flex; flex-direction:column; }
   .nit-auth-logo{ display:flex; justify-content:center; margin-bottom:6px; }
   .nit-auth-logo img{ width:170px; height:44px; max-width:170px; max-height:44px; object-fit:contain; }
@@ -101,7 +102,7 @@
 <div class="nit-auth nit-brand-18">
   <div class="nit-auth-form">
     <a class="nit-auth-back" href="{{config.wwwroot}}/">
-      <span>الرجوع للرئيسية</span>
+      <span>{{#str}}bth_backhome, theme_nit{{/str}}</span>
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
     </a>
     <div class="nit-auth-inner">

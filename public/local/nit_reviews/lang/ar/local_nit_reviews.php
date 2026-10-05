@@ -41,3 +41,12 @@ $string['err_invalidrating'] = 'اختار تقييم من 1 إلى 5 نجوم.'
 $string['err_reviewtoolong'] = 'التعليق طويل جدًا (الحد الأقصى {$a} حرف).';
 $string['err_reviewnotfound'] = 'التقييم غير موجود.';
 $string['err_toomanycourses'] = 'عدد الكورسات في الطلب كبير جدًا (الحد الأقصى {$a}).';
+
+// Strings that were missing in Arabic (English pages showed through).
+$string['privacy:metadata:local_nit_reviews'] = 'تقييمات النجوم والمراجعات التي كتبها المستخدم للكورسات.';
+$string['privacy:metadata:local_nit_reviews:courseid'] = 'الكورس الذي تتم مراجعته.';
+$string['privacy:metadata:local_nit_reviews:userid'] = 'المستخدم الذي كتب المراجعة.';
+$string['privacy:metadata:local_nit_reviews:rating'] = 'تقييم النجوم (1–5).';
+$string['privacy:metadata:local_nit_reviews:review'] = 'نص المراجعة المكتوب.';
+$string['privacy:metadata:local_nit_reviews:timecreated'] = 'وقت كتابة المراجعة لأول مرة.';
+$string['privacy:metadata:local_nit_reviews:timemodified'] = 'وقت آخر تعديل للمراجعة.';

@@ -115,3 +115,33 @@ $string['reg_passwordmismatch'] = 'كلمتا السر غير متطابقتين
 $string['registration_heading'] = 'تسجيل الطلاب';
 $string['registration_enabled'] = 'السماح للطلاب بإنشاء حساب';
 $string['registration_enabled_desc'] = 'يفتح صفحة التسجيل (/local/academy/register.php) والتسجيل من التطبيق. الحساب الجديد يتفعّل فورًا والطالب يدخل بالإيميل. مستقل عن إعداد "التسجيل الذاتي" في Moodle.';
+
+// Strings that were missing in Arabic (English pages showed through).
+$string['pluginname'] = 'الأكاديمية';
+$string['academy:manageplatform'] = 'إدارة منصة الأكاديمية';
+$string['messageprovider:welcome'] = 'رسالة الترحيب';
+$string['welcome_subject'] = 'أهلاً بك في {$a}!';
+$string['welcome_small'] = 'أهلاً بك في {$a}!';
+$string['welcome_body'] = 'أهلاً {$a->name}،
+
+أهلاً بك في {$a->site}! حسابك أصبح مفعّلاً.
+
+تقدر تتصفح الكورسات وتشترك وتبدأ التعلم على طول. سعداء بانضمامك لينا.';
+$string['otp_subject'] = '{$a}: كود استعادة كلمة السر';
+$string['otp_body'] = 'أهلاً {$a->name}،
+
+كود استعادة كلمة السر الخاص بك على {$a->site} هو: {$a->code}
+
+الكود صالح لمدة {$a->mins} دقيقة. لو ماطلبتش الكود ده تقدر تتجاهل الرسالة.';
+$string['notenrolled'] = 'أنت غير مشترك في هذا الكورس';
+$string['player_heading'] = 'مشغّل الكورس';
+$string['player_heading_desc'] = 'طريقة تنقّل الطالب داخل الكورس في المشغّل (كل أنواع الدروس بتفتح في نفس الإطار).';
+$string['player_markcomplete'] = 'إظهار زر "تم الإنجاز"';
+$string['player_markcomplete_desc'] = 'للدروس ذات الإكمال اليدوي، يظهر زر "تم الإنجاز" في رأس المشغّل (وينتقل للدرس التالي).';
+$string['player_lockorder'] = 'قفل الدروس بالترتيب';
+$string['player_lockorder_desc'] = 'الدرس يفتح فقط بعد إكمال كل الدروس السابقة التي تتبع الإكمال. الدروس المقفولة يظهر بجانبها قفل في المنهج.';
+$string['player_markcomplete_btn'] = 'تم الإنجاز';
+$string['player_completed'] = 'مكتمل';
+$string['player_locked'] = 'أكمل الدروس السابقة أولاً';
+$string['player_lesson'] = 'الدرس';
+$string['player_of'] = 'من';

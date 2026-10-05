@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_nit_lessons';
-$plugin->version   = 2026100500;        // Teacher profiles, Jitsi rooms, student hub, notifications.
+$plugin->version   = 2026100501;        // Teacher profile card on /local/academy/profile.php, subjects list.
 $plugin->requires  = 2024100700;
 $plugin->supported = [405, 502];
 $plugin->maturity  = MATURITY_ALPHA;

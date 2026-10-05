@@ -87,5 +87,13 @@ function xmldb_local_academy_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026100502, 'local', 'academy');
     }
 
+    if ($oldversion < 2026100503) {
+        // Lesson times were 2–3 hours off (site timezone Europe/London): Cairo. And new
+        // students confirm their email first, like Moodle's email self-registration.
+        \local_academy\local\site_defaults::apply();
+        \local_academy\local\site_defaults::email_confirmation();
+        upgrade_plugin_savepoint(true, 2026100503, 'local', 'academy');
+    }
+
     return true;
 }

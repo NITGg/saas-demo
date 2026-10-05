@@ -465,6 +465,15 @@ $string['footersocial_telegram'] = 'رابط تليجرام';
 // الصفحة الرئيسية (بسطتهالك).
 $string['sitepages'] = 'مدير صفحات الموقع';
 $string['sitepages_footer'] = 'الفوتر';
+$string['sitepages_navmenus'] = 'قوائم الشريط العلوي';
+$string['navmenu_gear'] = 'روابط قائمة الترس';
+$string['navmenu_gear_desc'] = 'الروابط التي تظهر في قائمة الترس (⚙) في الشريط العلوي. قبل حفظ هذه القائمة تعرض القائمة صفحات Moodle الافتراضية. الرابط الذي يبدأ بـ "/" صفحة داخل الموقع. "من يراه" يحدد الدور، والصفحة نفسها تتحقق من الصلاحية.';
+$string['navmenu_user'] = 'روابط قائمة الملف الشخصي';
+$string['navmenu_user_desc'] = 'الروابط التي تظهر في قائمة الملف الشخصي (الصورة الرمزية). قائمة اللغة و"تبديل الدور" و"تسجيل الخروج" تبقى دائمًا في الأسفل. قبل حفظ هذه القائمة تعرض القائمة روابط Moodle الافتراضية.';
+$string['navmenu_show_all'] = 'كل المستخدمين المسجلين';
+$string['navmenu_show_student'] = 'الطلاب';
+$string['navmenu_show_teacher'] = 'المدرسون';
+$string['navmenu_show_admin'] = 'المديرون والمشرفون';
 $string['navpagesmenu'] = 'صفحات الموقع';
 
 // نصوص الناف بار والفوتر (بسطتهالك).
@@ -476,3 +485,43 @@ $string['bth_login'] = 'تسجيل الدخول';
 $string['bth_signup'] = 'حساب جديد';
 $string['bth_footerpages'] = 'الصفحات';
 $string['bth_footersocial'] = 'السوشيال ميديا';
+
+// Bassthalk login card (templates/core/loginform + login_layout).
+$string['bth_backhome'] = 'الرجوع للرئيسية';
+$string['bth_loginheading'] = 'أهلا تاني! جاهز للمذاكرة؟';
+$string['bth_loginsubtitle'] = 'ادخل علي حسابك بإدخال البريد الإلكتروني و كلمة المرور المسجل بهم من قبل';
+$string['bth_loginemail'] = 'البريد الإلكتروني';
+$string['bth_loginpassword'] = 'كلمة السر';
+$string['bth_loginforgot'] = 'هل نسيت كلمة السر؟';
+$string['bth_loginforgotlink'] = 'اضغط هنا';
+$string['bth_loginsubmit'] = 'تسجيل الدخول';
+$string['bth_loginnoaccount'] = 'لا يوجد لديك حساب؟';
+$string['bth_logincreate'] = 'انشئ حسابك الآن !';
+$string['bth_loginparent'] = 'لوحة تحكم ولي الأمر';
+
+// Strings that were missing in Arabic (English pages showed through).
+$string['homepagetemplates'] = 'قالب الصفحة الرئيسية';
+$string['homepagetemplates_desc'] = 'اختر شكل الصفحة الرئيسية لهذه الأكاديمية. التطبيق يعيد كتابة أقسام الصفحة الرئيسية من القالب المختار؛ وبعدها صاحب الأكاديمية يضيف صوره ولون علامته التجارية.';
+$string['applytemplate'] = 'تطبيق هذا القالب';
+$string['templatereapply'] = 'إعادة التطبيق';
+$string['templatecurrent'] = 'الحالي';
+$string['templateapplied'] = 'تم تطبيق قالب الصفحة الرئيسية "{$a}".';
+$string['templateunknown'] = 'قالب غير معروف.';
+$string['viewhomepage'] = 'عرض الصفحة الرئيسية';
+$string['applyconfirm'] = 'تطبيق قالب "{$a}"؟ هذا يستبدل أقسام الصفحة الرئيسية الحالية. أي صور أو نصوص مضافة لهذه الأقسام سيتم استبدالها.';
+$string['applywarning'] = 'تطبيق القالب يستبدل أقسام الصفحة الرئيسية بتصميم القالب. اعمل ده قبل ما صاحب الأكاديمية يضيف صوره ومحتواه — إعادة التطبيق لاحقاً تعيد ضبط هذه الأقسام.';
+$string['invalidtemplate'] = 'قالب صفحة رئيسية غير معروف: {$a}';
+$string['homepagecontent'] = 'محتوى الصفحة الرئيسية';
+$string['homepagecontent_desc'] = 'عدّل نصوص وصور قالب الصفحة الرئيسية لهذه الأكاديمية. الحقول ثنائية اللغة فيها إنجليزي + عربي. اترك الحقل فارغاً للإبقاء على القيمة الافتراضية للقالب. محتوى الكورسات والاشتراكات والكوبونات ديناميكي ويُملأ تلقائياً.';
+$string['contentsaved'] = 'تم حفظ محتوى الصفحة الرئيسية.';
+$string['contentimghint'] = 'اختر صورة لاستبدال هذه الصورة. اتركها فارغة للإبقاء على الصورة الحالية.';
+$string['welcometosite'] = 'أهلاً بك في {$a}';
+$string['authsidetagline'] = 'كورسات قصيرة ومنظمة يقدمها محترفون. اتعلم بالسرعة اللي تناسبك واحصل على شهادة.';
+$string['loginwelcomeback'] = 'أهلاً بعودتك';
+$string['logincontinue'] = 'سجّل الدخول لتكمل التعلم.';
+$string['keepsignedin'] = 'تذكرني';
+$string['signupcreatetitle'] = 'أنشئ حسابك';
+$string['signupsubtitle'] = 'ابدأ مجاناً — بدون بطاقة.';
+$string['signupstepaccount'] = 'الحساب';
+$string['signupstepverify'] = 'التحقق';
+$string['signupstepdone'] = 'تم';

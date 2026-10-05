@@ -21,7 +21,8 @@ defined('MOODLE_INTERNAL') || die();
 require_once($CFG->libdir . '/adminlib.php');
 
 /**
- * Admin setting: the site footer "pages" column as an editable list of rows.
+ * Admin setting: the site footer "pages" column as an editable list of rows
+ * (subclassed for the navbar menus: {@see admin_setting_navlinks}).
  *
  * Each row is a page name, its link (starting with "/" for a page on this site,
  * or a full http(s) address) and who sees it (everyone / visitors / signed-in
@@ -34,8 +35,27 @@ require_once($CFG->libdir . '/adminlib.php');
  */
 class admin_setting_footerpages extends \admin_setting {
 
-    /** @var string[] who-sees-it values, in the order the select lists them */
-    private const AUDIENCES = ['all', 'guest', 'user'];
+    /**
+     * Who-sees-it choices, in the order the select lists them (the first is the default).
+     *
+     * @return array<string, string> value => label
+     */
+    protected function audiences(): array {
+        return [
+            'all' => get_string('footerpages_show_all', 'theme_nit'),
+            'guest' => get_string('footerpages_show_guest', 'theme_nit'),
+            'user' => get_string('footerpages_show_user', 'theme_nit'),
+        ];
+    }
+
+    /**
+     * The rows shown before an admin saves the list.
+     *
+     * @return array<int, array{name:string, url:string, show:string}>
+     */
+    protected function default_rows(): array {
+        return \theme_nit_footer_pages_default();
+    }
 
     /**
      * Get the stored JSON.
@@ -73,11 +93,12 @@ class admin_setting_footerpages extends \admin_setting {
             if ($url[0] !== '/' && !preg_match('~^https?://~i', $url)) {
                 return get_string('footerpages_invalidurl', 'theme_nit', s($url));
             }
-            $show = (string) ($shows[$i] ?? 'all');
+            $audiences = array_keys($this->audiences());
+            $show = (string) ($shows[$i] ?? $audiences[0]);
             $rows[] = [
                 'name' => $name,
                 'url' => clean_param($url, PARAM_URL) ?: $url,
-                'show' => in_array($show, self::AUDIENCES, true) ? $show : 'all',
+                'show' => in_array($show, $audiences, true) ? $show : $audiences[0],
             ];
         }
         $json = json_encode($rows, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -95,24 +116,21 @@ class admin_setting_footerpages extends \admin_setting {
         if (is_array($data)) {
             $rows = [];
             foreach ((array) ($data['name'] ?? []) as $i => $n) {
-                $rows[] = ['name' => $n, 'url' => $data['url'][$i] ?? '', 'show' => $data['show'][$i] ?? 'all'];
+                $rows[] = ['name' => $n, 'url' => $data['url'][$i] ?? '', 'show' => $data['show'][$i] ?? ''];
             }
         } else {
             $decoded = ($data === null || $data === false) ? null : json_decode((string) $data, true);
-            $rows = is_array($decoded) ? $decoded : \theme_nit_footer_pages_default();
+            $rows = is_array($decoded) ? $decoded : $this->default_rows();
         }
 
         $full = $this->get_full_name();
-        $labels = [
-            'all' => get_string('footerpages_show_all', 'theme_nit'),
-            'guest' => get_string('footerpages_show_guest', 'theme_nit'),
-            'user' => get_string('footerpages_show_user', 'theme_nit'),
-        ];
-        $rowhtml = function(array $row) use ($full, $labels): string {
+        $labels = $this->audiences();
+        $first = array_key_first($labels);
+        $rowhtml = function(array $row) use ($full, $labels, $first): string {
             $opts = '';
             foreach ($labels as $value => $label) {
                 $opts .= \html_writer::tag('option', s($label),
-                    ['value' => $value] + ((($row['show'] ?? 'all') === $value) ? ['selected' => 'selected'] : []));
+                    ['value' => $value] + ((($row['show'] ?? $first) === $value) ? ['selected' => 'selected'] : []));
             }
             return '<tr class="nit-fp-row">'
                 . '<td><input type="text" class="form-control" name="' . $full . '[name][]" value="' . s($row['name'] ?? '') . '"'
@@ -129,14 +147,14 @@ class admin_setting_footerpages extends \admin_setting {
         foreach ($rows as $row) {
             $body .= $rowhtml($row);
         }
-        $template = $rowhtml(['name' => '', 'url' => '', 'show' => 'all']);
+        $template = $rowhtml(['name' => '', 'url' => '', 'show' => $first]);
         $id = 'nit-fp-' . $this->name;
 
         $html = '<div class="nit-footerpages" id="' . $id . '">'
             // An always-present hidden marker so an emptied list still posts.
             . '<input type="hidden" name="' . $full . '[name][]" value="">'
             . '<input type="hidden" name="' . $full . '[url][]" value="">'
-            . '<input type="hidden" name="' . $full . '[show][]" value="all">'
+            . '<input type="hidden" name="' . $full . '[show][]" value="' . s($first) . '">'
             . '<table class="table table-sm align-middle mb-2"><thead><tr>'
             . '<th>' . s(get_string('footerpages_name', 'theme_nit')) . '</th>'
             . '<th>' . s(get_string('footerpages_url', 'theme_nit')) . '</th>'

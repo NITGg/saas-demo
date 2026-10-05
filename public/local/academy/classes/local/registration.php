@@ -22,9 +22,10 @@ defined('MOODLE_INTERNAL') || die();
  * Student self-registration (the Bassthalk 3-step form) — one implementation for
  * the web page /local/academy/register.php and the mobile API (register_student).
  *
- * The account is active at once (no approval, no email confirmation) and the
- * student signs in with their email (site setting authloginviaemail; the username
- * is the email too). Every registration answer is saved in the academy profile
+ * Like Moodle's email self-registration, the account waits until the student
+ * opens the link in the confirmation email ({@see confirmation_required()}; when
+ * that is off it is active at once). The student signs in with their email
+ * (site setting authloginviaemail; the username is the email too). Every registration answer is saved in the academy profile
  * fields (see user_fields).
  *
  * @package    local_academy
@@ -70,7 +71,7 @@ class registration {
     /**
      * The auth method new students get: Moodle's self-registration method when it
      * is set and enabled, else "email" when enabled, else "manual" (always on).
-     * All of them sign in with email + password; the account is confirmed at once.
+     * All of them sign in with email + password.
      *
      * @return string
      */
@@ -82,6 +83,42 @@ class registration {
             }
         }
         return 'manual';
+    }
+
+    /**
+     * Whether a new account waits for its email to be confirmed — Moodle's own
+     * flow: Self registration = "Email-based self-registration" (set by
+     * site_defaults::email_confirmation()). The student gets Moodle's
+     * confirmation email; /login/confirm.php activates the account, and an
+     * unconfirmed sign-in offers to send the email again.
+     *
+     * @return bool
+     */
+    public static function confirmation_required(): bool {
+        return get_config('core', 'registerauth') === 'email' && is_enabled_auth('email');
+    }
+
+    /**
+     * Hook: Moodle's own sign-up form (/login/signup.php, open while Self
+     * registration is on) → the academy form, so every account gets the same fields.
+     *
+     * @param \core\hook\after_config $hook
+     */
+    public static function after_config(\core\hook\after_config $hook): void {
+        global $SCRIPT;
+        if (during_initial_install() || CLI_SCRIPT || AJAX_SCRIPT || ($SCRIPT ?? '') !== '/login/signup.php') {
+            return;
+        }
+        redirect(new \moodle_url('/local/academy/register.php'));
+    }
+
+    /**
+     * Where the confirmation link sends the student once confirmed: the home page.
+     *
+     * @return \moodle_url
+     */
+    public static function confirmation_url(): \moodle_url {
+        return new \moodle_url('/login/confirm.php', ['redirect' => (new \moodle_url('/'))->out(false)]);
     }
 
     /**
@@ -256,7 +293,7 @@ class registration {
      *
      * @param array $raw submitted values (form names, see FIELDS)
      * @param bool $agreed whether the terms were accepted
-     * @return \stdClass the new user record
+     * @return \stdClass the new user record (confirmed = 0 while it waits for the email)
      * @throws invalid_registration with the field errors when the data is not valid
      * @throws \moodle_exception registrationdisabled when self-registration is off
      */
@@ -275,9 +312,12 @@ class registration {
         }
         self::throttle();
 
+        $confirm = self::confirmation_required();
         $user = (object) [
             'auth'        => self::auth_method(),
-            'confirmed'   => 1, // Active at once: no approval / email confirmation.
+            // Waits for the email to be confirmed (Moodle's email self-registration), else active at once.
+            'confirmed'   => $confirm ? 0 : 1,
+            'secret'      => $confirm ? random_string(15) : '',
             'mnethostid'  => $CFG->mnet_localhost_id,
             'username'    => self::unique_username($data['email']),
             'password'    => $data['password'],
@@ -296,7 +336,12 @@ class registration {
         }
         profile_save_custom_fields($user->id, $custom);
 
-        return $DB->get_record('user', ['id' => $user->id], '*', MUST_EXIST);
+        $created = $DB->get_record('user', ['id' => $user->id], '*', MUST_EXIST);
+        if ($confirm && !send_confirmation_email($created, self::confirmation_url())) {
+            // The account stays: signing in shows Moodle's "confirm your account" page with a resend button.
+            debugging('local_academy: the confirmation email to user ' . $created->id . ' could not be sent.');
+        }
+        return $created;
     }
 
     /** Accounts one network address (IP) may create per hour. */

@@ -564,9 +564,11 @@ username=<email>&password=<password>&service=moodle_mobile_app
 
 #### Student registration (the 3-step form) — pre-login, **shared token**
 
-The same form and rules as the website page `/local/academy/register.php`. The account is **active
-at once** (no approval, no email confirmation) and the call returns the new student's token, so the
-app goes straight into the account. The student later signs in with the email + password.
+The same form and rules as the website page `/local/academy/register.php`. Like Moodle's email
+self-registration, the account **waits for email confirmation**: Moodle emails a link, and the student
+can sign in (email + password) only after opening it. While confirmation is off on an academy
+(Self registration ≠ "Email-based self-registration") the account is active at once and the call
+returns the new student's token instead.
 
 ##### `get_registration_form` (GET)
 Fields in form order with their step (1–3), type and dropdown options, the password rules and the
@@ -605,8 +607,15 @@ terms page:
 | the 18 field names above | string | yes | menu fields: the option `value`; digits may be typed in Arabic (`٠١٠…`) |
 | `agree` | 1 | yes | the student accepted the terms |
 
-Success — the student is created, signed in, and this is **their own token** (store it and replace the
-shared token for every next call):
+Success, email confirmation on (the default) — the account was created and Moodle emailed the
+confirmation link. There is **no token**: show `message`, then the login screen. Signing in before
+the link is opened fails with `errorcode` `usernotconfirmed`.
+```json
+{"status":"success","data":{"userid":23,"confirmationrequired":true,"email":"reg.test1@example.com",
+ "message":"An email should have been sent to your address at reg.test1@example.com. …"}}
+```
+Success, email confirmation off — the student is created, signed in, and this is **their own token**
+(store it and replace the shared token for every next call):
 ```json
 {"status":"success","data":{"userid":23,"token":"<new user token>","privatetoken":null,
  "profile":{"userid":23,"username":"reg.test1@example.com","fullname":"تجربة تسجيل",
@@ -2661,12 +2670,16 @@ Errors: `roomnotready`, `forbidden`.
 Takes no parameters.
 ```json
 {"status":"success","data":{"available":true,"headline":"مدرس فيزياء","subjects":["فيزياء","Physics"],
- "hours":[{"dayofweek":0,"starttime":"10:00","endtime":"22:00"}],"bookable":true,"timezone":"Africa/Cairo",
+ "hours":[{"dayofweek":0,"starttime":"10:00","endtime":"22:00"}],
+ "subjectoptions":[{"value":"{mlang ar}الفيزياء{mlang}{mlang en}Physics{mlang}","label":"الفيزياء"}],
+ "bookable":true,"timezone":"Africa/Cairo",
  "days":[{"value":0,"label":"Sunday"},{"value":1,"label":"Monday"}]}}
 ```
 - `bookable` is `true` when students can book this teacher: `available` is on and there is at least one
   subject.
 - `dayofweek` runs from `0` (Sunday) to `6`. Times are in the teacher's `timezone`.
+- `subjectoptions`: the subjects to choose from (the admin's list in Live lesson settings → Subjects, or the
+  teacher's course names while it is empty, plus subjects already saved). Show `label`, send `value`.
 
 #### update_teacher_profile (POST)
 Replaces the whole profile and returns it.
@@ -2675,10 +2688,11 @@ Replaces the whole profile and returns it.
 |---|---|---|---|
 | available | 0/1 | no | students can book (default 0) |
 | headline | text | no | short line under the name |
-| subjects | JSON array of strings | yes | e.g. `["فيزياء","Physics"]` |
+| subjects | JSON array of strings | yes | `value`s from `subjectoptions` |
 | hours | JSON array | no | `[{"dayofweek":0,"starttime":"16:00","endtime":"20:00"}]`. Each range must be at least 1 hour. Empty means 08:00–20:00 every day |
 
-Errors: `notateacher`, `subjectsrequired` (available without a subject), `badhours`, `invalidparameter`
+Errors: `notateacher`, `subjectsrequired` (available without a subject), `badsubject` (not in
+`subjectoptions`), `badhours`, `invalidparameter`
 (bad JSON).
 
 ---

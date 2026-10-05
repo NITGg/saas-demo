@@ -502,6 +502,15 @@ $string['footersocial_telegram'] = 'Telegram link';
 // Site pages manager (Plugins → Local plugins).
 $string['sitepages'] = 'Site pages manager';
 $string['sitepages_footer'] = 'Footer';
+$string['sitepages_navmenus'] = 'Navbar menus';
+$string['navmenu_gear'] = 'Gear menu links';
+$string['navmenu_gear_desc'] = 'The links in the gear (⚙) menu of the top bar. Until you save this list the menu shows Moodle\'s own pages. A link starting with "/" is a page on this site. "Who sees it" picks the role; the page itself still checks access.';
+$string['navmenu_user'] = 'Profile menu links';
+$string['navmenu_user_desc'] = 'The links in the profile (avatar) menu. The language menu, "Switch role" and "Log out" always stay at the bottom. Until you save this list the menu shows Moodle\'s own links.';
+$string['navmenu_show_all'] = 'Every signed-in user';
+$string['navmenu_show_student'] = 'Students';
+$string['navmenu_show_teacher'] = 'Teachers';
+$string['navmenu_show_admin'] = 'Admins and managers';
 $string['navpagesmenu'] = 'Site pages';
 
 // Bassthalk navbar / footer texts.
@@ -513,3 +522,16 @@ $string['bth_login'] = 'Log in';
 $string['bth_signup'] = 'New account';
 $string['bth_footerpages'] = 'Pages';
 $string['bth_footersocial'] = 'Social media';
+
+// Bassthalk login card (templates/core/loginform + login_layout).
+$string['bth_backhome'] = 'Back to home';
+$string['bth_loginheading'] = 'Welcome back! Ready to study?';
+$string['bth_loginsubtitle'] = 'Sign in with the email and password you registered with.';
+$string['bth_loginemail'] = 'Email';
+$string['bth_loginpassword'] = 'Password';
+$string['bth_loginforgot'] = 'Forgot your password?';
+$string['bth_loginforgotlink'] = 'Click here';
+$string['bth_loginsubmit'] = 'Log in';
+$string['bth_loginnoaccount'] = "Don't have an account?";
+$string['bth_logincreate'] = 'Create your account now!';
+$string['bth_loginparent'] = 'Parent dashboard';

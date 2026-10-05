@@ -22,6 +22,7 @@ class observer {
         if (!$user || !empty($user->deleted) || isguestuser($user)) {
             return;
         }
+        self::land_on_home($user);
 
         // Only for users who signed up with email/password.
         if ($user->auth !== 'email') {
@@ -35,6 +36,38 @@ class observer {
 
         self::send_welcome($user);
         set_user_preference('local_academy_welcomed', 1, $user);
+    }
+
+    /** Pages a student is NOT sent back to after logging in (they go to the home page). */
+    const NOT_AFTER_LOGIN = ['/local/nit_category/index.php', '/course/index.php', '/local/academy/start.php',
+        '/local/academy/register.php', '/login/'];
+
+    /**
+     * After logging in a student lands on the home page, not on the catalogue
+     * they clicked "Log in" from (core returns to the referring page through
+     * $SESSION->wantsurl). A page they were sent to log in for — a course, a
+     * lesson, a payment — is kept. Admins and teachers keep core's behaviour.
+     *
+     * @param \stdClass $user
+     */
+    public static function land_on_home(\stdClass $user): void {
+        global $CFG, $SESSION;
+        if (empty($SESSION->wantsurl) || is_siteadmin($user)
+                || has_capability('moodle/site:configview', \context_system::instance(), $user)
+                || \local_academy\teacher_manager::is_teacher((int) $user->id)) {
+            return;
+        }
+        $path = (string) parse_url((string) $SESSION->wantsurl, PHP_URL_PATH);
+        $root = (string) parse_url($CFG->wwwroot, PHP_URL_PATH);
+        if ($root !== '' && strpos($path, $root) === 0) {
+            $path = substr($path, strlen($root));
+        }
+        foreach (self::NOT_AFTER_LOGIN as $page) {
+            if (strpos($path, $page) === 0) {
+                unset($SESSION->wantsurl);
+                return;
+            }
+        }
     }
 
     /**

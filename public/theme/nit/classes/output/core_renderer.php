@@ -139,6 +139,49 @@ class core_renderer extends \theme_boost\output\core_renderer {
         return \theme_nit_footer_context();
     }
 
+    /**
+     * The gear menu items, in the shape of the primary navigation
+     * (text, url, isactive, haschildren, children): the links set on
+     * Site pages → Navbar menus, else Moodle's primary navigation.
+     *
+     * @return array
+     */
+    public function nit_gear_items(): array {
+        $links = \theme_nit_navmenu_links('gear');
+        if ($links === null) {
+            $primary = new \core\navigation\output\primary($this->page);
+            return $primary->export_for_template($this)['mobileprimarynav'] ?? [];
+        }
+        $here = $this->page->has_set_url() ? $this->page->url : null;
+        $items = [];
+        foreach ($links as $link) {
+            $url = new \moodle_url($link['url']);
+            $items[] = [
+                'text' => $link['name'],
+                'url' => $url->out(false),
+                'isactive' => $here && $here->compare($url, URL_MATCH_BASE),
+                'haschildren' => false,
+            ];
+        }
+        return $items;
+    }
+
+    /**
+     * The avatar (user) menu. With links set on Site pages → Navbar menus they
+     * replace Moodle's links; the language menu, "Switch role" and "Log out" stay.
+     *
+     * @return string HTML
+     */
+    public function nit_user_menu(): string {
+        $primary = new \core\navigation\output\primary($this->page);
+        $menu = $primary->get_user_menu($this);
+        $links = \theme_nit_navmenu_links('user');
+        if ($links !== null && isloggedin() && !isguestuser()) {
+            $menu['items'] = \theme_nit_user_menu_items($links, $menu['items'] ?? []);
+        }
+        return $this->render_from_template('core/user_menu', $menu);
+    }
+
     public function nit_account_link(): string {
         global $CFG;
         if (!\theme_nit\local\editor::can_edit()) {

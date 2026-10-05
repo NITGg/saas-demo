@@ -143,8 +143,9 @@ api::run(function (string $function) use ($USER, $userid, $token, $DB) {
         case 'get_registration_form':
             return \local_academy\local\registration::form();
 
-        // Create the student account (active at once) and sign it in: returns the
-        // NEW user's token. Field errors come back as errorcode invalidregistration
+        // Create the student account. With email confirmation on (Moodle's email
+        // self-registration) it returns confirmationrequired and no token; otherwise
+        // it signs the student in and returns the NEW user's token. Field errors come back as errorcode invalidregistration
         // with `errors` {field: message}.
         case 'register_student':
             api::require_post();
@@ -158,6 +159,16 @@ api::run(function (string $function) use ($USER, $userid, $token, $DB) {
             } catch (\local_academy\local\invalid_registration $e) {
                 api::emit(['status' => 'fail', 'error' => $e->getMessage(),
                     'errorcode' => 'invalidregistration', 'errors' => $e->errors]);
+            }
+            if (empty($newuser->confirmed)) {
+                // Moodle's email confirmation: no token until the student opens the emailed link,
+                // then they sign in normally (login/token.php refuses unconfirmed accounts).
+                return [
+                    'userid'               => (int) $newuser->id,
+                    'confirmationrequired' => true,
+                    'email'                => $newuser->email,
+                    'message'              => strip_tags(get_string('emailconfirmsent', '', $newuser->email)),
+                ];
             }
             // Become the new student and mint their mobile token (as /login/token.php does).
             \core\session\manager::set_user($newuser);

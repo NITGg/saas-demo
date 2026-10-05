@@ -183,3 +183,11 @@ $string['err_invalidstatus']       = 'حالة المعاملة غير معرو�
 $string['err_providernotfound']    = 'مزوّد الدفع غير موجود.';
 $string['err_invalidpriority']     = 'لا يمكن أن تكون الأولوية سالبة.';
 $string['err_nothingtochange']     = 'أرسل enabled و/أو priority للتعديل.';
+
+// Strings that were missing in Arabic (English pages showed through).
+$string['registerfree'] = 'سجّل مجاناً';
+$string['freecourseintro'] = 'هذا الكورس مجاني. اضغط بالأسفل للتسجيل وابدأ التعلم.';
+$string['freeenrolled'] = 'تم تسجيلك. استمتع بالكورس!';
+$string['covered_by_subscription'] = 'ضمن اشتراكك';
+$string['enroll'] = 'اشترك';
+$string['renew_subscription'] = 'جدّد اشتراكك';

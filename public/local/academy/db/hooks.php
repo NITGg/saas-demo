@@ -27,4 +27,9 @@ $callbacks = [
         'hook' => \core\hook\after_config::class,
         'callback' => [\local_academy\local\course_route::class, 'after_config'],
     ],
+    [
+        // login/signup.php (core sign-up, open with email self-registration) → our form.
+        'hook' => \core\hook\after_config::class,
+        'callback' => [\local_academy\local\registration::class, 'after_config'],
+    ],
 ];

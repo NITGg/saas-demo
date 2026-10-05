@@ -51,6 +51,10 @@ $t = fn(string $en, string $ar) => $isar ? $ar : $en;
 
 // ── Save (personal details + language preference) ────────────────────────────
 if (data_submitted() && confirm_sesskey()) {
+    // Teachers: the live-lesson card (bookings, subjects, weekly hours) posts with this form.
+    $lessonerror = class_exists('\local_nit_lessons\local\profile_section')
+        ? \local_nit_lessons\local\profile_section::save((int) $USER->id) : null;
+
     $upd = new stdClass();
     $upd->id = (int) $USER->id;
     $upd->firstname = trim(required_param('firstname', PARAM_TEXT));
@@ -149,6 +153,9 @@ if (data_submitted() && confirm_sesskey()) {
                 }
             }
 
+            if ($lessonerror !== null) {
+                redirect(new moodle_url($pageurl, [], 'lessons'), $lessonerror, null, \core\output\notification::NOTIFY_ERROR);
+            }
             redirect($pageurl, $t('Your changes were saved.', 'تم حفظ التغييرات.'),
                 null, \core\output\notification::NOTIFY_SUCCESS);
         } catch (\Throwable $ex) {
@@ -352,6 +359,10 @@ echo $OUTPUT->header();
           <?php echo $pfinput('guardianjob'); ?>
         </div>
       </div>
+
+      <?php // Teachers: live lessons (from local_nit_lessons; '' for everyone else). ?>
+      <?php echo class_exists('\local_nit_lessons\local\profile_section')
+          ? \local_nit_lessons\local\profile_section::render((int) $USER->id) : ''; ?>
 
       <!-- preferences (only real, persisted settings) -->
       <div class="nit-prof-card">

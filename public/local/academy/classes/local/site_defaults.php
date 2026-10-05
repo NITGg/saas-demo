@@ -24,12 +24,18 @@ namespace local_academy\local;
  *   study systems, course and category names…) depends on it.
  * - The site home page as the home page (the logo / "Home" link), not the
  *   dashboard, and open to visitors who are not logged in.
+ * - Cairo as the site timezone. A fresh install picks the server's (UTC or
+ *   Europe/London), so lesson times showed 2–3 hours off and "Start lesson"
+ *   said it was too early. Users keep "99" (= the site timezone).
  *
  * @package    local_academy
  * @copyright  2026 NIT
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class site_defaults {
+
+    /** The academy's timezone (Egypt). */
+    const TIMEZONE = 'Africa/Cairo';
 
     /**
      * Apply the settings (safe to run again).
@@ -49,6 +55,20 @@ class site_defaults {
         // also sends visitors to the login page when the dashboard is disabled.
         set_config('forcelogin', 0);
         set_config('enablemyhome', 1);
+
+        set_config('timezone', self::TIMEZONE);
+    }
+
+    /**
+     * Turn on Moodle's email self-registration, so a new student confirms their
+     * email before signing in (registration::confirmation_required()). Core's own
+     * sign-up form, which this opens, is sent to /local/academy/register.php
+     * (registration::after_config). Run once: an admin may turn it off again
+     * (Site administration → Plugins → Authentication → Self registration).
+     */
+    public static function email_confirmation(): void {
+        \core\plugininfo\auth::enable_plugin('email', 1);
+        set_config('registerauth', 'email');
     }
 
     /**

@@ -11,7 +11,7 @@
  *
  * Renders the measured 1:1 Bassthalk /register UI. On submit the account is
  * created by \local_academy\local\registration (the same code as the mobile
- * register_student call): active at once, signs in with the email, every answer
+ * register_student call): Moodle's confirmation email, then the student signs in with the email; every answer
  * saved in the academy profile fields. Server errors are shown on their fields.
  * The grade (الصف) list is the site's course categories (the "Year" level).
  *
@@ -26,7 +26,11 @@ require_once($CFG->dirroot . '/theme/nit/lib.php'); // theme_nit_brand_logo_url(
 $PAGE->set_url(new moodle_url('/local/academy/register.php'));
 $PAGE->set_context(context_system::instance());
 $PAGE->set_pagelayout('embedded');
-$PAGE->set_title('طلب انشاء حساب');
+// Page copy in the visitor's language (Arabic first, English otherwise).
+$isar = strpos(current_language(), 'ar') === 0;
+$t = static fn(string $en, string $ar): string => $isar ? $ar : $en;
+$PAGE->set_title($t('Create an account', 'طلب انشاء حساب'));
+$hintname = $t('Write your name in Arabic as it is on the ID card', 'اكتب اسمك بالعربي زي اللي موجود في البطاقة');
 $PAGE->set_heading('');
 
 if (isloggedin() && !isguestuser()) {
@@ -50,7 +54,7 @@ $genders = \local_academy\local\user_fields::menu_options('gender');
 $loginurl = (new moodle_url('/login/index.php'))->out(false);
 $homeurl = (new moodle_url('/'))->out(false);
 
-// ---- submit: create the account, sign in, go to the start page ----
+// ---- submit: create the account, then "check your email" (or sign in and go home) ----
 $regold = [];     // Values to put back in the form after a failed submit (never the password).
 $regerrors = [];  // Field name => message.
 if (data_submitted()) {
@@ -70,8 +74,20 @@ if (data_submitted()) {
             throw new \local_academy\local\invalid_registration(['password2' => get_string('reg_passwordmismatch', 'local_academy')]);
         }
         $newuser = \local_academy\local\registration::register($raw, $agreed);
+        if (empty($newuser->confirmed)) {
+            // Moodle's email self-registration: "check your email" (core strings), no sign-in yet.
+            $PAGE->set_title(get_string('emailconfirm'));
+            echo $OUTPUT->header();
+            echo $OUTPUT->box_start('generalbox boxaligncenter boxwidthnormal mt-5 p-4 text-center');
+            echo $OUTPUT->heading(get_string('emailconfirm'), 3);
+            echo html_writer::tag('p', get_string('emailconfirmsent', '', s($newuser->email)));
+            echo $OUTPUT->single_button(new moodle_url('/'), get_string('continue'), 'get');
+            echo $OUTPUT->box_end();
+            echo $OUTPUT->footer();
+            die;
+        }
         complete_user_login($newuser);
-        redirect(new moodle_url('/local/academy/start.php'), get_string('reg_success', 'local_academy'),
+        redirect(new moodle_url('/'), get_string('reg_success', 'local_academy'),
             null, \core\output\notification::NOTIFY_SUCCESS);
     } catch (\local_academy\local\invalid_registration $e) {
         $regerrors = $e->errors;
@@ -151,6 +167,7 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
     border:1px solid var(--line); border-radius:10px; padding:9px 16px; background:var(--field); font-family:'Almarai',sans-serif;
     font-weight:700; font-size:14px; color:var(--ink); text-decoration:none; }
   .nit-reg-back:hover{ background:var(--hover)!important; color:var(--ink)!important; text-decoration:none; }
+  [dir="ltr"] .nit-reg-back svg{ transform:scaleX(-1); } /* the arrow points back toward the start edge */
 
   .nit-reg-progress{ margin:52px 0 10px; }
   .nit-reg-progrow{ display:flex; justify-content:space-between; align-items:center; font-size:14px; font-family:'Tajawal'; margin-bottom:6px; }
@@ -241,18 +258,18 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
 
 <div class="nit-reg nit-brand-18">
   <div class="nit-reg-form">
-    <a class="nit-reg-back" href="<?php echo $homeurl; ?>"><span>الرجوع للرئيسية</span>
+    <a class="nit-reg-back" href="<?php echo $homeurl; ?>"><span><?php echo s($t('Back to home', 'الرجوع للرئيسية')); ?></span>
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
     </a>
     <div class="nit-reg-inner">
       <div class="nit-reg-progress">
-        <div class="nit-reg-progrow"><span class="pct" id="reg-pct">30%</span><span class="step" id="reg-step-label">الخطوه الاولى</span></div>
+        <div class="nit-reg-progrow"><span class="pct" id="reg-pct">30%</span><span class="step" id="reg-step-label"><?php echo s($t('Step one', 'الخطوه الاولى')); ?></span></div>
         <div class="nit-reg-track"><div class="nit-reg-fill" id="reg-fill" style="width:30%"></div></div>
       </div>
 
       <div class="nit-reg-logo"><img src="<?php echo s(theme_nit_brand_logo_url()); ?>" alt="<?php echo s(format_string($SITE->fullname)); ?>"></div>
-      <h1>طلب انشاء حساب :</h1>
-      <p class="nit-reg-sub">ادخل بياناتك بشكل صحيح وسيتم مراجعة طلبك خلال ساعات لـ بضع ايام, وتقدر تسجل دخول عشان تشوف حالة الطلب بتاعك</p>
+      <h1><?php echo s($t('Create an account:', 'طلب انشاء حساب :')); ?></h1>
+      <p class="nit-reg-sub"><?php echo s($t('Enter your details correctly. Your request is reviewed within a few hours to a few days, and you can log in to see its status.', 'ادخل بياناتك بشكل صحيح وسيتم مراجعة طلبك خلال ساعات لـ بضع ايام, وتقدر تسجل دخول عشان تشوف حالة الطلب بتاعك')); ?></p>
 
       <?php if (!empty($regerrors)) {
           echo $OUTPUT->notification($regerrors['_form'] ?? get_string('reg_failed', 'local_academy'),
@@ -264,52 +281,52 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
         <!-- STEP 1 -->
         <div class="reg-step active" data-step="1">
           <div class="nit-reg-grid">
-            <?php echo reg_text('firstname', 'الاسم الأول', $ic['user'], 'اكتب اسمك بالعربي زي اللي موجود في البطاقة'); ?>
-            <?php echo reg_text('secondname', 'الاسم الثاني', $ic['user'], 'اكتب اسمك بالعربي زي اللي موجود في البطاقة'); ?>
+            <?php echo reg_text('firstname', $t('First name', 'الاسم الأول'), $ic['user'], $hintname); ?>
+            <?php echo reg_text('secondname', $t('Second name', 'الاسم الثاني'), $ic['user'], $hintname); ?>
           </div>
           <div class="nit-reg-grid nit-reg-row">
-            <?php echo reg_text('thirdname', 'الاسم الثالث', $ic['user'], 'اكتب اسمك بالعربي زي اللي موجود في البطاقة'); ?>
-            <?php echo reg_text('lastname', 'الاسم الأخير', $ic['user'], 'اكتب اسمك بالعربي زي اللي موجود في البطاقة'); ?>
+            <?php echo reg_text('thirdname', $t('Third name', 'الاسم الثالث'), $ic['user'], $hintname); ?>
+            <?php echo reg_text('lastname', $t('Last name', 'الاسم الأخير'), $ic['user'], $hintname); ?>
           </div>
-          <div class="nit-reg-grid one nit-reg-row"><?php echo reg_text('phone', 'رقم الهاتف', $ic['phone'], '', 'tel'); ?></div>
-          <div class="nit-reg-grid one nit-reg-row"><?php echo reg_select('grade', 'اختر الصف الدراسي', $gradeoptions); ?></div>
-          <div class="nit-reg-grid one nit-reg-row"><?php echo reg_text('national', 'رقم الطالب القومي', $ic['id'], 'رقم بطاقة الطالب نفسه، مش ولي الأمر'); ?></div>
-          <div class="nit-reg-btns"><button type="button" class="btn-next" data-next>التالي</button></div>
-          <div class="nit-reg-bottom">يوجد لديك حساب بالفعل؟ <a href="<?php echo $loginurl; ?>">ادخل إلى حسابك الآن !</a></div>
+          <div class="nit-reg-grid one nit-reg-row"><?php echo reg_text('phone', $t('Phone number', 'رقم الهاتف'), $ic['phone'], '', 'tel'); ?></div>
+          <div class="nit-reg-grid one nit-reg-row"><?php echo reg_select('grade', $t('Choose your school year', 'اختر الصف الدراسي'), $gradeoptions); ?></div>
+          <div class="nit-reg-grid one nit-reg-row"><?php echo reg_text('national', $t('Student national ID', 'رقم الطالب القومي'), $ic['id'], $t('The student\'s own ID number, not the guardian\'s', 'رقم بطاقة الطالب نفسه، مش ولي الأمر')); ?></div>
+          <div class="nit-reg-btns"><button type="button" class="btn-next" data-next><?php echo s($t('Next', 'التالي')); ?></button></div>
+          <div class="nit-reg-bottom"><?php echo s($t('Already have an account?', 'يوجد لديك حساب بالفعل؟')); ?> <a href="<?php echo $loginurl; ?>"><?php echo s($t('Log in now!', 'ادخل إلى حسابك الآن !')); ?></a></div>
         </div>
 
         <!-- STEP 2 -->
         <div class="reg-step" data-step="2">
           <div class="nit-reg-grid">
-            <?php echo reg_text('fatherphone', 'رقم هاتف الأب', $ic['phone'], '', 'tel'); ?>
-            <?php echo reg_text('motherphone', 'رقم هاتف الأم', $ic['phone'], '', 'tel'); ?>
+            <?php echo reg_text('fatherphone', $t("Father's phone", 'رقم هاتف الأب'), $ic['phone'], '', 'tel'); ?>
+            <?php echo reg_text('motherphone', $t("Mother's phone", 'رقم هاتف الأم'), $ic['phone'], '', 'tel'); ?>
           </div>
           <div class="nit-reg-grid nit-reg-row">
-            <?php echo reg_text('school', 'اسم المدرسة', $ic['school']); ?>
-            <?php echo reg_text('guardianjob', 'مهنة ولي الأمر', $ic['job']); ?>
+            <?php echo reg_text('school', $t('School name', 'اسم المدرسة'), $ic['school']); ?>
+            <?php echo reg_text('guardianjob', $t("Guardian's job", 'مهنة ولي الأمر'), $ic['job']); ?>
           </div>
           <div class="nit-reg-grid nit-reg-row">
-            <?php echo reg_select('studysystem', 'النظام الدراسي', $systems); ?>
-            <?php echo reg_select('governorate', 'المحافظة', $governorates); ?>
+            <?php echo reg_select('studysystem', $t('Study system', 'النظام الدراسي'), $systems); ?>
+            <?php echo reg_select('governorate', $t('Governorate', 'المحافظة'), $governorates); ?>
           </div>
-          <div class="nit-reg-grid one nit-reg-row"><?php echo reg_select('division', 'اختر الشعبة الدراسية', []); ?></div>
-          <div class="nit-reg-btns"><button type="button" class="btn-prev" data-prev>السابق</button><button type="button" class="btn-next" data-next>التالي</button></div>
-          <div class="nit-reg-bottom">يوجد لديك حساب بالفعل؟ <a href="<?php echo $loginurl; ?>">ادخل إلى حسابك الآن !</a></div>
+          <div class="nit-reg-grid one nit-reg-row"><?php echo reg_select('division', $t('Choose your division', 'اختر الشعبة الدراسية'), []); ?></div>
+          <div class="nit-reg-btns"><button type="button" class="btn-prev" data-prev><?php echo s($t('Back', 'السابق')); ?></button><button type="button" class="btn-next" data-next><?php echo s($t('Next', 'التالي')); ?></button></div>
+          <div class="nit-reg-bottom"><?php echo s($t('Already have an account?', 'يوجد لديك حساب بالفعل؟')); ?> <a href="<?php echo $loginurl; ?>"><?php echo s($t('Log in now!', 'ادخل إلى حسابك الآن !')); ?></a></div>
         </div>
 
         <!-- STEP 3 -->
         <div class="reg-step" data-step="3">
-          <div class="nit-reg-grid one"><?php echo reg_select('religion', 'ما مادة التربية الدينية التي تدرسها؟', $religions); ?></div>
-          <div class="nit-reg-grid one nit-reg-row"><?php echo reg_select('gender', 'النوع', $genders); ?></div>
-          <div class="nit-reg-grid one nit-reg-row"><?php echo reg_text('email', 'البريد الإلكتروني', $ic['mail'], '', 'email'); ?></div>
+          <div class="nit-reg-grid one"><?php echo reg_select('religion', $t('Which religious education do you study?', 'ما مادة التربية الدينية التي تدرسها؟'), $religions); ?></div>
+          <div class="nit-reg-grid one nit-reg-row"><?php echo reg_select('gender', $t('Gender', 'النوع'), $genders); ?></div>
+          <div class="nit-reg-grid one nit-reg-row"><?php echo reg_text('email', $t('Email', 'البريد الإلكتروني'), $ic['mail'], '', 'email'); ?></div>
           <div class="nit-reg-grid nit-reg-row">
-            <?php echo reg_text('password', 'كلمة السر', $ic['lock'], '', 'password', true); ?>
-            <?php echo reg_text('password2', 'تأكيد كلمة السر', $ic['lock'], '', 'password', true); ?>
+            <?php echo reg_text('password', $t('Password', 'كلمة السر'), $ic['lock'], '', 'password', true); ?>
+            <?php echo reg_text('password2', $t('Confirm password', 'تأكيد كلمة السر'), $ic['lock'], '', 'password', true); ?>
           </div>
-          <label class="nit-reg-terms"><input type="checkbox" name="agree" value="1" id="f_agree"<?php echo !empty($regold['agree']) ? ' checked' : ''; ?>><span>أوافق على <a href="#" class="reg-terms-open">الشروط والأحكام</a> واتفاقية شراء الكورس في منصة بسطتهالك.</span></label>
+          <label class="nit-reg-terms"><input type="checkbox" name="agree" value="1" id="f_agree"<?php echo !empty($regold['agree']) ? ' checked' : ''; ?>><span><?php echo s($t('I agree to the', 'أوافق على')); ?> <a href="#" class="reg-terms-open"><?php echo s($t('terms and conditions', 'الشروط والأحكام')); ?></a> <?php echo s($t('and the course purchase agreement of the platform.', 'واتفاقية شراء الكورس في منصة بسطتهالك.')); ?></span></label>
           <div class="reg-err" id="agree-err" style="margin-top:6px;"></div>
-          <div class="nit-reg-btns"><button type="button" class="btn-prev" data-prev>السابق</button><button type="submit" class="btn-next">طلب انشاء حساب !</button></div>
-          <div class="nit-reg-bottom">يوجد لديك حساب بالفعل؟ <a href="<?php echo $loginurl; ?>">ادخل إلى حسابك الآن !</a></div>
+          <div class="nit-reg-btns"><button type="button" class="btn-prev" data-prev><?php echo s($t('Back', 'السابق')); ?></button><button type="submit" class="btn-next"><?php echo s($t('Create account!', 'طلب انشاء حساب !')); ?></button></div>
+          <div class="nit-reg-bottom"><?php echo s($t('Already have an account?', 'يوجد لديك حساب بالفعل؟')); ?> <a href="<?php echo $loginurl; ?>"><?php echo s($t('Log in now!', 'ادخل إلى حسابك الآن !')); ?></a></div>
         </div>
       </form>
     </div>
@@ -320,10 +337,21 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
 <div class="reg-modal-ov nit-brand-18" id="reg-terms-modal">
   <div class="reg-modal" role="dialog" aria-modal="true">
     <div class="reg-modal-head">
-      <div><div class="t">اتفاقية شراء الكورس</div><div class="s">اقرأ البنود كويس قبل ما توافق، موافقتك الإلكترونية ملزمة.</div></div>
+      <div><div class="t"><?php echo s($t('Course purchase agreement', 'اتفاقية شراء الكورس')); ?></div><div class="s"><?php echo s($t('Read the terms carefully before agreeing; your electronic consent is binding.', 'اقرأ البنود كويس قبل ما توافق، موافقتك الإلكترونية ملزمة.')); ?></div></div>
       <button type="button" class="reg-modal-x" data-close>&times;</button>
     </div>
     <div class="reg-modal-body">
+<?php if (!$isar): ?>
+      <div class="reg-modal-sec"><p>Please read the following terms carefully. By clicking "I agree to all the terms" you confirm that you have read and understood this agreement and agree to be bound by all of its terms.</p></div>
+      <div class="reg-modal-sec"><h4>First: Intellectual property</h4>
+        <p>All educational content on the platform, including videos, files, summaries, tests, audio recordings, images and any other learning material, belongs to the platform or to the parties and rights holders who granted the platform the right to publish and use it.</p>
+        <p>Copying, filming, recording, republishing, distributing, selling or sharing any part of the content by any means is prohibited without the prior written consent of the platform or the rights holder.</p></div>
+      <div class="reg-modal-sec"><h4>Second: Balance and payments</h4>
+        <p>Amounts topped up to the student's wallet on the platform cannot be refunded in cash or transferred to money outside the platform once the top-up is complete.</p>
+        <p>The student may use the full topped-up balance to buy any of the courses or learning services available on the platform.</p></div>
+      <div class="reg-modal-sec"><h4>Third: Cancelling a course subscription</h4>
+        <p>Once access to a course's content is activated, the subscription cannot be cancelled or refunded, as digital content counts as a service consumed as soon as it is made available.</p></div>
+<?php else: ?>
       <div class="reg-modal-sec"><p>برجاء قراءة البنود التالية بعناية. بالضغط على زر «موافق على الشروط والأحكام» فإنك تقر بأنك قد قرأت هذه الاتفاقية وفهمتها وتوافق على الالتزام بجميع بنودها.</p></div>
       <div class="reg-modal-sec"><h4>أولاً: حقوق الملكية الفكرية</h4>
         <p>جميع المحتويات التعليمية المعروضة على منصة بسطتهالك، بما في ذلك الفيديوهات والملفات والملخصات والاختبارات والتسجيلات الصوتية والصور وأي مواد تعليمية أخرى، هي ملك للمنصة أو للجهات وأصحاب الحقوق الذين منحوا المنصة حق نشرها واستخدامها.</p>
@@ -333,14 +361,26 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
         <p>يحق للطالب استخدام الرصيد المشحون بالكامل في شراء أي من الكورسات أو الخدمات التعليمية المتاحة داخل المنصة.</p></div>
       <div class="reg-modal-sec"><h4>ثالثًا: إلغاء الاشتراك في الكورس</h4>
         <p>بمجرد تفعيل الوصول إلى محتوى كورس، لا يمكن إلغاء الاشتراك أو استرداد قيمته، حيث يُعد المحتوى الرقمي خدمة مُستهلكة فور إتاحتها.</p></div>
+<?php endif; ?>
     </div>
-    <div class="reg-modal-foot"><button type="button" class="reg-modal-agree" data-agree>موافق علي جميع الشروط</button></div>
+    <div class="reg-modal-foot"><button type="button" class="reg-modal-agree" data-agree><?php echo s($t('I agree to all the terms', 'موافق علي جميع الشروط')); ?></button></div>
   </div>
 </div>
 
 <script>
 (function(){
   var DIV = <?php echo json_encode($divisions, JSON_UNESCAPED_UNICODE); ?>;
+  var L = <?php echo json_encode([
+      'step1' => $t('Step one', 'الخطوه الاولى'),
+      'step2' => $t('Step two', 'الخطوه التانيه'),
+      'step3' => $t('Last step', 'الخطوه الاخيره'),
+      'required' => $t('This field is required', 'هذا الحقل مطلوب'),
+      'email' => $t('Invalid email address', 'بريد إلكتروني غير صحيح'),
+      'number' => $t('Enter a valid number (digits only)', 'ادخل رقمًا صحيحًا (أرقام فقط)'),
+      'pwshort' => $t('The password must be at least 8 characters', 'كلمة السر 8 أحرف على الأقل'),
+      'pwmatch' => $t('The passwords do not match', 'كلمتا السر غير متطابقتين'),
+      'agree' => $t('You must agree to the terms and conditions', 'لازم توافق على الشروط والأحكام'),
+  ], JSON_UNESCAPED_UNICODE); ?>;
   // Default study system: "عام" (stored bilingual, e.g. "{mlang en}general{mlang}{mlang ar}عام{mlang}").
   var DEFAULT_SYSTEM = <?php
       $defaultsystem = '';
@@ -357,7 +397,7 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
   var OLD_DIVISION = <?php echo json_encode((string) ($regold['division'] ?? ''), JSON_UNESCAPED_UNICODE); ?>;
   var HAS_OLD = <?php echo $regold ? 'true' : 'false'; ?>;
   var steps = [].slice.call(document.querySelectorAll('.reg-step'));
-  var meta = [{p:'30%',l:'الخطوه الاولى'},{p:'60%',l:'الخطوه التانيه'},{p:'90%',l:'الخطوه الاخيره'}];
+  var meta = [{p:'30%',l:L.step1},{p:'60%',l:L.step2},{p:'90%',l:L.step3}];
   var cur = 0;
   function show(i){
     cur = Math.max(0, Math.min(steps.length-1, i));
@@ -384,16 +424,16 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
     stepEl.querySelectorAll('input[required], select[required]').forEach(function(f){
       var v = (f.value||'').trim();
       var bad = '';
-      if(!v){ bad = 'هذا الحقل مطلوب'; }
-      else if(f.type==='email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){ bad = 'بريد إلكتروني غير صحيح'; }
-      else if((f.type==='tel' || /phone|national/.test(f.name)) && !/^[0-9]{7,15}$/.test(v)){ bad = 'ادخل رقمًا صحيحًا (أرقام فقط)'; }
-      else if(f.id==='f_password' && v.length < 8){ bad = 'كلمة السر 8 أحرف على الأقل'; }
-      else if(f.id==='f_password2'){ var p=document.getElementById('f_password'); if(p && v!==p.value){ bad = 'كلمتا السر غير متطابقتين'; } }
+      if(!v){ bad = L.required; }
+      else if(f.type==='email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){ bad = L.email; }
+      else if((f.type==='tel' || /phone|national/.test(f.name)) && !/^[0-9]{7,15}$/.test(v)){ bad = L.number; }
+      else if(f.id==='f_password' && v.length < 8){ bad = L.pwshort; }
+      else if(f.id==='f_password2'){ var p=document.getElementById('f_password'); if(p && v!==p.value){ bad = L.pwmatch; } }
       if(bad){ ok=false; setErr(f, bad); if(!first){ first=f; } }
     });
     // terms on last step
     var agree = stepEl.querySelector('#f_agree');
-    if(agree && !agree.checked){ ok=false; var ae=document.getElementById('agree-err'); if(ae){ ae.textContent='لازم توافق على الشروط والأحكام'; } if(!first){ first=agree; } }
+    if(agree && !agree.checked){ ok=false; var ae=document.getElementById('agree-err'); if(ae){ ae.textContent=L.agree; } if(!first){ first=agree; } }
     if(first){ first.focus(); try{ first.scrollIntoView({block:'center',behavior:'smooth'}); }catch(e){} }
     return ok;
   }

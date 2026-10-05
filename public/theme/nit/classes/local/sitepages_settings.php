@@ -23,7 +23,7 @@ use admin_settingpage;
 
 /**
  * "Site pages manager": the content of the Bassthalk-style pages that are not
- * HTML blocks, one tab each (today: the site footer). The home page sections
+ * HTML blocks, one tab each (the site footer, the navbar menus). The home page sections
  * are nit_section blocks — see theme/nit/blocks/templates/bassthalk.
  *
  * Registered under Site administration → Plugins → Local plugins by
@@ -54,6 +54,7 @@ class sitepages_settings {
             get_string('sitepages', 'theme_nit'), 'moodle/site:config');
         if ($fulltree) {
             $page->add_tab(self::footer_tab());
+            $page->add_tab(self::navmenus_tab());
         }
         return $page;
     }
@@ -69,14 +70,15 @@ class sitepages_settings {
             'theme_nit/footer_description',
             get_string('footerdescription', 'theme_nit'),
             get_string('footerdescription_desc', 'theme_nit'),
-            'تم صنع هذه المنصة بهدف تهيئة الطالب لـ كامل جوانب الثانوية العامة و ما بعدها',
+            theme_nit_ml('This platform was made to prepare students for every side of secondary school and beyond',
+                'تم صنع هذه المنصة بهدف تهيئة الطالب لـ كامل جوانب الثانوية العامة و ما بعدها'),
             PARAM_TEXT, 60, 3
         ));
         $tab->add(new admin_setting_configtext(
             'theme_nit/footer_copyright',
             get_string('footercopyright', 'theme_nit'),
             get_string('footercopyright_desc', 'theme_nit'),
-            'جميع الحقوق محفوظة © {year}',
+            theme_nit_ml('All rights reserved © {year}', 'جميع الحقوق محفوظة © {year}'),
             PARAM_TEXT
         ));
         $tab->add(new \theme_nit\admin_setting_footerpages(
@@ -99,6 +101,20 @@ class sitepages_settings {
                 PARAM_URL
             ));
         }
+        return $tab;
+    }
+
+    /**
+     * Navbar menus tab: the links of the gear menu and of the avatar (user) menu.
+     *
+     * @return admin_settingpage
+     */
+    private static function navmenus_tab(): admin_settingpage {
+        $tab = new admin_settingpage('theme_nit_sitepages_navmenus', get_string('sitepages_navmenus', 'theme_nit'));
+        $tab->add(new \theme_nit\admin_setting_navlinks('gear',
+            get_string('navmenu_gear', 'theme_nit'), get_string('navmenu_gear_desc', 'theme_nit')));
+        $tab->add(new \theme_nit\admin_setting_navlinks('user',
+            get_string('navmenu_user', 'theme_nit'), get_string('navmenu_user_desc', 'theme_nit')));
         return $tab;
     }
 

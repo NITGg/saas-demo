@@ -326,6 +326,9 @@ final class mobile_api {
             $days[] = ['value' => $d, 'label' => self::str('day' . $d)];
         }
         return $profile + [
+            // The subjects the teacher picks from (send the value back in update_teacher_profile).
+            'subjectoptions' => array_map(fn($s) => ['value' => $s, 'label' => format_string($s)],
+                teacher_service::subject_options($userid)),
             'bookable' => $service->bookable($userid),
             'timezone' => teacher_service::timezone($userid)->getName(),
             'days' => $days,

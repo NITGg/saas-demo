@@ -1,0 +1,141 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_nit_lessons/profile_section
+
+    The teacher's live-lesson card on /local/academy/profile.php (inside its form,
+    using its nit-prof-* styles). Saved by \local_nit_lessons\local\profile_section::save().
+
+    Example context (json):
+    {
+        "marker": "nitlx_profile", "available": true, "headline": "Physics teacher",
+        "subjects": [{"options": [{"value": "Physics", "label": "Physics", "selected": true}]}],
+        "blankoptions": [{"value": "Physics", "label": "Physics"}], "hassubjectoptions": true,
+        "hours": [{"start": "16:00", "end": "20:00", "days": [{"value": 0, "label": "Sunday", "selected": true}]}],
+        "daynames": [{"value": 0, "label": "Sunday"}], "timezone": "Africa/Cairo", "mylessonsurl": "#"
+    }
+}}
+<div class="nit-prof-card nitlx-prof" id="lessons">
+    <input type="hidden" name="{{marker}}" value="1">
+    <div class="nit-prof-cardhd nitlx-prof-hd">
+        <span>{{#str}}teacherprofile, local_nit_lessons{{/str}}</span>
+        <a class="btn-out" href="{{mylessonsurl}}">{{#str}}mylessons, local_nit_lessons{{/str}}</a>
+    </div>
+    <div class="nit-prof-body">
+        <p class="full nitlx-prof-intro">{{#str}}teacherprofile_intro, local_nit_lessons{{/str}}</p>
+        <label class="full nitlx-prof-switch">
+            <input type="checkbox" name="nitlx_available" value="1" {{#available}}checked{{/available}}>
+            <span>{{#str}}takebookings, local_nit_lessons{{/str}}</span>
+        </label>
+        <div class="full">
+            <div class="nit-prof-lbl">{{#str}}headline, local_nit_lessons{{/str}}</div>
+            <input class="nit-prof-field" type="text" name="nitlx_headline" value="{{headline}}" maxlength="255"
+                   placeholder="{{#str}}headline_ph, local_nit_lessons{{/str}}">
+        </div>
+
+        <div class="full">
+            <div class="nit-prof-lbl">{{#str}}subjects, local_nit_lessons{{/str}}</div>
+            {{^hassubjectoptions}}<p class="nitlx-prof-hint">{{#str}}nosubjectoptions, local_nit_lessons{{/str}}</p>{{/hassubjectoptions}}
+            <div class="nitlx-prof-rows" data-region="subjects">
+                {{#subjects}}
+                <div class="nitlx-prof-row">
+                    <select class="nit-prof-field" name="nitlx_subjects[]" aria-label="{{#str}}subjects, local_nit_lessons{{/str}}">
+                        <option value="">{{#str}}choosesubject, local_nit_lessons{{/str}}</option>
+                        {{#options}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/options}}
+                    </select>
+                    <button type="button" class="nitlx-prof-x" data-remove aria-label="{{#str}}remove{{/str}}">×</button>
+                </div>
+                {{/subjects}}
+            </div>
+            <button type="button" class="nitlx-prof-add" data-add="subject">+ {{#str}}addsubject, local_nit_lessons{{/str}}</button>
+        </div>
+
+        <div class="full">
+            <div class="nit-prof-lbl">{{#str}}workinghours, local_nit_lessons{{/str}}</div>
+            <p class="nitlx-prof-hint">{{#str}}workinghours_help, local_nit_lessons, {{timezone}}{{/str}}</p>
+            <div class="nitlx-prof-rows" data-region="hours">
+                {{#hours}}
+                <div class="nitlx-prof-row">
+                    <select class="nit-prof-field" name="nitlx_day[]">{{#days}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/days}}</select>
+                    <input class="nit-prof-field" type="time" name="nitlx_start[]" value="{{start}}" step="900" dir="ltr">
+                    <span>{{#str}}to, local_nit_lessons{{/str}}</span>
+                    <input class="nit-prof-field" type="time" name="nitlx_end[]" value="{{end}}" step="900" dir="ltr">
+                    <button type="button" class="nitlx-prof-x" data-remove aria-label="{{#str}}remove{{/str}}">×</button>
+                </div>
+                {{/hours}}
+            </div>
+            <button type="button" class="nitlx-prof-add" data-add="hour">+ {{#str}}addhours, local_nit_lessons{{/str}}</button>
+        </div>
+    </div>
+
+    <template id="nitlx-tpl-subject">
+        <div class="nitlx-prof-row">
+            <select class="nit-prof-field" name="nitlx_subjects[]" aria-label="{{#str}}subjects, local_nit_lessons{{/str}}">
+                <option value="">{{#str}}choosesubject, local_nit_lessons{{/str}}</option>
+                {{#blankoptions}}<option value="{{value}}">{{label}}</option>{{/blankoptions}}
+            </select>
+            <button type="button" class="nitlx-prof-x" data-remove aria-label="{{#str}}remove{{/str}}">×</button>
+        </div>
+    </template>
+    <template id="nitlx-tpl-hour">
+        <div class="nitlx-prof-row">
+            <select class="nit-prof-field" name="nitlx_day[]">{{#daynames}}<option value="{{value}}">{{label}}</option>{{/daynames}}</select>
+            <input class="nit-prof-field" type="time" name="nitlx_start[]" value="16:00" step="900" dir="ltr">
+            <span>{{#str}}to, local_nit_lessons{{/str}}</span>
+            <input class="nit-prof-field" type="time" name="nitlx_end[]" value="20:00" step="900" dir="ltr">
+            <button type="button" class="nitlx-prof-x" data-remove aria-label="{{#str}}remove{{/str}}">×</button>
+        </div>
+    </template>
+</div>
+<style>
+  .nitlx-prof-hd{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .nitlx-prof-intro, .nitlx-prof-hint{ margin:0; font-size:13px; color:var(--t-muted,#8A8A82); line-height:1.7; }
+  .nitlx-prof-hint{ margin-bottom:8px; }
+  .nitlx-prof-switch{ display:flex; align-items:center; gap:10px; font-size:14px; font-weight:600; cursor:pointer; margin:0; }
+  .nitlx-prof-switch input{ width:18px; height:18px; accent-color:var(--nit-brand-primary,#0E7C66); }
+  .nitlx-prof-rows{ display:flex; flex-direction:column; gap:10px; }
+  .nitlx-prof-row{ display:flex; align-items:center; gap:10px; }
+  .nitlx-prof-row .nit-prof-field{ flex:1; min-width:0; }
+  .nitlx-prof-row input[type="time"]{ flex:0 1 130px; }
+  .nitlx-prof-x{ flex:none; width:36px; height:36px; border-radius:9px; border:1px solid var(--t-border2,#DCDCD7);
+    background:var(--t-bg,#fff); color:#B4402F; font-size:18px; line-height:1; cursor:pointer; }
+  .nitlx-prof-add{ margin-top:10px; border:0; background:none; padding:4px 0; font:inherit; font-size:13px; font-weight:600;
+    color:var(--nit-brand-primary,#0E7C66); cursor:pointer; }
+  @media (max-width:560px){ .nitlx-prof-row{ flex-wrap:wrap; } .nitlx-prof-row input[type="time"]{ flex:1 1 40%; } }
+</style>
+{{#js}}
+(function() {
+    var root = document.getElementById('lessons');
+    if (!root) {
+        return;
+    }
+    root.addEventListener('click', function(e) {
+        var remove = e.target.closest('[data-remove]');
+        if (remove) {
+            remove.closest('.nitlx-prof-row').remove();
+            return;
+        }
+        var add = e.target.closest('[data-add]');
+        if (add) {
+            var kind = add.getAttribute('data-add');
+            var tpl = document.getElementById('nitlx-tpl-' + kind);
+            root.querySelector('[data-region="' + (kind === 'hour' ? 'hours' : 'subjects') + '"]')
+                .appendChild(tpl.content.cloneNode(true));
+        }
+    });
+})();
+{{/js}}

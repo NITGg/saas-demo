@@ -8,8 +8,8 @@
     theme_nit/core/login_layout.
 }}
 <div class="loginform">
-    <h1>أهلا تاني! جاهز للمذاكرة؟</h1>
-    <p class="login-subtitle">ادخل علي حسابك بإدخال البريد الإلكتروني و كلمة المرور المسجل بهم من قبل</p>
+    <h1>{{#str}}bth_loginheading, theme_nit{{/str}}</h1>
+    <p class="login-subtitle">{{#str}}bth_loginsubtitle, theme_nit{{/str}}</p>
 
     {{#maintenance}}
         <div class="alert alert-danger login-maintenance">{{{maintenance}}}</div>
@@ -43,41 +43,41 @@
             <input type="hidden" name="logintoken" value="{{logintoken}}">
 
             <div class="login-field login-form-username">
-                <label for="username" class="sr-only visually-hidden">البريد الإلكتروني</label>
+                <label for="username" class="sr-only visually-hidden">{{#str}}bth_loginemail, theme_nit{{/str}}</label>
                 <span class="login-field-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7 8.5 6 8.5-6"/></svg>
                 </span>
                 <input type="text" name="username" id="username" class="form-control" value="{{username}}" {{!
-                    !}}placeholder="البريد الإلكتروني" autocomplete="username">
+                    !}}placeholder="{{#str}}bth_loginemail, theme_nit{{/str}}" autocomplete="username">
             </div>
 
             <div class="login-field login-form-password nit-pw-wrap">
-                <label for="password" class="sr-only visually-hidden">كلمة السر</label>
+                <label for="password" class="sr-only visually-hidden">{{#str}}bth_loginpassword, theme_nit{{/str}}</label>
                 <span class="login-field-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2.2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
                 </span>
                 <input type="password" name="password" id="password" value="" class="form-control" {{!
-                    !}}placeholder="كلمة السر" autocomplete="current-password">
+                    !}}placeholder="{{#str}}bth_loginpassword, theme_nit{{/str}}" autocomplete="current-password">
                 <button type="button" class="nit-pw-eye" aria-label="{{#str}}showpassword, theme_nit{{/str}}" {{!
                     !}}onclick="var i=document.getElementById('password'); var on=i.type==='password'; i.type=on?'text':'password'; this.setAttribute('aria-pressed', on); this.classList.toggle('on', on);">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
                 </button>
             </div>
 
-            <div class="login-forgot">هل نسيت كلمة السر؟ <a href="{{forgotpasswordurl}}">اضغط هنا</a></div>
+            <div class="login-forgot">{{#str}}bth_loginforgot, theme_nit{{/str}} <a href="{{forgotpasswordurl}}">{{#str}}bth_loginforgotlink, theme_nit{{/str}}</a></div>
 
             {{#recaptcha}}<div class="login-form-recaptcha mb-3">{{{recaptcha}}}</div>{{/recaptcha}}
             <div class="login-form-submit">
-                <button class="btn btn-primary" type="submit" id="loginbtn">تسجيل الدخول</button>
+                <button class="btn btn-primary" type="submit" id="loginbtn">{{#str}}bth_loginsubmit, theme_nit{{/str}}</button>
             </div>
         </form>
     {{/showloginform}}
 
-    <div class="login-signup">لا يوجد لديك حساب؟ <a href="{{config.wwwroot}}/local/academy/register.php">انشئ حسابك الآن !</a></div>
+    <div class="login-signup">{{#str}}bth_loginnoaccount, theme_nit{{/str}} <a href="{{config.wwwroot}}/local/academy/register.php">{{#str}}bth_logincreate, theme_nit{{/str}}</a></div>
 
     <div class="login-aux">
         {{! Parents have no account: they follow a student from the phone-gated parent dashboard. Guest login removed (same purpose as "back to home"). }}
-        <a class="btn-secondary-auth" href="{{config.wwwroot}}/parent_dashboard">لوحة تحكم ولي الأمر</a>
+        <a class="btn-secondary-auth" href="{{config.wwwroot}}/parent_dashboard">{{#str}}bth_loginparent, theme_nit{{/str}}</a>
     </div>
 
     {{#languagemenu}}

@@ -2803,16 +2803,16 @@ function theme_nit_brand_logo_url(): string {
  * when its URL is filled in. The icons are the networks' own marks, so they keep
  * the networks' own colours.
  *
- * @return array<string, array{label:string, icon:string}>
+ * @return array<string, array{label:string[], icon:string}> label = [English, Arabic]
  */
 function theme_nit_footer_social_networks(): array {
     return [
-        'facebook' => ['label' => 'فيسبوك', 'icon' => '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="5" fill="#1877F2"/><path fill="#fff" d="M15.6 12.6h-2.3V20h-3v-7.4H8.6v-2.6h1.7V8.4c0-2.1 1-3.4 3.4-3.4h2v2.6h-1.3c-.9 0-1.1.4-1.1 1.1v1.3h2.4z"/></svg>'],
-        'instagram' => ['label' => 'انستجرام', 'icon' => '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#E4405F"/><rect x="5.5" y="5.5" width="13" height="13" rx="4" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="12" cy="12" r="3.2" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="16.2" cy="7.8" r="1" fill="#fff"/></svg>'],
-        'tiktok' => ['label' => 'تيك توك', 'icon' => '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#111827"/><path fill="#fff" d="M16.6 8.3a3.6 3.6 0 0 1-2.2-.8v5.6a3.9 3.9 0 1 1-3.4-3.9v2a1.9 1.9 0 1 0 1.4 1.9V4.5h2a3.6 3.6 0 0 0 2.2 2.6z"/></svg>'],
-        'youtube' => ['label' => 'يوتيوب', 'icon' => '<svg viewBox="0 0 24 24" aria-hidden="true"><rect y="3.5" width="24" height="17" rx="5" fill="#FF0000"/><path fill="#fff" d="M10 8.5v7l6-3.5z"/></svg>'],
-        'whatsapp' => ['label' => 'واتساب', 'icon' => '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#25D366"/><path fill="#fff" d="M12 5.2a6.7 6.7 0 0 0-5.8 10.1L5.3 18.8l3.6-.9A6.7 6.7 0 1 0 12 5.2zm3.9 9.4c-.2.5-1 1-1.4 1-.4.1-.8.1-2.6-.6-2.2-.9-3.6-3.1-3.7-3.3-.1-.1-.9-1.2-.9-2.3s.6-1.6.8-1.8c.2-.2.4-.3.6-.3h.4c.1 0 .3 0 .5.4l.7 1.6c.1.1.1.3 0 .4l-.3.4-.3.3c-.1.1-.2.2-.1.5.1.2.6 1 1.3 1.6.9.8 1.6 1 1.8 1.1.2.1.4.1.5-.1l.7-.8c.2-.2.3-.2.5-.1l1.5.7c.2.1.4.2.4.3.1.2.1.6-.1 1z"/></svg>'],
-        'telegram' => ['label' => 'تليجرام', 'icon' => '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#229ED9"/><path fill="#fff" d="M17.8 6.6 5.9 11.2c-.8.3-.8.8-.1 1l3 .9 1.2 3.6c.1.4.3.5.6.5.2 0 .4-.1.6-.3l1.5-1.4 3 2.2c.6.3 1 .2 1.1-.5l2-9.6c.2-.9-.3-1.3-1-1z"/></svg>'],
+        'facebook' => ['label' => ['Facebook', 'فيسبوك'], 'icon' => '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="5" fill="#1877F2"/><path fill="#fff" d="M15.6 12.6h-2.3V20h-3v-7.4H8.6v-2.6h1.7V8.4c0-2.1 1-3.4 3.4-3.4h2v2.6h-1.3c-.9 0-1.1.4-1.1 1.1v1.3h2.4z"/></svg>'],
+        'instagram' => ['label' => ['Instagram', 'انستجرام'], 'icon' => '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#E4405F"/><rect x="5.5" y="5.5" width="13" height="13" rx="4" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="12" cy="12" r="3.2" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="16.2" cy="7.8" r="1" fill="#fff"/></svg>'],
+        'tiktok' => ['label' => ['TikTok', 'تيك توك'], 'icon' => '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#111827"/><path fill="#fff" d="M16.6 8.3a3.6 3.6 0 0 1-2.2-.8v5.6a3.9 3.9 0 1 1-3.4-3.9v2a1.9 1.9 0 1 0 1.4 1.9V4.5h2a3.6 3.6 0 0 0 2.2 2.6z"/></svg>'],
+        'youtube' => ['label' => ['YouTube', 'يوتيوب'], 'icon' => '<svg viewBox="0 0 24 24" aria-hidden="true"><rect y="3.5" width="24" height="17" rx="5" fill="#FF0000"/><path fill="#fff" d="M10 8.5v7l6-3.5z"/></svg>'],
+        'whatsapp' => ['label' => ['WhatsApp', 'واتساب'], 'icon' => '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#25D366"/><path fill="#fff" d="M12 5.2a6.7 6.7 0 0 0-5.8 10.1L5.3 18.8l3.6-.9A6.7 6.7 0 1 0 12 5.2zm3.9 9.4c-.2.5-1 1-1.4 1-.4.1-.8.1-2.6-.6-2.2-.9-3.6-3.1-3.7-3.3-.1-.1-.9-1.2-.9-2.3s.6-1.6.8-1.8c.2-.2.4-.3.6-.3h.4c.1 0 .3 0 .5.4l.7 1.6c.1.1.1.3 0 .4l-.3.4-.3.3c-.1.1-.2.2-.1.5.1.2.6 1 1.3 1.6.9.8 1.6 1 1.8 1.1.2.1.4.1.5-.1l.7-.8c.2-.2.3-.2.5-.1l1.5.7c.2.1.4.2.4.3.1.2.1.6-.1 1z"/></svg>'],
+        'telegram' => ['label' => ['Telegram', 'تليجرام'], 'icon' => '<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#229ED9"/><path fill="#fff" d="M17.8 6.6 5.9 11.2c-.8.3-.8.8-.1 1l3 .9 1.2 3.6c.1.4.3.5.6.5.2 0 .4-.1.6-.3l1.5-1.4 3 2.2c.6.3 1 .2 1.1-.5l2-9.6c.2-.9-.3-1.3-1-1z"/></svg>'],
     ];
 }
 
@@ -2825,13 +2825,74 @@ function theme_nit_footer_social_networks(): array {
  */
 function theme_nit_footer_pages_default(): array {
     return [
-        ['name' => 'الرئيسية', 'url' => '/', 'show' => 'all'],
-        ['name' => 'المساعدة', 'url' => '/user/contactsitesupport.php', 'show' => 'all'],
-        ['name' => 'انشاء حساب جديد', 'url' => '/local/academy/register.php', 'show' => 'guest'],
-        ['name' => 'تسجيل الدخول', 'url' => '/login/index.php', 'show' => 'guest'],
-        ['name' => 'لوحة التحكم', 'url' => '/my/', 'show' => 'user'],
-        ['name' => 'الملف الشخصي', 'url' => '/user/profile.php', 'show' => 'user'],
+        ['name' => theme_nit_ml('Home', 'الرئيسية'), 'url' => '/', 'show' => 'all'],
+        ['name' => theme_nit_ml('Help', 'المساعدة'), 'url' => '/user/contactsitesupport.php', 'show' => 'all'],
+        ['name' => theme_nit_ml('Create an account', 'انشاء حساب جديد'), 'url' => '/local/academy/register.php', 'show' => 'guest'],
+        ['name' => theme_nit_ml('Log in', 'تسجيل الدخول'), 'url' => '/login/index.php', 'show' => 'guest'],
+        ['name' => theme_nit_ml('Dashboard', 'لوحة التحكم'), 'url' => '/my/', 'show' => 'user'],
+        ['name' => theme_nit_ml('Profile', 'الملف الشخصي'), 'url' => '/user/profile.php', 'show' => 'user'],
     ];
+}
+
+/**
+ * A text in English and Arabic as one {mlang} string (multilang2 shows the
+ * visitor's language wherever it goes through format_string / format_text).
+ *
+ * @param string $en
+ * @param string $ar
+ * @return string
+ */
+function theme_nit_ml(string $en, string $ar): string {
+    return '{mlang en}' . $en . '{mlang}{mlang ar}' . $ar . '{mlang}';
+}
+
+/**
+ * The footer texts the theme used to ship in Arabic only, as [old Arabic => English].
+ * {@see theme_nit_footer_translate_defaults()} turns saved copies of them into {mlang} pairs.
+ *
+ * @return array<string, string>
+ */
+function theme_nit_footer_old_defaults(): array {
+    return [
+        'الرئيسية' => 'Home',
+        'المساعدة' => 'Help',
+        'انشاء حساب جديد' => 'Create an account',
+        'تسجيل الدخول' => 'Log in',
+        'لوحة التحكم' => 'Dashboard',
+        'الملف الشخصي' => 'Profile',
+        'تم صنع هذه المنصة بهدف تهيئة الطالب لـ كامل جوانب الثانوية العامة و ما بعدها' =>
+            'This platform was made to prepare students for every side of secondary school and beyond',
+        'جميع الحقوق محفوظة © {year}' => 'All rights reserved © {year}',
+    ];
+}
+
+/**
+ * Give the saved footer settings English too: page names, description and copyright
+ * still holding the old Arabic-only defaults become {mlang} pairs. Texts an admin
+ * wrote are left alone.
+ */
+function theme_nit_footer_translate_defaults(): void {
+    $old = theme_nit_footer_old_defaults();
+    $pages = get_config('theme_nit', 'footer_pages');
+    if ($pages !== false && $pages !== null) {
+        $rows = json_decode((string) $pages, true);
+        if (is_array($rows)) {
+            foreach ($rows as &$row) {
+                $name = trim((string) ($row['name'] ?? ''));
+                if (isset($old[$name])) {
+                    $row['name'] = theme_nit_ml($old[$name], $name);
+                }
+            }
+            unset($row);
+            set_config('footer_pages', json_encode($rows, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), 'theme_nit');
+        }
+    }
+    foreach (['footer_description', 'footer_copyright'] as $key) {
+        $value = trim((string) get_config('theme_nit', $key));
+        if (isset($old[$value])) {
+            set_config($key, theme_nit_ml($old[$value], $value), 'theme_nit');
+        }
+    }
 }
 
 /**
@@ -2895,17 +2956,19 @@ function theme_nit_footer_context(): array {
     foreach (theme_nit_footer_social_networks() as $key => $net) {
         $url = theme_nit_footer_absolute_url((string) get_config('theme_nit', 'footer_' . $key));
         if ($url !== '') {
-            $socials[] = ['label' => $net['label'], 'url' => $url, 'icon' => $net['icon']];
+            $label = strpos(current_language(), 'ar') === 0 ? $net['label'][1] : $net['label'][0];
+            $socials[] = ['label' => $label, 'url' => $url, 'icon' => $net['icon']];
         }
     }
 
     $desc = get_config('theme_nit', 'footer_description');
     if ($desc === false) {
-        $desc = 'تم صنع هذه المنصة بهدف تهيئة الطالب لـ كامل جوانب الثانوية العامة و ما بعدها';
+        $desc = theme_nit_ml('This platform was made to prepare students for every side of secondary school and beyond',
+            'تم صنع هذه المنصة بهدف تهيئة الطالب لـ كامل جوانب الثانوية العامة و ما بعدها');
     }
     $copy = get_config('theme_nit', 'footer_copyright');
     if ($copy === false) {
-        $copy = 'جميع الحقوق محفوظة © {year}';
+        $copy = theme_nit_ml('All rights reserved © {year}', 'جميع الحقوق محفوظة © {year}');
     }
     $copy = str_replace('{year}', date('Y'), (string) $copy);
 
@@ -2920,6 +2983,171 @@ function theme_nit_footer_context(): array {
         'socials' => $socials,
         'hassocials' => !empty($socials),
     ];
+}
+
+/**
+ * Who a navbar menu link can be for (the "Who sees it" choices, the first is the default).
+ *
+ * @return string[]
+ */
+function theme_nit_navmenu_audiences(): array {
+    return ['all', 'student', 'teacher', 'admin'];
+}
+
+/**
+ * A lang string in English and Arabic as one {mlang} text.
+ *
+ * @param string $identifier
+ * @param string $component
+ * @return string ('' when the component is not installed)
+ */
+function theme_nit_ml_string(string $identifier, string $component): string {
+    $sm = get_string_manager();
+    if (!$sm->string_exists($identifier, $component)) {
+        return '';
+    }
+    return theme_nit_ml($sm->get_string($identifier, $component, null, 'en'),
+        $sm->get_string($identifier, $component, null, 'ar'));
+}
+
+/**
+ * The rows a navbar menu starts with: today's links, so saving the list
+ * unchanged keeps the menu as it was.
+ *
+ * - gear: Moodle's primary navigation plus the pages our plugins add to it.
+ * - user: the avatar menu (Site administration → Navigation → User menu items, + Preferences).
+ *
+ * @param string $menu 'gear' or 'user'
+ * @return array<int, array{name:string, url:string, show:string}>
+ */
+function theme_nit_navmenu_default(string $menu): array {
+    global $CFG;
+    $rows = [];
+    $add = function(string $name, string $url, string $show = 'all') use (&$rows) {
+        if ($name !== '') {
+            $rows[] = ['name' => $name, 'url' => $url, 'show' => $show];
+        }
+    };
+    if ($menu === 'gear') {
+        $add(theme_nit_ml_string('home', 'core'), '/');
+        $add(theme_nit_ml_string('myhome', 'core'), '/my/');
+        $add(theme_nit_ml_string('mycourses', 'core'), '/my/courses.php');
+        $add(theme_nit_ml_string('mywallet', 'local_nit_finance'), '/local/nit_finance/wallet.php');
+        $add(theme_nit_ml_string('myearnings', 'local_nit_finance'), '/local/nit_finance/earnings.php', 'teacher');
+        $add(theme_nit_ml_string('availablepackages', 'local_nit_flex'), '/local/nit_flex/packages.php');
+        $add(theme_nit_ml_string('studenthub', 'local_nit_lessons'), '/local/nit_lessons/student.php');
+        $add(theme_nit_ml_string('mylessons', 'local_nit_lessons'), '/local/nit_lessons/my_lessons.php', 'teacher');
+        $add(theme_nit_ml_string('teacherprofile', 'local_nit_lessons'), '/local/academy/profile.php#lessons', 'teacher');
+        $add(theme_nit_ml_string('managelessons', 'local_nit_lessons'), '/local/nit_lessons/manage_lessons.php', 'admin');
+        $add(theme_nit_ml_string('managepackages', 'local_nit_flex'), '/local/nit_flex/manage_packages.php', 'admin');
+        $add(theme_nit_ml_string('managecoupons', 'local_nit_commerce'), '/local/nit_commerce/manage_coupons.php', 'admin');
+        $add(theme_nit_ml_string('manageoffers', 'local_nit_commerce'), '/local/nit_commerce/manage_offers.php', 'admin');
+        $add(theme_nit_ml_string('managesubscriptions', 'local_nit_subscriptions'),
+            '/local/nit_subscriptions/manage_subscriptions.php', 'admin');
+        $add(theme_nit_ml_string('administrationsite', 'core'), '/admin/search.php', 'admin');
+        return $rows;
+    }
+
+    // The avatar menu: Moodle's "User menu items" lines ("name,component|/url" or "Text|/url").
+    foreach (preg_split('/\R/u', (string) ($CFG->customusermenuitems ?? '')) as $line) {
+        $bits = explode('|', trim($line), 2);
+        if (count($bits) !== 2 || trim($bits[0]) === '' || trim($bits[1]) === '') {
+            continue;
+        }
+        $namebits = explode(',', trim($bits[0]), 2);
+        $name = count($namebits) === 2 ? theme_nit_ml_string(trim($namebits[0]), trim($namebits[1])) : '';
+        $url = trim($bits[1]);
+        if (strpos($url, $CFG->wwwroot) === 0) {
+            $url = substr($url, strlen($CFG->wwwroot)) ?: '/';
+        }
+        $add($name !== '' ? $name : trim($bits[0]), $url);
+    }
+    $add(theme_nit_ml_string('preferences', 'core'), '/user/preferences.php');
+    return $rows;
+}
+
+/**
+ * Whether a navbar menu link is for this user.
+ *
+ * @param string $show all | student | teacher | admin
+ * @param int $userid
+ * @return bool
+ */
+function theme_nit_navmenu_audience_ok(string $show, int $userid): bool {
+    if ($show === 'all') {
+        return true;
+    }
+    $sys = \context_system::instance();
+    $isadmin = is_siteadmin($userid) || has_capability('moodle/site:configview', $sys, $userid);
+    if ($show === 'admin') {
+        return $isadmin;
+    }
+    $isteacher = class_exists('\local_academy\teacher_manager') && \local_academy\teacher_manager::is_teacher($userid);
+    if ($show === 'teacher') {
+        return $isteacher;
+    }
+    return $show === 'student' && !$isteacher && !$isadmin;
+}
+
+/**
+ * The links an admin set for a navbar menu that the current user sees.
+ *
+ * @param string $menu 'gear' or 'user'
+ * @return array<int, array{name:string, url:string}>|null null while the list was
+ *         never saved (the menu then keeps Moodle's own links)
+ */
+function theme_nit_navmenu_links(string $menu): ?array {
+    global $USER;
+    $raw = get_config('theme_nit', 'navmenu_' . $menu);
+    if ($raw === false || $raw === null || $raw === '') {
+        return null;
+    }
+    $rows = json_decode((string) $raw, true);
+    if (!is_array($rows)) {
+        return null;
+    }
+    $links = [];
+    foreach ($rows as $row) {
+        $url = theme_nit_footer_absolute_url((string) ($row['url'] ?? ''));
+        $name = trim((string) ($row['name'] ?? ''));
+        if ($url === '' || $name === '' || !isloggedin() || isguestuser()
+                || !theme_nit_navmenu_audience_ok((string) ($row['show'] ?? 'all'), (int) $USER->id)) {
+            continue;
+        }
+        $links[] = ['name' => format_string($name), 'url' => $url];
+    }
+    return $links;
+}
+
+/**
+ * The avatar menu items with the admin's links in place of Moodle's: the
+ * language submenu, "Switch role" / "Return to my role" and "Log out" are kept,
+ * after a divider.
+ *
+ * @param array $links from theme_nit_navmenu_links('user')
+ * @param array $items Moodle's items (primary::get_user_menu()['items'])
+ * @return array items for core/user_action_menu_items
+ */
+function theme_nit_user_menu_items(array $links, array $items): array {
+    $out = [];
+    foreach ($links as $link) {
+        $out[] = (object) ['itemtype' => 'link', 'link' => true, 'divider' => false,
+            'url' => $link['url'], 'title' => $link['name'], 'titleidentifier' => ''];
+    }
+    $kept = [];
+    foreach ($items as $item) {
+        $item = (object) $item;
+        $url = isset($item->url) ? (string) ($item->url instanceof moodle_url ? $item->url->out(false) : $item->url) : '';
+        if (($item->itemtype ?? '') === 'submenu-link'
+                || preg_match('~/(login/logout|course/switchrole|course/loginas)\.php~', $url)) {
+            $item->divider = false;
+            $kept[] = $item;
+        }
+    }
+    if ($out && $kept) {
+        $out[count($out) - 1]->divider = true;
+    }
+    return array_merge($out, $kept);
 }
 
 /**

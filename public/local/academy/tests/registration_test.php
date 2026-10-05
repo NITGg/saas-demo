@@ -54,17 +54,18 @@ final class registration_test extends \advanced_testcase {
         ];
     }
 
-    public function test_register_creates_an_active_account_with_every_field(): void {
+    public function test_register_saves_every_field_and_waits_for_email_confirmation(): void {
         global $DB;
         $this->resetAfterTest();
         set_config('registerauth', 'email');
         $data = $this->valid();
+        $sink = $this->redirectEmails();
 
         $user = registration::register($data, true);
 
         $this->assertSame('mona.saleh@example.com', $user->email);
         $this->assertSame('mona.saleh@example.com', $user->username);
-        $this->assertEquals(1, $user->confirmed);
+        $this->assertEquals(0, $user->confirmed); // Moodle's email self-registration: not active yet.
         $this->assertEquals(0, $user->suspended);
         $this->assertSame('01011112222', $user->phone1);
         $this->assertTrue(validate_internal_user_password($user, 'Test@1234'));
@@ -75,6 +76,26 @@ final class registration_test extends \advanced_testcase {
         $this->assertSame($data['grade'], $values[academic_structure::USER_YEAR]);
         $this->assertSame('Engineer', $values['guardianjob']);
         $this->assertTrue($DB->record_exists('user', ['id' => $user->id, 'auth' => 'email']));
+
+        // Moodle's confirmation email went out; its link (back to the home page) activates the account.
+        $messages = $sink->get_messages();
+        $this->assertCount(1, $messages);
+        $this->assertSame('mona.saleh@example.com', $messages[0]->to);
+        $body = quoted_printable_decode($messages[0]->body);
+        $this->assertStringContainsString('/login/confirm.php', $body);
+        $this->assertStringContainsString('data=' . $user->secret . '/', $body);
+        $this->assertSame(AUTH_CONFIRM_OK, get_auth_plugin('email')->user_confirm($user->username, $user->secret));
+        $this->assertEquals(1, $DB->get_field('user', 'confirmed', ['id' => $user->id]));
+    }
+
+    public function test_a_wrong_secret_does_not_confirm(): void {
+        global $DB;
+        $this->resetAfterTest();
+        set_config('registerauth', 'email');
+        $this->redirectEmails();
+        $user = registration::register($this->valid(), true);
+        $this->assertNotSame(AUTH_CONFIRM_OK, get_auth_plugin('email')->user_confirm($user->username, 'wrongsecret'));
+        $this->assertEquals(0, $DB->get_field('user', 'confirmed', ['id' => $user->id]));
     }
 
     public function test_validation_reports_each_bad_field(): void {

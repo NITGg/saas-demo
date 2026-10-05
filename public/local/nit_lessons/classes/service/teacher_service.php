@@ -67,6 +67,66 @@ class teacher_service extends service {
      * @param int $userid
      * @return array{available:bool, headline:string, subjects:string[], hours:array}
      */
+    /**
+     * The site's subject list (Live lesson settings → Subjects, one per line,
+     * {mlang} allowed), as stored values.
+     *
+     * @return string[]
+     */
+    public static function site_subjects(): array {
+        $raw = get_config('local_nit_lessons', 'subjects');
+        if ($raw === false || $raw === null) {
+            $raw = self::default_subjects();
+        }
+        $list = [];
+        foreach (preg_split('/\R/u', (string) $raw) as $line) {
+            $line = trim($line);
+            if ($line !== '' && !in_array($line, $list, true)) {
+                $list[] = \core_text::substr($line, 0, 255);
+            }
+        }
+        return $list;
+    }
+
+    /**
+     * The subjects a teacher can pick: the site's list — or, while it is empty,
+     * the names of their courses — plus any subject they already teach.
+     *
+     * @param int $userid
+     * @return string[]
+     */
+    public static function subject_options(int $userid): array {
+        global $DB;
+        $options = self::site_subjects();
+        if (!$options && class_exists('\local_academy\teacher_manager')) {
+            foreach (\local_academy\teacher_manager::get_teacher_courses($userid) as $course) {
+                $options[] = (string) $course['fullname'];
+            }
+        }
+        foreach ($DB->get_fieldset_select('nit_teacher_subject', 'subject', 'teacherid = ? ORDER BY id', [$userid]) as $s) {
+            if (!in_array($s, $options, true)) {
+                $options[] = $s;
+            }
+        }
+        return array_values(array_unique($options));
+    }
+
+    /**
+     * The subject list a new site starts with (Arabic + English).
+     *
+     * @return string
+     */
+    public static function default_subjects(): string {
+        $subjects = [
+            ['اللغة العربية', 'Arabic'], ['اللغة الإنجليزية', 'English'], ['اللغة الفرنسية', 'French'],
+            ['الرياضيات', 'Mathematics'], ['العلوم', 'Science'], ['الفيزياء', 'Physics'], ['الكيمياء', 'Chemistry'],
+            ['الأحياء', 'Biology'], ['الدراسات الاجتماعية', 'Social studies'], ['التاريخ', 'History'],
+            ['الجغرافيا', 'Geography'], ['الفلسفة والمنطق', 'Philosophy and logic'], ['علم النفس والاجتماع', 'Psychology and sociology'],
+            ['الجيولوجيا', 'Geology'], ['التربية الدينية', 'Religious education'], ['الحاسب الآلي', 'Computer science'],
+        ];
+        return implode("\n", array_map(fn($s) => '{mlang ar}' . $s[0] . '{mlang}{mlang en}' . $s[1] . '{mlang}', $subjects));
+    }
+
     public function profile(int $userid): array {
         global $DB;
         $row = $DB->get_record('nit_teacher_profile', ['userid' => $userid]);
@@ -95,10 +155,17 @@ class teacher_service extends service {
      */
     public function save(int $userid, bool $available, string $headline, array $subjects, array $hours): void {
         global $DB;
+        $options = self::subject_options($userid);
         $clean = [];
         foreach ($subjects as $subject) {
             $subject = trim(clean_param((string) $subject, PARAM_TEXT));
-            if ($subject !== '' && !in_array(\core_text::strtolower($subject), array_map('core_text::strtolower', $clean), true)) {
+            if ($subject === '') {
+                continue;
+            }
+            if (!in_array($subject, $options, true)) {
+                throw new lesson_exception('err_badsubject');
+            }
+            if (!in_array(\core_text::strtolower($subject), array_map('core_text::strtolower', $clean), true)) {
                 $clean[] = \core_text::substr($subject, 0, 255);
             }
         }

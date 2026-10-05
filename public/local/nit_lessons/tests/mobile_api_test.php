@@ -47,6 +47,7 @@ final class mobile_api_test extends \advanced_testcase {
         $student = (int) $gen->create_user()->id;
         $teacher = (int) $gen->create_user()->id;
         $gen->enrol_user($teacher, $gen->create_course()->id, 'editingteacher');
+        set_config('subjects', 'Physics', 'local_nit_lessons');
         (new teacher_service())->save($teacher, true, '', ['Physics'], []);
         set_config('min_booking_minutes', 0, 'local_nit_lessons');
         set_config('cancel_deadline_minutes', 60, 'local_nit_lessons');

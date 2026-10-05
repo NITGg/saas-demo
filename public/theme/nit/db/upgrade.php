@@ -57,5 +57,14 @@ function xmldb_theme_nit_upgrade($oldversion) {
         }
         upgrade_plugin_savepoint(true, 2026100500, 'theme', 'nit');
     }
+
+    if ($oldversion < 2026100501) {
+        // The footer page names, description and copyright were saved in Arabic
+        // only, so English pages showed Arabic: give the old defaults English too.
+        global $CFG;
+        require_once($CFG->dirroot . '/theme/nit/lib.php');
+        theme_nit_footer_translate_defaults();
+        upgrade_plugin_savepoint(true, 2026100501, 'theme', 'nit');
+    }
     return true;
 }

@@ -23,6 +23,7 @@ function xmldb_local_academy_install() {
     // Also creates the "is-special" course field.
     \local_academy\local\academic_structure::sync();
     \local_academy\local\site_defaults::apply();
+    \local_academy\local\site_defaults::email_confirmation();
     \local_academy\local\site_defaults::ensure_arabic();
     return true;
 }

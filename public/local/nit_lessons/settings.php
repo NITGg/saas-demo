@@ -47,6 +47,10 @@ if ($hassiteconfig) {
         $settings->add(new admin_setting_configselect('local_nit_lessons/lessons_courseid',
             get_string('lessonscourse', 'local_nit_lessons'), get_string('lessonscourse_desc', 'local_nit_lessons'),
             0, $courses));
+        // The subjects teachers pick from on their profile (/local/academy/profile.php).
+        $settings->add(new admin_setting_configtextarea('local_nit_lessons/subjects',
+            get_string('set_subjects', 'local_nit_lessons'), get_string('set_subjects_desc', 'local_nit_lessons'),
+            \local_nit_lessons\service\teacher_service::default_subjects(), PARAM_TEXT, 60, 10));
         foreach (\local_nit_lessons\service\settings_service::DEFAULTS as $key => $default) {
             if ($key === 'lessons_courseid') {
                 continue;

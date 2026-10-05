@@ -56,6 +56,7 @@ final class lifecycle_test extends \advanced_testcase {
         $this->teacher = $gen->create_user();
         $course = $gen->create_course();
         $gen->enrol_user($this->teacher->id, $course->id, 'editingteacher');
+        set_config('subjects', 'Physics', 'local_nit_lessons');
         (new teacher_service())->save((int) $this->teacher->id, true, '', ['Physics'], []);
         foreach (['min_booking_minutes' => 0, 'start_allowed_minutes' => 100000,
                 'complete_allowed_minutes' => 0, 'cancel_deadline_minutes' => 0,
