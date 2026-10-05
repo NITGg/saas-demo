@@ -48,6 +48,35 @@ final class wallet_test extends \advanced_testcase {
     }
 
     /**
+     * A live-lesson earning credits the teacher and platform wallets; a missed lesson pays the
+     * platform only; reversing takes both back. Activity sales with the same id do not collide.
+     *
+     * @return void
+     */
+    public function test_live_lesson_earning_moves_wallets(): void {
+        global $DB;
+        $this->resetAfterTest();
+        set_config('teacher_percent', 40, 'local_nit_finance');
+        $DB->insert_record('nit_earning', (object) ['lessonid' => 12, 'source' => 'cm', 'teacherid' => 55,
+            'teacher_amount_minor' => 1, 'status' => 'active', 'timecreated' => time(), 'timemodified' => time()]);
+
+        $e = wallet::distribute(12, 55, 66, 7, 10000);
+        $this->assertSame('lesson', $e['source']);
+        $this->assertSame(4000, \local_nit_finance\local\wallets::balance('teacher', 55));
+        $this->assertSame(6000, \local_nit_finance\local\wallets::balance('platform'));
+
+        $absent = wallet::distribute(13, 55, 66, 7, 10000, false);
+        $this->assertSame(0, $absent['teacher_amount_minor']);
+        $this->assertSame(16000, \local_nit_finance\local\wallets::balance('platform'));
+
+        wallet::reverse_earning(12, 2, 'mistake');
+        $this->assertSame(0, \local_nit_finance\local\wallets::balance('teacher', 55));
+        $this->assertSame(10000, \local_nit_finance\local\wallets::balance('platform'));
+        // The activity-sale earning with lessonid 12 is untouched.
+        $this->assertSame('active', $DB->get_field('nit_earning', 'status', ['source' => 'cm', 'lessonid' => 12]));
+    }
+
+    /**
      * Distribution is idempotent per lesson.
      *
      * @return void

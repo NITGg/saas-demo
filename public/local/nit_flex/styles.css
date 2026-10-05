@@ -112,8 +112,6 @@
 .nitlx-pkg__price {
     display: flex;
     align-items: baseline;
-    justify-content: flex-end;
-    flex-direction: row-reverse;
     gap: 10px;
 }
 .nitlx-pkg__price strong {
@@ -670,4 +668,11 @@
     .nitlx-dialog__body {
         padding: 20px;
     }
+}
+
+/* Form fields use the page font (Moodle gives search/select their own). */
+.nitlx :is(input, select, textarea, button),
+.nitlx-dialog :is(input, select, textarea, button) {
+    font-family: inherit;
+    letter-spacing: normal;
 }
