@@ -85,7 +85,7 @@ class api_client {
      */
     public function get_video(string $videoid): array {
         return $this->request('GET', '/videos/' . rawurlencode($videoid), [
-            'fields' => 'uri,name,duration,transcode.status,privacy,player_embed_url',
+            'fields' => 'uri,name,duration,transcode.status,upload.status,privacy,player_embed_url',
         ]);
     }
 

@@ -110,7 +110,7 @@ if ($cmid) {
             ['Activity', s(format_string($instance->name))],
             ['Video id', s($videoid)],
             ['Privacy hash (?h=)', $instance->videohash !== '' ? s($instance->videohash)
-                : 'none — an UNLISTED video needs it: paste the full link (vimeo.com/ID/HASH) in the activity settings'],
+                : 'none (only an "unlisted" video needs one — see Privacy view below)'],
             ['Embed URL', html_writer::link($embed, s($embed), ['target' => '_blank'])],
             ['This site\'s domain', s($domain)],
         ];
@@ -119,9 +119,17 @@ if ($cmid) {
                 $client = new \local_vimeo\api_client();
                 $video = $client->get_video($videoid);
                 $privacy = $video['privacy'] ?? [];
-                $rows[] = ['Transcode status', s((string) ($video['transcode']['status'] ?? '?'))
+                $upload = (string) ($video['upload']['status'] ?? '?');
+                $rows[] = ['Upload status', s($upload) . ($upload !== 'complete'
+                    ? ' — ' . html_writer::tag('span', 'Vimeo did NOT receive the whole file: it will never finish processing. '
+                        . 'Upload the video again (keep the page open until "Uploaded ✓") and Save.',
+                        ['style' => 'color:#b00;font-weight:bold'])
+                    : '')];
+                $rows[] = ['Transcode status',s((string) ($video['transcode']['status'] ?? '?'))
                     . (($video['transcode']['status'] ?? '') !== 'complete' ? ' — the video plays only after Vimeo finishes processing it' : '')];
-                $rows[] = ['Privacy view / embed', s(($privacy['view'] ?? '?') . ' / ' . ($privacy['embed'] ?? '?'))];
+                $rows[] = ['Privacy view / embed', s(($privacy['view'] ?? '?') . ' / ' . ($privacy['embed'] ?? '?'))
+                    . (($privacy['view'] ?? '') === 'unlisted' && $instance->videohash === ''
+                        ? ' — UNLISTED without a hash: open the activity settings and Save (the hash is fetched)' : '')];
                 if (($privacy['embed'] ?? '') === 'whitelist') {
                     $domains = $client->list_domains($videoid);
                     $ok = in_array(strtolower($domain), array_map('strtolower', $domains), true);

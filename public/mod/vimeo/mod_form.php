@@ -125,30 +125,52 @@ class mod_vimeo_mod_form extends moodleform_mod {
                 if (d.error || !d.videoId || !d.uploadLink) {
                     throw new Error(d.error || 'No upload link returned');
                 }
-                // tus: PATCH the whole file at offset 0 to the pre-signed link.
-                var xhr = new XMLHttpRequest();
-                xhr.open('PATCH', d.uploadLink, true);
-                xhr.setRequestHeader('Tus-Resumable', '1.0.0');
-                xhr.setRequestHeader('Upload-Offset', '0');
-                xhr.setRequestHeader('Content-Type', 'application/offset+octet-stream');
-                xhr.upload.onprogress = function (e) {
-                    if (e.lengthComputable) {
-                        var pct = Math.round(e.loaded / e.total * 100);
-                        bar.style.width = pct + '%';
-                        say('Uploading… ' + pct + '%');
-                    }
-                };
-                xhr.onload = function () {
-                    if (xhr.status >= 200 && xhr.status < 300) {
+                // tus: PATCH the file in chunks to the pre-signed link. After each
+                // PATCH Vimeo answers with how many bytes it really has
+                // (Upload-Offset); the next chunk starts there. Only when it has
+                // the whole file is the video "uploaded" — a partly received file
+                // stays "in_progress" on Vimeo for ever and never plays.
+                var CHUNK = 64 * 1024 * 1024, tries = 0;
+                function send(offset) {
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('PATCH', d.uploadLink, true);
+                    xhr.setRequestHeader('Tus-Resumable', '1.0.0');
+                    xhr.setRequestHeader('Upload-Offset', String(offset));
+                    xhr.setRequestHeader('Content-Type', 'application/offset+octet-stream');
+                    xhr.upload.onprogress = function (e) {
+                        if (e.lengthComputable) {
+                            var pct = Math.min(99, Math.round((offset + e.loaded) / file.size * 100));
+                            bar.style.width = pct + '%';
+                            say('Uploading… ' + pct + '% — keep this page open');
+                        }
+                    };
+                    xhr.onload = function () {
+                        if (xhr.status < 200 || xhr.status >= 300) {
+                            say('Upload failed (HTTP ' + xhr.status + '). Choose the file again to retry.');
+                            return;
+                        }
+                        var got = parseInt(xhr.getResponseHeader('Upload-Offset'), 10);
+                        if (isNaN(got)) {
+                            got = Math.min(offset + CHUNK, file.size); // header not readable: trust the chunk
+                        }
+                        if (got < file.size) {
+                            tries = (got > offset) ? 0 : tries + 1;
+                            if (tries > 3) {
+                                say('Vimeo stopped receiving the file at ' + Math.round(got / file.size * 100)
+                                    + '%. Choose the file again to retry.');
+                                return;
+                            }
+                            send(got);
+                            return;
+                        }
                         field.value = d.videoId;
                         bar.style.width = '100%';
-                        say('Uploaded ✓ — video id set. Click Save to finish.');
-                    } else {
-                        say('Upload failed (HTTP ' + xhr.status + '). Try again or paste a video id.');
-                    }
-                };
-                xhr.onerror = function () { say('Upload error (network/CORS). Try again or paste a video id.'); };
-                xhr.send(file);
+                        say('Uploaded ✓ — Vimeo has the whole file. Click Save; it plays after Vimeo finishes processing (a few minutes).');
+                    };
+                    xhr.onerror = function () { say('Upload error (network). Choose the file again to retry.'); };
+                    xhr.send(file.slice(offset, Math.min(offset + CHUNK, file.size)));
+                }
+                send(0);
             })
             .catch(function (err) { say('Error: ' + err.message); });
     });
