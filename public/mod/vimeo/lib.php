@@ -49,6 +49,10 @@ function vimeo_add_instance($data, $mform = null) {
 
     $data->videohash    = vimeo_resolve_videohash($data); // before videoid: reads the pasted URL
     $data->videoid      = vimeo_resolve_videoid($data);
+    if ($data->videohash === '') {
+        // An uploaded video may be "unlisted": ask Vimeo for its hash, or the player says it does not exist.
+        $data->videohash = \local_vimeo\video_service::privacy_hash($data->videoid);
+    }
     $data->timemodified = time();
     $data->intro        = $data->intro ?? '';
     $data->introformat  = $data->introformat ?? FORMAT_HTML;
@@ -75,6 +79,10 @@ function vimeo_update_instance($data, $mform = null) {
     $data->id           = $data->instance;
     $data->videohash    = vimeo_resolve_videohash($data); // before videoid: reads the pasted URL
     $data->videoid      = vimeo_resolve_videoid($data);
+    if ($data->videohash === '') {
+        // An uploaded video may be "unlisted": ask Vimeo for its hash, or the player says it does not exist.
+        $data->videohash = \local_vimeo\video_service::privacy_hash($data->videoid);
+    }
     $data->timemodified = time();
 
     $DB->update_record('vimeo', $data);

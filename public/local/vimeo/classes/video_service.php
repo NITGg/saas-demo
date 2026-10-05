@@ -241,6 +241,30 @@ class video_service {
     }
 
     /**
+     * The privacy hash Vimeo's own player URL carries (?h=…) — an "unlisted"
+     * video plays only with it ("Sorry, this video does not exist" without).
+     * Vimeo may make an upload unlisted even though we ask for "hide from
+     * Vimeo", depending on the account's plan. Best-effort, never throws.
+     *
+     * @param string $videoid
+     * @return string the hash, '' when none / unknown
+     */
+    public static function privacy_hash(string $videoid): string {
+        if ($videoid === '' || !api_client::is_configured()) {
+            return '';
+        }
+        try {
+            $video = (new api_client())->get_video($videoid);
+        } catch (\Throwable $e) {
+            debugging('local_vimeo: ' . $e->getMessage(), DEBUG_DEVELOPER);
+            return '';
+        }
+        $query = (string) parse_url((string) ($video['player_embed_url'] ?? ''), PHP_URL_QUERY);
+        parse_str($query, $params);
+        return preg_match('/^[0-9a-f]+$/i', (string) ($params['h'] ?? '')) ? (string) $params['h'] : '';
+    }
+
+    /**
      * The domain videos are whitelisted for: the "whitelistdomain" setting, else
      * the host of this site's wwwroot.
      *

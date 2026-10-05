@@ -49,7 +49,8 @@ class api_client {
      * @throws api_exception if no access token is configured
      */
     public function __construct(?string $token = null, ?string $base = null) {
-        $this->token = $token ?? (string) get_config('local_vimeo', 'access_token');
+        // Trimmed: a pasted token often carries a space / line break, which Vimeo rejects with HTTP 401.
+        $this->token = trim($token ?? (string) get_config('local_vimeo', 'access_token'));
         $configbase  = $base ?? (string) get_config('local_vimeo', 'apibase');
         $this->base  = rtrim($configbase ?: self::DEFAULT_BASE, '/');
 
@@ -84,7 +85,7 @@ class api_client {
      */
     public function get_video(string $videoid): array {
         return $this->request('GET', '/videos/' . rawurlencode($videoid), [
-            'fields' => 'uri,name,duration,transcode.status,privacy',
+            'fields' => 'uri,name,duration,transcode.status,privacy,player_embed_url',
         ]);
     }
 
