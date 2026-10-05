@@ -32,6 +32,7 @@ use local_nit_finance\local\catalog;
 use local_nit_finance\local\codes;
 use local_nit_finance\local\money;
 use local_nit_finance\local\output;
+use local_nit_finance\local\preview;
 use local_nit_finance\local\purchases;
 use local_nit_finance\local\wallets;
 
@@ -101,6 +102,7 @@ $balance = wallets::balance(wallets::STUDENT, $userid);
 $priced = $item->priceminor > 0;
 $coursebuyurl = access::course_has_price((int) $course->id)
     ? new moodle_url('/local/payments/buy.php', ['courseid' => $course->id]) : null;
+$previewseconds = preview::for_user($userid, $cm, $state);
 
 $context = [
     'coursename' => $item->coursename,
@@ -119,6 +121,9 @@ $context = [
     'courseurl' => $courseurl->out(false),
     'coursebuyurl' => $coursebuyurl ? $coursebuyurl->out(false) : '',
     'walleturl' => (new moodle_url('/local/nit_finance/wallet.php'))->out(false),
+    'previewurl' => $previewseconds > 0 ? preview::url((int) $cm->id)->out(false) : '',
+    'previewlabel' => $previewseconds > 0
+        ? get_string('watchpreview', 'local_nit_finance', preview::label($previewseconds)) : '',
 ];
 
 echo $OUTPUT->header();

@@ -175,6 +175,46 @@ final class output {
     }
 
     /**
+     * "Free previews" block for the whole-course checkout page: the video lessons
+     * whose first minutes this user can watch before buying.
+     *
+     * @param int $courseid
+     * @param int $userid
+     * @return string HTML, '' when there is none
+     */
+    public static function free_previews(int $courseid, int $userid): string {
+        $previews = preview::course_seconds($courseid);
+        if (!$previews) {
+            return '';
+        }
+        $state = access::course_state($userid, $courseid);
+        $items = '';
+        foreach (get_fast_modinfo($courseid)->get_cms() as $cm) {
+            if (!isset($previews[$cm->id]) || !$cm->visible || $cm->deletioninprogress) {
+                continue;
+            }
+            $seconds = preview::for_user($userid, $cm, $state, $previews[$cm->id]);
+            if ($seconds <= 0) {
+                continue;
+            }
+            $items .= \html_writer::tag('li',
+                \html_writer::span(format_string($cm->name, true, ['context' => $cm->context]),
+                    'nitfin-purchase__main nitfin-purchase__name')
+                . \html_writer::span(preview::label($seconds), 'nitfin-purchase__meta')
+                . \html_writer::link(preview::url((int) $cm->id), get_string('previewwatch', 'local_nit_finance'),
+                    ['class' => 'nitfin-btn nitfin-btn--outline nitfin-btn--small']),
+                ['class' => 'nitfin-purchase']);
+        }
+        if ($items === '') {
+            return '';
+        }
+        return \html_writer::div(
+            \html_writer::tag('h2', get_string('freepreviews', 'local_nit_finance'), ['class' => 'nitfin-section__title'])
+            . \html_writer::tag('ul', $items, ['class' => 'nitfin-purchases']),
+            'nitfin-forsale nit-brand-18 nitfin-section');
+    }
+
+    /**
      * Ledger rows.
      *
      * @param \stdClass[] $lines from wallets::history()

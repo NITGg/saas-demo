@@ -152,6 +152,28 @@ final class preview {
     }
 
     /**
+     * The preview length as words: "1 minute", "2 minutes", "2:30 minutes" …
+     * (Arabic has its own forms for 1, 2, 3–10 and 11+).
+     *
+     * @param int $seconds
+     * @return string
+     */
+    public static function label(int $seconds): string {
+        if ($seconds % 60 !== 0) {
+            return get_string('previewdur_clock', 'local_nit_finance',
+                intdiv($seconds, 60) . ':' . str_pad((string) ($seconds % 60), 2, '0', STR_PAD_LEFT));
+        }
+        $minutes = intdiv($seconds, 60);
+        if ($minutes === 1) {
+            return get_string('previewdur_one', 'local_nit_finance');
+        }
+        if ($minutes === 2) {
+            return get_string('previewdur_two', 'local_nit_finance');
+        }
+        return get_string($minutes <= 10 ? 'previewdur_few' : 'previewdur_many', 'local_nit_finance', $minutes);
+    }
+
+    /**
      * The free seconds this user may watch of an activity — 0 when the activity
      * has no preview, is not a video, or the user can already open all of it.
      *

@@ -15,6 +15,8 @@
  * Per activity: locked (lesson-order lock), forsale (needs buying, local_nit_finance),
  * completed, completiontracking, watched_percent — from \local_academy\player::walk().
  * Locked / for-sale / restricted activities never carry fileurl / otpurl / embedurl.
+ * previewseconds > 0 on a for-sale video lesson: its free first seconds play via
+ * /local/nit_finance/api.php?function=get_lesson_preview.
  */
 
 define('NO_MOODLE_COOKIES', true);
@@ -539,6 +541,14 @@ function build_activities(array $cms, object $modinfo, string $wstoken, string $
                 }
                 unset($material);
             }
+        }
+
+        // A video lesson not bought yet may have free first minutes: the app plays
+        // them via /local/nit_finance/api.php?function=get_lesson_preview.
+        $act['previewseconds'] = 0;
+        if ($act['forsale'] && !$act['restricted'] && !$act['locked']
+                && class_exists('\local_nit_finance\local\preview')) {
+            $act['previewseconds'] = \local_nit_finance\local\preview::for_user((int) $USER->id, $cm);
         }
 
         $result[] = $act;

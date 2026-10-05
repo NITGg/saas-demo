@@ -254,3 +254,27 @@ $string['err_codenotfound'] = 'الكود غير موجود.';
 $string['err_codenotactive'] = 'يمكن إيقاف الكود غير المستخدم فقط.';
 $string['err_badexpiry'] = 'أدخل تاريخ انتهاء في المستقبل (YYYY-MM-DD)، أو 0 بدون انتهاء.';
 $string['err_amountnonzero'] = 'أدخل مبلغًا غير الصفر، مثل 50 أو -50.';
+
+// Free preview of a paid video lesson.
+$string['saleheader_video'] = 'البيع والمعاينة المجانية';
+$string['previewminutes'] = 'معاينة مجانية (بالدقايق)';
+$string['previewminutes_help'] = 'أول الدقايق دي من الفيديو بتشتغل مجانًا لأي حد عامل تسجيل دخول ولسه ما اشتراش الدرس أو الكورس، علشان يجرّب قبل ما يشتري. الفيديو بيقف عندها ويعرض فتح الدرس. اتركه فارغًا لو مش عايز معاينة. ينفع نص دقيقة، مثلًا 2.5.';
+$string['err_badpreview'] = 'اكتب الدقايق المجانية رقم من 0 لـ {$a}، مثلًا 3 أو 2.5.';
+$string['err_nopreview'] = 'الدرس ده مالوش معاينة مجانية ليك.';
+$string['err_nopreviewvideo'] = 'الدرس ده مافيهوش فيديو للمعاينة.';
+$string['previewtitle'] = 'معاينة مجانية';
+$string['previewchip'] = 'معاينة مجانية';
+$string['previewbadge'] = 'معاينة مجانية · أول {$a}';
+$string['previewintro'] = 'شوف أول {$a} من الدرس ده مجانًا. افتح الدرس علشان تشوفه كله.';
+$string['previewended'] = 'المعاينة المجانية خلصت';
+$string['previewendedtext'] = 'افتح الدرس علشان تكمّل باقي الفيديو.';
+$string['previewfailed'] = 'المعاينة ما اشتغلتش. حدّث الصفحة وجرّب تاني.';
+$string['previewunlock'] = 'افتح الدرس كامل';
+$string['previewwatch'] = 'شاهد مجانًا';
+$string['watchpreview'] = 'شاهد أول {$a} مجانًا';
+$string['freepreviews'] = 'جرّب قبل ما تشتري';
+$string['previewdur_one'] = 'دقيقة';
+$string['previewdur_two'] = 'دقيقتين';
+$string['previewdur_few'] = '{$a} دقايق';
+$string['previewdur_many'] = '{$a} دقيقة';
+$string['previewdur_clock'] = '{$a} دقيقة';

@@ -1,0 +1,62 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_nit_finance/preview_page
+
+    Free preview of a paid video lesson (local/nit_finance/preview.php).
+    js/preview.js removes the iframe once `seconds` have played and shows the end panel.
+
+    Example context (json):
+    {
+        "coursename": "Physics", "name": "Lesson 1", "provider": "vimeo", "seconds": 180,
+        "iframe": "<iframe src=\"https://player.vimeo.com/video/1\"></iframe>",
+        "badge": "Free preview · the first 3 minutes",
+        "intro": "Watch the first 3 minutes of this lesson for free.",
+        "buyurl": "#", "courseurl": "#"
+    }
+}}
+<div class="nitfin nit-brand-18">
+    <div class="nitfin__wrap nitfin-preview">
+        <p class="nitfin-buy__course">{{coursename}}</p>
+        <h1 class="nitfin-preview__name">{{name}}</h1>
+
+        <div class="nitfin-preview__stage" data-nitfin-preview data-provider="{{provider}}" data-seconds="{{seconds}}">
+            {{{iframe}}}
+            <div class="nitfin-preview__end" data-nitfin-preview-end {{#iframe}}hidden{{/iframe}}>
+                <div class="nitfin-buy__lock" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+                </div>
+                <p class="nitfin-preview__endtitle" data-nitfin-preview-ended {{^iframe}}hidden{{/iframe}}>{{#str}}previewended, local_nit_finance{{/str}}</p>
+                <p class="nitfin-preview__endtitle" data-nitfin-preview-failed {{#iframe}}hidden{{/iframe}}>{{#str}}previewfailed, local_nit_finance{{/str}}</p>
+                <p class="nitfin-preview__endtext">{{#str}}previewendedtext, local_nit_finance{{/str}}</p>
+                <a class="nitfin-btn" href="{{buyurl}}">{{#str}}previewunlock, local_nit_finance{{/str}}</a>
+            </div>
+        </div>
+
+        <div class="nitfin-card nitfin-preview__info">
+            <div class="nitfin-preview__text">
+                <span class="nitfin-chip">{{badge}}</span>
+                <p>{{intro}}</p>
+            </div>
+            <a class="nitfin-btn" href="{{buyurl}}">{{#str}}previewunlock, local_nit_finance{{/str}}</a>
+        </div>
+
+        <div class="nitfin-buy__links">
+            <a href="{{courseurl}}">{{#str}}backtocourse, local_nit_finance{{/str}}</a>
+        </div>
+    </div>
+</div>

@@ -92,6 +92,10 @@ api::run(function (string $function) use ($userid) {
         case 'get_lesson_access':
             return finance::get_lesson_access($userid, required_param('cmid', PARAM_INT));
 
+        // Free first minutes of a paid video lesson (preview_seconds > 0 in get_lesson_access).
+        case 'get_lesson_preview':
+            return finance::get_lesson_preview($userid, required_param('cmid', PARAM_INT));
+
         // Buy one lesson with the wallet.
         case 'buy_lesson':
             api::require_post();

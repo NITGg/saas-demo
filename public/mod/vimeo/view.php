@@ -23,6 +23,11 @@ $cm      = get_coursemodule_from_id('vimeo', $id, 0, false, MUST_EXIST);
 $course  = get_course($cm->course);
 $moduleinstance = $DB->get_record('vimeo', ['id' => $cm->instance], '*', MUST_EXIST);
 
+// Not bought / not enrolled, but the lesson has free minutes: watch the preview
+// (require_login would send a student who is not enrolled to the course checkout).
+if (class_exists('\local_nit_finance\local\preview')) {
+    \local_nit_finance\local\preview::redirect_if_preview($cm);
+}
 require_login($course, true, $cm);
 if (class_exists('\local_academy\player')) {
     \local_academy\player::require_unlocked($course, (int) $cm->id);

@@ -116,8 +116,9 @@ try {
 
     echo $OUTPUT->render_from_template('local_payments/course_page_price', $templatedata);
 
-    // Lessons of this course sold one by one (local_nit_finance).
+    // Free previews of video lessons, then lessons sold one by one (local_nit_finance).
     if (class_exists('\local_nit_finance\local\output')) {
+        echo \local_nit_finance\local\output::free_previews((int) $courseid, (int) $USER->id);
         echo \local_nit_finance\local\output::lessons_for_sale((int) $courseid, (int) $USER->id);
     }
 

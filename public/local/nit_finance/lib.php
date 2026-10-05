@@ -78,7 +78,9 @@ function local_nit_finance_coursemodule_standard_elements($formwrapper, $mform) 
     if (!has_capability('local/nit_finance:setprice', context_course::instance($course->id))) {
         return;
     }
-    $mform->addElement('header', 'local_nit_finance_hdr', get_string('saleheader', 'local_nit_finance'));
+    $isvideo = preview::is_video(local_nit_finance_form_modname($formwrapper));
+    $mform->addElement('header', 'local_nit_finance_hdr',
+        get_string($isvideo ? 'saleheader_video' : 'saleheader', 'local_nit_finance'));
     $mform->addElement('text', 'local_nit_finance_price', get_string('lessonprice', 'local_nit_finance'), ['size' => 8]);
     $mform->setType('local_nit_finance_price', PARAM_RAW_TRIMMED);
     $mform->addHelpButton('local_nit_finance_price', 'lessonprice', 'local_nit_finance');
@@ -90,7 +92,7 @@ function local_nit_finance_coursemodule_standard_elements($formwrapper, $mform) 
     }
 
     // Free preview: the first minutes of a video lesson play for anyone logged in.
-    if (!preview::is_video(local_nit_finance_form_modname($formwrapper))) {
+    if (!$isvideo) {
         return;
     }
     $mform->addElement('text', 'local_nit_finance_preview', get_string('previewminutes', 'local_nit_finance'), ['size' => 8]);

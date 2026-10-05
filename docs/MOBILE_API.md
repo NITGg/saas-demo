@@ -416,6 +416,7 @@ New / changed per activity:
 | `restrictioninfo` | Plain-text reason, e.g. `Available from 1 January 2030`. `""` when available. |
 | `locked` | Lesson-order lock (admin option "lock lessons in order"): an earlier tracked lesson is not complete. Show a lock; tell the user to finish the previous lessons. Staff are never locked. |
 | `forsale` | Lesson sold separately (local_nit_finance) and not bought yet → show "Buy". |
+| `previewseconds` | `forsale` video lesson with a free preview: the first N seconds can be played via §7 `get_lesson_preview` (show "Watch free"). `0` = no preview. |
 | `completed` | Completion state is complete / complete-pass. |
 | `completiontracking` | `none` \| `manual` (show a "mark as done" control) \| `auto`. |
 | `watched_percent` | Video lessons: % watched (int), `null` when never started / not a tracked video. |
@@ -1902,7 +1903,7 @@ GET|POST {site}/local/nit_finance/api.php?function=<name>&token=<token>[&lang=ar
 
 | Group | Functions | Rule |
 |---|---|---|
-| Student (any logged-in user) | get_wallet, get_wallet_history, get_my_purchases, create_topup_checkout, get_topup_status, redeem_code, get_course_lesson_prices, get_lesson_access, buy_lesson | Acts on the token's own wallet |
+| Student (any logged-in user) | get_wallet, get_wallet_history, get_my_purchases, create_topup_checkout, get_topup_status, redeem_code, get_course_lesson_prices, get_lesson_access, get_lesson_preview, buy_lesson | Acts on the token's own wallet |
 | Teacher | get_teacher_wallet, get_teacher_wallet_history, get_my_earnings, request_withdrawal, get_my_withdrawals | The user has a teacher or editing-teacher role anywhere, or already has earnings or a teacher wallet. Otherwise the call fails with `notateacher` |
 | Admin | get_finance_summary, list_withdrawals, process_withdrawal, list_wallets, get_wallet_ledger, adjust_wallet, list_codes, generate_codes, disable_code | Capability `local/nit_finance:manage` (system), which the manager role has. Otherwise the call fails with `nopermissions` |
 | Pricing | set_lesson_price | Capability `local/nit_finance:setprice` in the lesson's course (the manager role by default). Otherwise the call fails with `nopermissions` |
@@ -2035,10 +2036,11 @@ Lists the lessons of a course that are sold on their own, with the student's sta
    "price":{"price_minor":20000,"price":200.0,"currency":"EGP"},"owned":false,"enrolled":true,"staff":false,"lessons_only":false},
  "balance_minor":15000,"balance":150.0,"currency":"EGP","lessons":[
   {"cmid":3,"name":"الدرس 2: دوائر التيار الكهربي","modname":"page","section":1,"price_minor":3000,"price":30.0,
-   "owned":false,"open":false,"can_buy":true},
+   "owned":false,"open":false,"can_buy":true,"preview_seconds":0},
   {"cmid":34,"name":"درس فيديو تجريبي","modname":"vimeo","section":1,"price_minor":7550,"price":75.5,
-   "owned":true,"open":true,"can_buy":false}]}}
+   "owned":true,"open":true,"can_buy":false,"preview_seconds":0}]}}
 ```
+- `preview_seconds` > 0: a video lesson with free first seconds for this student (see `get_lesson_preview`).
 - Lessons come in course order. Only lessons with a price are listed. Unpriced lessons follow the rules in get_lesson_access.
 - `course.sold` means the whole course has an online price (`local_payments`). `course.price` is `null` when it is not sold. `course.owned` means the student bought, unlocked or subscribed to the whole course, so every lesson is open.
 - `lessons_only` is `true` when the student got into a paid course only by buying single lessons. In that case unpriced lessons stay closed for them.
@@ -2057,16 +2059,39 @@ Says whether the student can open one lesson and whether they can pay for it fro
  "coursename":"الفيزياء - الصف الثالث الثانوي","priced":true,"price_minor":3000,"price":30.0,"currency":"EGP",
  "open":false,"owned":false,"owns_course":false,"staff":false,"enrolled":true,
  "balance_minor":15000,"balance":150.0,"can_afford":true,"shortfall_minor":0,"shortfall":0.0,
- "course_sold":true,"topup_available":false}}
+ "course_sold":true,"topup_available":false,"preview_seconds":0}}
 ```
 Decide what to show from these fields:
 - If `open`, open the lesson.
+- If `preview_seconds` > 0 (a video lesson the student has not bought, also when not enrolled), offer "Watch the first N minutes free" with `get_lesson_preview`.
 - If `can_afford`, offer "Pay `price` from wallet", which calls `buy_lesson`.
 - If neither, the student is short by `shortfall`. Offer a top-up (when `topup_available`), a code, or buying the whole course (when `course_sold`).
 
 If the student owns the lesson but the enrolment after payment had failed, this call retries the enrolment (as the web buy page does).
 
 Errors: `itemnotfound` (missing, being deleted, or hidden). Verified with `cmid=999999`.
+
+#### get_lesson_preview (GET)
+Plays the free preview of a paid video lesson. The teacher sets "Free preview (minutes)" on the
+activity (Vimeo / VdoCipher only). Any logged-in user who cannot open the lesson yet — not bought,
+or not enrolled in the paid course — gets it.
+
+| Param | Type | Req | Description |
+|---|---|---|---|
+| cmid | int | yes | Course module id |
+
+```json
+{"status":"success","data":{"cmid":49,"provider":"vimeo","preview_seconds":180,
+ "videoid":"76979871","embedurl":"https://player.vimeo.com/video/76979871"}}
+```
+VdoCipher lessons return `"provider":"vdocipher"` with `otp`, `playbackInfo`, `watermark`, `ttl`
+(the same fields as §4.4 `get_playback`) instead of `embedurl`.
+
+- **The app enforces the limit**: when the play position reaches `preview_seconds` (also after a
+  seek), stop and close the player, then show "Unlock the full lesson" → `get_lesson_access` /
+  `buy_lesson`. Do not save video progress or completion for a preview.
+- Errors: `nopreview` (no preview, not a video, or the student can already open the whole lesson —
+  use the normal playback then), `nopreviewvideo` (no video attached), `itemnotfound`.
 
 #### buy_lesson (POST)
 Buys one lesson with the student wallet. The student is enrolled in the course if they were not already.
@@ -2800,7 +2825,7 @@ P = shared pre-login token is enough; ✱ = new in this version)
 |---|---|
 | `academy` | P: `get_home_selected`✱, `get_home_teachers`✱, `get_home_lessons`✱, `get_teacher_page`✱, `get_course_page`✱, `get_registration_form`✱, `register_student`✱, `request_password_otp`, `verify_password_otp`, `reset_password`, `get_profile_fields`✱, `get_academic_structure`✱, `browse_teachers`, `get_teacher`, `get_teacher_courses` · S: `change_password`, `get_my_profile`, `get_full_profile`✱, `update_my_profile`✱, `get_course_lessons`✱, `log_lesson_view`✱, `get_my_certificates`✱, `is_course_free`, `enrol_free_course`, `get_quizzes`, `get_quiz`, `start_quiz_attempt`, `save_quiz_answer`, `finish_quiz_attempt`, `submit_quiz_attempt`, `get_quiz_attempt`, `get_my_quiz_attempts` · M: `get_all_teachers`, `get_license_status` |
 | `nit_category` ✱ | P/S: `get_categories`, `get_courses` |
-| `nit_finance` ✱ | S: `get_wallet`, `get_wallet_history`, `get_my_purchases`, `create_topup_checkout`, `get_topup_status`, `redeem_code`, `get_course_lesson_prices`, `get_lesson_access`, `buy_lesson` · T: `get_teacher_wallet`, `get_teacher_wallet_history`, `get_my_earnings`, `request_withdrawal`, `get_my_withdrawals` · M: `get_finance_summary`, `list_withdrawals`, `process_withdrawal`, `list_wallets`, `get_wallet_ledger`, `adjust_wallet`, `list_codes`, `generate_codes`, `disable_code`, `set_lesson_price` |
+| `nit_finance` ✱ | S: `get_wallet`, `get_wallet_history`, `get_my_purchases`, `create_topup_checkout`, `get_topup_status`, `redeem_code`, `get_course_lesson_prices`, `get_lesson_access`, `get_lesson_preview`, `buy_lesson` · T: `get_teacher_wallet`, `get_teacher_wallet_history`, `get_my_earnings`, `request_withdrawal`, `get_my_withdrawals` · M: `get_finance_summary`, `list_withdrawals`, `process_withdrawal`, `list_wallets`, `get_wallet_ledger`, `adjust_wallet`, `list_codes`, `generate_codes`, `disable_code`, `set_lesson_price` |
 | `nit_flex` ✱ | S: `get_packages`, `get_package_quote`, `buy_package_wallet`, `create_package_checkout`, `get_package_checkout_status`, `get_my_flex`, `get_my_packages`, `get_package_payments`, `get_flex_history` · M: `admin_list_packages`, `admin_save_package`, `admin_set_package_status`, `admin_delete_package`, `admin_assign_package`, `admin_list_purchases`, `admin_unassign_package` |
 | `nit_lessons` ✱ | S: `get_teachers`, `get_teacher_slots`, `request_lesson`, `student_respond_lesson`, `report_teacher_absent`, `cancel_lesson_request`, `cancel_lesson_student` · S/T: `get_my_lessons`, `get_lesson`, `get_lesson_join`, `request_time_update`, `respond_time_update` · T: `teacher_respond_lesson`, `start_lesson`, `complete_lesson`, `report_student_absent`, `cancel_lesson_teacher`, `get_teacher_profile`, `update_teacher_profile` · M: `admin_list_lessons`, `admin_reverse_flex`, `admin_get_settings`, `admin_update_settings` |
 | `payments` ✱ | M: `get_revenue_report`, `get_transactions`, `get_providers`, `set_provider` · T/M: `get_course_prices`, `save_course_price`, `delete_course_price` |

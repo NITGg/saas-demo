@@ -421,6 +421,7 @@ final class mobile_api {
                     'owned' => !empty($state['owned'][$cmid]),
                     'open' => $open,
                     'can_buy' => !$open,
+                    'preview_seconds' => preview::for_user($userid, $cm, $state),
                 ];
             }
         }
@@ -488,7 +489,29 @@ final class mobile_api {
         ] + self::money('shortfall', !$open && $price > 0 ? max(0, $price - $balance) : 0) + [
             'course_sold' => (bool) $state['coursepriced'],
             'topup_available' => output::online_payment_available(),
+            // Free seconds the app may play via get_lesson_preview (0 = no preview for this user).
+            'preview_seconds' => preview::for_user($userid, $cm, $state),
         ];
+    }
+
+    /**
+     * Play the free preview of a paid video lesson: the player data plus the
+     * seconds after which the app must stop the video and offer to buy.
+     *
+     * @param int $userid
+     * @param int $cmid
+     * @return array cmid, provider (vimeo|vdocipher), preview_seconds, videoid,
+     *               then embedurl (vimeo) | otp, playbackInfo, watermark, ttl (vdocipher)
+     */
+    public static function get_lesson_preview(int $userid, int $cmid): array {
+        global $DB;
+        [, $cm] = self::visible_cm($cmid, $userid);
+        $seconds = preview::for_user($userid, $cm);
+        if ($seconds <= 0) {
+            throw new finance_exception('err_nopreview');
+        }
+        $user = $DB->get_record('user', ['id' => $userid], '*', MUST_EXIST);
+        return ['cmid' => (int) $cm->id] + preview::playback($cm, $user, $seconds);
     }
 
     /**

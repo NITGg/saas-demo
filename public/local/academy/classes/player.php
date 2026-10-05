@@ -97,6 +97,9 @@ class player {
         // Lessons sold one by one (local_nit_finance): not bought yet → link to the buy page.
         $sale = class_exists('\local_nit_finance\local\access')
             ? \local_nit_finance\local\access::course_state((int) $USER->id, (int) $course->id) : null;
+        // Video lessons with a free preview open the preview instead of the buy page.
+        $previews = $sale && class_exists('\local_nit_finance\local\preview')
+            ? \local_nit_finance\local\preview::course_seconds((int) $course->id) : [];
         // Watched % of video lessons (local_nit_videoprogress).
         $watched = class_exists('\local_nit_videoprogress\progress')
             ? \local_nit_videoprogress\progress::course_percents((int) $USER->id, (int) $course->id) : [];
@@ -121,7 +124,10 @@ class player {
                 $forsale = $sale && !\local_nit_finance\local\access::cm_open($sale, (int) $mod->id);
                 $url = $locked ? '' : self::url_for($mod);
                 if ($forsale && !$locked) {
-                    $url = (new moodle_url('/local/nit_finance/buy.php', ['cmid' => $mod->id]))->out(false);
+                    $url = isset($previews[$mod->id])
+                        && \local_nit_finance\local\preview::for_user((int) $USER->id, $mod, $sale, $previews[$mod->id]) > 0
+                        ? \local_nit_finance\local\preview::url((int) $mod->id)->out(false)
+                        : (new moodle_url('/local/nit_finance/buy.php', ['cmid' => $mod->id]))->out(false);
                 }
                 $entry = [
                     'cm'      => $mod,

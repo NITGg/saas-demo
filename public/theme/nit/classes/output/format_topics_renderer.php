@@ -1149,6 +1149,14 @@ class format_topics_renderer extends \format_topics\output\renderer {
         $chip = html_writer::link($buyurl,
             get_string('buy', 'local_nit_finance') . ' · ' . \local_nit_finance\local\money::format($price),
             ['class' => 'nitfin-chip nit-brand-18']);
+        // A video lesson with a free preview: the lesson name opens the preview.
+        if (class_exists('\local_nit_finance\local\preview') && isloggedin() && !isguestuser()
+                && \local_nit_finance\local\preview::for_user((int) $USER->id, $cm, $state) > 0) {
+            $previewurl = \local_nit_finance\local\preview::url((int) $cm->id);
+            $chip = html_writer::link($previewurl, get_string('previewchip', 'local_nit_finance'),
+                ['class' => 'nitfin-chip nit-brand-18']) . ' ' . $chip;
+            return [$chip, $previewurl];
+        }
         return [$chip, $buyurl];
     }
 

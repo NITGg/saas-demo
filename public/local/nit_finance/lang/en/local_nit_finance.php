@@ -254,3 +254,27 @@ $string['err_codenotfound'] = 'Code not found.';
 $string['err_codenotactive'] = 'Only an unused code can be disabled.';
 $string['err_badexpiry'] = 'Enter a future expiry date (YYYY-MM-DD), or 0 for no expiry.';
 $string['err_amountnonzero'] = 'Enter an amount other than zero, e.g. 50 or -50.';
+
+// Free preview of a paid video lesson.
+$string['saleheader_video'] = 'Sale & free preview';
+$string['previewminutes'] = 'Free preview (minutes)';
+$string['previewminutes_help'] = 'The first minutes of this video play for free for anyone logged in who has not bought the lesson or the course yet, so they can try it before buying. The video stops at that point and offers to unlock the lesson. Leave empty for no preview. Halves are fine, e.g. 2.5.';
+$string['err_badpreview'] = 'Enter the free minutes as a number from 0 to {$a}, e.g. 3 or 2.5.';
+$string['err_nopreview'] = 'This lesson has no free preview for you.';
+$string['err_nopreviewvideo'] = 'This lesson has no video to preview.';
+$string['previewtitle'] = 'Free preview';
+$string['previewchip'] = 'Free preview';
+$string['previewbadge'] = 'Free preview · the first {$a}';
+$string['previewintro'] = 'Watch the first {$a} of this lesson for free. Unlock the lesson to watch all of it.';
+$string['previewended'] = 'The free preview has ended';
+$string['previewendedtext'] = 'Unlock the lesson to watch the rest of it.';
+$string['previewfailed'] = 'The preview could not be loaded. Refresh the page to try again.';
+$string['previewunlock'] = 'Unlock the full lesson';
+$string['previewwatch'] = 'Watch free';
+$string['watchpreview'] = 'Watch the first {$a} free';
+$string['freepreviews'] = 'Try before you buy';
+$string['previewdur_one'] = '1 minute';
+$string['previewdur_two'] = '2 minutes';
+$string['previewdur_few'] = '{$a} minutes';
+$string['previewdur_many'] = '{$a} minutes';
+$string['previewdur_clock'] = '{$a} minutes';

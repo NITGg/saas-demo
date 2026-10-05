@@ -24,7 +24,8 @@
         "coursename": "Physics", "name": "Lesson 1", "priced": true, "price": "50 EGP", "balance": "20 EGP",
         "canpay": false, "paylabel": "Pay 50 EGP from my wallet", "action": "#", "cmid": 5, "sesskey": "abc",
         "redeem": {"action": "#", "params": [{"name": "cmid", "value": 5}], "sesskey": "abc"},
-        "courseurl": "#", "coursebuyurl": "#", "walleturl": "#"
+        "courseurl": "#", "coursebuyurl": "#", "walleturl": "#",
+        "previewurl": "#", "previewlabel": "Watch the first 3 minutes free"
     }
 }}
 <div class="nitfin nit-brand-18">
@@ -35,6 +36,15 @@
             </div>
             <p class="nitfin-buy__course">{{coursename}}</p>
             <h1 class="nitfin-buy__name">{{name}}</h1>
+
+            {{#previewurl}}
+            <p class="nitfin-buy__preview">
+                <a class="nitfin-btn nitfin-btn--outline nitfin-btn--small" href="{{previewurl}}">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>
+                    {{previewlabel}}
+                </a>
+            </p>
+            {{/previewurl}}
 
             {{#priced}}
             <p class="nitfin-buy__intro">{{#str}}buyintro, local_nit_finance{{/str}}</p>
