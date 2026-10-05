@@ -111,6 +111,32 @@ api::run(function (string $function) use ($USER, $userid, $token, $DB) {
             return \local_academy\password_reset_manager::change_password($userid,
                 required_param('currentpassword', PARAM_RAW), required_param('newpassword', PARAM_RAW));
 
+        // ── Bassthalk pages (public: the shared token browses as a visitor) ─────────
+
+        // Home: "كورسات مختارة" — picked courses + the year filter.
+        case 'get_home_selected':
+            return \local_academy\api\pages::home_selected(api::public_viewer());
+
+        // Home: "المدرسين عندنا" — teachers + year / study system / division filter
+        // (`me` pre-selects the signed-in student's own values).
+        case 'get_home_teachers':
+            api::public_viewer();
+            return \local_academy\api\pages::home_teachers();
+
+        // Home: "المحاضرات المقترحة" — the latest courses.
+        case 'get_home_lessons':
+            return \local_academy\api\pages::home_lessons(api::public_viewer());
+
+        // The public teacher page.
+        case 'get_teacher_page':
+            $teacherid = required_param('teacherid', PARAM_INT);
+            return \local_academy\api\pages::teacher($teacherid, api::public_viewer());
+
+        // The course details page: about, teachers, price card, lessons with states.
+        case 'get_course_page':
+            $courseid = required_param('courseid', PARAM_INT);
+            return \local_academy\api\pages::course($courseid, api::public_viewer());
+
         // ── Student registration (pre-login: shared registration token) ──────────
 
         // The 3-step registration form: fields, steps, dropdown options, password rules.

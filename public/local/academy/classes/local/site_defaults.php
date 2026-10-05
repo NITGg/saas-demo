@@ -50,4 +50,26 @@ class site_defaults {
         set_config('forcelogin', 0);
         set_config('enablemyhome', 1);
     }
+
+    /**
+     * Install the Arabic language pack when missing (it lives in moodledata, not
+     * in the code). Without it the navbar AR/EN menu is hidden and ?lang=ar is
+     * ignored. Needs the server to reach download.moodle.org; a failure is only
+     * reported — install it from Site administration › Language › Language packs.
+     *
+     * @return bool whether Arabic is installed afterwards
+     */
+    public static function ensure_arabic(): bool {
+        if (get_string_manager()->translation_exists('ar', false)) {
+            return true;
+        }
+        try {
+            \core_php_time_limit::raise();
+            (new \tool_langimport\controller())->install_languagepacks('ar');
+            get_string_manager()->reset_caches();
+        } catch (\Throwable $ex) {
+            mtrace('local_academy: could not install the Arabic language pack: ' . $ex->getMessage());
+        }
+        return get_string_manager()->translation_exists('ar', false);
+    }
 }

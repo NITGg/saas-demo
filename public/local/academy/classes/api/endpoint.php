@@ -169,6 +169,39 @@ class endpoint {
     }
 
     /**
+     * Whether this request uses the shared pre-login token (getsettings.php →
+     * admin_token / user_token): the caller is a visitor, not that token's owner.
+     *
+     * @return bool
+     */
+    public static function is_shared_token(): bool {
+        if (self::$token === '') {
+            return false;
+        }
+        $shared = array_filter([
+            (string) get_config('local_multitopics', 'admin_token'),
+            (string) get_config('local_multitopics', 'user_token'),
+        ]);
+        return in_array(self::$token, $shared, true);
+    }
+
+    /**
+     * The viewer of a public page: the token's user, or 0 for a visitor (shared
+     * token). A visitor continues as the guest user so the page shows only what a
+     * visitor of the website sees.
+     *
+     * @return int user id, 0 = visitor
+     */
+    public static function public_viewer(): int {
+        global $USER;
+        if (self::is_shared_token()) {
+            \core\session\manager::set_user(guest_user());
+            return 0;
+        }
+        return (int) $USER->id;
+    }
+
+    /**
      * Whether the academy is locked (suspended, or expired past grace) for this
      * user. Mirrors local_license's page lock, which skips JSON endpoints; site
      * admins stay through so the owner can still read the licence status.

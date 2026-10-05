@@ -81,5 +81,11 @@ function xmldb_local_academy_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026100501, 'local', 'academy');
     }
 
+    if ($oldversion < 2026100502) {
+        // Production had no Arabic language pack: no AR/EN menu in the navbar.
+        \local_academy\local\site_defaults::ensure_arabic();
+        upgrade_plugin_savepoint(true, 2026100502, 'local', 'academy');
+    }
+
     return true;
 }

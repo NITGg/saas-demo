@@ -180,12 +180,12 @@ if ($parentfieldid) {
 // Registration data (user profile fields) and the field builders for the cards.
 $pf = \local_academy\local\user_fields::values((int) $USER->id);
 $pfdefs = \local_academy\local\user_fields::definitions();
-$pfinput = function (string $key, string $type = 'text', array $attrs = []) use ($pf, $pfdefs, $e): string {
+$pfinput = function (string $key, string $type = 'text', array $attrs = []) use ($pf, $pfdefs, $e, $t): string {
     $extra = '';
     foreach ($attrs as $name => $value) {
         $extra .= ' ' . $name . '="' . $e($value) . '"';
     }
-    return '<div><div class="nit-prof-lbl">' . $e($pfdefs[$key]['name']) . '</div>'
+    return '<div><div class="nit-prof-lbl">' . $e($t($pfdefs[$key]['name'][1], $pfdefs[$key]['name'][0])) . '</div>'
         . '<input class="nit-prof-field" type="' . $type . '" name="pf_' . $key . '" value="' . $e($pf[$key]) . '"' . $extra . '></div>';
 };
 $pfselect = function (string $key) use ($pf, $pfdefs, $e, $t): string {
@@ -193,7 +193,7 @@ $pfselect = function (string $key) use ($pf, $pfdefs, $e, $t): string {
     foreach (\local_academy\local\user_fields::menu_options($key) as $option) {
         $opts .= '<option value="' . $e($option) . '"' . ($option === $pf[$key] ? ' selected' : '') . '>' . format_string($option) . '</option>'; // Category names carry {mlang}.
     }
-    return '<div><div class="nit-prof-lbl">' . $e($pfdefs[$key]['name']) . '</div>'
+    return '<div><div class="nit-prof-lbl">' . $e($t($pfdefs[$key]['name'][1], $pfdefs[$key]['name'][0])) . '</div>'
         . '<select class="nit-prof-field" id="nit-pf-' . $key . '" name="pf_' . $key . '">' . $opts . '</select></div>';
 };
 $phoneattrs = ['dir' => 'ltr', 'pattern' => '^[+]?[0-9\s\-()]{7,25}$', 'placeholder' => $t('e.g. 01012345678', 'مثال: 01012345678'),

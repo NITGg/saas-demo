@@ -114,8 +114,32 @@ class block_nit_section extends block_base {
             $text = $this->config->text ?? '';
         }
 
-        $this->content->text = format_text($text, FORMAT_HTML, $filteropt);
+        $this->content->text = format_text(self::site_relative_urls($text), FORMAT_HTML, $filteropt);
         return $this->content;
+    }
+
+    /**
+     * Point root-relative URLs ("/theme/…", fetch('/local/…')) at this site when
+     * Moodle lives in a sub-folder (https://host/bassthalk/): the template HTML
+     * is written for a site at the domain root.
+     *
+     * @param string $text
+     * @return string
+     */
+    public static function site_relative_urls(string $text): string {
+        global $CFG;
+        $path = rtrim((string) parse_url($CFG->wwwroot, PHP_URL_PATH), '/');
+        if ($path === '' || $text === '') {
+            return $text;
+        }
+        // Attributes, fetch('/…') and CSS url(/…) — but not protocol-relative "//"
+        // and not URLs already under the site folder.
+        $notours = '(?!/|' . preg_quote(ltrim($path, '/'), '~') . '(?:/|["\')?#]))';
+        return preg_replace(
+            '~(\b(?:src|href|action|poster|data-src)\s*=\s*["\']|\bfetch\(\s*["\']|\burl\(\s*["\']?)/' . $notours . '~i',
+            '$1' . $path . '/',
+            $text
+        );
     }
 
     /**

@@ -5,14 +5,14 @@ document. Last updated **2026-10-05**. Replaces the older `MOBILE_API.md` / `mob
 (see [§10.3 What changed](#103-what-changed-for-the-existing-app) for the differences that matter to the
 existing app).
 
-> Not covered yet (in progress, will be added later): the new Bassthalk home page sections and the new
-> teacher page / course details page.
+> Every screen of the platform is covered, including the Bassthalk home page sections, the teacher
+> page and the course details page (§3.10).
 
 ## Contents
 
 1. [Getting started](#1-getting-started) — base URL, tokens, the 3 API styles, errors, languages, money
 2. [App bootstrap, Google sign-in, catalogue, course content, AI, job forms](#2-app-bootstrap-google-sign-in-catalogue-course-content-ai-job-forms)
-3. [Sign-in, password, profile, lessons, quizzes, certificates, teachers](#3-sign-in-password-profile-lessons-quizzes-certificates-teachers)
+3. [Sign-in, password, profile, home & course pages, lessons, quizzes, certificates, teachers](#3-sign-in-password-profile-home--course-pages-lessons-quizzes-certificates-teachers)
 4. [Live sessions, Jitsi and video playback](#4-live-sessions-jitsi-and-video-playback)
 5. [Video progress, course reviews, parent dashboard](#5-video-progress-course-reviews-parent-dashboard)
 6. [Payments, coupons & offers, subscriptions](#6-payments-coupons--offers-subscriptions)
@@ -546,7 +546,7 @@ Errors: `errorsubmissionnotfound`, `nopermissions`.
 
 ---
 
-## 3. Sign-in, password, profile, lessons, quizzes, certificates, teachers
+## 3. Sign-in, password, profile, home & course pages, lessons, quizzes, certificates, teachers
 
 Endpoint (style A): `GET|POST /local/academy/api.php?function=<name>&token=<token>[&lang=ar|en]`
 
@@ -837,6 +837,121 @@ Streams the PDF (issues the certificate on first download, like the web). Errors
 ```
 `-1` = unlimited; `null` = no expiry. Price, renew and upgrade are handled by the NIT platform (nit2),
 not by the academy. Non-managers get `nopermissions` (do **not** log out — just hide the screen).
+
+### 3.10 Home page, teacher page, course page
+
+The Bassthalk screens as data — the same sources and rules as the website pages (home page sections,
+`/local/academy/teacher.php`, `/local/academy/course.php`). All are GET on `/local/academy/api.php`.
+
+**Visitors:** these work with the **shared token** too. The caller is then treated as a website
+visitor: no personal data (`enrolled`/`covered` false, `me` null), hidden courses are not shown,
+and the course page's main button asks to log in (`action:"login"`). With the user's own token the
+user's state is used.
+
+Every course card / course page carries the same **`state`** (price card) object:
+```json
+{"enrolled":false,"covered":false,"free":false,"haspricing":true,
+ "price":130.0,"price_minor":13000,"currency":"EGP",
+ "hasoffer":true,"offerlabel":"-40%","finalprice":78.0,"finalprice_minor":7800,"discountpercent":40}
+```
+Show `finalprice`; when `hasoffer`, strike `price` and show the `discountpercent` badge. `free` → "مجاني".
+Card button: `enrolled` → open the course; `covered` → enrol with the subscription
+(`enrol_course`, §6.3.3); `haspricing` → buy (§6.1.1); otherwise free enrol (`enrol_course`).
+
+#### `get_home_selected` — "كورسات مختارة"
+```json
+{"status":"success","data":{
+ "years":[{"id":1,"name":"الصف الاول الاعدادى"},{"id":6,"name":"الصف الثالث الثانوي"}],
+ "courses":[{"id":2,"fullname":"الإدارة والأعمال 1",
+   "image":"http://…/webservice/pluginfile.php/16/course/overviewfiles/cover.jpg?token=<token>",
+   "year":"الصف الاول الاعدادى","years":[1],"teachers":1,"lessons":1,"state":{…}}]}}
+```
+The admin-picked courses. Year chips filter the cards: a card belongs to every year id in `years`.
+`teachers` / `lessons` are counts. `image` is `""` when the course has no picture (use the placeholder).
+
+#### `get_home_teachers` — "المدرسين عندنا"
+```json
+{"status":"success","data":{
+ "years":[{"id":6,"name":"الصف الثالث الثانوي"}],
+ "systems":[{"name":"{mlang en}general{mlang}{mlang ar}عام{mlang}","label":"عام",
+             "divisions":[{"name":"{mlang ar}ادبى{mlang}{mlang en}Literary{mlang}","label":"ادبى"}]}],
+ "me":{"year":6,"system":"{mlang en}general{mlang}{mlang ar}عام{mlang}","division":""},
+ "teachers":[{"id":6,"name":"أحمد سمير","title":"أستاذ اللغة العربية",
+   "photo":"http://…/webservice/pluginfile.php/41/user/icon/nit/f3?rev=6309&token=<token>",
+   "courses":[{"years":[6],"system":"{mlang en}general{mlang}{mlang ar}عام{mlang}","division":""}]}]}}
+```
+Filter on the device (no reload): a teacher matches when **one** of their `courses` matches the chosen
+year (in `years`), study system (`system` = the system's `name`) and division (`division` = the
+division's `name`; an empty course value matches any). `me` = the signed-in student's own year /
+system / division to pre-select (`null` for visitors). Tap a teacher → `get_teacher_page`.
+
+#### `get_home_lessons` — "المحاضرات المقترحة"
+```json
+{"status":"success","data":{"courses":[{"id":15,"fullname":"الرياضيات - الصف الأول الاعدادي",
+  "image":"http://…/webservice/pluginfile.php/86/course/overviewfiles/cover.svg?token=<token>",
+  "year":"١ ع","price":"مجاني","summary":"الأعداد النسبية والجبر والهندسة للصف الأول الإعدادي.",
+  "created":1791124082,"modified":1791181745,"state":{…}}]}}
+```
+The latest courses. `year` is the short year label and `price` the ready-made price text of the web
+card; use `state` for real numbers.
+
+#### `get_teacher_page` — `teacherid`
+```json
+{"status":"success","data":{"id":6,"name":"أحمد سمير","title":"أستاذ اللغة العربية",
+ "photo":"http://…/webservice/pluginfile.php/41/user/icon/nit/f3?rev=6309&token=<token>",
+ "bio":"خبرة أكثر من 15 سنة في تدريس اللغة العربية للمرحلة الثانوية…",
+ "years":[{"id":6,"name":"الصف الثالث الثانوي","short":"٣ ث","courses":1,"divisions":[],"label":"الصف الثالث الثانوي"}],
+ "courses":[{"id":14,"fullname":"اللغة العربية - الصف الثاني الاعدادي","image":"…","year":"٢ ع",
+   "price":"90 جنيه","summary":"…","created":…,"modified":…,"yearid":2,"division":"","enrolled":false,"state":{…}}],
+ "counts":{"courses":4,"years":4,"students":12}}}
+```
+`years` are the tabs (filter `courses` by `yearid`; `label` includes the divisions). Errors:
+`teachernotfound` (not a teacher, or a site admin).
+
+#### `get_course_page` — `courseid`
+```json
+{"status":"success","data":{
+ "course":{"id":4,"fullname":"الفيزياء - الصف الثالث الثانوي","shortname":"demo-phy-sec3",
+   "summary":"الكهربية التيارية والكهرومغناطيسية…","summaryhtml":"<p>…</p>",
+   "image":"http://…/webservice/pluginfile.php/48/course/overviewfiles/cover.svg?token=<token>",
+   "category":{"id":6,"name":"الصف الثالث الثانوي"},"studysystem":"عام","division":"علمى رياضة",
+   "subject":"","language":"","isfreeflag":false,"certificate":false,"hours":null,
+   "timemodified":1791124069,"hasvideo":true},
+ "counts":{"sections":1,"lessons":5,"assessments":0,"students":5},
+ "teachers":[{"id":8,"fullname":"هشام فؤاد","title":"دكتور الفيزياء",
+   "photo":"http://…/webservice/pluginfile.php/43/user/icon/nit/f3?rev=6317&token=<token>"}],
+ "learn":[],"skills":[],"audience":[],"prerequisites":[],
+ "price":{"enrolled":true,"covered":false,"free":false,"haspricing":true,"price":200.0,"price_minor":20000,
+          "currency":"EGP","hasoffer":false,"offerlabel":"","finalprice":200.0,"finalprice_minor":20000,"discountpercent":0},
+ "action":"open","resume_cmid":2,
+ "sections":[{"id":10,"number":1,"name":"قسم جديد","summary":"","available":true,"availableinfo":"",
+   "progress":{"tracked":false,"done":0,"total":5},
+   "items":[
+     {"cmid":2,"name":"الدرس 1: قانون أوم","modname":"page","islabel":false,"marker":"","price":null,
+      "canopen":true,"locked":false,"forsale":false,"completed":false,"watched_percent":null},
+     {"cmid":3,"name":"الدرس 2: دوائر التيار الكهربي","modname":"page","islabel":false,"marker":"buy",
+      "price":{"price_minor":3000,"price":30.0,"currency":"EGP"},"canopen":false,"forsale":true,"…":"…"},
+     {"cmid":34,"name":"درس فيديو تجريبي","modname":"vimeo","islabel":false,"marker":"owned",
+      "canopen":true,"watched_percent":42,"…":"…"}]}],
+ "forums":[]}}
+```
+- **About tab:** `course.summary` (or `summaryhtml`), `teachers` (tap → `get_teacher_page`), `subject`,
+  `learn` ("هتتعلم إيه"), `skills`, `audience` / `prerequisites` (requirements), `language`,
+  `certificate`, `hours`, `counts`. Empty lists = hide that block.
+- **Price card:** `price` (the `state` object above) + `counts`. **Main button by `action`:**
+  `login` (visitor → login screen, then reload) · `open` (enrolled → open `resume_cmid`, or the first
+  lesson) · `enrol_subscription` (covered by the subscription → `enrol_course`) · `buy` (→ purchase flow
+  §6.1.1) · `enrol_free` (→ `enrol_course`).
+- **Lessons tab:** `sections[]` (one accordion row each). `available:false` → show `availableinfo`
+  (e.g. "Available from …") instead of items. `progress`: when `tracked`, show `(done/total)`, else
+  `(total دروس)`. `items[]` are lessons; an item with `part` is a sub-group:
+  `{"part":"<title>","items":[…]}`. `islabel` items are plain text (not tappable).
+- **Item `marker`:** `free` (free course) · `locked` (paid course, not bought) · `buy` (a lesson sold
+  on its own — show `price`, buy with the wallet: `get_lesson_access` / `buy_lesson`, §7) · `owned`
+  (bought on its own) · `""` (normal). `canopen` = the user can open it now; `locked` = lesson-order
+  lock; `completed`, `watched_percent` = progress.
+- **Forum tab:** `forums[]` (`cmid`, `name`) — hide the tab when empty.
+- Errors: `coursenotfound` (missing, the site course, or hidden for this viewer).
 
 ---
 
@@ -2669,7 +2784,7 @@ P = shared pre-login token is enough; ✱ = new in this version)
 
 | Plugin | Functions |
 |---|---|
-| `academy` | P: `get_registration_form`✱, `register_student`✱, `request_password_otp`, `verify_password_otp`, `reset_password`, `get_profile_fields`✱, `get_academic_structure`✱, `browse_teachers`, `get_teacher`, `get_teacher_courses` · S: `change_password`, `get_my_profile`, `get_full_profile`✱, `update_my_profile`✱, `get_course_lessons`✱, `log_lesson_view`✱, `get_my_certificates`✱, `is_course_free`, `enrol_free_course`, `get_quizzes`, `get_quiz`, `start_quiz_attempt`, `save_quiz_answer`, `finish_quiz_attempt`, `submit_quiz_attempt`, `get_quiz_attempt`, `get_my_quiz_attempts` · M: `get_all_teachers`, `get_license_status` |
+| `academy` | P: `get_home_selected`✱, `get_home_teachers`✱, `get_home_lessons`✱, `get_teacher_page`✱, `get_course_page`✱, `get_registration_form`✱, `register_student`✱, `request_password_otp`, `verify_password_otp`, `reset_password`, `get_profile_fields`✱, `get_academic_structure`✱, `browse_teachers`, `get_teacher`, `get_teacher_courses` · S: `change_password`, `get_my_profile`, `get_full_profile`✱, `update_my_profile`✱, `get_course_lessons`✱, `log_lesson_view`✱, `get_my_certificates`✱, `is_course_free`, `enrol_free_course`, `get_quizzes`, `get_quiz`, `start_quiz_attempt`, `save_quiz_answer`, `finish_quiz_attempt`, `submit_quiz_attempt`, `get_quiz_attempt`, `get_my_quiz_attempts` · M: `get_all_teachers`, `get_license_status` |
 | `nit_category` ✱ | P/S: `get_categories`, `get_courses` |
 | `nit_finance` ✱ | S: `get_wallet`, `get_wallet_history`, `get_my_purchases`, `create_topup_checkout`, `get_topup_status`, `redeem_code`, `get_course_lesson_prices`, `get_lesson_access`, `buy_lesson` · T: `get_teacher_wallet`, `get_teacher_wallet_history`, `get_my_earnings`, `request_withdrawal`, `get_my_withdrawals` · M: `get_finance_summary`, `list_withdrawals`, `process_withdrawal`, `list_wallets`, `get_wallet_ledger`, `adjust_wallet`, `list_codes`, `generate_codes`, `disable_code`, `set_lesson_price` |
 | `nit_flex` ✱ | S: `get_packages`, `get_package_quote`, `buy_package_wallet`, `create_package_checkout`, `get_package_checkout_status`, `get_my_flex`, `get_my_packages`, `get_package_payments`, `get_flex_history` · M: `admin_list_packages`, `admin_save_package`, `admin_set_package_status`, `admin_delete_package`, `admin_assign_package`, `admin_list_purchases`, `admin_unassign_package` |
@@ -2699,7 +2814,9 @@ P = shared pre-login token is enough; ✱ = new in this version)
 Backwards compatible: every existing function name, parameter and response field is kept. Things to
 know when updating the app:
 
-0. **Student registration is new:** `get_registration_form` + `register_student` (§3.1) create an
+0. **Bassthalk screens are new:** `get_home_selected`, `get_home_teachers`, `get_home_lessons`,
+   `get_teacher_page`, `get_course_page` (§3.10) — work with the shared token for visitors.
+   **Student registration is new too:** `get_registration_form` + `register_student` (§3.1) create an
    active account with all the academy fields and return its token. Use them instead of Moodle's
    `auth_email_signup_user` (which needs email confirmation and does not take the academy fields).
 1. **One envelope everywhere (style A):** every failure now also carries `errorcode`; business errors
