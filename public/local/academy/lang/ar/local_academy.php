@@ -107,6 +107,7 @@ $string['reg_emailtaken'] = 'يوجد حساب بهذا البريد الإلك�
 $string['reg_mustagree'] = 'لازم توافق على الشروط والأحكام';
 $string['reg_success'] = 'تم إنشاء حسابك بنجاح. أهلًا بيك!';
 $string['reg_failed'] = 'برجاء تصحيح الحقول المحددة.';
+$string['reg_sessionexpired'] = 'انتهت جلستك قبل إرسال الطلب، فلم يُنشأ الحساب. بياناتك محفوظة: اكتب كلمة السر مرة أخرى واضغط «طلب انشاء حساب».';
 $string['err_registrationdisabled'] = 'التسجيل مغلق في هذه الأكاديمية.';
 $string['err_invalidregistration'] = 'برجاء تصحيح الحقول المحددة.';
 $string['err_toomanyregistrations'] = 'تم إنشاء حسابات كثيرة من نفس الشبكة. حاول مرة أخرى بعد ساعة.';

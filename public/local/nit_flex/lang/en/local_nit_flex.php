@@ -163,3 +163,5 @@ $string['privacy:metadata:nit_flex_tx'] = 'The Flex balance ledger for a student
 $string['privacy:metadata:nit_flex_tx:userid'] = 'The student whose balance changed.';
 $string['privacy:metadata:nit_flex_tx:amount'] = 'The signed change to the Flex balance.';
 $string['privacy:metadata:nit_flex_tx:timecreated'] = 'When the change happened.';
+$string['err_ordernotfound'] = 'Payment order not found.';
+$string['err_featureunavailable'] = 'Lesson packages are not part of your current plan.';

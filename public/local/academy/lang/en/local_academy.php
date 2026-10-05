@@ -130,6 +130,7 @@ $string['reg_emailtaken'] = 'An account with this email already exists. Sign in 
 $string['reg_mustagree'] = 'You must accept the terms and conditions.';
 $string['reg_success'] = 'Your account has been created. Welcome!';
 $string['reg_failed'] = 'Please correct the highlighted fields.';
+$string['reg_sessionexpired'] = 'Your session expired before the request was sent, so no account was created. Your answers are kept: type the password again and send the request.';
 $string['err_registrationdisabled'] = 'Registration is closed on this academy.';
 $string['err_invalidregistration'] = 'Please correct the highlighted fields.';
 $string['err_toomanyregistrations'] = 'Too many accounts were created from this network. Please try again in an hour.';

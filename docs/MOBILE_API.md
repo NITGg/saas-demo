@@ -2,12 +2,11 @@
 
 Everything the mobile app (student, teacher, parent, admin screens) can do with an academy, in one
 document. Last updated **2026-10-05**. Replaces the older `MOBILE_API.md` / `mobile-app-api.md`
-(see [§9.3 What changed](#93-what-changed-for-the-existing-app) for the differences that matter to the
+(see [§10.3 What changed](#103-what-changed-for-the-existing-app) for the differences that matter to the
 existing app).
 
-> Not covered yet (in progress, will be added later): the new Bassthalk home page sections, the new
-> teacher page / course details page, and the Flex
-> packages / live-lessons plugins (`local_nit_flex`, `local_nit_lessons`).
+> Not covered yet (in progress, will be added later): the new Bassthalk home page sections and the new
+> teacher page / course details page.
 
 ## Contents
 
@@ -18,8 +17,9 @@ existing app).
 5. [Video progress, course reviews, parent dashboard](#5-video-progress-course-reviews-parent-dashboard)
 6. [Payments, coupons & offers, subscriptions](#6-payments-coupons--offers-subscriptions)
 7. [Wallet, lessons sold one by one, codes, teacher earnings](#7-wallet-lessons-sold-one-by-one-codes-teacher-earnings)
-8. [Standard Moodle web services the app uses](#8-standard-moodle-web-services-the-app-uses)
-9. [Reference: error codes, endpoint index, changes](#9-reference)
+8. [Lesson packages (Flex) and live 1:1 lessons](#8-lesson-packages-flex-and-live-11-lessons)
+9. [Standard Moodle web services the app uses](#9-standard-moodle-web-services-the-app-uses)
+10. [Reference: error codes, endpoint index, changes](#10-reference)
 
 ---
 
@@ -57,6 +57,8 @@ Token API endpoints (style A) — all share one implementation (`local_academy\a
 | `/local/academy/api.php` | sign-in helpers, profile, lessons, quizzes, certificates, teachers, licence |
 | `/local/nit_category/api.php` | catalogue |
 | `/local/nit_finance/api.php` | wallet, lessons for sale, codes, teacher earnings, withdrawals |
+| `/local/nit_flex/api.php` | lesson packages (Flex): buy with the wallet or online, my packages, Flex history; admin catalogue |
+| `/local/nit_lessons/api.php` | live 1:1 lessons: teachers and free slots, booking, lesson actions, joining the room, teacher profile; admin |
 | `/local/payments/api.php` | payment admin: revenue, transactions, course prices, gateways |
 | `/local/nit_commerce/api.php` | coupons & offers |
 | `/local/nit_subscriptions/api.php` | subscriptions, enrol in free / covered courses |
@@ -107,7 +109,7 @@ Token API endpoints (style A) — all share one implementation (`local_academy\a
 | `internalerror` | server problem (details are logged, never shown) | generic error + retry |
 | anything else | a business rule (e.g. `invalidphone`, `lessonlocked`, `insufficientwallet`) | show `error` |
 
-A full list is in [§9.1](#91-error-codes).
+A full list is in [§10.1](#101-error-codes).
 
 ### 1.7 Roles
 
@@ -629,7 +631,7 @@ must be valid and not used by another account (saved in lower case); the passwor
 `passwordpolicy`. Every answer is saved in the student's profile fields (see `get_full_profile`); the
 student can edit them later with `update_my_profile` (§3.3).
 
-**Logout:** delete the stored token on the device (optionally unregister the push device, §8).
+**Logout:** delete the stored token on the device (optionally unregister the push device, §9).
 
 ### 3.2 Forgot password (OTP) and change password
 
@@ -739,7 +741,7 @@ The course's lessons in order with the learner's state — the same rules the we
 ```
 - `locked` → show a padlock ("finish the previous lessons"); `forsale` → show the price / buy
   (§7 `get_lesson_access`, `buy_lesson`); `manual` → show "mark as complete" (Moodle
-  `core_completion_update_activity_completion_status_manually`, §8) when `markcomplete` is true.
+  `core_completion_update_activity_completion_status_manually`, §9) when `markcomplete` is true.
 - `resume_cmid` = first unfinished lesson ("Continue" button). `video` lessons play through §4.3/§4.4.
 - Errors: `coursenotfound`, `notenrolled`.
 
@@ -2205,7 +2207,398 @@ Errors: `nopermissions`, `itemnotfound`, `badprice`.
 
 ---
 
-## 8. Standard Moodle web services the app uses
+## 8. Lesson packages (Flex) and live 1:1 lessons
+
+A **package** gives the student **Flex**. One Flex books one live 1:1 lesson of 60 minutes with any
+teacher who takes bookings. The lesson runs in a Jitsi room. A student holds **one active package at a
+time**.
+
+The money follows the same rules as the website:
+- The student pays for the package from the wallet or online. Coupons and offers apply.
+- The money stays undistributed until a lesson uses a Flex.
+- **Completed lesson:** the teacher's share (their own percent, else the site default) goes to the
+  teacher wallet, and the rest goes to the platform. It appears in §7 `get_my_earnings` with
+  `source:"lesson"`.
+- **Student absent / late cancel:** the Flex is used and the platform keeps its whole value.
+- **Teacher absent / teacher cancel / early cancel:** the Flex goes back to the student.
+- **Flex left when a package ends:** it expires, and its value goes to the platform.
+
+### 8.1 Endpoints and rules
+
+```
+GET|POST {site}/local/nit_flex/api.php?function=<name>&token=<token>[&lang=ar|en]&...      (packages)
+GET|POST {site}/local/nit_lessons/api.php?function=<name>&token=<token>[&lang=ar|en]&...   (lessons)
+```
+
+- Same token, envelope, HTTP codes, `POST` rule, money and paging rules as §7.1.
+- **Times** are Unix seconds. Send `time` as one of the `time` values returned by `get_teacher_slots`.
+- **Licence:** when the academy's plan has no `packages` feature, every call fails with
+  `featureunavailable`. Hide the feature.
+- **Who may call what:**
+
+| Group | Functions | Rule |
+|---|---|---|
+| Student (any logged-in user) | `nit_flex`: get_packages, get_package_quote, buy_package_wallet, create_package_checkout, get_package_checkout_status, get_my_flex, get_my_packages, get_package_payments, get_flex_history · `nit_lessons`: get_teachers, get_teacher_slots, request_lesson | Acts for the token's user |
+| Student or teacher of the lesson | get_my_lessons, get_lesson, get_lesson_join and the lesson actions (§8.4) | The engine checks that the user is this lesson's student or teacher and that the lesson is in the right state (`forbidden`, `badstate`) |
+| Teacher | get_teacher_profile, update_teacher_profile | The user has a teacher or editing-teacher role in any course. Otherwise `notateacher` |
+| Admin | `nit_flex`: `admin_*` | Capability `local/nit_flex:managepackages` (manager) |
+| Admin | `nit_lessons`: `admin_*` | Capability `local/nit_lessons:managesettings` (manager) |
+
+**Teacher earnings and withdrawals** are not here. They use the §7.3 functions on
+`/local/nit_finance/api.php`.
+
+---
+
+### 8.2 Packages — student (`/local/nit_flex/api.php`)
+
+#### get_packages (GET)
+Returns the packages for sale, the student's active package and the wallet balance. Takes no
+parameters.
+```json
+{"status":"success","data":{"packages":[{"id":6,"name":"flex 10","description":"flex 10 description","flex_count":10,
+ "expiration_days":0,"validity_label":"Never expires","status":"active","price_minor":20000,"price":200.0,
+ "final_price_minor":20000,"final_price":200.0,"price_per_flex_minor":2000,"price_per_flex":20.0,"currency":"EGP"}],
+ "can_buy":false,
+ "active":{"id":12,"packageid":6,"name":"flex 10","total_flex":10,"remaining_flex":9,"reserved_flex":0,"consumed_flex":1,
+  "status":"active","status_label":"Active","source":"online","timeactivated":1791189719,"expires_at":0,
+  "price_paid_minor":20000,"price_paid":200.0,"currency":"EGP"},
+ "online_payment":false,"wallet_balance_minor":45000,"wallet_balance":450.0,"currency":"EGP"}}
+```
+- `final_price` is the price after automatic offers (no coupon). Show `price` crossed out when the two
+  differ.
+- `can_buy` is `false` while a package is active. Disable the buy buttons and show `active`.
+- `online_payment` is `false` when no gateway is set up. Hide "Pay online" and keep "Pay from wallet".
+- `expires_at` is `0` when the package never expires.
+
+#### get_package_quote (GET)
+Returns the price to pay, with an optional coupon. Call it when the buy sheet opens and again on
+"Apply coupon".
+
+| Param | Type | Req | Description |
+|---|---|---|---|
+| packageid | int | yes | package |
+| coupon_code | text | no | coupon as typed |
+
+```json
+{"status":"success","data":{"packageid":6,"coupon_code":"NOPE","coupon_applied":false,"coupon_error":"Coupon not found.",
+ "original_price_minor":20000,"original_price":200.0,"discount_minor":0,"discount":0.0,
+ "final_price_minor":20000,"final_price":200.0,"wallet_balance_minor":45000,"wallet_balance":450.0,
+ "can_pay_wallet":false,"can_pay_online":false,"currency":"EGP"}}
+```
+- An invalid coupon does **not** fail the call. It returns the price without the coupon and puts the
+  reason in `coupon_error`. Show that reason under the coupon box.
+- `can_pay_wallet` is `false` when the balance is below `final_price` or a package is already active.
+  Offer the §7 top-up in that case.
+
+Errors: `notfound`, `packagenotavailable`.
+
+#### buy_package_wallet (POST)
+Buys the package with the student wallet. The coupon is reserved in the same step, so a coupon that
+has just run out cancels the purchase.
+
+| Param | Type | Req | Description |
+|---|---|---|---|
+| packageid | int | yes | package |
+| coupon_code | text | no | coupon |
+
+```json
+{"status":"success","data":{"purchase":{"id":13,"packageid":6,"name":"flex 10","total_flex":10,"remaining_flex":10,
+ "reserved_flex":0,"consumed_flex":0,"status":"active","status_label":"Active","source":"online","timeactivated":1791200000,
+ "expires_at":0,"price_paid_minor":16000,"price_paid":160.0,"currency":"EGP"},
+ "wallet_balance_minor":29000,"wallet_balance":290.0,"currency":"EGP"}}
+```
+Errors: `insufficientwallet` (→ top up), `alreadyhaspackage`, `packagenotavailable`, `notfound`,
+`walletbusy`, coupon codes (`couponnotfound`, `couponexpired`, `couponusedup`, …).
+
+#### create_package_checkout (POST)
+Starts an online payment.
+
+| Param | Type | Req | Description |
+|---|---|---|---|
+| packageid | int | yes | package |
+| coupon_code | text | no | coupon |
+
+```json
+{"status":"success","data":{"order_id":"NIT-…","checkout_url":"https://checkout.kashier.io/…","expires_at":1791201800,
+ "transaction_id":88,"amount_minor":16000,"amount":160.0,"original_amount_minor":20000,"original_amount":200.0,
+ "currency":"EGP","callback_url":"https://…/local/payments/callback.php"}}
+```
+
+Flow:
+1. Open `checkout_url` in a web view.
+2. When the web view reaches `callback_url…`, close it.
+3. Poll `get_package_checkout_status` with `order_id`.
+
+Errors: `noonline` (no gateway → use the wallet), `alreadyhaspackage`, `freeonwallet` (the discount
+makes it free → use `buy_package_wallet`), `packagenotavailable`, `paymentinitiationfailed`.
+
+#### get_package_checkout_status (GET)
+Returns where an online payment stands. While the payment is not complete, it asks the gateway, which
+grants the package if the payment went through.
+
+| Param | Type | Req | Description |
+|---|---|---|---|
+| order_id | text | yes | from create_package_checkout |
+
+```json
+{"status":"success","data":{"order_id":"NIT-…","status":"completed","paid":true,"granted":true,"purchaseid":13,
+ "credited_to_wallet":false,"active":{"id":13,"…":"…"},"amount_minor":16000,"amount":160.0,"currency":"EGP"}}
+```
+- `granted:true`: done. Show `active`.
+- `credited_to_wallet:true`: the order was paid while another package was already active. The money
+  went to the wallet instead. Tell the student.
+- `paid:false`: still `pending`, or `failed` / `cancelled`. Poll a few times, then show the status.
+
+Errors: `ordernotfound`.
+
+#### get_my_flex (GET)
+Returns the Flex balance for the header or badge. Takes no parameters.
+```json
+{"status":"success","data":{"available_flex":9,"reserved_flex":0,"has_package":true,"active":{"id":12,"…":"…"}}}
+```
+`reserved_flex` counts the Flex booked for confirmed lessons that have not happened yet.
+
+#### get_my_packages (GET)
+Returns `{"packages":[<purchase>…]}`, active first. Each package has the same shape as `active` above.
+`status` is one of `active`, `fully_used`, `expired`, `cancelled`.
+
+#### get_package_payments (GET)
+Returns package payments, newest first. The `amount` of a `refund` row is negative.
+```json
+{"status":"success","data":{"payments":[{"id":5,"packageid":6,"name":"flex 10","method":"wallet","method_label":"Wallet",
+ "transaction_no":"TXNC9CEF46BAE8949","reference":"","status":"success","timecreated":1791189719,
+ "amount_minor":20000,"amount":200.0,"currency":"EGP"}]}}
+```
+`method` is one of `wallet`, `online`, `offline`, `bank`, `cash`, `refund`.
+
+#### get_flex_history (GET)
+Takes `page` and `perpage` (default 50, max 200). Returns the Flex ledger, newest first.
+```json
+{"status":"success","data":{"total":3,"page":0,"perpage":50,"history":[{"id":46,"purchaseid":12,"lessonid":14,
+ "type":"consume","amount":0,"balance_before":9,"balance_after":9,"reason":"Lesson completed","timecreated":1791190275,
+ "type_label":"Used"}]}}
+```
+- `type` is one of `purchase`, `assign`, `reserve` (−1, booked), `consume` (0, used), `return` (+1),
+  `expire`, `adjust` (removed by an admin).
+- `amount` is the change to the available balance.
+
+---
+
+### 8.3 Booking — student (`/local/nit_lessons/api.php`)
+
+Flow:
+1. `get_teachers`.
+2. `get_teacher_slots(teacherid)`.
+3. The student picks a subject (from the teacher's `subjects`) and a free slot, and writes a note.
+4. `request_lesson`.
+
+Nothing is reserved yet. The Flex is reserved when the teacher accepts.
+
+#### get_teachers (GET)
+Returns the teachers who take bookings.
+
+| Param | Type | Req | Description |
+|---|---|---|---|
+| subject | text | no | filter: subject contains this text (any case) |
+
+```json
+{"status":"success","data":{"teachers":[{"id":22,"fullname":"مدرس الحصص","headline":"مدرس فيزياء",
+ "subjects":[{"value":"فيزياء","name":"فيزياء"},{"value":"Physics","name":"Physics"}],
+ "picture_url":"https://…/theme/image.php/nit/core/…/u/f1"}]}}
+```
+Send `subjects[].value` back as `subject`.
+
+#### get_teacher_slots (GET)
+Returns the teacher's one-hour slots for the next 14 days. Days with no free slot are left out.
+
+| Param | Type | Req | Description |
+|---|---|---|---|
+| teacherid | int | yes | teacher |
+| lessonid | int | no | when moving a lesson, its own time counts as free |
+
+```json
+{"status":"success","data":{"teacherid":22,"duration":60,"teacher_timezone":"Africa/Cairo","subjects":["فيزياء","Physics"],
+ "days":[{"date":1791241200,"date_label":"Tuesday, 6 October 2026",
+   "slots":[{"time":1791277200,"label":"10:00 AM","free":true},{"time":1791280800,"label":"11:00 AM","free":false}]}]}}
+```
+- Show taken slots disabled (`free:false`). Slots are built from the teacher's weekly hours (08:00–20:00
+  when they set none), minus booked lessons and the minimum booking notice.
+- `label` is in the user's timezone.
+
+Errors: `teachernotbookable`.
+
+#### request_lesson (POST)
+Books a lesson. The student needs an active package with Flex left.
+
+| Param | Type | Req | Description |
+|---|---|---|---|
+| teacherid | int | yes | teacher |
+| subject | text | yes | one of the teacher's `subjects[].value` |
+| time | int | yes | a free slot `time` |
+| note | text | yes | what the student wants to study |
+
+Returns the new lesson (§8.4 shape) with `status:"pending"`. The teacher gets a notification.
+
+Errors: `noflex` (→ packages), `teachernotbookable`, `subjectnotoffered`, `outsidehours`, `timeconflict`,
+`minbooking`, `noterequired`, `subjectrequired`, `selfbooking`, `teachernotfound`.
+
+---
+
+### 8.4 Lessons — student and teacher (`/local/nit_lessons/api.php`)
+
+#### get_my_lessons (GET)
+Returns the user's lessons in this order: needs an answer first, then upcoming (soonest first), then
+past.
+
+| Param | Type | Req | Description |
+|---|---|---|---|
+| role | text | no | `student`, `teacher`, or empty for both |
+| status | text | no | filter, one of the statuses below |
+
+#### get_lesson (GET) — `lessonid`
+Returns one lesson. Shape:
+```json
+{"status":"success","data":{"id":15,"studentid":12,"teacherid":22,"subject":"Physics","status":"confirmed",
+ "requested_time":1791284400,"confirmed_time":1791284400,"effective_time":1791284400,"duration":60,"note":"API test",
+ "reject_reason":null,"cancel_reason":null,"flex_state":"reserved","actual_start":0,"actual_end":0,"cmid":0,
+ "teacher_name":"مدرس الحصص","student_name":"طالب تجريبي","timecreated":1791200000,"timemodified":1791200100,
+ "proposals":[],"my_role":"teacher","status_label":"Confirmed","flex_state_label":"Flex booked",
+ "pending_suggestion":null,"pending_reschedule":null,
+ "actions":[{"action":"start","function":"start_lesson","value":"","needs":"none","label":"Start lesson"},
+            {"action":"cancel","function":"cancel_lesson_teacher","value":"","needs":"reason_required","label":"Cancel lesson"},
+            {"action":"request_time_update","function":"request_time_update","value":"","needs":"time","label":"Change time"}],
+ "can_join":false,"join_cmid":0}}
+```
+
+**Status values:**
+
+| status | Meaning |
+|---|---|
+| `pending` | New request, waiting for the teacher |
+| `waiting_student` | The teacher suggested another time, waiting for the student |
+| `waiting_teacher` | The student suggested another time, waiting for the teacher |
+| `confirmed` | Booked. The Flex is reserved |
+| `in_progress` | The teacher started it. Join the room |
+| `completed` | Done. The Flex was used |
+| `student_absent` | Done. The Flex was used |
+| `teacher_absent` | The Flex was returned |
+| `cancelled` | Cancelled by the student |
+| `cancelled_teacher` | Cancelled by the teacher |
+| `rejected` | Declined by the teacher |
+
+- `flex_state` is one of `none`, `reserved`, `consumed`, `returned`.
+- `effective_time` is the time to show: the confirmed time, or else the requested time.
+- `pending_suggestion` is the time the other side suggested (`proposed_time`, `role`) while the status is
+  `waiting_*`. `pending_reschedule` is an open "change time" request on a confirmed lesson.
+
+**Actions.** Draw one button per `actions[]` item. Each item tells you which function to call and
+what to ask first:
+
+| needs | Ask first, then send |
+|---|---|
+| `none` | nothing (show a confirmation) |
+| `reason` | optional text → `reason` |
+| `reason_required` | required text → `reason` |
+| `note` | optional text → `reason` (completion note) |
+| `time` | a slot from `get_teacher_slots(teacherid, lessonid)` → `time` |
+
+#### Lesson action functions (POST)
+Every action takes `lessonid`, plus `value`, `time` or `reason` as the action's `needs` says. Each one
+returns the updated lesson. The other side gets a notification.
+
+| function | value | Who | Effect |
+|---|---|---|---|
+| `teacher_respond_lesson` | `accept` / `reject` / `suggest` (+`time`) | teacher | accept → `confirmed` and the Flex is reserved. reject → `rejected`. suggest → `waiting_student` |
+| `student_respond_lesson` | `accept` / `reject` / `suggest` (+`time`) | student | accept → `confirmed` and the Flex is reserved. reject → `cancelled`. suggest → `waiting_teacher` |
+| `start_lesson` | — | teacher | → `in_progress`. Creates the Jitsi room. Allowed from 30 minutes before the start (setting) |
+| `complete_lesson` | — (`reason` = note) | teacher | → `completed`. The Flex is used and the teacher is paid. Allowed 45 minutes after the start (setting) |
+| `report_student_absent` | — | teacher | → `student_absent`. The Flex is used and the platform keeps it. Allowed 15 minutes after the start time |
+| `report_teacher_absent` | — | student | → `teacher_absent`. The Flex is returned |
+| `cancel_lesson_request` | — | student | Withdraws a request before it is confirmed. Nothing was reserved |
+| `cancel_lesson_student` | — | student | Cancels a confirmed lesson. Up to 120 minutes before (setting) the Flex is returned. Later, the Flex is used |
+| `cancel_lesson_teacher` | — (`reason` required) | teacher | → `cancelled_teacher`. The Flex is returned |
+| `request_time_update` | — (+`time`) | either | Asks to move a confirmed lesson. Allowed until 120 minutes before (setting) |
+| `respond_time_update` | `accept` / `reject` | the other side | Answers a move request |
+
+Errors: `forbidden`, `badstate` (the lesson changed: refresh), `lessonnotfound`, `badaction`,
+`reasonrequired`, `notime`, `minbooking`, `timeconflict`, `tooearlytostart`, `completetooearly`,
+`absencetooearly`, `updatedeadline`, `updatepending`, `noupdaterequest`, `noflex`, `nolessonscourse`
+(rooms not set up by the admin).
+
+#### get_lesson_join (GET) — `lessonid`
+Returns the room of a lesson that has started (`can_join:true`).
+```json
+{"status":"success","data":{"lessonid":14,"cmid":69,"sessionid":7,"is_teacher":true,
+ "join_url":"https://…/mod/jitsi/view.php?id=69"}}
+```
+Open it like any live-session room (§4.1–4.2): `mod_jitsi_get_session_info(cmid)` (or
+`/mod/jitsi/api_token.php?id=cmid`) and join with the Jitsi SDK.
+- The teacher calls `set_teacher_present(cmid, 1/0)` (§4.1) on conference joined / left.
+- The student is held in the lobby until the teacher is in the call.
+
+Errors: `roomnotready`, `forbidden`.
+
+---
+
+### 8.5 Teacher profile (`/local/nit_lessons/api.php`)
+
+#### get_teacher_profile (GET)
+Takes no parameters.
+```json
+{"status":"success","data":{"available":true,"headline":"مدرس فيزياء","subjects":["فيزياء","Physics"],
+ "hours":[{"dayofweek":0,"starttime":"10:00","endtime":"22:00"}],"bookable":true,"timezone":"Africa/Cairo",
+ "days":[{"value":0,"label":"Sunday"},{"value":1,"label":"Monday"}]}}
+```
+- `bookable` is `true` when students can book this teacher: `available` is on and there is at least one
+  subject.
+- `dayofweek` runs from `0` (Sunday) to `6`. Times are in the teacher's `timezone`.
+
+#### update_teacher_profile (POST)
+Replaces the whole profile and returns it.
+
+| Param | Type | Req | Description |
+|---|---|---|---|
+| available | 0/1 | no | students can book (default 0) |
+| headline | text | no | short line under the name |
+| subjects | JSON array of strings | yes | e.g. `["فيزياء","Physics"]` |
+| hours | JSON array | no | `[{"dayofweek":0,"starttime":"16:00","endtime":"20:00"}]`. Each range must be at least 1 hour. Empty means 08:00–20:00 every day |
+
+Errors: `notateacher`, `subjectsrequired` (available without a subject), `badhours`, `invalidparameter`
+(bad JSON).
+
+---
+
+### 8.6 Admin
+
+#### Packages (`/local/nit_flex/api.php`, `local/nit_flex:managepackages`)
+
+| function | Method | Params | Returns |
+|---|---|---|---|
+| `admin_list_packages` | GET | — | `packages[]`: the package shape plus `name_ar`, `name_en`, `description_ar`, `description_en`, `purchases` |
+| `admin_save_package` | POST | `id` (0 = new), `name_ar`, `name_en`, `description_ar`, `description_en`, `flex_count`, `price` (pounds), `expiration_days` (0 = never), `active` (0/1) | the package |
+| `admin_set_package_status` | POST | `id`, `active` (0/1) | `{id, status}` |
+| `admin_delete_package` | POST | `id` | `{id, deleted}`. Only packages nobody bought |
+| `admin_assign_package` | POST | `studentid`, `packageid`, `amount` (pounds, empty = price), `method` (`offline`, `bank`, `cash`, `wallet`), `reference` | the purchase. `wallet` takes the amount from the student wallet |
+| `admin_list_purchases` | GET | `page`, `perpage` | `purchases[]`: each purchase has `student_name`, `student_email`, `can_unassign`, and the purchase fields |
+| `admin_unassign_package` | POST | `purchaseid`, `refund` (0/1) | `{purchaseid, cancelled, refunded_minor, refunded}`. The refund is the value of the unused Flex, and it goes back to the student wallet |
+
+Errors: `nameflexrequired`, `flexpositive`, `daysnegative`, `badprice`, `packageinuse` (bought before:
+deactivate it instead), `studentnotfound`, `studenthaspackage`, `insufficientwallet`, `notfound`.
+
+#### Live lessons (`/local/nit_lessons/api.php`, `local/nit_lessons:managesettings`)
+
+| function | Method | Params | Returns |
+|---|---|---|---|
+| `admin_list_lessons` | GET | `status`, `page`, `perpage` | `lessons[]`: each with `id`, `student_name`, `teacher_name`, `subject`, `status`, `status_label`, `flex_state`, `time`, `teacher_amount_minor`, `platform_amount_minor`, `can_reverse` |
+| `admin_reverse_flex` | POST | `lessonid`, `reason` | `{lessonid, reversed}`. Returns the Flex to the student and takes the teacher and platform shares back from their wallets |
+| `admin_get_settings` | GET | — | `min_booking_minutes`, `cancel_deadline_minutes`, `update_deadline_minutes`, `start_allowed_minutes`, `complete_allowed_minutes`, `absence_report_minutes`, `lessons_courseid`, `rooms_ready` |
+| `admin_update_settings` | POST | `settings` = JSON object of the keys above (minutes, ≥ 0) | the settings |
+
+Errors: `reasonrequired`, `earningnotfound`, `alreadyreversed`, `settingnegative`.
+
+---
+
+## 9. Standard Moodle web services the app uses
 
 Style B: `/webservice/rest/server.php?wstoken=<token>&moodlewsrestformat=json&moodlewssettingfilter=true&moodlewssettinglang=<ar|en>&wsfunction=<name>`.
 All are in the `moodle_mobile_app` service (verified on this site).
@@ -2244,9 +2637,9 @@ Also in the service (documented in their sections): `local_payments_*` (9), `loc
 
 ---
 
-## 9. Reference
+## 10. Reference
 
-### 9.1 Error codes
+### 10.1 Error codes
 
 Codes shared by every style-A endpoint are in §1.6. Business codes by area (show `error` to the user
 unless an action is listed):
@@ -2265,9 +2658,11 @@ unless an action is listed):
 | Parent | `invalidphone`, `studentnotfound`, `toomanyattempts` (wait 15 min) |
 | Live sessions | `sessionnotfound`, `sessionnotavailable`, `sessionended`, `notallowed`, `notjoined`, `notjitsiactivity`, `notsessionteacher`, `studentnotenrolled`, `invalidvalue` |
 | Wallet / finance | `insufficientwallet`, `alreadyowned`, `notforsale`, `itemnotfound`, `walletbusy`, `noenrol`, `amountpositive`, `topuprange`, `paymentunavailable`, `ordernotfound`, `codeinvalid`, `codeused`, `codeexpired`, `notateacher`, `insufficientbalance`, `badmethod`, `busy`; admin: `badaction`, `withdrawalnotfound`, `withdrawalstate`, `reasonrequired`, `badstatus`, `badwallettype`, `usernotfound`, `amountnonzero`, `chooseitem`, `badprice`, `codecount`, `badexpiry`, `codenotfound`, `codenotactive` |
+| Lesson packages | `featureunavailable` (hide the feature), `alreadyhaspackage`, `packagenotavailable`, `notfound`, `noonline`, `freeonwallet`, `ordernotfound`, `insufficientwallet`; admin: `nameflexrequired`, `flexpositive`, `daysnegative`, `packageinuse`, `studentnotfound`, `studenthaspackage` |
+| Live lessons | `noflex` (→ packages), `teachernotbookable`, `subjectnotoffered`, `outsidehours`, `timeconflict`, `minbooking`, `noterequired`, `subjectrequired`, `selfbooking`, `forbidden`, `badstate` (refresh), `lessonnotfound`, `notime`, `tooearlytostart`, `completetooearly`, `absencetooearly`, `updatedeadline`, `updatepending`, `noupdaterequest`, `reasonrequired`, `roomnotready`, `nolessonscourse`, `notateacher`, `subjectsrequired`, `badhours`; admin: `earningnotfound`, `alreadyreversed`, `settingnegative` |
 | Payments / commerce | `featureunavailable` (hide the feature), coupon codes (`couponnotfound`, `couponexpired`, …), admin: `pricepositive`, `invalidcurrency`, `invalidcountry`, `onedefault`, `oneactivepercountry`, `pricenotfound`, `providernotfound`, `invalidpriority`, `nothingtochange`, `invalidstatus`, subscription admin codes (§6.3.4) |
 
-### 9.2 Endpoint index
+### 10.2 Endpoint index
 
 **Style A — `/local/<plugin>/api.php?function=…`** (S = student/any user, T = teacher, M = manager,
 P = shared pre-login token is enough; ✱ = new in this version)
@@ -2277,6 +2672,8 @@ P = shared pre-login token is enough; ✱ = new in this version)
 | `academy` | P: `get_registration_form`✱, `register_student`✱, `request_password_otp`, `verify_password_otp`, `reset_password`, `get_profile_fields`✱, `get_academic_structure`✱, `browse_teachers`, `get_teacher`, `get_teacher_courses` · S: `change_password`, `get_my_profile`, `get_full_profile`✱, `update_my_profile`✱, `get_course_lessons`✱, `log_lesson_view`✱, `get_my_certificates`✱, `is_course_free`, `enrol_free_course`, `get_quizzes`, `get_quiz`, `start_quiz_attempt`, `save_quiz_answer`, `finish_quiz_attempt`, `submit_quiz_attempt`, `get_quiz_attempt`, `get_my_quiz_attempts` · M: `get_all_teachers`, `get_license_status` |
 | `nit_category` ✱ | P/S: `get_categories`, `get_courses` |
 | `nit_finance` ✱ | S: `get_wallet`, `get_wallet_history`, `get_my_purchases`, `create_topup_checkout`, `get_topup_status`, `redeem_code`, `get_course_lesson_prices`, `get_lesson_access`, `buy_lesson` · T: `get_teacher_wallet`, `get_teacher_wallet_history`, `get_my_earnings`, `request_withdrawal`, `get_my_withdrawals` · M: `get_finance_summary`, `list_withdrawals`, `process_withdrawal`, `list_wallets`, `get_wallet_ledger`, `adjust_wallet`, `list_codes`, `generate_codes`, `disable_code`, `set_lesson_price` |
+| `nit_flex` ✱ | S: `get_packages`, `get_package_quote`, `buy_package_wallet`, `create_package_checkout`, `get_package_checkout_status`, `get_my_flex`, `get_my_packages`, `get_package_payments`, `get_flex_history` · M: `admin_list_packages`, `admin_save_package`, `admin_set_package_status`, `admin_delete_package`, `admin_assign_package`, `admin_list_purchases`, `admin_unassign_package` |
+| `nit_lessons` ✱ | S: `get_teachers`, `get_teacher_slots`, `request_lesson`, `student_respond_lesson`, `report_teacher_absent`, `cancel_lesson_request`, `cancel_lesson_student` · S/T: `get_my_lessons`, `get_lesson`, `get_lesson_join`, `request_time_update`, `respond_time_update` · T: `teacher_respond_lesson`, `start_lesson`, `complete_lesson`, `report_student_absent`, `cancel_lesson_teacher`, `get_teacher_profile`, `update_teacher_profile` · M: `admin_list_lessons`, `admin_reverse_flex`, `admin_get_settings`, `admin_update_settings` |
 | `payments` ✱ | M: `get_revenue_report`, `get_transactions`, `get_providers`, `set_provider` · T/M: `get_course_prices`, `save_course_price`, `delete_course_price` |
 | `nit_commerce` (token mode ✱) | S: `get_available_offers`, `get_available_coupons`, `preview_discount` · M: `get_coupons`, `create_coupon`, `update_coupon`, `activate_coupon`, `deactivate_coupon`, `delete_coupon`, `get_offers`, `create_offer`, `update_offer`, `activate_offer`, `deactivate_offer`, `delete_offer`, `get_discount_targets` |
 | `nit_subscriptions` (token mode ✱) | S: `get_available_subscriptions`, `get_my_active_subscription`, `get_my_subscriptions`, `get_subscription_payment_history`, `create_subscription_checkout`, `enrol_course`✱ · M: `get_subscriptions`, `create_subscription`, `update_subscription`, `activate_subscription`, `deactivate_subscription`, `delete_subscription`, `get_categories_with_courses`, `set_subscription_courses`, `get_all_user_subscriptions`, `unsubscribe_user`, `get_all_course_purchases`, `revoke_course_purchase`, `get_reminder_settings`, `preview_reminder_settings`, `save_reminder_settings` |
@@ -2297,7 +2694,7 @@ P = shared pre-login token is enough; ✱ = new in this version)
 (quiz images, URLs come ready-made), `/mod/jitsi/api_token.php`, `/webservice/upload.php`,
 `/lib/ajax/service-nologin.php`.
 
-### 9.3 What changed for the existing app
+### 10.3 What changed for the existing app
 
 Backwards compatible: every existing function name, parameter and response field is kept. Things to
 know when updating the app:
@@ -2331,12 +2728,15 @@ know when updating the app:
    keys (`app_name`, `apple_client_id`, `facebook_app_id`, `links` are not returned — links are in
    `design_system.php`).
 
-### 9.4 Known limitations
+### 10.4 Known limitations
 
 - Payments go through the Kashier hosted page; the app opens `checkout_url` and must intercept the
   return URL `…/local/payments/callback.php?…` (it needs a browser session), then verify with
-  `local_payments_verify_payment` / `get_topup_status`.
+  `local_payments_verify_payment` / `get_topup_status` / `get_package_checkout_status` (§8.2).
 - No refund API (refunds arrive only through the gateway webhook).
 - The AI assistant supports VdoCipher lessons only.
 - The parent throttle is per IP and shared with the website (10 wrong attempts → 15 minutes).
 - Teacher money has two figures (withdrawable balance vs. wallet ledger) — see §7.
+- Live lessons: slots are one hour, built from the teacher's weekly hours in the teacher's timezone. The
+  room is a Jitsi activity in the course chosen in the admin settings (`rooms_ready` in
+  `admin_get_settings`); without it `start_lesson` fails with `nolessonscourse`.

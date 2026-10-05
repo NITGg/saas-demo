@@ -259,3 +259,4 @@ $string['privacy:metadata:nit_lesson_proposal'] = 'المواعيد المقتر
 $string['privacy:metadata:nit_lesson_proposal:proposedby'] = 'من اقترح الموعد.';
 $string['privacy:metadata:nit_lesson_proposal:proposed_time'] = 'الموعد المقترح.';
 $string['privacy:metadata:nit_lesson_proposal:timecreated'] = 'وقت الاقتراح.';
+$string['err_notateacher'] = 'هذه الخاصية للمدرسين.';

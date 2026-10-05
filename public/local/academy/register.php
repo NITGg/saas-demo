@@ -53,13 +53,19 @@ $homeurl = (new moodle_url('/'))->out(false);
 // ---- submit: create the account, sign in, go to the start page ----
 $regold = [];     // Values to put back in the form after a failed submit (never the password).
 $regerrors = [];  // Field name => message.
-if (data_submitted() && confirm_sesskey()) {
+if (data_submitted()) {
     $raw = [];
     foreach (\local_academy\local\registration::FIELDS as $name) {
         $raw[$name] = optional_param($name, '', PARAM_RAW);
     }
     $agreed = (bool) optional_param('agree', 0, PARAM_BOOL);
     try {
+        // A lost or replaced session cookie (e.g. another Moodle on the same domain sharing the
+        // cookie name) makes the sesskey stale: say so and keep the answers instead of silently
+        // showing an empty form again.
+        if (!confirm_sesskey()) {
+            throw new \moodle_exception('reg_sessionexpired', 'local_academy');
+        }
         if (optional_param('password2', '', PARAM_RAW) !== $raw['password']) {
             throw new \local_academy\local\invalid_registration(['password2' => get_string('reg_passwordmismatch', 'local_academy')]);
         }

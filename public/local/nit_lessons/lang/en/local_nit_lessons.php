@@ -259,3 +259,4 @@ $string['privacy:metadata:nit_lesson_proposal'] = 'Times suggested while agreein
 $string['privacy:metadata:nit_lesson_proposal:proposedby'] = 'Who suggested the time.';
 $string['privacy:metadata:nit_lesson_proposal:proposed_time'] = 'The suggested time.';
 $string['privacy:metadata:nit_lesson_proposal:timecreated'] = 'When it was suggested.';
+$string['err_notateacher'] = 'This is for teachers.';

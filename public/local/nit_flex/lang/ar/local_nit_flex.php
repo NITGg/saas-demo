@@ -163,3 +163,5 @@ $string['privacy:metadata:nit_flex_tx'] = 'سجل رصيد الفلكس للطا
 $string['privacy:metadata:nit_flex_tx:userid'] = 'الطالب الذي تغيّر رصيده.';
 $string['privacy:metadata:nit_flex_tx:amount'] = 'التغيّر في رصيد الفلكس.';
 $string['privacy:metadata:nit_flex_tx:timecreated'] = 'وقت التغيّر.';
+$string['err_ordernotfound'] = 'طلب الدفع غير موجود.';
+$string['err_featureunavailable'] = 'باقات الحصص غير متاحة في باقتك الحالية.';
