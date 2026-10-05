@@ -1,0 +1,146 @@
+<!--
+  Bassthalk home — "إزاي بسطتهالك بتشتغل؟". Paste into a "NIT Section" block, mode "Raw HTML".
+  Source of truth: theme/nit/blocks/templates/bassthalk/how.html (see README.md there).
+  Measured 1:1 against bassthalk.com at 1280×832. Colours: Brand Colors → Bassthalk → "Home — how it works".
+  Texts: Arabic + English via {mlang ar}…{mlang}{mlang en}…{mlang} (edit both); the layout follows the page direction.
+
+  To add / remove a block, copy / delete one <div class="nit-bth-how-card …"> … </div>:
+    - c1 … c5      = the card colour (repeat c1–c5 for more cards);
+    - is-small     = a card without a picture (one grid column on wide screens);
+    - is-wide      = a card with a picture on its left half (two columns) — v3 / v4 / v5 = how the
+                     picture sits (as on bassthalk's cards 3 / 4 / 5); add <img> inside .nit-bth-how-art;
+    - the number in .nit-bth-how-num is the big number on the card.
+-->
+<style>
+  .nit-bth-how{ position:relative; overflow:hidden; font-family:'Almarai',sans-serif; }
+  .nit-bth-how-inner{ position:relative; display:flex; flex-direction:column; width:100%; overflow:hidden; margin-top:24px; padding:40px 12px; }
+  .nit-bth-how-inner > * + *{ margin-top:20px; }
+  .nit-bth-how-head{ position:relative; z-index:10; font-family:'Tajawal',sans-serif; font-size:32px; line-height:1.5; font-weight:500; color:var(--nit-brand-bthhowtext); }
+  .nit-bth-how-head h2{ margin:0; font:inherit; color:inherit; text-align:center; }
+  .nit-bth-how-head h2 b{ font-weight:700; }
+  .nit-bth-how-head p{ width:100%; margin:0; font-family:'Tajawal',sans-serif; font-size:20px; line-height:28px; text-align:center; }
+  .nit-bth-how-grid{ position:relative; z-index:10; display:grid; grid-template-columns:repeat(1,minmax(0,1fr)); gap:24px; width:100%;
+    padding:40px 16px 0; font-family:'Almarai',sans-serif; }
+  .nit-bth-how-card{ position:relative; display:flex; overflow:hidden; border-radius:12px; min-height:160px; padding:16px;
+    grid-column:span 2 / span 2; background:var(--nit-bth-howbg); color:var(--nit-bth-howtext); transition:all .4s ease; }
+  .nit-bth-how-card.is-small{ flex-direction:column; }
+  .nit-bth-how-card.is-wide{ flex-direction:row; }
+  .nit-bth-how-card.c1{ --nit-bth-howbg:var(--nit-brand-bthhowbg1); --nit-bth-howtext:var(--nit-brand-bthhowtext1); }
+  .nit-bth-how-card.c2{ --nit-bth-howbg:var(--nit-brand-bthhowbg2); --nit-bth-howtext:var(--nit-brand-bthhowtext); }
+  .nit-bth-how-card.c3{ --nit-bth-howbg:var(--nit-brand-bthhowbg3); --nit-bth-howtext:var(--nit-brand-bthhowtext); filter:saturate(.5); }
+  .nit-bth-how-card.c4{ --nit-bth-howbg:var(--nit-brand-bthhowbg4); --nit-bth-howtext:var(--nit-brand-bthhowtext); }
+  .nit-bth-how-card.c5{ --nit-bth-howbg:var(--nit-brand-bthhowbg5); --nit-bth-howtext:var(--nit-brand-bthhowtext); filter:saturate(.5); }
+  .nit-bth-how-text{ display:flex; flex-direction:column; justify-content:space-between; width:100%; font-family:'Tajawal',sans-serif; font-size:16px; line-height:1!important; }
+  .nit-bth-how-card.is-wide .nit-bth-how-text{ width:50%; }
+  .nit-bth-how-num{ padding-bottom:32px; font-family:'Tajawal',sans-serif; font-size:48px; font-weight:700; }
+  .nit-bth-how-cols{ display:flex; flex-direction:column; }
+  .nit-bth-how-cols > * + *{ margin-top:16px; }
+  .nit-bth-how-title{ font-weight:700; }
+  .nit-bth-how-art{ display:flex; justify-content:center; align-items:center; width:100%; transform:translateX(-32px); transform-origin:top left; }
+  .nit-bth-how-card.is-wide .nit-bth-how-art{ width:50%; }
+  .nit-bth-how-card.v4 .nit-bth-how-art{ transform:translate(-32px,32px); overflow:hidden; }
+  .nit-bth-how-artwrap{ width:100%; }
+  .nit-bth-how-card.v3 .nit-bth-how-artwrap, .nit-bth-how-card.v4 .nit-bth-how-artwrap{ height:100%; display:flex; align-items:flex-end; }
+  .nit-bth-how-art img{ display:block; width:100%; max-width:100%; height:auto; margin:0; }
+  .nit-bth-how-card.v3 img, .nit-bth-how-card.v4 img{ transform-origin:top right; }
+  @media (min-width:640px){
+    .nit-bth-how-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+  }
+  @media (min-width:768px){
+    .nit-bth-how-inner{ margin-top:80px; padding:80px 12px; }
+    .nit-bth-how-head{ font-size:48px; }
+    .nit-bth-how-head h2, .nit-bth-how-head p{ text-align:start; }
+    .nit-bth-how-head p{ max-width:384px; }
+    .nit-bth-how-card{ padding:32px; }
+    .nit-bth-how-card.is-small{ grid-column:span 1 / span 1; min-height:220px; flex-direction:column-reverse; justify-content:flex-start; }
+    .nit-bth-how-card.is-wide{ min-height:300px; }
+    .nit-bth-how-text{ flex-direction:row; align-items:flex-end; justify-content:normal; font-size:18px; }
+    .nit-bth-how-num{ position:absolute; top:32px; inset-inline-start:32px; padding-bottom:0; font-size:64px; }
+    .nit-bth-how-card.is-small .nit-bth-how-cols{ padding-top:80px; }
+    .nit-bth-how-art{ justify-content:normal; align-items:flex-start; }
+    .nit-bth-how-card.v3 img{ transform:translate(-32px,32px) scale(1.05); }
+    .nit-bth-how-card.v4 img{ transform:translate(0,32px) scale(1.05); }
+    .nit-bth-how-card.v5 img{ transform:translateX(-32px); }
+  }
+  @media (min-width:1024px){
+    .nit-bth-how-grid{ grid-template-columns:repeat(3,minmax(0,1fr)); }
+  }
+  @media (min-width:1280px){
+    .nit-bth-how-inner{ padding-inline:40px; }
+    .nit-bth-how-grid{ grid-template-columns:repeat(4,minmax(0,1fr)); padding-inline:80px; }
+  }
+  /* English (left-to-right): the same layout, mirrored. */
+  html[dir="ltr"] .nit-bth-how-art{ transform:translateX(32px); transform-origin:top right; }
+  html[dir="ltr"] .nit-bth-how-card.v4 .nit-bth-how-art{ transform:translate(32px,32px); }
+  html[dir="ltr"] .nit-bth-how-card.v3 img, html[dir="ltr"] .nit-bth-how-card.v4 img{ transform-origin:top left; }
+  @media (min-width:768px){
+    html[dir="ltr"] .nit-bth-how-card.v3 img{ transform:translate(32px,32px) scale(1.05); }
+    html[dir="ltr"] .nit-bth-how-card.v5 img{ transform:translateX(32px); }
+  }
+</style>
+<section class="nit-bth-section nit-bth-how nit-brand-18" data-nit-section="how" aria-labelledby="nit-bth-how-title">
+  <div class="nit-bth-how-inner">
+    <div class="nit-bth-how-head">
+      <h2 id="nit-bth-how-title">{mlang ar}إزاي <b>بسطتهالك</b> بتشتغل؟{mlang}{mlang en}How does <b>Bassthalk</b> work?{mlang}</h2>
+      <p>{mlang ar}كل خطوة في المنصة معمولة علشان تخلّي رحلتك الدراسية أسهل وأوضح:{mlang}{mlang en}Every step on the platform is made to make your study journey easier and clearer:{mlang}</p>
+    </div>
+    <div class="nit-bth-how-grid">
+
+      <div class="nit-bth-how-card c1 is-small">
+        <div class="nit-bth-how-text">
+          <div class="nit-bth-how-num">1</div>
+          <div class="nit-bth-how-cols">
+            <div class="nit-bth-how-title">{mlang ar}اختار صفك ومادتك{mlang}{mlang en}Choose your year and subject{mlang}</div>
+            <div>{mlang ar}أول حاجة، بتختار الصف الدراسي (أولى - تانية - تالتة ثانوي) وبعدين بتختار المادة اللي عايز تذاكرها.{mlang}{mlang en}First, pick your school year (first, second or third secondary), then the subject you want to study.{mlang}</div>
+          </div>
+        </div>
+        <div class="nit-bth-how-art"></div>
+      </div>
+
+      <div class="nit-bth-how-card c2 is-small">
+        <div class="nit-bth-how-text">
+          <div class="nit-bth-how-num">2</div>
+          <div class="nit-bth-how-cols">
+            <div class="nit-bth-how-title">{mlang ar}شوف المدرسين والكورسات{mlang}{mlang en}Browse teachers and courses{mlang}</div>
+            <div>{mlang ar}هتلاقي قائمة بأفضل المدرسين لكل مادة، وكورسات متقسّمة حسب المواضيع والمراجعات.{mlang}{mlang en}You'll find the best teachers for every subject, and courses split by topic and revision.{mlang}</div>
+          </div>
+        </div>
+        <div class="nit-bth-how-art"></div>
+      </div>
+
+      <div class="nit-bth-how-card c3 is-wide v3">
+        <div class="nit-bth-how-text">
+          <div class="nit-bth-how-num">3</div>
+          <div class="nit-bth-how-cols">
+            <div class="nit-bth-how-title">{mlang ar}اشترك في الكورس{mlang}{mlang en}Subscribe to the course{mlang}</div>
+            <div>{mlang ar}لقيت كورس عاجبك؟ دوس "اشترك الآن" وابدأ تتعلّم فورًا! تقدر تتابع من الموبايل أو اللابتوب في أي وقت.{mlang}{mlang en}Found a course you like? Press "Subscribe now" and start learning right away — on your phone or laptop, any time.{mlang}</div>
+          </div>
+        </div>
+        <div class="nit-bth-how-art"><div class="nit-bth-how-artwrap"><img src="/theme/nit/pix/bassthalk_how3.svg" alt="" loading="lazy"></div></div>
+      </div>
+
+      <div class="nit-bth-how-card c4 is-wide v4">
+        <div class="nit-bth-how-text">
+          <div class="nit-bth-how-num">4</div>
+          <div class="nit-bth-how-cols">
+            <div class="nit-bth-how-title">{mlang ar}ذاكر واتمرّن{mlang}{mlang en}Study and practise{mlang}</div>
+            <div>{mlang ar}اتفرج على الفيديوهات، حلّ الامتحانات، خُد نِقاط، وارجع للمحتوى وقت ما تحب.{mlang}{mlang en}Watch the videos, solve the exams, earn points and come back to the content whenever you like.{mlang}</div>
+          </div>
+        </div>
+        <div class="nit-bth-how-art"><div class="nit-bth-how-artwrap"><img src="/theme/nit/pix/bassthalk_how4.svg" alt="" loading="lazy"></div></div>
+      </div>
+
+      <div class="nit-bth-how-card c5 is-wide v5">
+        <div class="nit-bth-how-text">
+          <div class="nit-bth-how-num">5</div>
+          <div class="nit-bth-how-cols">
+            <div class="nit-bth-how-title">{mlang ar}اسأل، شارك، ونافس{mlang}{mlang en}Ask, share and compete{mlang}</div>
+            <div>{mlang ar}ادخل مجموعات المناقشة، اسأل عن أي حاجة مش واضحة،شارك أفكارك، وشوف أنت فين بين زمايلك.{mlang}{mlang en}Join the discussion groups, ask about anything unclear, share your ideas and see where you stand among your classmates.{mlang}</div>
+          </div>
+        </div>
+        <div class="nit-bth-how-art"><div class="nit-bth-how-artwrap"><img src="/theme/nit/pix/bassthalk_how5.svg" alt="" loading="lazy"></div></div>
+      </div>
+
+    </div>
+  </div>
+</section>

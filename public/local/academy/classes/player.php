@@ -94,6 +94,12 @@ class player {
         $sections = [];
         $curindex = -1;
         $blocked = false; // becomes true after the first incomplete tracked lesson
+        // Lessons sold one by one (local_nit_finance): not bought yet → link to the buy page.
+        $sale = class_exists('\local_nit_finance\local\access')
+            ? \local_nit_finance\local\access::course_state((int) $USER->id, (int) $course->id) : null;
+        // Watched % of video lessons (local_nit_videoprogress).
+        $watched = class_exists('\local_nit_videoprogress\progress')
+            ? \local_nit_videoprogress\progress::course_percents((int) $USER->id, (int) $course->id) : [];
         foreach ($modinfo->get_section_info_all() as $secinfo) {
             if (!$secinfo->uservisible) {
                 continue;
@@ -112,11 +118,18 @@ class player {
                     $done = in_array((int) $cdata->completionstate, [COMPLETION_COMPLETE, COMPLETION_COMPLETE_PASS], true);
                 }
                 $locked = $lock && $blocked;
+                $forsale = $sale && !\local_nit_finance\local\access::cm_open($sale, (int) $mod->id);
+                $url = $locked ? '' : self::url_for($mod);
+                if ($forsale && !$locked) {
+                    $url = (new moodle_url('/local/nit_finance/buy.php', ['cmid' => $mod->id]))->out(false);
+                }
                 $entry = [
                     'cm'      => $mod,
                     'cmid'    => (int) $mod->id,
                     'name'    => format_string($mod->name),
-                    'url'     => $locked ? '' : self::url_for($mod),
+                    'url'     => $url,
+                    'forsale' => $forsale,
+                    'watched' => $watched[$mod->id] ?? null,
                     'done'    => $done,
                     'tracked' => $tracked,
                     'manual'  => $manual,
@@ -157,6 +170,9 @@ class player {
         $w = self::walk($course);
         $first = null;
         foreach ($w['lessons'] as $l) {
+            if ($l['forsale']) {
+                continue; // Not bought: never "resume" into a buy page.
+            }
             if ($first === null) {
                 $first = $l['cm'];
             }
@@ -392,12 +408,13 @@ class player {
           <?php foreach ($sec['items'] as $it): ?>
             <?php
             $cls = 'nit-lesson' . ($it['current'] ? ' nit-lesson--current' : '') . ($it['done'] ? ' nit-lesson--done' : '') . ($it['locked'] ? ' nit-lesson--locked' : '');
-            $glyph = $it['locked'] ? '&#128274;' : ($it['done'] && !$it['current'] ? '&#10003;' : self::icon($it['type'], $it['video']));
+            $glyph = ($it['locked'] || $it['forsale']) ? '&#128274;' : ($it['done'] && !$it['current'] ? '&#10003;' : self::icon($it['type'], $it['video']));
             $tag = $it['locked'] ? 'span' : 'a';
             ?>
             <<?php echo $tag; ?> class="<?php echo $cls; ?>"<?php if (!$it['locked']): ?> href="<?php echo $e($it['url']); ?>"<?php else: ?> title="<?php echo $e($s('player_locked')); ?>"<?php endif; ?>>
               <span class="nit-lesson__ic"><?php echo $glyph; ?></span>
               <span class="nit-lesson__name"><?php echo $e($it['name']); ?></span>
+              <?php if ($it['watched'] !== null && class_exists('\local_nit_videoprogress\ui')): ?><?php echo \local_nit_videoprogress\ui::chip((int) $it['watched']); ?><?php endif; ?>
               <?php if (!$it['video']): ?><span class="nit-lesson__type"><?php echo $e($it['typename']); ?></span><?php endif; ?>
             </<?php echo $tag; ?>>
           <?php endforeach; ?>

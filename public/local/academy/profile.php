@@ -64,6 +64,43 @@ if (data_submitted() && confirm_sesskey()) {
         $upd->lang = $lang;
     }
 
+    // Registration data (user profile fields, see \local_academy\local\user_fields).
+    // A dropdown only accepts one of its own options; a division must belong to
+    // the chosen study system.
+    $custom = [];
+    foreach (\local_academy\local\user_fields::definitions() as $shortname => $def) {
+        if ($shortname === 'parentphone') {
+            continue; // Saved below from its own input (its shortname is a local_parent setting).
+        }
+        $value = optional_param('pf_' . $shortname, null, PARAM_TEXT);
+        if ($value === null) {
+            continue; // Not on this form (e.g. the teacher title) — leave it as it is.
+        }
+        $value = trim($value);
+        if ($def['type'] === 'menu' && $value !== ''
+                && !in_array($value, \local_academy\local\user_fields::menu_options($shortname), true)) {
+            $value = '';
+        }
+        $custom[$shortname] = $value;
+    }
+    $sysmap = \local_academy\local\academic_structure::map();
+    $sys = $custom[\local_academy\local\academic_structure::USER_SYSTEM] ?? '';
+    $div = $custom[\local_academy\local\academic_structure::USER_DIVISION] ?? '';
+    if ($div !== '' && ($sys === '' || !in_array($div, $sysmap[$sys] ?? [], true))) {
+        $custom[\local_academy\local\academic_structure::USER_DIVISION] = '';
+    }
+    foreach (['fatherphone' => $t('father phone', 'هاتف الأب'), 'motherphone' => $t('mother phone', 'هاتف الأم')] as $key => $label) {
+        $v = $custom[$key] ?? '';
+        if ($v !== '' && (!preg_match('/^[+]?[0-9\s\-()]{7,25}$/', $v) || strlen(preg_replace('/\D+/', '', $v)) < 7)) {
+            redirect($pageurl, $t('Please enter a valid ' . $label . ' (e.g. 01012345678).', 'يرجى إدخال رقم ' . $label . ' صحيح (مثال: 01012345678).'),
+                null, \core\output\notification::NOTIFY_ERROR);
+        }
+    }
+    if (($custom['nationalid'] ?? '') !== '' && !preg_match('/^[0-9]{14}$/', $custom['nationalid'])) {
+        redirect($pageurl, $t('The national ID is 14 digits.', 'الرقم القومي 14 رقم.'),
+            null, \core\output\notification::NOTIFY_ERROR);
+    }
+
     // Validate phone fields: reject strings and invalid numbers.
     if ($upd->phone1 !== '') {
         $digits = preg_replace('/\D+/', '', $upd->phone1);
@@ -91,6 +128,9 @@ if (data_submitted() && confirm_sesskey()) {
                 $USER->lang = $lang;
             }
 
+            require_once($CFG->dirroot . '/user/profile/lib.php');
+            profile_save_custom_fields($USER->id, $custom);
+
             // Save parent phone to custom profile field.
             $parentfield = (string) (get_config('local_parent', 'parentphonefield') ?: 'parentphone');
             $fieldid = $DB->get_field('user_info_field', 'id', ['shortname' => $parentfield]);
@@ -107,11 +147,6 @@ if (data_submitted() && confirm_sesskey()) {
                         'dataformat' => 0,
                     ]);
                 }
-            }
-
-            // Sync with local_parent linking if available.
-            if (class_exists('\local_parent\link_manager') && $parentphone !== '') {
-                \local_parent\link_manager::record_parent_phone((int) $USER->id, $parentphone);
             }
 
             redirect($pageurl, $t('Your changes were saved.', 'تم حفظ التغييرات.'),
@@ -141,9 +176,28 @@ $currentparentphone = '';
 if ($parentfieldid) {
     $currentparentphone = (string) $DB->get_field('user_info_data', 'data', ['userid' => $USER->id, 'fieldid' => $parentfieldid]);
 }
-if ($currentparentphone === '' && $DB->get_manager()->table_exists('local_parent_link')) {
-    $currentparentphone = (string) $DB->get_field('local_parent_link', 'parentphone', ['studentid' => $USER->id]);
-}
+
+// Registration data (user profile fields) and the field builders for the cards.
+$pf = \local_academy\local\user_fields::values((int) $USER->id);
+$pfdefs = \local_academy\local\user_fields::definitions();
+$pfinput = function (string $key, string $type = 'text', array $attrs = []) use ($pf, $pfdefs, $e): string {
+    $extra = '';
+    foreach ($attrs as $name => $value) {
+        $extra .= ' ' . $name . '="' . $e($value) . '"';
+    }
+    return '<div><div class="nit-prof-lbl">' . $e($pfdefs[$key]['name']) . '</div>'
+        . '<input class="nit-prof-field" type="' . $type . '" name="pf_' . $key . '" value="' . $e($pf[$key]) . '"' . $extra . '></div>';
+};
+$pfselect = function (string $key) use ($pf, $pfdefs, $e, $t): string {
+    $opts = '<option value="">' . $e($t('Choose…', 'اختر…')) . '</option>';
+    foreach (\local_academy\local\user_fields::menu_options($key) as $option) {
+        $opts .= '<option value="' . $e($option) . '"' . ($option === $pf[$key] ? ' selected' : '') . '>' . format_string($option) . '</option>'; // Category names carry {mlang}.
+    }
+    return '<div><div class="nit-prof-lbl">' . $e($pfdefs[$key]['name']) . '</div>'
+        . '<select class="nit-prof-field" id="nit-pf-' . $key . '" name="pf_' . $key . '">' . $opts . '</select></div>';
+};
+$phoneattrs = ['dir' => 'ltr', 'pattern' => '^[+]?[0-9\s\-()]{7,25}$', 'placeholder' => $t('e.g. 01012345678', 'مثال: 01012345678'),
+    'oninput' => "this.value = this.value.replace(/[^0-9+\\s\\-()]/g, '');"];
 
 // Real destinations for the settings nav.
 $nav = [
@@ -240,6 +294,8 @@ echo $OUTPUT->header();
             <div class="nit-prof-lbl"><?php echo $e($t('First name', 'الاسم الأول')); ?></div>
             <input class="nit-prof-field" type="text" name="firstname" value="<?php echo $e($USER->firstname); ?>" required>
           </div>
+          <?php echo $pfinput('secondname'); ?>
+          <?php echo $pfinput('thirdname'); ?>
           <div>
             <div class="nit-prof-lbl"><?php echo $e($t('Last name', 'اسم العائلة')); ?></div>
             <input class="nit-prof-field" type="text" name="lastname" value="<?php echo $e($USER->lastname); ?>" required>
@@ -256,6 +312,35 @@ echo $OUTPUT->header();
                    placeholder="<?php echo $e($t('e.g. 01012345678', 'مثال: 01012345678')); ?>"
                    value="<?php echo $e($USER->phone1 ?? ''); ?>">
           </div>
+          <?php echo $pfinput('nationalid', 'text', ['dir' => 'ltr', 'inputmode' => 'numeric', 'maxlength' => '14', 'pattern' => '[0-9]{14}',
+              'oninput' => "this.value = this.value.replace(/\\D/g, '');"]); ?>
+          <?php echo $pfselect('gender'); ?>
+          <?php echo $pfselect('religion'); ?>
+          <?php echo $pfselect('governorate'); ?>
+          <?php echo $pfinput('school'); ?>
+          <div class="full">
+            <div class="nit-prof-lbl"><?php echo $e($t('Bio', 'نبذة')); ?></div>
+            <textarea class="nit-prof-field" name="bio" maxlength="2000"><?php echo $e(strip_tags($USER->description ?? '')); ?></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- study details -->
+      <div class="nit-prof-card">
+        <div class="nit-prof-cardhd"><?php echo $e($t('Study details', 'البيانات الدراسية')); ?></div>
+        <div class="nit-prof-body">
+          <?php echo $pfselect(\local_academy\local\academic_structure::USER_YEAR); ?>
+          <?php echo $pfselect(\local_academy\local\academic_structure::USER_SYSTEM); ?>
+          <?php echo $pfselect(\local_academy\local\academic_structure::USER_DIVISION); ?>
+        </div>
+      </div>
+
+      <!-- guardian details -->
+      <div class="nit-prof-card">
+        <div class="nit-prof-cardhd"><?php echo $e($t('Guardian details', 'بيانات ولي الأمر')); ?></div>
+        <div class="nit-prof-body">
+          <?php echo $pfinput('fatherphone', 'tel', $phoneattrs); ?>
+          <?php echo $pfinput('motherphone', 'tel', $phoneattrs); ?>
           <div>
             <div class="nit-prof-lbl"><?php echo $e($t('Parent phone', 'هاتف ولي الأمر')); ?></div>
             <input class="nit-prof-field" type="tel" name="parentphone" dir="ltr"
@@ -264,10 +349,7 @@ echo $OUTPUT->header();
                    placeholder="<?php echo $e($t('Parent mobile number', 'رقم هاتف ولي الأمر')); ?>"
                    value="<?php echo $e($currentparentphone); ?>">
           </div>
-          <div class="full">
-            <div class="nit-prof-lbl"><?php echo $e($t('Bio', 'نبذة')); ?></div>
-            <textarea class="nit-prof-field" name="bio" maxlength="2000"><?php echo $e(strip_tags($USER->description ?? '')); ?></textarea>
-          </div>
+          <?php echo $pfinput('guardianjob'); ?>
         </div>
       </div>
 
@@ -310,4 +392,6 @@ echo $OUTPUT->header();
 })();
 </script>
 <?php
+echo \local_academy\local\linked_selects::script('nit-pf-' . \local_academy\local\academic_structure::USER_SYSTEM,
+    'nit-pf-' . \local_academy\local\academic_structure::USER_DIVISION);
 echo $OUTPUT->footer();

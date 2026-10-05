@@ -27,5 +27,45 @@ function xmldb_local_academy_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026070404, 'local', 'academy');
     }
 
+    if ($oldversion < 2026100400) {
+        // Course settings: group "custom fields" with the "is-special" checkbox
+        // (home page "selected courses").
+        \local_academy\local\course_fields::ensure();
+        upgrade_plugin_savepoint(true, 2026100400, 'local', 'academy');
+    }
+
+    if ($oldversion < 2026100401) {
+        // Year / Study system / Division dropdowns on courses and students, and
+        // the registration data as student profile fields.
+        \local_academy\local\academic_structure::sync();
+        upgrade_plugin_savepoint(true, 2026100401, 'local', 'academy');
+    }
+
+    if ($oldversion < 2026100402) {
+        // Teacher title (the line under the name on the home page teacher cards).
+        \local_academy\local\user_fields::ensure();
+        upgrade_plugin_savepoint(true, 2026100402, 'local', 'academy');
+    }
+
+    if ($oldversion < 2026100403) {
+        // Years are the course categories (REQUIREMENTS: "Categories = Year
+        // only"): drop the course "Year" dropdown and give the student "Year"
+        // dropdown the categories.
+        \local_academy\local\academic_structure::remove_old_course_year();
+        \local_academy\local\academic_structure::sync();
+        upgrade_plugin_savepoint(true, 2026100403, 'local', 'academy');
+    }
+
+    if ($oldversion < 2026100404) {
+        // Arabic + English ({mlang}) for the profile groups, field names and fixed
+        // options, and for the default study systems / divisions — answers kept.
+        \local_academy\local\user_fields::translate();
+        \local_academy\local\academic_structure::translate();
+        // local_nit_finance's teacher-percent field sits in our "teacher" group.
+        $ml = \local_academy\local\user_fields::ml('نسبة المدرس من الأرباح %', 'Teacher share of earnings %');
+        $DB->set_field('user_info_field', 'name', $ml, ['shortname' => 'teacherpercent', 'name' => 'نسبة المدرس من الأرباح %']);
+        upgrade_plugin_savepoint(true, 2026100404, 'local', 'academy');
+    }
+
     return true;
 }

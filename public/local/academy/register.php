@@ -32,21 +32,19 @@ if (isloggedin() && !isguestuser()) {
     redirect(new moodle_url('/'));
 }
 
-// الصف (Year) = site top-level visible categories.
-$gradeoptions = $DB->get_records('course_categories', ['parent' => 0, 'visible' => 1], 'sortorder', 'id,name');
-
-// Admin-configurable defaults (hardcoded for the UI stage).
-$systems = ['عام', 'أزهر', 'باكالوريا'];
-$divisions = [
-    'عام'      => ['ادبى', 'علمى علوم', 'علمى رياضة'],
-    'أزهر'     => ['علمى', 'ادبى'],
-    'باكالوريا' => ['مسار طب وعلوم الحياة', 'مسار الهندسة وعلوم الحاسب', 'مسار ادارة الاعمال', 'مسار الاداب والفنون'],
-];
-$governorates = ['القاهرة', 'الجيزة', 'الإسكندرية', 'الدقهلية', 'البحر الأحمر', 'البحيرة', 'الفيوم', 'الغربية',
-    'الإسماعيلية', 'المنوفية', 'المنيا', 'القليوبية', 'الوادي الجديد', 'السويس', 'أسوان', 'أسيوط', 'بني سويف',
-    'بورسعيد', 'دمياط', 'الشرقية', 'جنوب سيناء', 'كفر الشيخ', 'مطروح', 'الأقصر', 'قنا', 'شمال سيناء', 'سوهاج'];
-$religions = ['التربية الدينية الاسلامية', 'التربية الدينية المسيحية'];
-$genders = ['ذكر', 'أنثى'];
+// The dropdown lists are the admin's: Years = the course categories; Study systems / Divisions from
+// Plugins → Local plugins → Study systems & divisions, the others from the
+// student profile fields (Users → User profile fields).
+$academic = \local_academy\local\academic_structure::get();
+$gradeoptions = array_map(static fn(array $y): array => ['value' => $y['key'], 'label' => $y['name']],
+    \local_academy\local\academic_structure::years()); // Years = the course categories.
+$systems = array_column($academic['systems'], 'name');
+// System => its divisions as {value: stored text, label: shown in the page language}.
+$divisions = array_map(static fn(array $list): array => array_map(static fn(string $d): array => ['value' => $d,
+    'label' => format_string($d, true, ['escape' => false])], $list), \local_academy\local\academic_structure::map($academic));
+$governorates = \local_academy\local\user_fields::menu_options('governorate');
+$religions = \local_academy\local\user_fields::menu_options('religion');
+$genders = \local_academy\local\user_fields::menu_options('gender');
 
 $loginurl = (new moodle_url('/login/index.php'))->out(false);
 $homeurl = (new moodle_url('/'))->out(false);
@@ -79,8 +77,9 @@ function reg_text($name, $label, $icon, $hint = '', $type = 'text', $pw = false)
 function reg_select($name, $placeholder, array $opts, $valuefield = null) {
     $o = '<option value="" selected disabled hidden></option>';
     foreach ($opts as $k => $v) {
-        if (is_object($v)) { $o .= '<option value="' . (int)$v->id . '">' . format_string($v->name) . '</option>'; }
-        else { $o .= '<option value="' . s($v) . '">' . s($v) . '</option>'; }
+        if (is_array($v)) { $o .= '<option value="' . s($v['value']) . '">' . s($v['label']) . '</option>'; }
+        else if (is_object($v)) { $o .= '<option value="' . (int)$v->id . '">' . format_string($v->name) . '</option>'; }
+        else { $o .= '<option value="' . s($v) . '">' . format_string($v) . '</option>'; }
     }
     return '<div class="reg-cell"><div class="reg-field reg-sel">'
         . '<select name="' . $name . '" id="f_' . $name . '" data-ph="' . s($placeholder) . '" required>' . $o . '</select>'
@@ -369,7 +368,7 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
   function fillDivisions(){
     var list = DIV[sysSel.value] || [];
     var ph = divSel.getAttribute('data-ph');
-    divSel.innerHTML = '<option value="" selected disabled hidden>'+ph+'</option>' + list.map(function(d){ return '<option value="'+d+'">'+d+'</option>'; }).join('');
+    divSel.innerHTML = '<option value="" selected disabled hidden>'+ph+'</option>' + list.map(function(d){ var o = document.createElement('option'); o.value = d.value; o.textContent = d.label; return o.outerHTML; }).join('');
     divSel.style.color = 'var(--ph)';
   }
   if(sysSel && divSel){

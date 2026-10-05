@@ -15,8 +15,9 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Parent accounts — link a parent to their child(ren) by phone number and let
- * them follow marks, quiz activity and events. See docs/parent-accounts.md.
+ * Parent dashboard — a parent types their child's phone and their own phone and
+ * follows the child's videos, homework and exams (bassthalk.com/parent_dashboard).
+ * There is no parent account. See docs/parent-accounts.md.
  *
  * @package    local_parent
  * @copyright  2026 NIT
@@ -26,8 +27,8 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_parent';
-$plugin->version   = 2026092803;
+$plugin->version   = 2026100400;
 $plugin->requires  = 2024100700; // Moodle 4.5+
 $plugin->supported = [405, 502];
 $plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.1.0-foundation';
+$plugin->release   = '0.2.0-dashboard';

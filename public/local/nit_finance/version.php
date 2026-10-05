@@ -25,11 +25,11 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_nit_finance';
-$plugin->version   = 2026080501;
+$plugin->version   = 2026100401;
 $plugin->requires  = 2024100700;              // Moodle 4.5 LTS baseline.
 $plugin->supported = [405, 502];
 $plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.1.0';
+$plugin->release   = '0.2.0';
 $plugin->dependencies = [
     'local_nit_core' => 2026080403,
 ];

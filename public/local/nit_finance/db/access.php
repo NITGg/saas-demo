@@ -33,4 +33,14 @@ $capabilities = [
             'manager' => CAP_ALLOW,
         ],
     ],
+
+    // Set an activity's own price (sell it lesson by lesson).
+    'local/nit_finance:setprice' => [
+        'captype'      => 'write',
+        'contextlevel' => CONTEXT_COURSE,
+        'archetypes'   => [
+            'manager' => CAP_ALLOW,
+        ],
+        'riskbitmask'  => RISK_CONFIG,
+    ],
 ];

@@ -24,89 +24,75 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['pluginname'] = 'حسابات أولياء الأمور';
-
-// Capability.
-$string['parent:view'] = 'الاطّلاع على تقدّم ابنه المرتبط';
-
-// The parent role.
-$string['parentrole'] = 'ولي أمر';
-$string['parentroledesc'] = 'ولي أمر يقدر يتابع درجات ابنه ونشاط اختباراته وأحداثه. بيتسند تلقائيًا في سياق كل ابن لما الحسابين يترابطوا بالرقم.';
+$string['pluginname'] = 'لوحة تحكم ولي الأمر';
+$string['cachedef_failures'] = 'محاولات الدخول الخاطئة على لوحة ولي الأمر';
 
 // Settings.
-$string['settingsheading'] = 'حسابات أولياء الأمور';
+$string['settingsheading'] = 'لوحة تحكم ولي الأمر';
 $string['defaultcountrycode'] = 'كود الدولة الافتراضي';
 $string['defaultcountrycode_desc'] = 'أرقام بتتحط قبل الرقم المحلي اللي مفيهوش كود دولة، عشان 010… و +2010… يتطابقوا. مصر = 20.';
 $string['parentphonefield'] = 'حقل رقم ولي الأمر';
-$string['parentphonefield_desc'] = 'الاسم المختصر لحقل البروفايل المخصص للطالب اللي بيحمل رقم ولي الأمر (بيتملى وقت تسجيل الطالب).';
+$string['parentphonefield_desc'] = 'الاسم المختصر لحقل البروفايل اللي فيه رقم ولي أمر الطالب. لوحة ولي الأمر بتقارن رقم ولي الأمر بالحقل ده وبحقلي رقم الأب ورقم الأم.';
 
 // Student sign-up field.
 $string['parentphonelabel'] = 'رقم ولي الأمر';
 
-// Parent phone-gate page.
-$string['parentsignup'] = 'إنشاء حساب ولي أمر';
-$string['parentsignupintro'] = 'اكتب رقم الموبايل اللي ابنك سجّله كرقم ولي أمره. مش هنكمّل غير لو طالب سجّل الرقم ده قبل كده.';
-$string['yourphone'] = 'رقم موبايلك';
-$string['continuetosignup'] = 'متابعة';
-
-// Parent dashboard.
-$string['dashboard'] = 'لوحة ولي الأمر';
-$string['marks'] = 'الدرجات';
-$string['quizactivity'] = 'نشاط الاختبارات';
-$string['col_course'] = 'الكورس';
-$string['col_grade'] = 'الدرجة';
-$string['col_quiz'] = 'الاختبار';
-$string['col_score'] = 'النتيجة';
-$string['col_taken'] = 'الوقت';
-$string['col_duration'] = 'المدة';
-$string['noquizzes'] = 'لسه مفيش محاولات اختبار.';
-$string['nomarks'] = 'لسه مفيش درجات.';
-
-// Linking / flow messages.
-$string['err_noparentnumber'] = 'مفيش طالب سجّل الرقم ده. اطلب من ابنك يضيفه في ملفه الأول.';
+// Dashboard — hero and form.
+$string['dashboard'] = 'لوحة تحكم ولي الأمر';
+$string['title_a'] = 'لوحة تحكم';
+$string['title_b'] = 'ولي الأمر';
+$string['intro'] = 'دلوقتي تقدر تتابع نجلك أسبوعياً بكل سهولة لكل نشاطاته التعليمية من حيث مشاهداته ودرجاته، عشان تكون مطمئن على مستقبله وتبقى جزء من رحلته التعليمية، وتساعدنا في تحقيق هدفه للوصول لأفضل النتائج.';
+$string['childphone'] = 'رقم هاتف نجلك';
+$string['yourphone'] = 'رقم هاتفك';
+$string['start'] = 'ابدأ المتابعة';
 $string['err_invalidphone'] = 'يرجى إدخال رقم هاتف صحيح (مثال: 01012345678). غير مسموح بالحروف أو النصوص.';
-$string['parentsignupbadge'] = 'إنشاء حساب ولي أمر (مرتبط برقم: {$a})';
-$string['parentsignupprompt'] = 'هل أنت ولي أمر وترغب في متابعة ابنك؟';
-$string['parentsignuplink'] = 'أنشئ حساب ولي أمر من هنا';
-$string['parentphonehint'] = 'اختياري: اكتب رقم ولي أمرك لكي يتمكن من متابعة درجاتك ونشاطك.';
-$string['mychildren'] = 'أولادي';
-$string['linkedchildren'] = 'الأبناء المرتبطون';
-$string['nochildren'] = 'لسه مفيش أبناء مرتبطين بحسابك.';
+$string['err_nomatch'] = 'البيانات غير صحيحة. اتأكد من رقم نجلك ومن رقمك المسجل عنده كرقم ولي الأمر.';
+$string['err_toomany'] = 'محاولات كثيرة غير صحيحة. حاول مرة أخرى بعد ربع ساعة.';
 
-// Notifications to parents.
-$string['messageprovider:child_activity'] = 'إشعارات تقدم الابن (الاختبارات والدرجات والأنشطة)';
+// Dashboard — results.
+$string['courselist'] = 'كورسات نجلك';
+$string['togglelist'] = 'تصغير / تكبير قائمة الكورسات';
+$string['choosecourse'] = 'أختر الكورس أولا لإظهار كل ما يخص نجلك من إحصائيات ونتائج';
+$string['nocourses'] = 'لا يوجد كورسات مشترك بها نجلك حاليا لعرض البيانات';
+$string['stats_a'] = 'تفاصيل احصائيات';
+$string['stats_b'] = 'نجلك !';
+$string['showcontent'] = 'عرض المحتوى';
+$string['hidecontent'] = 'إخفاء المحتوى';
+$string['nocontent'] = 'لم يتم نزول المحتوى في هذا الكورس حتى الآن';
+$string['emptyweek'] = 'لم يتم رفع محتوى';
+$string['startedon'] = 'بدأ في :';
+$string['col_videos'] = 'الفيديوهات';
+$string['col_homework'] = 'الواجبات';
+$string['col_exams'] = 'الامتحانات';
+$string['studentlevel'] = 'مستوى الطالب';
 
-$string['notif_quiz_subject'] = 'تم تسليم اختبار: {$a->child} أنهى {$a->quiz}';
-$string['notif_quiz_body'] = 'مرحباً،
+// Items, named by their order in the lecture.
+$string['label_videos'] = 'الفيديو {$a}';
+$string['label_homework'] = 'الواجب {$a}';
+$string['label_exams'] = 'الامتحان {$a}';
+$string['ord1'] = 'الأول';
+$string['ord2'] = 'الثاني';
+$string['ord3'] = 'الثالث';
+$string['ord4'] = 'الرابع';
+$string['ord5'] = 'الخامس';
+$string['ord6'] = 'السادس';
+$string['ord7'] = 'السابع';
+$string['ord8'] = 'الثامن';
+$string['ord9'] = 'التاسع';
+$string['ord10'] = 'العاشر';
+$string['done_videos'] = 'تم مشاهدة';
+$string['done_videos_after'] = 'من الفيديو';
+$string['done_homework'] = 'نتيجة الواجب';
+$string['done_exams'] = 'نتيجة الاختبار';
+$string['pending_videos'] = 'جاري المشاهدة';
+$string['pending_homework'] = 'تم التسليم، في انتظار التصحيح';
+$string['pending_exams'] = 'تم الحل، في انتظار النتيجة';
+$string['absent_videos'] = 'لم يتم مشاهدة الفيديو';
+$string['absent_homework'] = 'لم يتم حضور الواجب';
+$string['absent_exams'] = 'لم يتم حضور الاختبار';
+$string['none_videos'] = 'لا يوجد فيديوهات حتى الآن';
+$string['none_homework'] = 'لا يوجد واجبات حتى الآن';
+$string['none_exams'] = 'لا يوجد اختبارات حتى الآن';
 
-أنهى ابنك/ابنتك {$a->child} الاختبار "{$a->quiz}" في كورس "{$a->course}".
-الدرجة: {$a->score}
-
-يمكنك الاطلاع على كافة التفاصيل ولوحة المتابعة من هنا:
-{$a->url}';
-
-$string['notif_grade_subject'] = 'درجة جديدة لابنك {$a->child}: {$a->item}';
-$string['notif_grade_body'] = 'مرحباً،
-
-تم رصد درجة جديدة لابنك/ابنتك {$a->child} في "{$a->item}" بكورس "{$a->course}".
-الدرجة: {$a->grade}
-
-تابع درجات ابنك ونشاطه عبر لوحة ولي الأمر:
-{$a->url}';
-
-$string['notif_course_completed_subject'] = 'مبروك! {$a->child} أتم كورس {$a->course}';
-$string['notif_course_completed_body'] = 'مرحباً،
-
-خبر رائع! أتم ابنك/ابنتك {$a->child} بنجاح كورس "{$a->course}".
-
-يمكنك مراجعة تقرير الإنجاز عبر لوحة ولي الأمر:
-{$a->url}';
-
-$string['notif_course_enrolled_subject'] = '{$a->child} انضم إلى كورس جديد: {$a->course}';
-$string['notif_course_enrolled_body'] = 'مرحباً،
-
-انضم ابنك/ابنتك {$a->child} إلى كورس "{$a->course}".
-
-يمكنك متابعة تقدمه أولاً بأول من لوحة ولي الأمر:
-{$a->url}';
-
+// Privacy.
+$string['privacy:metadata'] = 'إضافة لوحة ولي الأمر لا تخزن أي بيانات شخصية؛ هي بتعرض بيانات الطالب الموجودة بالفعل لما رقمه ورقم ولي أمره يتطابقوا.';

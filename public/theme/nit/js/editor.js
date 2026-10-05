@@ -138,7 +138,14 @@
             "#nit-side-panel{position:fixed;top:64px;inset-inline-end:0;width:340px;max-width:88vw;" +
             "height:calc(100vh - 64px);background:#fff;border-inline-start:1px solid #EDEDE9;" +
             "box-shadow:-12px 0 40px rgba(20,24,28,.08);z-index:1029;overflow:auto;" +
-            "font:14px 'Manrope',system-ui,sans-serif;color:#16191D;padding:18px 16px 40px}" +
+            "font:14px 'Manrope',system-ui,sans-serif;color:#16191D;padding:18px 16px 40px;transition:transform .25s ease}" +
+            "#nit-side-panel.nit-side-hidden{transform:translateX(100%);visibility:hidden;transition:transform .25s ease,visibility 0s .25s}" +
+            "[dir=rtl] #nit-side-panel.nit-side-hidden{transform:translateX(-100%)}" +
+            "#nit-side-toggle{position:fixed;z-index:1030;width:28px;height:56px;padding:0;border:1px solid #EDEDE9;" +
+            "border-inline-end:0;border-start-start-radius:10px;border-end-start-radius:10px;background:#fff;color:#16191D;" +
+            "box-shadow:-6px 0 18px rgba(20,24,28,.08);font:700 20px/1 system-ui;cursor:pointer;transition:inset-inline-end .25s ease}" +
+            "#nit-side-toggle:hover{background:#FAFAF8}" +
+            "#nit-side-toggle:focus-visible{outline:2px solid var(--nit-brand-primary,#0E7C66);outline-offset:2px}" +
             "#nit-side-panel .nit-side-hd{font:700 11px 'Manrope',system-ui;letter-spacing:.12em;" +
             "text-transform:uppercase;color:#8A8A82;margin:18px 4px 8px}" +
             "#nit-side-panel .nit-side-hint{font-size:12px;color:#8A8A82;margin:0 4px 6px;line-height:1.5}" +
@@ -1945,9 +1952,51 @@
 
         document.body.appendChild(sidePanel);
         document.body.classList.add('nit-editing-panel');
+        buildSideToggle(dock);
         window.addEventListener('beforeunload', function (e) { if (!leaving && draftCount()) { e.preventDefault(); e.returnValue = ''; } });
     }
+    // A tab on the panel's edge hides / shows it, so the page content behind it
+    // (buttons, links) can be reached while editing. The choice is remembered in
+    // this browser (localStorage — a per-viewer convenience only).
+    var sideToggle = null;
+    var SIDE_HIDDEN_KEY = 'nitSidePanelHidden';
+    function sideHidden() {
+        try { return window.localStorage.getItem(SIDE_HIDDEN_KEY) === '1'; } catch (e) { return false; }
+    }
+    function buildSideToggle(dock) {
+        if (sideToggle || !sidePanel) { return; }
+        sideToggle = document.createElement('button');
+        sideToggle.type = 'button';
+        sideToggle.id = 'nit-side-toggle';
+        var place = function () {
+            if (!sidePanel || !sideToggle) { return; }
+            var hidden = sidePanel.classList.contains('nit-side-hidden');
+            sideToggle.style.top = (parseInt(sidePanel.style.top, 10) || 64) + 16 + 'px';
+            sideToggle.style.insetInlineEnd = hidden ? '0px' : sidePanel.offsetWidth + 'px';
+        };
+        var apply = function (hidden) {
+            sidePanel.classList.toggle('nit-side-hidden', hidden);
+            var rtl = document.documentElement.dir === 'rtl';
+            // The arrow points the way the panel will move.
+            sideToggle.textContent = (hidden !== rtl) ? '‹' : '›';
+            var label = hidden ? t('showpanel', 'Show editing panel') : t('hidepanel', 'Hide editing panel');
+            sideToggle.title = label;
+            sideToggle.setAttribute('aria-label', label);
+            sideToggle.setAttribute('aria-expanded', hidden ? 'false' : 'true');
+            place();
+        };
+        sideToggle.addEventListener('click', function () {
+            var hidden = !sidePanel.classList.contains('nit-side-hidden');
+            try { window.localStorage.setItem(SIDE_HIDDEN_KEY, hidden ? '1' : '0'); } catch (e) { /* private mode */ }
+            apply(hidden);
+        });
+        document.body.appendChild(sideToggle);
+        window.addEventListener('resize', place);
+        apply(sideHidden());
+    }
+
     function removeSidePanel() {
+        if (sideToggle) { sideToggle.remove(); sideToggle = null; }
         if (sidePanel) { sidePanel.remove(); sidePanel = null; panelContent = null; publishBar = null; }
         document.body.classList.remove('nit-editing-panel');
         document.querySelectorAll('[data-nit-section].nit-sel').forEach(function (s) { s.classList.remove('nit-sel'); });

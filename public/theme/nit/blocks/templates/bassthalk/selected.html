@@ -1,0 +1,269 @@
+<!--
+  Bassthalk home — "كورسات مختارة / مخصوص ليك". Paste into a "NIT Section" block, mode "Raw HTML".
+  Source of truth: theme/nit/blocks/templates/bassthalk/selected.html (see README.md there).
+  Measured 1:1 against bassthalk.com at 1280×832. Colours: Brand Colors → Bassthalk → "Home — selected courses".
+  Texts: Arabic + English via {mlang ar}…{mlang}{mlang en}…{mlang} (edit both); the layout follows the page direction.
+
+  The cards are NOT written here: the script below loads them from
+  /local/academy/homedata.php?section=selected — the visible courses whose "is-special" box is ticked
+  on the course settings page (group "custom fields"), with each course's year = its course category. The year list
+  of the filter is the course categories (choosing a category also shows its sub-categories' courses).
+  The look of one card is the <template data-nit-sel-card> below; {{fullname}} {{url}} {{year}}
+  {{teachers}} {{lessons}} are filled in for every course.
+-->
+<style>
+  .nit-bth-sel{ position:relative; overflow:hidden; width:100%; margin-bottom:40px; color:var(--nit-brand-bthseltext); font-family:'Almarai',sans-serif;
+    font-size:16px; line-height:24px; background:linear-gradient(to bottom, var(--nit-brand-bthselbgtop), var(--nit-brand-bthselbgbottom)); }
+  .nit-bth-sel-z{ position:relative; z-index:10; padding:40px 0; }
+  .nit-bth-sel-top{ display:flex; flex-direction:column; justify-content:space-evenly; align-items:center; padding:32px 4px; font-family:'Tajawal',sans-serif; font-weight:700; }
+  .nit-bth-sel-text{ display:flex; flex-direction:column; flex-basis:100%; padding:16px 8px 40px; }
+  .nit-bth-sel-text > * + *{ margin-top:40px; }
+  .nit-bth-sel-text h2{ margin:0; font-family:'Tajawal',sans-serif; font-size:30px; line-height:36px; font-weight:700; text-align:center; color:inherit; }
+  .nit-bth-sel-text p{ max-width:384px; margin-bottom:0; font-family:'Tajawal',sans-serif; font-size:20px; line-height:28px; font-weight:500; text-align:center; }
+  .nit-bth-sel-art{ position:relative; height:100%; flex-basis:100%; }
+  .nit-bth-sel-frame{ overflow:hidden; padding:12px; border-radius:16px; background:var(--nit-brand-bthselframebg);
+    border:1px solid var(--nit-brand-bthselframe); box-shadow:0 1px 2px 0 rgba(0,0,0,.05); }
+  .nit-bth-sel-frame-in{ position:relative; width:100%; }
+  .nit-bth-sel-frame-in img{ position:absolute; inset:0; display:block; width:100%; height:auto; max-width:none; margin:0; }
+  .nit-bth-sel-spacer{ aspect-ratio:551/320; width:320px; max-width:100%; }
+  .nit-bth-sel-bottom{ display:flex; flex-direction:column; padding-top:32px; }
+  .nit-bth-sel-bottom > * + *{ margin-top:24px; }
+  .nit-bth-sel-barwrap{ padding:0 16px; margin-bottom:16px; }
+  .nit-bth-sel-bar{ display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:40px; width:100%; }
+  .nit-bth-sel-select{ position:relative; width:256px; font-family:'Almarai',sans-serif; }
+  .nit-bth-sel-selectbtn{ display:flex; justify-content:space-between; align-items:center; width:100%; padding:8px 16px; border:2px solid var(--nit-brand-bthselfilter);
+    border-radius:12px; background:transparent; color:var(--nit-brand-bthselfilter); font-family:'Almarai',sans-serif; font-size:inherit; line-height:inherit;
+    font-weight:400; text-align:start; cursor:pointer; transition:all .4s ease; }
+  .nit-bth-sel-selectbtn:focus{ outline:none; }
+  .nit-bth-sel-selectbtn:focus-visible{ box-shadow:0 0 0 2px color-mix(in srgb, var(--nit-brand-bthselfilter) 35%, transparent); }
+  .nit-bth-sel-selectbtn svg{ width:18px; height:18px; margin-inline-start:8px; flex:none; }
+  .nit-bth-sel-menu{ position:absolute; inset-inline-start:0; z-index:50; width:100%; max-height:240px; overflow:auto; margin:8px 0 0; padding:0; list-style:none; text-align:start;
+    background:var(--nit-brand-bthselmenubg); border:1px solid var(--nit-brand-bthselfilter); border-radius:12px;
+    box-shadow:0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -4px rgba(0,0,0,.1); }
+  .nit-bth-sel-menu[hidden]{ display:none; }
+  .nit-bth-sel-menu li{ padding:8px 16px; cursor:pointer; color:var(--nit-brand-bthseltext); transition:all .4s ease; font-family:'Almarai',sans-serif; font-size:inherit; line-height:inherit; }
+  .nit-bth-sel-menu li:hover, .nit-bth-sel-menu li:focus{ background:var(--nit-brand-bthselmenuhover); outline:none; }
+  .nit-bth-sel-arrows{ display:flex; align-items:center; gap:12px; }
+  .nit-bth-sel-arrow{ display:flex; align-items:center; justify-content:center; width:44px; height:44px; padding:0; border-radius:9999px; font-size:24px;
+    border:2px solid var(--nit-brand-bthselarrowbg); background:var(--nit-brand-bthselarrowbg); color:var(--nit-brand-bthselarrowicon); cursor:pointer; transition:all .2s; }
+  .nit-bth-sel-arrow:hover{ background:var(--nit-brand-bthselarrowhover); }
+  .nit-bth-sel-arrow:focus{ outline:none; }
+  .nit-bth-sel-arrow:focus-visible{ box-shadow:0 0 0 2px var(--nit-brand-bthselarrowhover); }
+  .nit-bth-sel-arrow:disabled{ background:transparent; color:var(--nit-brand-bthselarrowofficon); border-color:var(--nit-brand-bthselarrowoff); cursor:not-allowed; }
+  .nit-bth-sel-arrow svg{ width:1em; height:1em; }
+  html[dir="ltr"] .nit-bth-sel-arrow svg{ transform:scaleX(-1); }
+  .nit-bth-sel-viewport{ position:relative; overflow:hidden; }
+  .nit-bth-sel-track{ display:flex; gap:20px; transition:transform .3s ease; will-change:transform; touch-action:pan-y; }
+  .nit-bth-sel-slide{ flex:none; padding:40px 16px; }
+  .nit-bth-sel-slide[hidden]{ display:none; }
+  .nit-bth-sel-empty{ padding:40px 16px; text-align:center; font:500 18px/28px 'Tajawal',sans-serif; color:var(--nit-brand-bthseltext); }
+  .nit-bth-sel-empty[hidden]{ display:none; }
+  .nit-bth-sel-card{ width:100%; min-width:300px; padding:16px; border-radius:16px; font-family:'Almarai',sans-serif; font-size:inherit; line-height:inherit;
+    color:var(--nit-brand-bthselcardtext); background:var(--nit-brand-bthselcardbg); transition:all .4s ease;
+    box-shadow:0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -2px rgba(0,0,0,.1); }
+  .nit-bth-sel-card:hover{ background:var(--nit-brand-bthselcardhover); }
+  .nit-bth-sel-cardtop{ display:flex; flex-direction:column; gap:8px; align-items:center; justify-content:center; height:128px; margin-bottom:20px; overflow:hidden;
+    border-radius:12px; background:color-mix(in srgb, var(--nit-brand-bthselcardtext) 20%, transparent); }
+  .nit-bth-sel-cardtop img{ display:block; width:100%; height:100%; object-fit:cover; margin:0; }
+  .nit-bth-sel-icon{ display:flex; align-items:center; justify-content:center; font-size:48px; transform:translateY(-1px); }
+  .nit-bth-sel-icon svg{ width:1em; height:1em; }
+  .nit-bth-sel-topname{ padding:0 12px; font:700 18px/1.25 'Tajawal',sans-serif; text-align:center; }
+  .nit-bth-sel-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; font-family:'Tajawal',sans-serif; font-size:14px; }
+  .nit-bth-sel-row h3{ margin:0; font:700 18px/28px 'Tajawal',sans-serif; color:var(--nit-brand-bthselcardtext); }
+  .nit-bth-sel-year{ display:flex; align-items:center; gap:4px; color:var(--nit-brand-bthselyear); font-weight:700; white-space:nowrap; }
+  .nit-bth-sel-year:empty{ display:none; }
+  .nit-bth-sel-stats{ display:flex; flex-direction:column; justify-content:space-between; margin-bottom:16px; font-size:12px; line-height:16px; font-weight:300;
+    color:color-mix(in srgb, var(--nit-brand-bthselcardtext) 90%, transparent); }
+  .nit-bth-sel-stats > * + *{ margin-top:20px; }
+  .nit-bth-sel-stat{ display:flex; align-items:center; justify-content:space-between; }
+  .nit-bth-sel-btnwrap{ display:flex; width:100%; }
+  .nit-bth-sel a.nit-bth-sel-btn, .nit-bth-sel a.nit-bth-sel-btn:visited{ display:block; width:100%; padding:8px 16px; border:2px solid var(--nit-brand-bthselbtnborder); border-radius:12px;
+    background:var(--nit-brand-bthselbtnbg)!important; color:var(--nit-brand-bthselbtntext)!important; font-family:'Almarai',sans-serif; font-size:inherit; line-height:inherit;
+    font-weight:700; text-align:center; text-decoration:none!important; transition:all .4s ease; }
+  .nit-bth-sel a.nit-bth-sel-btn:hover, .nit-bth-sel a.nit-bth-sel-btn:focus-visible{ background:var(--nit-brand-bthselbtnhover)!important; color:var(--nit-brand-bthselbtntext)!important; }
+  /* bassthalk sets its body text to 15.008px on phones. */
+  @media (max-width:767px){ .nit-bth-sel{ font-size:15.008px; line-height:22.512px; } }
+  @media (min-width:640px){
+    .nit-bth-sel-card{ padding:20px; }
+    .nit-bth-sel-row{ font-size:16px; }
+    .nit-bth-sel-row h3{ font-size:20px; }
+    .nit-bth-sel-stats{ font-size:14px; line-height:20px; }
+  }
+  @media (min-width:768px){
+    .nit-bth-sel{ min-height:100vh; margin-bottom:64px; }
+    .nit-bth-sel-top{ padding-inline:20px; }
+    .nit-bth-sel-text{ padding-inline:40px; }
+    .nit-bth-sel-text h2{ font-size:48px; line-height:1; }
+    .nit-bth-sel-art{ max-width:576px; }
+    .nit-bth-sel-frame{ padding:20px; }
+    .nit-bth-sel-spacer{ width:420px; }
+    .nit-bth-sel-bottom{ padding-top:56px; }
+    .nit-bth-sel-bottom > * + *{ margin-top:48px; }
+    .nit-bth-sel-barwrap{ padding:0 40px; }
+  }
+  @media (min-width:1024px){
+    .nit-bth-sel-top{ padding-inline:80px; }
+    .nit-bth-sel-text h2{ font-size:60px; }
+    .nit-bth-sel-art{ max-width:672px; }
+    .nit-bth-sel-spacer{ width:520px; }
+    .nit-bth-sel-barwrap{ padding:0 80px; }
+  }
+  @media (min-width:1280px){
+    .nit-bth-sel-top{ flex-direction:row; align-items:flex-start; }
+    .nit-bth-sel-text{ flex-basis:50%; padding-bottom:0; }
+    .nit-bth-sel-text h2, .nit-bth-sel-text p{ text-align:start; }
+    .nit-bth-sel-text h2{ font-size:72px; }
+    .nit-bth-sel-art{ flex-basis:50%; }
+  }
+</style>
+<section class="nit-bth-section nit-bth-sel nit-brand-18" data-nit-section="selected" aria-labelledby="nit-bth-sel-title">
+  <div class="nit-bth-sel-z">
+    <div class="nit-bth-sel-top">
+      <div class="nit-bth-sel-text">
+        <h2 id="nit-bth-sel-title">{mlang ar}كورسات مختارة<br>مخصوص ليك{mlang}{mlang en}Courses picked<br>just for you{mlang}</h2>
+        <p>{mlang ar}ريحنا دماغك وجمعنا لك كورسات على مزاجك، مختارة بحب وعناية كأننا بنعمل شوبينج لأحسن شوية كورسات تساعدك وتنميك!{mlang}{mlang en}We did the work for you and gathered courses to your taste, picked with care as if we were shopping for the best courses to help you grow!{mlang}</p>
+      </div>
+      <div class="nit-bth-sel-art">
+        <div class="nit-bth-sel-frame">
+          <div class="nit-bth-sel-frame-in">
+            <img src="/theme/nit/pix/bassthalk_selected.png" alt="" loading="lazy">
+            <div class="nit-bth-sel-spacer"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="nit-bth-sel-bottom">
+      <div class="nit-bth-sel-barwrap">
+        <div class="nit-bth-sel-bar">
+          <div class="nit-bth-sel-select">
+            <button type="button" class="nit-bth-sel-selectbtn" aria-haspopup="listbox" aria-expanded="false" data-nit-sel-toggle>
+              <span data-nit-sel-label data-placeholder="{mlang ar}اختر الصف الدراسي{mlang}{mlang en}Choose your year{mlang}">{mlang ar}اختر الصف الدراسي{mlang}{mlang en}Choose your year{mlang}</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7.41 8.58L12 13.17l4.59-4.59L18 10l-6 6l-6-6z"/></svg>
+            </button>
+            <ul class="nit-bth-sel-menu" role="listbox" aria-label="{mlang ar}الصف الدراسي{mlang}{mlang en}Year{mlang}" hidden data-nit-sel-menu>
+              <li role="option" tabindex="-1" data-year="">{mlang ar}كل الصفوف{mlang}{mlang en}All years{mlang}</li>
+            </ul>
+          </div>
+          <div class="nit-bth-sel-arrows">
+            <button type="button" class="nit-bth-sel-arrow" aria-label="{mlang ar}السابق{mlang}{mlang en}Previous{mlang}" data-nit-sel-prev disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8.59 16.58L13.17 12L8.59 7.41L10 6l6 6l-6 6z"/></svg>
+            </button>
+            <button type="button" class="nit-bth-sel-arrow" aria-label="{mlang ar}التالي{mlang}{mlang en}Next{mlang}" data-nit-sel-next disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M15.41 16.58L10.83 12l4.58-4.59L14 6l-6 6l6 6z"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="nit-bth-sel-viewport">
+        <div class="nit-bth-sel-track" data-nit-sel-track></div>
+        <div class="nit-bth-sel-empty" data-nit-sel-empty hidden>{mlang ar}لا توجد كورسات مختارة لهذا الصف حاليًا.{mlang}{mlang en}No picked courses for this year yet.{mlang}</div>
+      </div>
+    </div>
+  </div>
+  <template data-nit-sel-card>
+    <div class="nit-bth-sel-slide" data-years="{{yearids}}">
+      <div class="nit-bth-sel-card">
+        <div class="nit-bth-sel-cardtop" data-nit-sel-image>
+          <span class="nit-bth-sel-icon"><svg viewBox="0 0 256 256" aria-hidden="true"><g fill="currentColor"><path d="M48 72h64v112H48Zm142.64-33.61a8 8 0 0 0-9.5-6.21l-46.81 10a8.07 8.07 0 0 0-6.15 9.57L139.79 107l62.46-13.42Z" opacity=".2"/><path d="m231.65 194.55l-33.19-157.8a16 16 0 0 0-19-12.39l-46.81 10.06a16.08 16.08 0 0 0-12.3 19l33.19 157.8A16 16 0 0 0 169.16 224a16.3 16.3 0 0 0 3.38 -.36l46.81-10.06a16.09 16.09 0 0 0 12.3-19.03M136 50.15v-.09l46.8-10l3.33 15.87L139.33 66Zm6.62 31.47l46.82-10.05l3.34 15.9L146 97.53Zm6.64 31.57l46.82-10.06l13.3 63.24l-46.82 10.06ZM216 197.94l-46.8 10l-3.33-15.87l46.8-10.07l3.33 15.85zM104 32H56a16 16 0 0 0-16 16v160a16 16 0 0 0 16 16h48a16 16 0 0 0 16-16V48a16 16 0 0 0-16-16M56 48h48v16H56Zm0 32h48v96H56Zm48 128H56v-16h48z"/></g></svg></span>
+          <span class="nit-bth-sel-topname">{{fullname}}</span>
+        </div>
+        <div class="nit-bth-sel-row">
+          <h3>{{fullname}}</h3>
+          <div class="nit-bth-sel-year">{{year}}</div>
+        </div>
+        <div class="nit-bth-sel-stats">
+          <div class="nit-bth-sel-stat"><div>{mlang ar}المدرسين{mlang}{mlang en}Teachers{mlang}</div><div>{{teachers}}</div></div>
+          <div class="nit-bth-sel-stat"><div>{mlang ar}الدروس{mlang}{mlang en}Lessons{mlang}</div><div>{{lessons}}</div></div>
+        </div>
+        <div class="nit-bth-sel-btnwrap"><a class="nit-bth-sel-btn" href="{{url}}">{mlang ar}اعرف اكثر{mlang}{mlang en}Learn more{mlang}</a></div>
+      </div>
+    </div>
+  </template>
+  <script>
+  (function(){
+    var root = document.currentScript && document.currentScript.closest('[data-nit-section="selected"]');
+    if (!root || root.getAttribute('data-ready')) { return; }
+    root.setAttribute('data-ready', '1');
+    var track = root.querySelector('[data-nit-sel-track]'), viewport = track.parentNode;
+    var prev = root.querySelector('[data-nit-sel-prev]'), next = root.querySelector('[data-nit-sel-next]');
+    var toggle = root.querySelector('[data-nit-sel-toggle]'), menu = root.querySelector('[data-nit-sel-menu]');
+    var label = root.querySelector('[data-nit-sel-label]'), empty = root.querySelector('[data-nit-sel-empty]');
+    var tpl = root.querySelector('template[data-nit-sel-card]');
+    var GAP = 20, index = 0, slides = [];
+
+    function esc(s){ var d = document.createElement('div'); d.textContent = (s == null ? '' : String(s)); return d.innerHTML; }
+    function visible(){ return slides.filter(function(s){ return !s.hidden; }); }
+    // The first card sits at the reading-start edge; moving on slides the track
+    // towards the reading end (right in Arabic, left in English).
+    function dir(){ return getComputedStyle(root).direction === 'rtl' ? 1 : -1; }
+    function render(){
+      var vis = visible();
+      var step = vis.length ? vis[0].getBoundingClientRect().width + GAP : 0;
+      var max = Math.max(0, track.scrollWidth - viewport.clientWidth);
+      var shift = Math.min(index * step, max);
+      track.style.transform = 'translate3d(' + (dir() * shift) + 'px,0,0)';
+      prev.disabled = index <= 0;
+      next.disabled = shift >= max - 1;
+      empty.hidden = vis.length > 0;
+    }
+    prev.addEventListener('click', function(){ if (index > 0) { index--; render(); } });
+    next.addEventListener('click', function(){ if (!next.disabled) { index++; render(); } });
+    window.addEventListener('resize', render);
+    // Swipe (touch / pen / mouse drag) moves one card.
+    var startX = null;
+    track.addEventListener('pointerdown', function(e){ startX = e.clientX; });
+    track.addEventListener('pointerup', function(e){
+      if (startX === null) { return; }
+      var dx = e.clientX - startX; startX = null;
+      if (Math.abs(dx) < 40) { return; }
+      if (dir() * dx > 0 && !next.disabled) { index++; } else if (dir() * dx < 0 && index > 0) { index--; }
+      render();
+    });
+
+    // Year filter — in the page, no reload.
+    function openMenu(open){ menu.hidden = !open; toggle.setAttribute('aria-expanded', open ? 'true' : 'false'); }
+    toggle.addEventListener('click', function(){ openMenu(menu.hidden); });
+    document.addEventListener('click', function(e){ if (!root.querySelector('.nit-bth-sel-select').contains(e.target)) { openMenu(false); } });
+    function choose(li){
+      var year = li.getAttribute('data-year');
+      label.textContent = year === '' ? label.getAttribute('data-placeholder') : li.textContent;
+      // A course belongs to its category and to that category's parents.
+      slides.forEach(function(s){
+        s.hidden = (year !== '' && (' ' + s.getAttribute('data-years') + ' ').indexOf(' ' + year + ' ') === -1);
+      });
+      index = 0; openMenu(false); render();
+    }
+    menu.addEventListener('click', function(e){ var li = e.target.closest('li'); if (li) { choose(li); } });
+    menu.addEventListener('keydown', function(e){
+      var li = e.target.closest('li');
+      if (li && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); choose(li); }
+    });
+
+    fetch('/local/academy/homedata.php?section=selected', {credentials: 'same-origin'})
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        (data.years || []).forEach(function(y){
+          var li = document.createElement('li');
+          li.setAttribute('role', 'option'); li.setAttribute('tabindex', '-1');
+          li.setAttribute('data-year', y.id); li.textContent = y.name;
+          menu.appendChild(li);
+        });
+        var html = tpl.innerHTML;
+        (data.courses || []).forEach(function(c){
+          c.yearids = (c.years || []).join(' ');
+          var out = html.replace(/\{\{(\w+)\}\}/g, function(m, k){ return esc(c[k] !== undefined ? c[k] : ''); });
+          var holder = document.createElement('div'); holder.innerHTML = out.trim();
+          var slide = holder.firstElementChild;
+          if (c.image) {
+            var top = slide.querySelector('[data-nit-sel-image]');
+            if (top) { top.innerHTML = '<img src="' + esc(c.image) + '" alt="" loading="lazy">'; }
+          }
+          track.appendChild(slide);
+          slides.push(slide);
+        });
+        render();
+      })
+      .catch(function(){ render(); });
+  })();
+  </script>
+</section>

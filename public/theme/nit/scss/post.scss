@@ -366,7 +366,11 @@ body.nit-frontpage {
 // itself stays in the gear dropdown (navbar), and course/activity pages keep
 // full Moodle editing — this is scoped to body.nit-frontpage.editing only.
 // -----------------------------------------------------------------------------
-body.nit-frontpage.editing {
+//
+// Except on the Bassthalk template: its sections are plain HTML blocks that the
+// admin adds and edits with Moodle's own block tools ("Add a block", and each
+// block's menu → Configure / Move / Delete), so those stay.
+body.nit-frontpage.editing:not(.nit-bth-template) {
     .block .block-controls,
     .block .action-menu,
     .block [data-drag-type],
@@ -377,8 +381,12 @@ body.nit-frontpage.editing {
     .addblock,
     [data-key="addblock"],
     button[data-action="addblock"],
-    #region-main-settings-menu,
     .blockmovetarget {
+        display: none !important;
+    }
+}
+body.nit-frontpage.editing {
+    #region-main-settings-menu {
         display: none !important;
     }
 
@@ -450,5 +458,59 @@ body.nit-frontpage.editing {
 @media (max-width: 767px) {
     [data-nit-about-image] {
         min-height: 60vh !important;
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Bassthalk homepage template (blocks/templates/bassthalk — nit_section blocks).
+//
+// The hero runs up behind the floating navbar, and the sections span the page
+// edge to edge: #page's side padding is cancelled with the same values Boost
+// gives it, instead of 100vw (which would add the scrollbar's width and push
+// every section 7px off centre). The section look itself lives in each block.
+// -----------------------------------------------------------------------------
+body.nit-bth-template {
+    // Not in edit mode: there the "Add a block" strip at the top of #page must
+    // stay below the navbar.
+    &:not(.editing) #page.drawers:has(> .nit-region-fullwidth-top .nit-bth-hero) {
+        margin-top: 0;
+    }
+
+    #page.drawers > .nit-region-fullwidth-top:has(.nit-bth-section) {
+        width: auto;
+        max-width: none;
+        margin-top: 0;
+        margin-inline: 0;
+
+        @media (min-width: 768px) {
+            margin-left: -3rem;
+            margin-right: -3rem;
+        }
+    }
+
+    @media (min-width: 768px) {
+        &.drawer-open-left #page.drawers > .nit-region-fullwidth-top:has(.nit-bth-section) {
+            margin-left: -1rem;
+        }
+    }
+
+    @media (min-width: 992px) {
+        #page.drawers.show-drawer-left > .nit-region-fullwidth-top:has(.nit-bth-section) {
+            margin-left: -1rem;
+        }
+        #page.drawers.show-drawer-right > .nit-region-fullwidth-top:has(.nit-bth-section) {
+            margin-right: -1rem;
+        }
+    }
+
+    // The block is only a frame around the section: no card padding or gaps.
+    .block_nit_section:has(.nit-bth-section) {
+        .card-body,
+        .card-text,
+        .no-overflow {
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow: visible;
+        }
     }
 }

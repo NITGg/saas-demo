@@ -29,7 +29,8 @@ body.pagelayout-frontpage {
         filter: none !important;
     }
 
-    [data-nit-section]:not([data-nit-section="footer"]) a:not(.nit-btn-solid):not(.nit-btn-ghost):not([data-nit-edit-img]):not([data-nit-map]) {
+    // Not in the Bassthalk sections (blocks/templates/bassthalk): they style their own links and buttons.
+    [data-nit-section]:not([data-nit-section="footer"]):not(.nit-bth-section) a:not(.nit-btn-solid):not(.nit-btn-ghost):not([data-nit-edit-img]):not([data-nit-map]) {
         transition: color .15s ease, opacity .15s ease;
 
         &:hover {

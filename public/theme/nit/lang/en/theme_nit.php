@@ -154,6 +154,15 @@ $string['acad_buynow'] = 'Buy now';
 $string['acad_insubscription'] = 'In your subscription';
 $string['acad_lockedlesson'] = 'Locked';
 $string['acad_currency'] = 'EGP';
+$string['acad_tababout'] = 'About the course';
+$string['acad_tabforum'] = 'Forum';
+$string['acad_lessons'] = 'Lessons';
+$string['acad_lessonslabel'] = 'Lessons:';
+$string['acad_subscribe'] = 'Subscribe now!';
+$string['acad_discount'] = '{$a}% off';
+$string['acad_parthide'] = 'Hide';
+$string['acad_partshow'] = 'Show';
+$string['acad_noitems'] = 'Nothing in this lesson yet';
 
 // Inline front-page editor (theme/nit/js/editor.js + edit.php).
 $string['edit_editpage'] = 'Edit page';
@@ -292,6 +301,8 @@ $string['edit_col_onprimary'] = 'Text on buttons';
 $string['edit_auto'] = 'Auto';
 $string['edit_toolarge'] = 'Image too large';
 $string['edit_advanced'] = 'Advanced…';
+$string['edit_hidepanel'] = 'Hide editing panel';
+$string['edit_showpanel'] = 'Show editing panel';
 $string['edit_publish'] = 'Publish';
 $string['edit_unpublished'] = 'Changes preview on the page only. Publish to make them live, or Discard.';
 $string['edit_nochanges'] = 'No unpublished changes.';
@@ -464,7 +475,6 @@ $string['altfavicon_desc'] = 'The browser-tab icon. Leave empty to use the favic
 // Bassthalk: coloured logo, site footer settings, gear menu.
 $string['brandlogo'] = 'Coloured logo (light backgrounds)';
 $string['brandlogo_desc'] = 'The logo drawn on light backgrounds: the site footer, the log-in card and the registration card. Leave empty to use the built-in logo.';
-$string['footersettings'] = 'Site footer';
 $string['footerdescription'] = 'Footer description';
 $string['footerdescription_desc'] = 'The sentence under the logo in the site footer. Leave empty to hide it.';
 $string['footercopyright'] = 'Copyright line';
@@ -489,24 +499,17 @@ $string['footersocial_tiktok'] = 'TikTok link';
 $string['footersocial_youtube'] = 'YouTube link';
 $string['footersocial_whatsapp'] = 'WhatsApp link';
 $string['footersocial_telegram'] = 'Telegram link';
-// Bassthalk home (Appearance → Bassthalk home).
-$string['bthhome'] = 'Bassthalk home';
-$string['bthhome_enabled'] = 'Show the Bassthalk home sections';
-$string['bthhome_enabled_desc'] = 'On: the home page shows the Bassthalk sections below, and the older home-page section blocks are hidden so nothing appears twice (they still show while edit mode is on, so they can be removed). Off: the home page shows its blocks as before.';
-$string['bthhome_hero'] = 'Hero (first section)';
-$string['bthhome_hero_desc'] = 'The full-screen opening section: two-line title, paragraph, the "start" button and the illustration. Its colours are on the Bassthalk group of the Brand Colors page (Home page block).';
-$string['bthhome_hero_title1'] = 'Title — first line';
-$string['bthhome_hero_title1_desc'] = 'The first line of the big title.';
-$string['bthhome_hero_title2'] = 'Title — second line';
-$string['bthhome_hero_title2_desc'] = 'The second line of the big title.';
-$string['bthhome_hero_highlight'] = 'Highlighted words';
-$string['bthhome_hero_highlight_desc'] = 'The part of the second line drawn bold in the highlight colour. Write it exactly as it appears in the second line; leave empty for no highlight.';
-$string['bthhome_hero_text'] = 'Paragraph';
-$string['bthhome_hero_text_desc'] = 'The text under the title. Leave empty to hide it.';
-$string['bthhome_hero_button'] = 'Button label';
-$string['bthhome_hero_button_desc'] = 'Visitors go to the registration page; a logged-in student goes back to the last activity they opened, or to their courses if they have not opened one yet. Leave empty to hide the button.';
-$string['bthhome_hero_image'] = 'Illustration';
-$string['bthhome_hero_image_desc'] = 'The picture along the bottom of the section (drawn up to 1024 px wide; a transparent PNG or SVG about 2.1 times wider than tall fits best). Leave empty to use the built-in illustration.';
-$string['bthhome_hero_imagemobile'] = 'Illustration (phones)';
-$string['bthhome_hero_imagemobile_desc'] = 'Shown instead of the illustration above on screens narrower than 768 px, under the button (Bassthalk uses a portrait picture there, about 374 × 418). Leave empty to use the illustration above on phones too.';
+// Site pages manager (Plugins → Local plugins).
+$string['sitepages'] = 'Site pages manager';
+$string['sitepages_footer'] = 'Footer';
 $string['navpagesmenu'] = 'Site pages';
+
+// Bassthalk navbar / footer texts.
+$string['bth_searchsite'] = 'Search the site';
+$string['bth_searchtitle'] = 'Search the site\'s courses ..';
+$string['bth_searchlabel'] = 'Search';
+$string['bth_searchsubmit'] = 'Search';
+$string['bth_login'] = 'Log in';
+$string['bth_signup'] = 'New account';
+$string['bth_footerpages'] = 'Pages';
+$string['bth_footersocial'] = 'Social media';

@@ -175,3 +175,6 @@ $string['price_home'] = 'Price for {$a} (default country)';
 $string['currency_home'] = 'Currency for {$a}';
 $string['price_other'] = 'Price for other countries';
 $string['currency_other'] = 'Currency for other countries';
+
+// Wallet top-up (local_nit_finance).
+$string['topup_badamount'] = 'Top-up amount must be between {$a->min} and {$a->max} EGP.';

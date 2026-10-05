@@ -1,0 +1,480 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Teacher page — the Bassthalk design (bassthalk.com/teacher/<id>), rebuilt in
+// local/academy/teacher.php + templates/teacher_page.mustache.
+//
+// A blue hero (count chips, name, title, year pills) with the photo card
+// overlapping its bottom edge, then the teacher's courses in the home page's
+// course-card look with a year filter. The wrapper carries `.nit-brand-18`, so
+// every colour resolves from Brand Colors → Bassthalk (g18): the page's own
+// `bthtp*` roles, the shared Surface / Border primary / Text roles for the
+// photo card, and the `bthlessons*` roles for the course cards. No hex values.
+//
+// Layout uses logical properties only, so RTL (ar) and LTR (en) both work.
+
+// _chrome.scss puts every inner page on the template ground with `!important`
+// and forces template ink onto every h1–h6; repeat its selector chain plus
+// `:has(.bthtp)` so this page wins on specificity.
+$bthtp-body: "body:not(.pagelayout-frontpage):not(.pagelayout-login):not(.pagelayout-embedded):not(.path-site):has(.bthtp)";
+
+#{$bthtp-body} {
+    background: var(--nit-brand-g18-background) !important;
+
+    #topofscroll,
+    #page,
+    #page-content,
+    #region-main,
+    #region-main-box {
+        background: transparent !important;
+    }
+    #region-main {
+        padding: 0;
+        border: 0;
+        box-shadow: none;
+    }
+
+    .bthtp__name { color: var(--nit-brand-bthtpherotext) !important; }
+    .bthtp__about-h,
+    .bthtp__h2 { color: var(--nit-brand-bthlessonstext) !important; }
+    .bthtp__h2 span { color: var(--nit-brand-bthtpaccent) !important; }
+}
+
+.bthtp {
+    background: var(--nit-brand-background);
+    color: var(--nit-brand-bthlessonstext);
+    font-family: 'Tajawal', 'Almarai', system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    padding-block-end: 80px;
+
+    *, *::before, *::after { box-sizing: border-box; }
+    :where(a) { text-decoration: none; }
+    :where(h1, h2, p, ul, dl, dd) { margin: 0; }
+    :where(ul) { list-style: none; padding: 0; }
+    :is(a, button):focus-visible {
+        outline: 2px solid var(--nit-brand-bthtpaccent);
+        outline-offset: 2px;
+    }
+    [hidden] { display: none !important; }
+}
+
+.bthtp__ico {
+    width: 1em;
+    height: 1em;
+    flex: none;
+}
+
+// --- Hero ----------------------------------------------------------------------
+.bthtp__hero {
+    position: relative;
+    overflow: hidden;
+    margin: 16px 8px 0;
+    border-radius: 6px;
+    background: var(--nit-brand-bthtpherobg);
+    color: var(--nit-brand-bthtpherotext);
+}
+// The faint triangles of the original: the hero text colour through an SVG mask.
+.bthtp__pattern {
+    position: absolute;
+    inset: 0;
+    background: color-mix(in srgb, var(--nit-brand-bthtpherotext) 14%, transparent);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='38'%3E%3Cpath d='M11 4l9 15H2zM33 19l9 15H24z' fill='black'/%3E%3C/svg%3E") repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='38'%3E%3Cpath d='M11 4l9 15H2zM33 19l9 15H24z' fill='black'/%3E%3C/svg%3E") repeat;
+}
+.bthtp__hero-in {
+    position: relative;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 56px 16px 200px;
+}
+.bthtp__info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+}
+.bthtp__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.bthtp__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px;
+    padding-inline-start: 14px;
+    border-radius: 9999px;
+    background: var(--nit-brand-bthtpchipbg);
+    color: var(--nit-brand-bthtpchiptext);
+    font-weight: 700;
+    line-height: 1.5;
+}
+.bthtp__chip-num { direction: ltr; unicode-bidi: isolate; }
+.bthtp__tag {
+    padding: 2px 12px;
+    border-radius: 9999px;
+    color: var(--nit-brand-bthtptagtext);
+    font-size: 13px;
+    font-weight: 500;
+}
+.bthtp__tag--years { background: var(--nit-brand-bthtptagyears); }
+.bthtp__tag--courses { background: var(--nit-brand-bthtptagcourses); }
+.bthtp__name {
+    font-family: 'Tajawal', sans-serif;
+    font-size: 32px;
+    line-height: 1.25;
+    font-weight: 700;
+}
+.bthtp__title {
+    color: var(--nit-brand-bthtpherosub);
+    font-size: 18px;
+    line-height: 1.6;
+}
+.bthtp__pills {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+}
+.bthtp__pill {
+    padding: 8px 24px;
+    border: 1px solid var(--nit-brand-bthtppillborder);
+    border-radius: 9999px;
+    background: var(--nit-brand-bthtppillbg);
+    color: var(--nit-brand-bthtpherotext);
+    font-weight: 700;
+    font-size: 15px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .12);
+}
+
+// --- Photo card + about ---------------------------------------------------------
+.bthtp__body {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+    max-width: 1280px;
+    margin: -168px auto 0;
+    padding: 0 16px;
+}
+.bthtp__card {
+    justify-self: center;
+    width: 100%;
+    max-width: 320px;
+    padding: 12px;
+    border: 1px solid var(--nit-brand-borderprimary);
+    border-radius: 12px;
+    background: var(--nit-brand-surface);
+    box-shadow: 0 20px 40px -12px rgba(15, 23, 42, .25);
+}
+.bthtp__photo {
+    overflow: hidden;
+    aspect-ratio: 1 / 1;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--nit-brand-bthtpherobg) 18%, var(--nit-brand-surface));
+
+    img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        max-width: none;
+        object-fit: cover;
+        object-position: top;
+    }
+}
+.bthtp__stats {
+    display: flex;
+    flex-direction: column;
+    padding: 12px 8px 4px;
+}
+.bthtp__stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    font-size: 14px;
+
+    & + & { border-top: 1px solid var(--nit-brand-borderprimary); }
+    dt {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 500;
+        color: var(--nit-brand-textprimary);
+    }
+    dt .bthtp__ico { color: var(--nit-brand-bthtpstaticon); font-size: 18px; }
+    dd { font-weight: 700; color: var(--nit-brand-textsecondary); }
+}
+.bthtp__about {
+    align-self: end;
+    padding: 24px;
+    border: 1px solid var(--nit-brand-borderprimary);
+    border-radius: 12px;
+    background: var(--nit-brand-surface);
+}
+.bthtp__about-h {
+    margin-block-end: 12px;
+    font-size: 22px;
+    font-weight: 700;
+}
+.bthtp__about-p {
+    color: var(--nit-brand-textsecondary);
+    line-height: 1.8;
+    white-space: pre-line;
+}
+
+// --- Courses --------------------------------------------------------------------
+.bthtp__courses {
+    max-width: 1280px;
+    margin: 64px auto 0;
+    padding: 0 16px;
+}
+.bthtp__head {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-block-end: 32px;
+}
+.bthtp__rule {
+    flex: 0 1 80px;
+    min-width: 16px;
+    height: 3px;
+    border-radius: 3px;
+    background: var(--nit-brand-bthtpaccent);
+    opacity: .5;
+}
+.bthtp__h2 {
+    font-family: 'Tajawal', sans-serif;
+    font-size: 30px;
+    line-height: 1.3;
+    font-weight: 700;
+    text-align: center;
+    white-space: nowrap;
+}
+.bthtp__filter {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-block-end: 32px;
+}
+.bthtp__fbtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 20px;
+    border: 2px solid var(--nit-brand-bthtpaccent);
+    border-radius: 9999px;
+    background: transparent;
+    color: var(--nit-brand-bthlessonstext);
+    font: 500 15px/1.5 'Tajawal', sans-serif;
+    cursor: pointer;
+    transition: all .3s ease;
+
+    &:hover { background: color-mix(in srgb, var(--nit-brand-bthtpaccent) 12%, transparent); }
+    &.is-active {
+        background: var(--nit-brand-bthtpaccent);
+        color: var(--nit-brand-bthlessonsaccenttext);
+    }
+}
+.bthtp__fcount {
+    min-width: 22px;
+    padding: 0 6px;
+    border-radius: 9999px;
+    background: color-mix(in srgb, currentColor 15%, transparent);
+    font-size: 12px;
+    text-align: center;
+}
+.bthtp__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+}
+.bthtp__empty {
+    padding: 40px 16px;
+    text-align: center;
+    font-size: 18px;
+    color: var(--nit-brand-bthlessonsmuted);
+}
+
+// One course: the "المحاضرات المقترحة" card of the home page.
+.bthtp__course {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 16px;
+    border: 2px solid var(--nit-brand-bthlessonscard);
+    border-radius: 12px;
+    background: var(--nit-brand-bthlessonscard);
+    transition: all .4s ease;
+
+    &:hover { box-shadow: 0 16px 32px -16px rgba(15, 23, 42, .3); }
+}
+.bthtp__cimg {
+    display: block;
+    overflow: hidden;
+    aspect-ratio: 16 / 10;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--nit-brand-bthtpherobg) 25%, var(--nit-brand-bthlessonscard));
+
+    img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        max-width: none;
+        object-fit: cover;
+        transition: transform .4s ease;
+    }
+    &:hover img { transform: scale(1.04); }
+}
+// A course without a picture: a book on the tinted box.
+.bthtp__cimg:has(.bthtp__cnoimg) {
+    display: grid;
+    place-items: center;
+}
+.bthtp__cnoimg {
+    width: 56px;
+    height: 56px;
+    color: var(--nit-brand-bthtpherobg);
+}
+.bthtp__crow {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    min-width: 0;
+}
+.bthtp a.bthtp__ctitle {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    font-family: 'Almarai', sans-serif;
+    font-size: 18px;
+    line-height: 28px;
+    font-weight: 500;
+    color: var(--nit-brand-bthlessonsaccent);
+
+    &:hover { text-decoration: underline; }
+}
+.bthtp__cyear {
+    flex-shrink: 0;
+    white-space: nowrap;
+    font-size: 18px;
+    line-height: 28px;
+}
+.bthtp__crow--meta { align-items: flex-end; }
+.bthtp__cmain {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    min-width: 0;
+}
+.bthtp__cprice {
+    font-family: 'Almarai', sans-serif;
+    font-weight: 700;
+    color: var(--nit-brand-bthlessonsprice);
+}
+.bthtp__cdesc {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--nit-brand-bthlessonsmuted);
+
+    &.is-open { display: block; }
+}
+.bthtp__more {
+    padding: 0;
+    border: 0;
+    background: none;
+    font: 700 14px/20px 'Tajawal', sans-serif;
+    color: var(--nit-brand-bthlessonstext);
+    text-decoration: underline;
+    cursor: pointer;
+}
+.bthtp__cdates {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex-shrink: 0;
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--nit-brand-bthlessonsmuted);
+
+    li {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+}
+.bthtp__cbtns {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: auto;
+}
+.bthtp a.bthtp__btn {
+    display: block;
+    padding: 8px 16px;
+    border: 2px solid var(--nit-brand-bthlessonsaccent);
+    border-radius: 12px;
+    background: transparent;
+    color: var(--nit-brand-bthlessonsaccent);
+    text-align: center;
+    font-family: 'Almarai', sans-serif;
+    transition: all .4s ease;
+
+    &:hover {
+        background: var(--nit-brand-bthlessonsaccent);
+        color: var(--nit-brand-bthlessonsaccenttext);
+    }
+}
+.bthtp a.bthtp__btn--fill {
+    background: var(--nit-brand-bthlessonsaccent);
+    color: var(--nit-brand-bthlessonsaccenttext);
+
+    &:hover {
+        background: transparent;
+        color: var(--nit-brand-bthlessonsaccent);
+    }
+}
+
+// --- Breakpoints -----------------------------------------------------------------
+@media (min-width: 640px) {
+    .bthtp__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 768px) {
+    .bthtp__hero { margin-inline: 16px; }
+    .bthtp__hero-in { padding: 72px 40px 96px; }
+    .bthtp__name { font-size: 40px; }
+    // Photo card on the end side, overlapping the hero; the about box beside it.
+    .bthtp__body {
+        grid-template-columns: minmax(0, 1fr) 300px;
+        align-items: end;
+        margin-top: -260px;
+        padding: 0 40px;
+    }
+    .bthtp__card { grid-column: 2; grid-row: 1; justify-self: end; }
+    .bthtp__about { grid-column: 1; grid-row: 1; }
+    // Keep the hero text clear of the card.
+    .bthtp__info { padding-inline-end: 340px; }
+    .bthtp__courses { padding: 0 40px; }
+    .bthtp__h2 { font-size: 40px; }
+    .bthtp__rule { flex-basis: 120px; }
+}
+@media (min-width: 1024px) {
+    .bthtp__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .bthtp__name { font-size: 48px; }
+    .bthtp__body { grid-template-columns: minmax(0, 1fr) 320px; }
+    .bthtp__info { padding-inline-end: 360px; }
+    .bthtp__h2 { font-size: 48px; }
+}

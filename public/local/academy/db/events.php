@@ -18,4 +18,17 @@ $observers = [
         'eventname' => '\core\event\course_created',
         'callback'  => '\local_academy\observer::course_created',
     ],
+    // Years are the course categories: keep the student "Year" dropdown in step.
+    [
+        'eventname' => '\core\event\course_category_created',
+        'callback'  => '\local_academy\observer::category_changed',
+    ],
+    [
+        'eventname' => '\core\event\course_category_updated',
+        'callback'  => '\local_academy\observer::category_changed',
+    ],
+    [
+        'eventname' => '\core\event\course_category_deleted',
+        'callback'  => '\local_academy\observer::category_changed',
+    ],
 ];

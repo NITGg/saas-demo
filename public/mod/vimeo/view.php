@@ -69,6 +69,9 @@ $iframe = '<iframe src="' . s($src) . '" title="' . s(format_string($moduleinsta
     . ' style="position:absolute;inset:0;width:100%;height:100%;border:0;"'
     . ' allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>';
 
+// Watched % + resume from the last position (local_nit_videoprogress).
+$progress = class_exists('\local_nit_videoprogress\ui') ? \local_nit_videoprogress\ui::tracker($cm) : '';
+
 // ── The T1 player frame (shared with every other lesson type through
 // local_academy\player); falls back to a bare embed on any error. ──
 $rendered = false;
@@ -78,7 +81,7 @@ try {
     $overview = !empty($moduleinstance->intro)
         ? format_module_intro('vimeo', $moduleinstance, $cm->id) : '';
     echo \local_academy\player::render($cminfo, $course,
-        '<div class="nit-player__video">' . $iframe . '</div>', $overview, true);
+        '<div class="nit-player__video">' . $iframe . '</div>' . $progress, $overview, true);
     $rendered = true;
 } catch (\Throwable $ex) {
     debugging('mod_vimeo T1 player failed, using bare embed: ' . $ex->getMessage(), DEBUG_DEVELOPER);
@@ -90,7 +93,7 @@ if (!$rendered) {
         echo $OUTPUT->box(format_module_intro('vimeo', $moduleinstance, $cm->id), 'generalbox', 'intro');
     }
     echo '<div style="position:relative;width:100%;max-width:960px;margin:1rem auto;aspect-ratio:16/9;background:#000;">'
-        . $iframe . '</div>';
+        . $iframe . '</div>' . $progress;
 }
 
 echo $OUTPUT->footer();

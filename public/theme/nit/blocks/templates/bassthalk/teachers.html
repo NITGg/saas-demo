@@ -1,0 +1,342 @@
+<!--
+  Bassthalk home — "المدرسين عندنا / مش زي أي مدرسين!". Paste into a "NIT Section" block, mode "Raw HTML".
+  Source of truth: theme/nit/blocks/templates/bassthalk/teachers.html (see README.md there).
+  Measured against bassthalk.com at 1280×832. Colours: Brand Colors → Bassthalk → "Home — teachers".
+  Texts: Arabic + English via {mlang ar}…{mlang}{mlang en}…{mlang}; the layout follows the page direction.
+
+  The cards are NOT written here: the script loads /local/academy/homedata.php?section=teachers —
+  every teacher of a visible course, with the year (the course category) and the Study system /
+  Division of each of their courses. The filters (year, and division grouped by study system) work in
+  the page without reloading; a logged-in student starts on their own year / division. The line under
+  a name is the teacher's "لقب المدرس" profile field. The look of one card is the <template> below.
+
+  Carousel (as on bassthalk): the cards that fit inside the green panel are centred in it; the card
+  before and the card after sit 12px outside the panel edges and peek in from the page edges; each
+  arrow click moves one card (0.35s); the dots under the cards show the position (5 visible).
+-->
+<style>
+  .nit-bth-teach{ position:relative; width:100%; overflow:hidden; font-family:'Almarai',sans-serif; font-size:16px; line-height:24px;
+    color:var(--nit-brand-bthteachlabel); background:var(--nit-brand-bthteachbg); }
+  .nit-bth-teach-z{ position:relative; z-index:10; padding:40px 0; }
+  .nit-bth-teach-head{ display:flex; flex-direction:column; justify-content:space-evenly; align-items:center; gap:32px; padding:32px 20px 40px;
+    color:var(--nit-brand-bthteachtitle); font-family:'Tajawal',sans-serif; font-weight:700; }
+  .nit-bth-teach-head h2{ margin:0; font-family:'Tajawal',sans-serif; font-size:36px; line-height:1.6; font-weight:700; text-align:center; color:inherit; }
+  .nit-bth-teach-head p{ max-width:384px; margin:0; font-family:'Tajawal',sans-serif; font-size:20px; line-height:40px; font-weight:500; text-align:center; }
+  .nit-bth-teach-panel{ position:relative; display:flex; flex-direction:column; margin:0 auto; padding:16px 0 40px; border-radius:12px; }
+  .nit-bth-teach-panel > * + *{ margin-top:40px; }
+  .nit-bth-teach-panelbg{ position:absolute; inset:0; padding:0 16px; margin:0!important; }
+  .nit-bth-teach-panelbg > div{ width:100%; height:100%; border-radius:6px; background:var(--nit-brand-bthteachpanel); }
+  .nit-bth-teach-bar{ position:relative; z-index:30; display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:16px; padding:0 32px; }
+  .nit-bth-teach-filters{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; }
+  .nit-bth-teach-filters > p{ margin:0; color:var(--nit-brand-bthteachlabel); }
+  .nit-bth-teach-select{ position:relative; width:256px; }
+  .nit-bth-teach-selectbtn{ display:flex; justify-content:space-between; align-items:center; width:100%; padding:8px 16px; border:2px solid var(--nit-brand-bthteachfilter);
+    border-radius:12px; background:transparent; color:var(--nit-brand-bthteachfilter); font-family:'Almarai',sans-serif; font-size:inherit; line-height:inherit;
+    font-weight:400; text-align:start; cursor:pointer; transition:all .4s ease; }
+  .nit-bth-teach-selectbtn:focus{ outline:none; }
+  .nit-bth-teach-selectbtn:focus-visible{ box-shadow:0 0 0 2px color-mix(in srgb, var(--nit-brand-bthteachfilter) 35%, transparent); }
+  .nit-bth-teach-selectbtn svg{ width:18px; height:18px; margin-inline-start:8px; flex:none; }
+  .nit-bth-teach-menu{ position:absolute; inset-inline-start:0; z-index:50; width:100%; max-height:240px; overflow:auto; margin:8px 0 0; padding:0; list-style:none; text-align:start;
+    background:var(--nit-brand-bthteachmenubg); border:1px solid var(--nit-brand-bthteachfilter); border-radius:12px;
+    box-shadow:0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -4px rgba(0,0,0,.1); }
+  .nit-bth-teach-menu[hidden]{ display:none; }
+  .nit-bth-teach-menu li{ padding:8px 16px; cursor:pointer; color:var(--nit-brand-bthteachlabel); transition:all .4s ease; font-family:'Almarai',sans-serif; }
+  .nit-bth-teach-menu li:hover, .nit-bth-teach-menu li:focus{ background:var(--nit-brand-bthteachmenuhover); outline:none; }
+  .nit-bth-teach-menu li.is-group{ cursor:default; font-weight:700; font-size:14px;
+    background:color-mix(in srgb, var(--nit-brand-bthteachmenuhover) 35%, var(--nit-brand-bthteachmenubg)); }
+  .nit-bth-teach-menu li.is-group:hover{ background:color-mix(in srgb, var(--nit-brand-bthteachmenuhover) 35%, var(--nit-brand-bthteachmenubg)); }
+  .nit-bth-teach-arrows{ display:flex; align-items:center; gap:12px; }
+  .nit-bth-teach-arrow{ display:flex; align-items:center; justify-content:center; width:44px; height:44px; padding:0; border-radius:9999px; font-size:24px;
+    border:2px solid var(--nit-brand-bthteacharrowbg); background:var(--nit-brand-bthteacharrowbg); color:var(--nit-brand-bthteacharrowicon); cursor:pointer; transition:all .2s; }
+  .nit-bth-teach-arrow:hover{ background:var(--nit-brand-bthteacharrowhover); }
+  .nit-bth-teach-arrow:focus{ outline:none; }
+  .nit-bth-teach-arrow:focus-visible{ box-shadow:0 0 0 2px var(--nit-brand-bthteacharrowicon); }
+  .nit-bth-teach-arrow:disabled{ background:transparent; color:var(--nit-brand-bthteacharrowofficon); border-color:var(--nit-brand-bthteacharrowoff); cursor:not-allowed; }
+  .nit-bth-teach-arrow svg{ width:1em; height:1em; }
+  html[dir="ltr"] .nit-bth-teach-arrow svg{ transform:scaleX(-1); }
+  /* Carousel: the area is the inside of the panel; the script places the cards in it. */
+  .nit-bth-teach-carousel{ position:relative; z-index:10; }
+  .nit-bth-teach-area{ position:relative; margin:0 32px; padding:40px 0; }
+  .nit-bth-teach-area[hidden]{ display:none; }
+  .nit-bth-teach-track{ position:relative; height:var(--nit-teach-h, 400px); touch-action:pan-y; }
+  .nit-bth-teach-slide{ position:absolute; top:0; inset-inline-start:0; width:var(--nit-teach-w, 250px);
+    transform:translateX(var(--nit-teach-x, 0px)); }
+  /* Animated only once placed — the first layout (and a filter change) does not fly the cards in. */
+  .nit-bth-teach-track.is-ready .nit-bth-teach-slide{ transition:transform .35s ease; }
+  .nit-bth-teach-slide[hidden]{ display:none; }
+  .nit-bth-teach a.nit-bth-teach-link{ display:block; height:100%; color:inherit; text-decoration:none!important; }
+  .nit-bth-teach-card{ display:flex; flex-direction:column; width:100%; min-height:280px; overflow:hidden; padding:16px; border-radius:16px;
+    background:var(--nit-brand-bthteachcardbg); transition:all .4s ease; }
+  .nit-bth-teach-thumb{ flex-shrink:0; width:90%; aspect-ratio:1/1; margin:0 auto 16px; overflow:hidden; border-radius:12px; }
+  .nit-bth-teach-thumb img{ display:block; width:100%; height:100%; max-width:none; margin:0; object-fit:cover; object-position:top; border-radius:12px; }
+  .nit-bth-teach-text{ min-width:0; margin-top:auto; font-family:'Tajawal',sans-serif; }
+  .nit-bth-teach-text h3{ margin:0 0 4px; font-family:'Tajawal',sans-serif; font-size:24px; line-height:32px; font-weight:700; color:var(--nit-brand-bthteachname); }
+  .nit-bth-teach-text .nit-bth-teach-gap{ height:0; margin-bottom:12px; }
+  .nit-bth-teach-text p{ margin:0; font-size:14px; line-height:1.625; color:var(--nit-brand-bthteachsub); }
+  /* Dynamic dots (like Swiper's dynamicBullets): 5 visible, the current one full size. */
+  .nit-bth-teach-dots{ position:absolute; bottom:8px; left:50%; width:80px; height:8px; overflow:hidden; transform:translateX(-50%); white-space:nowrap; font-size:0; }
+  .nit-bth-teach-dots[hidden]{ display:none; }
+  .nit-bth-teach-dotsin{ display:inline-block; transition:transform .2s; }
+  .nit-bth-teach-dots button{ display:inline-block; position:relative; width:8px; height:8px; margin:0 4px; padding:0; border:0; border-radius:50%; cursor:pointer;
+    background:var(--nit-brand-bthlessonsdot); opacity:.2; transform:scale(.33); transition:transform .2s; }
+  .nit-bth-teach-dots button.s66{ transform:scale(.66); }
+  .nit-bth-teach-dots button.is-active{ background:var(--nit-brand-bthlessonsdotactive); opacity:1; transform:scale(1); }
+  .nit-bth-teach-empty{ position:relative; z-index:10; padding:40px 32px; text-align:center; font:500 18px/28px 'Tajawal',sans-serif; color:var(--nit-brand-bthteachlabel); }
+  .nit-bth-teach-empty[hidden]{ display:none; }
+  @media (min-width:640px){
+    .nit-bth-teach-slide{ --nit-teach-w:265px; }
+  }
+  @media (min-width:768px){
+    .nit-bth-teach{ min-height:100vh; }
+    .nit-bth-teach-head{ padding:32px 80px 56px; gap:48px; }
+    .nit-bth-teach-head h2{ font-size:48px; line-height:1.5; }
+    .nit-bth-teach-head p{ padding-top:16px; }
+    .nit-bth-teach-panel{ padding-top:24px; }
+    .nit-bth-teach-panelbg{ padding:0 10%; }
+    .nit-bth-teach-bar{ justify-content:space-between; padding:0 calc(10% + 16px); }
+    .nit-bth-teach-filters{ flex-direction:row; gap:20px; }
+    .nit-bth-teach-area{ margin:0 10%; }
+    .nit-bth-teach-slide{ --nit-teach-w:350px; }
+  }
+  @media (min-width:1024px){
+    .nit-bth-teach-head h2{ font-size:60px; line-height:1.5; }
+  }
+  @media (min-width:1280px){
+    .nit-bth-teach-head{ flex-direction:row; align-items:flex-start; }
+    .nit-bth-teach-head h2{ font-size:72px; line-height:1.55; text-align:start; }
+    .nit-bth-teach-head p{ text-align:start; }
+  }
+</style>
+<section class="nit-bth-section nit-bth-teach nit-brand-18" data-nit-section="teachers" aria-labelledby="nit-bth-teach-title">
+  <div class="nit-bth-teach-z">
+    <div class="nit-bth-teach-head">
+      <h2 id="nit-bth-teach-title">{mlang ar}المدرسين عندنا<br>مش زي أي مدرسين!{mlang}{mlang en}Our teachers<br>are like no other!{mlang}</h2>
+      <p>{mlang ar}في بسطتهالك، اخترنالك نخبة من أفضل المدرسين في مصر، كل واحد فيهم عنده خبرة كبيرة، وطريقة شرح سهلة، وبيفهمك المعلومة من أول مرة!{mlang}{mlang en}At Bassthalk we picked some of the best teachers in Egypt for you — each one has years of experience and an easy way of explaining that makes it click the first time!{mlang}</p>
+    </div>
+    <div class="nit-bth-teach-panel">
+      <div class="nit-bth-teach-panelbg" aria-hidden="true"><div></div></div>
+      <div class="nit-bth-teach-bar">
+        <div class="nit-bth-teach-filters">
+          <p>{mlang ar}مرحلتك و دراستك:{mlang}{mlang en}Your year and study:{mlang}</p>
+          <div class="nit-bth-teach-select" data-nit-teach-select="year">
+            <button type="button" class="nit-bth-teach-selectbtn" aria-haspopup="listbox" aria-expanded="false">
+              <span data-label data-placeholder="{mlang ar}اختر الصف الدراسي{mlang}{mlang en}Choose your year{mlang}">{mlang ar}اختر الصف الدراسي{mlang}{mlang en}Choose your year{mlang}</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7.41 8.58L12 13.17l4.59-4.59L18 10l-6 6l-6-6z"/></svg>
+            </button>
+            <ul class="nit-bth-teach-menu" role="listbox" aria-label="{mlang ar}الصف الدراسي{mlang}{mlang en}Year{mlang}" hidden>
+              <li role="option" tabindex="-1" data-value="">{mlang ar}كل الصفوف{mlang}{mlang en}All years{mlang}</li>
+            </ul>
+          </div>
+          <div class="nit-bth-teach-select" data-nit-teach-select="division">
+            <button type="button" class="nit-bth-teach-selectbtn" aria-haspopup="listbox" aria-expanded="false">
+              <span data-label data-placeholder="{mlang ar}اختر الشعبة العلمية{mlang}{mlang en}Choose your division{mlang}">{mlang ar}اختر الشعبة العلمية{mlang}{mlang en}Choose your division{mlang}</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7.41 8.58L12 13.17l4.59-4.59L18 10l-6 6l-6-6z"/></svg>
+            </button>
+            <ul class="nit-bth-teach-menu" role="listbox" aria-label="{mlang ar}الشعبة{mlang}{mlang en}Division{mlang}" hidden>
+              <li role="option" tabindex="-1" data-value="">{mlang ar}كل الشعب{mlang}{mlang en}All divisions{mlang}</li>
+            </ul>
+          </div>
+        </div>
+        <div class="nit-bth-teach-arrows">
+          <button type="button" class="nit-bth-teach-arrow" aria-label="{mlang ar}السابق{mlang}{mlang en}Previous{mlang}" data-nit-teach-prev disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8.59 16.58L13.17 12L8.59 7.41L10 6l6 6l-6 6z"/></svg>
+          </button>
+          <button type="button" class="nit-bth-teach-arrow" aria-label="{mlang ar}التالي{mlang}{mlang en}Next{mlang}" data-nit-teach-next disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M15.41 16.58L10.83 12l4.58-4.59L14 6l-6 6l6 6z"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="nit-bth-teach-carousel">
+        <div class="nit-bth-teach-area">
+          <div class="nit-bth-teach-track" data-nit-teach-track></div>
+          <div class="nit-bth-teach-dots" data-nit-teach-dots hidden><div class="nit-bth-teach-dotsin"></div></div>
+        </div>
+        <div class="nit-bth-teach-empty" data-nit-teach-empty hidden>{mlang ar}لا يوجد مدرسين لهذا الاختيار حاليًا.{mlang}{mlang en}No teachers match this choice yet.{mlang}</div>
+      </div>
+    </div>
+  </div>
+  <template data-nit-teach-card>
+    <div class="nit-bth-teach-slide">
+      <a class="nit-bth-teach-link" href="{{url}}">
+        <div class="nit-bth-teach-card">
+          <div class="nit-bth-teach-thumb"><img src="{{photo}}" alt="{{name}}" loading="lazy"></div>
+          <div class="nit-bth-teach-text">
+            <h3>{{name}}</h3>
+            <div class="nit-bth-teach-gap"></div>
+            <p>{{title}}</p>
+          </div>
+        </div>
+      </a>
+    </div>
+  </template>
+  <script>
+  (function(){
+    var root = document.currentScript && document.currentScript.closest('[data-nit-section="teachers"]');
+    if (!root || root.getAttribute('data-ready')) { return; }
+    root.setAttribute('data-ready', '1');
+    var track = root.querySelector('[data-nit-teach-track]'), area = track.parentNode;
+    var prev = root.querySelector('[data-nit-teach-prev]'), next = root.querySelector('[data-nit-teach-next]');
+    var dots = root.querySelector('[data-nit-teach-dots]'), dotsIn = dots.firstElementChild;
+    var empty = root.querySelector('[data-nit-teach-empty]'), tpl = root.querySelector('template[data-nit-teach-card]');
+    var GAP = 12, DOT = 16, start = 0, slides = [], filter = {year: '', system: '', division: ''};
+
+    function esc(s){ var d = document.createElement('div'); d.textContent = (s == null ? '' : String(s)); return d.innerHTML; }
+    function visible(){ return slides.filter(function(s){ return !s.hidden; }); }
+    function rtl(){ return getComputedStyle(root).direction === 'rtl'; }
+
+    // Place every card along the reading direction (x from the area's start edge):
+    // the ones that fit are centred inside the panel; the card before / after sits
+    // GAP outside the panel edge, peeking in from the page edge; the rest follow.
+    function render(){
+      var vis = visible(), count = vis.length;
+      empty.hidden = count > 0;
+      area.hidden = count === 0;
+      if (!count) { prev.disabled = next.disabled = true; dots.hidden = true; return; }
+      var areaW = area.clientWidth;
+      var w = vis[0].offsetWidth, step = w + GAP;
+      var fit = Math.max(1, Math.floor((areaW + GAP) / step));
+      var last = Math.max(0, count - fit);
+      if (start > last) { start = last; }
+      var inside = Math.min(fit, count);
+      var offset = Math.max(0, (areaW - (inside * w + (inside - 1) * GAP)) / 2);
+      var sign = rtl() ? -1 : 1, tallest = 0;
+      vis.forEach(function(s, i){
+        var rel = i - start, x;
+        if (rel < 0) { x = -GAP - w + (rel + 1) * step; }
+        else if (rel < inside) { x = offset + rel * step; }
+        else { x = areaW + GAP + (rel - inside) * step; }
+        s.style.setProperty('--nit-teach-x', (sign * x) + 'px');
+        tallest = Math.max(tallest, s.offsetHeight);
+      });
+      track.style.setProperty('--nit-teach-h', tallest + 'px');
+      prev.disabled = start <= 0;
+      next.disabled = start >= last;
+      renderDots(last + 1);
+    }
+    // Dots: one per position; 5 visible around the current one (1 / .66 / .33).
+    function renderDots(positions){
+      dots.hidden = positions < 2;
+      if (dotsIn.children.length !== positions) {
+        dotsIn.innerHTML = '';
+        for (var i = 0; i < positions; i++) {
+          var b = document.createElement('button');
+          b.type = 'button'; b.setAttribute('aria-label', String(i + 1));
+          b.addEventListener('click', (function(n){ return function(){ start = n; render(); }; })(i));
+          dotsIn.appendChild(b);
+        }
+      }
+      Array.prototype.forEach.call(dotsIn.children, function(b, i){
+        var d = Math.abs(i - start);
+        b.classList.toggle('is-active', d === 0);
+        b.classList.toggle('s66', d === 1);
+      });
+      // Keep the current dot in the middle slot of the 5-dot window.
+      var shift = (2 - start) * DOT;
+      dotsIn.style.transform = 'translateX(' + (rtl() ? -shift : shift) + 'px)';
+    }
+    // Re-place the cards without animating (first layout, filter, resize), then
+    // let the next arrow / dot / swipe move animate.
+    function settle(){
+      track.classList.remove('is-ready');
+      render();
+      void track.offsetWidth;
+      window.requestAnimationFrame(function(){ track.classList.add('is-ready'); });
+    }
+    prev.addEventListener('click', function(){ if (start > 0) { start--; render(); } });
+    next.addEventListener('click', function(){ if (!next.disabled) { start++; render(); } });
+    window.addEventListener('resize', settle);
+    var startX = null;
+    track.addEventListener('pointerdown', function(e){ startX = e.clientX; });
+    track.addEventListener('pointerup', function(e){
+      if (startX === null) { return; }
+      var dx = e.clientX - startX; startX = null;
+      if (Math.abs(dx) < 40) { return; }
+      var forward = rtl() ? dx > 0 : dx < 0;
+      if (forward && !next.disabled) { start++; } else if (!forward && start > 0) { start--; }
+      render();
+    });
+
+    // A teacher shows when one of their courses matches the chosen year and division.
+    function apply(){
+      slides.forEach(function(s){
+        var courses = s._courses || [];
+        s.hidden = !courses.some(function(c){
+          return (!filter.year || (c.years || []).indexOf(Number(filter.year)) !== -1)
+            && (!filter.division || (c.system === filter.system && c.division === filter.division));
+        });
+      });
+      start = 0; settle();
+    }
+
+    // Dropdowns.
+    var selects = {};
+    Array.prototype.forEach.call(root.querySelectorAll('[data-nit-teach-select]'), function(sel){
+      var key = sel.getAttribute('data-nit-teach-select');
+      var btn = sel.querySelector('button'), menu = sel.querySelector('ul'), label = sel.querySelector('[data-label]');
+      function open(on){ menu.hidden = !on; btn.setAttribute('aria-expanded', on ? 'true' : 'false'); }
+      btn.addEventListener('click', function(){ open(menu.hidden); });
+      document.addEventListener('click', function(e){ if (!sel.contains(e.target)) { open(false); } });
+      function choose(li, silent){
+        if (!li || li.classList.contains('is-group')) { return; }
+        var value = li.getAttribute('data-value');
+        label.textContent = value === '' ? label.getAttribute('data-placeholder') : li.textContent;
+        if (key === 'year') { filter.year = value; }
+        else { filter.division = value; filter.system = value === '' ? '' : li.getAttribute('data-system'); }
+        open(false);
+        if (!silent) { apply(); }
+      }
+      menu.addEventListener('click', function(e){ choose(e.target.closest('li')); });
+      menu.addEventListener('keydown', function(e){
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); choose(e.target.closest('li')); }
+      });
+      selects[key] = {menu: menu, choose: choose};
+    });
+    function item(menu, text, value, system){
+      var li = document.createElement('li');
+      li.setAttribute('role', 'option'); li.setAttribute('tabindex', '-1');
+      li.setAttribute('data-value', value); li.textContent = text;
+      if (system) { li.setAttribute('data-system', system); }
+      menu.appendChild(li);
+      return li;
+    }
+
+    fetch('/local/academy/homedata.php?section=teachers', {credentials: 'same-origin'})
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        (data.years || []).forEach(function(y){ item(selects.year.menu, y.name, String(y.id)); });
+        // Divisions grouped under their study system (a heading per system).
+        // (label = shown in the page language, name = what the filter matches.)
+        (data.systems || []).forEach(function(sys){
+          var head = item(selects.division.menu, sys.label || sys.name, '');
+          head.className = 'is-group'; head.removeAttribute('tabindex'); head.setAttribute('role', 'presentation');
+          (sys.divisions || []).forEach(function(d){
+            if (typeof d === 'string') { d = {name: d, label: d}; }
+            item(selects.division.menu, d.label, d.name, sys.name);
+          });
+        });
+        var html = tpl.innerHTML;
+        (data.teachers || []).forEach(function(t){
+          var holder = document.createElement('div');
+          holder.innerHTML = html.replace(/\{\{(\w+)\}\}/g, function(m, k){ return esc(t[k] !== undefined ? t[k] : ''); }).trim();
+          var slide = holder.firstElementChild;
+          slide._courses = t.courses || [];
+          track.appendChild(slide);
+          slides.push(slide);
+        });
+        // A logged-in student starts on their own year and division.
+        var me = data.me;
+        if (me) {
+          var find = function(menu, value, system){
+            return Array.prototype.find.call(menu.querySelectorAll('li'), function(li){
+              return li.getAttribute('data-value') === value && (!system || li.getAttribute('data-system') === system);
+            });
+          };
+          if (me.year) { selects.year.choose(find(selects.year.menu, String(me.year)), true); }
+          if (me.division) { selects.division.choose(find(selects.division.menu, me.division, me.system), true); }
+        }
+        apply();
+      })
+      .catch(function(){ render(); });
+  })();
+  </script>
+</section>

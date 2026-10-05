@@ -483,6 +483,109 @@ function theme_nit_brand_roles(): array {
         'bthherohighlight'  => ['section' => 'bassthalk', 'sub' => 'bthhome', 'label' => 'Hero highlighted words', 'short' => 'Hero highlight', 'usage' => ['the bold highlighted words in the hero title ("الطالب ليتفوق")'], 'default' => '#0d549b'],
         'bthherobtn'        => ['section' => 'bassthalk', 'sub' => 'bthhome', 'label' => 'Hero button', 'short' => 'Hero button', 'usage' => ['the "ابدأ رحلتك" button fill and border (drawn at half saturation)', 'its label colour on hover, when the fill turns transparent'], 'default' => '#14d80a'],
         'bthherobtntext'    => ['section' => 'bassthalk', 'sub' => 'bthhome', 'label' => 'Hero button text', 'short' => 'Hero button text', 'usage' => ['the label of the "ابدأ رحلتك" button'], 'default' => '#ffffff'],
+        'bthhowbg1'         => ['section' => 'bassthalk', 'sub' => 'bthhow', 'label' => 'How it works — card 1', 'short' => 'Card 1', 'usage' => ['the 1st card of "إزاي بسطتهالك بتشتغل؟" (and the 6th, 11th… when there are more)'], 'default' => '#0080ff'],
+        'bthhowbg2'         => ['section' => 'bassthalk', 'sub' => 'bthhow', 'label' => 'How it works — card 2', 'short' => 'Card 2', 'usage' => ['the 2nd card (and the 7th, 12th…)'], 'default' => '#b5ecff'],
+        'bthhowbg3'         => ['section' => 'bassthalk', 'sub' => 'bthhow', 'label' => 'How it works — card 3', 'short' => 'Card 3', 'usage' => ['the 3rd card (and the 8th…); drawn at half saturation like the original'], 'default' => '#adffa4'],
+        'bthhowbg4'         => ['section' => 'bassthalk', 'sub' => 'bthhow', 'label' => 'How it works — card 4', 'short' => 'Card 4', 'usage' => ['the 4th card (and the 9th…)'], 'default' => '#60feff'],
+        'bthhowbg5'         => ['section' => 'bassthalk', 'sub' => 'bthhow', 'label' => 'How it works — card 5', 'short' => 'Card 5', 'usage' => ['the 5th card (and the 10th…); drawn at half saturation like the original'], 'default' => '#bbf7d0'],
+        'bthhowtext1'       => ['section' => 'bassthalk', 'sub' => 'bthhow', 'label' => 'How it works — card 1 text', 'short' => 'Card 1 text', 'usage' => ['the number, title and text on card 1'], 'default' => '#ffffff'],
+        'bthhowtext'        => ['section' => 'bassthalk', 'sub' => 'bthhow', 'label' => 'How it works — text', 'short' => 'Text', 'usage' => ['the section title and paragraph', 'the number, title and text on cards 2–5'], 'default' => '#111827'],
+        'bthselbgtop'       => ['section' => 'bassthalk', 'sub' => 'bthselected', 'label' => 'Selected courses background (top)', 'short' => 'Background top', 'usage' => ['the top colour of the section gradient'], 'default' => '#ffffff'],
+        'bthselbgbottom'    => ['section' => 'bassthalk', 'sub' => 'bthselected', 'label' => 'Selected courses background (bottom)', 'short' => 'Background bottom', 'usage' => ['the bottom colour of the section gradient'], 'default' => '#bfdfff'],
+        'bthseltext'        => ['section' => 'bassthalk', 'sub' => 'bthselected', 'label' => 'Selected courses text', 'short' => 'Text', 'usage' => ['the section title and paragraph', 'the year list items'], 'default' => '#111827'],
+        'bthselframebg'     => ['section' => 'bassthalk', 'sub' => 'bthselected', 'label' => 'Illustration frame', 'short' => 'Frame', 'usage' => ['the white card around the illustration'], 'default' => '#ffffff'],
+        'bthselframe'       => ['section' => 'bassthalk', 'sub' => 'bthselected', 'label' => 'Illustration frame border', 'short' => 'Frame border', 'usage' => ['the thin border of the illustration card'], 'default' => '#d6f3ff'],
+        'bthselfilter'      => ['section' => 'bassthalk', 'sub' => 'bthselected', 'label' => 'Year filter', 'short' => 'Year filter', 'usage' => ['the border, text and arrow of "اختر الصف الدراسي"', 'the border of its open list'], 'default' => '#0861c5'],
+        'bthselmenubg'      => ['section' => 'bassthalk', 'sub' => 'bthselected', 'label' => 'Year list background', 'short' => 'Year list', 'usage' => ['the open list of years'], 'default' => '#edfaff'],
+        'bthselmenuhover'   => ['section' => 'bassthalk', 'sub' => 'bthselected', 'label' => 'Year list hover', 'short' => 'Year list hover', 'usage' => ['a year under the cursor'], 'default' => '#83e2ff'],
+        'bthselarrowbg'     => ['section' => 'bassthalk', 'sub' => 'bthselected', 'label' => 'Carousel arrow', 'short' => 'Arrow', 'usage' => ['the next / previous buttons when they can move'], 'default' => '#0694ff'],
+        'bthselarrowhover'  => ['section' => 'bassthalk', 'sub' => 'bthselected', 'label' => 'Carousel arrow hover', 'short' => 'Arrow hover', 'usage' => ['an arrow under the cursor'], 'default' => '#0080ff'],
+        'bthselarrowicon'   => ['section' => 'bassthalk', 'sub' => 'bthselected', 'label' => 'Carousel arrow icon', 'short' => 'Arrow icon', 'usage' => ['the chevron on an active arrow'], 'default' => '#ffffff'],
+        'bthselarrowoff'    => ['section' => 'bassthalk', 'sub' => 'bthselected', 'label' => 'Carousel arrow disabled', 'short' => 'Arrow disabled', 'usage' => ['the ring of an arrow at the end of the list'], 'default' => '#d1d5db'],
+        'bthselarrowofficon' => ['section' => 'bassthalk', 'sub' => 'bthselected', 'label' => 'Carousel arrow disabled icon', 'short' => 'Arrow disabled icon', 'usage' => ['the chevron of an arrow at the end of the list'], 'default' => '#9ca3af'],
+        'bthselcardbg'      => ['section' => 'bassthalk', 'sub' => 'bthselected', 'label' => 'Course card', 'short' => 'Card', 'usage' => ['the course cards'], 'default' => '#0694ff'],
+        'bthselcardhover'   => ['section' => 'bassthalk', 'sub' => 'bthselected', 'label' => 'Course card hover', 'short' => 'Card hover', 'usage' => ['a course card under the cursor'], 'default' => '#0d549b'],
+        'bthselcardtext'    => ['section' => 'bassthalk', 'sub' => 'bthselected', 'label' => 'Course card text', 'short' => 'Card text', 'usage' => ['the text on the cards (the top box and the counts are this colour mixed down)'], 'default' => '#ffffff'],
+        'bthselyear'        => ['section' => 'bassthalk', 'sub' => 'bthselected', 'label' => 'Course card year', 'short' => 'Year', 'usage' => ['the year next to the course name'], 'default' => '#91ff85'],
+        'bthselbtnbg'       => ['section' => 'bassthalk', 'sub' => 'bthselected', 'label' => 'Card button', 'short' => 'Button', 'usage' => ['the "اعرف اكثر" button'], 'default' => '#ffffff'],
+        'bthselbtntext'     => ['section' => 'bassthalk', 'sub' => 'bthselected', 'label' => 'Card button text', 'short' => 'Button text', 'usage' => ['the label of "اعرف اكثر"'], 'default' => '#0084ff'],
+        'bthselbtnborder'   => ['section' => 'bassthalk', 'sub' => 'bthselected', 'label' => 'Card button border', 'short' => 'Button border', 'usage' => ['the ring of "اعرف اكثر"'], 'default' => '#e5e7eb'],
+        'bthselbtnhover'    => ['section' => 'bassthalk', 'sub' => 'bthselected', 'label' => 'Card button hover', 'short' => 'Button hover', 'usage' => ['"اعرف اكثر" under the cursor'], 'default' => '#f3f4f6'],
+        'bthteachbg'        => ['section' => 'bassthalk', 'sub' => 'bthteach', 'label' => 'Teachers — background', 'short' => 'Background', 'usage' => ['the blue band behind "المدرسين عندنا"'], 'default' => '#0080ff'],
+        'bthteachtitle'     => ['section' => 'bassthalk', 'sub' => 'bthteach', 'label' => 'Teachers — title text', 'short' => 'Title text', 'usage' => ['the big title and the paragraph on the blue band'], 'default' => '#ffffff'],
+        'bthteachpanel'     => ['section' => 'bassthalk', 'sub' => 'bthteach', 'label' => 'Teachers — filter panel', 'short' => 'Panel', 'usage' => ['the green panel behind the filters and the teacher cards'], 'default' => '#4bf7a1'],
+        'bthteachlabel'     => ['section' => 'bassthalk', 'sub' => 'bthteach', 'label' => 'Teachers — panel text', 'short' => 'Panel text', 'usage' => ['"مرحلتك و دراستك:" and the items of the open lists'], 'default' => '#111827'],
+        'bthteachfilter'    => ['section' => 'bassthalk', 'sub' => 'bthteach', 'label' => 'Teachers — filters', 'short' => 'Filters', 'usage' => ['the border, text and arrow of the year / division dropdowns'], 'default' => '#000000'],
+        'bthteachmenubg'    => ['section' => 'bassthalk', 'sub' => 'bthteach', 'label' => 'Teachers — open list', 'short' => 'Open list', 'usage' => ['the background of an open dropdown list'], 'default' => '#ffffff'],
+        'bthteachmenuhover' => ['section' => 'bassthalk', 'sub' => 'bthteach', 'label' => 'Teachers — list hover', 'short' => 'List hover', 'usage' => ['an item under the cursor in an open list', 'the study-system headings in the division list are this colour mixed down'], 'default' => '#83e2ff'],
+        'bthteacharrowbg'   => ['section' => 'bassthalk', 'sub' => 'bthteach', 'label' => 'Teachers — arrow', 'short' => 'Arrow', 'usage' => ['the next / previous buttons when they can move'], 'default' => '#ffffff'],
+        'bthteacharrowicon' => ['section' => 'bassthalk', 'sub' => 'bthteach', 'label' => 'Teachers — arrow icon', 'short' => 'Arrow icon', 'usage' => ['the chevron on an active arrow'], 'default' => '#0080ff'],
+        'bthteacharrowhover' => ['section' => 'bassthalk', 'sub' => 'bthteach', 'label' => 'Teachers — arrow hover', 'short' => 'Arrow hover', 'usage' => ['an arrow under the cursor'], 'default' => '#edfaff'],
+        'bthteacharrowoff'  => ['section' => 'bassthalk', 'sub' => 'bthteach', 'label' => 'Teachers — arrow disabled', 'short' => 'Arrow disabled', 'usage' => ['the ring of an arrow that cannot move'], 'default' => '#d1d5db'],
+        'bthteacharrowofficon' => ['section' => 'bassthalk', 'sub' => 'bthteach', 'label' => 'Teachers — arrow disabled icon', 'short' => 'Arrow disabled icon', 'usage' => ['the chevron of an arrow that cannot move'], 'default' => '#9ca3af'],
+        'bthteachcardbg'    => ['section' => 'bassthalk', 'sub' => 'bthteach', 'label' => 'Teachers — card', 'short' => 'Card', 'usage' => ['the teacher cards'], 'default' => '#ffffff'],
+        'bthteachname'      => ['section' => 'bassthalk', 'sub' => 'bthteach', 'label' => 'Teachers — name', 'short' => 'Name', 'usage' => ['the teacher name on a card'], 'default' => '#111827'],
+        'bthteachsub'       => ['section' => 'bassthalk', 'sub' => 'bthteach', 'label' => 'Teachers — subject', 'short' => 'Subject', 'usage' => ['the line under the name (the teacher title)'], 'default' => '#6b7280'],
+        'bthlessonsaccent'  => ['section' => 'bassthalk', 'sub' => 'bthlessons', 'label' => 'Suggested lessons — accent', 'short' => 'Accent', 'usage' => ['"المقترحة", the course names, the "الكل" / subscribe / enter buttons'], 'default' => '#0861c5'],
+        'bthlessonsaccenttext' => ['section' => 'bassthalk', 'sub' => 'bthlessons', 'label' => 'Suggested lessons — on accent', 'short' => 'On accent', 'usage' => ['text on the filled buttons'], 'default' => '#ffffff'],
+        'bthlessonstext'    => ['section' => 'bassthalk', 'sub' => 'bthlessons', 'label' => 'Suggested lessons — text', 'short' => 'Text', 'usage' => ['the section titles and the year on a card'], 'default' => '#111827'],
+        'bthlessonsmuted'   => ['section' => 'bassthalk', 'sub' => 'bthlessons', 'label' => 'Suggested lessons — muted text', 'short' => 'Muted text', 'usage' => ['the course description and dates'], 'default' => '#6b7280'],
+        'bthlessonscard'    => ['section' => 'bassthalk', 'sub' => 'bthlessons', 'label' => 'Suggested lessons — card', 'short' => 'Card', 'usage' => ['the course cards (and their border)'], 'default' => '#f3f4f6'],
+        'bthlessonsprice'   => ['section' => 'bassthalk', 'sub' => 'bthlessons', 'label' => 'Suggested lessons — price', 'short' => 'Price', 'usage' => ['the course price'], 'default' => '#06b6d4'],
+        'bthlessonsnav'     => ['section' => 'bassthalk', 'sub' => 'bthlessons', 'label' => 'Suggested lessons — arrows', 'short' => 'Arrows', 'usage' => ['the ring and chevron of the slider arrows', 'their fill on hover'], 'default' => '#0694ff'],
+        'bthlessonsnavring' => ['section' => 'bassthalk', 'sub' => 'bthlessons', 'label' => 'Suggested lessons — arrow ring', 'short' => 'Arrow ring', 'usage' => ['the ring of the slider arrows'], 'default' => '#1eb1ff'],
+        'bthlessonsnavbg'   => ['section' => 'bassthalk', 'sub' => 'bthlessons', 'label' => 'Suggested lessons — arrow fill', 'short' => 'Arrow fill', 'usage' => ['the slider arrows at rest'], 'default' => '#ffffff'],
+        'bthlessonsdot'     => ['section' => 'bassthalk', 'sub' => 'bthlessons', 'label' => 'Suggested lessons — dots', 'short' => 'Dots', 'usage' => ['the slider dots (drawn faint; the current one is the active colour)'], 'default' => '#000000'],
+        'bthlessonsdotactive' => ['section' => 'bassthalk', 'sub' => 'bthlessons', 'label' => 'Suggested lessons — active dot', 'short' => 'Active dot', 'usage' => ['the dot of the current slide'], 'default' => '#00d5dd'],
+        // Course details page (course/view.php for learners) — the white cards,
+        // borders and main ink reuse Surface / Border primary / Text primary /
+        // Text secondary; only the colours that page owns are listed here.
+        'bthcoursepagebg'   => ['section' => 'bassthalk', 'sub' => 'bthcourse', 'label' => 'Course page — background', 'short' => 'Page background', 'usage' => ['the grey ground behind the course cards'], 'default' => '#f3f4f6'],
+        'bthcourseaccent'   => ['section' => 'bassthalk', 'sub' => 'bthcourse', 'label' => 'Course page — icons & active tab', 'short' => 'Icons', 'usage' => ['the tick icons in the lessons list', 'the lesson-type icons (book, play, homework)', 'the active tab "عن الكورس" and its underline', 'the icons of the facts list'], 'default' => '#06b6d4'],
+        'bthcourseprice'    => ['section' => 'bassthalk', 'sub' => 'bthcourse', 'label' => 'Course page — price', 'short' => 'Price', 'usage' => ['the big price', 'the lesson names in the price card'], 'default' => '#0e7490'],
+        'bthcourseoldprice' => ['section' => 'bassthalk', 'sub' => 'bthcourse', 'label' => 'Course page — old price', 'short' => 'Old price', 'usage' => ['the struck-through price before the discount'], 'default' => '#94a3b8'],
+        'bthcoursediscount' => ['section' => 'bassthalk', 'sub' => 'bthcourse', 'label' => 'Course page — discount badge', 'short' => 'Discount', 'usage' => ['the border and text of the "خصم %" badge'], 'default' => '#ef4444'],
+        'bthcoursecta'      => ['section' => 'bassthalk', 'sub' => 'bthcourse', 'label' => 'Course page — subscribe button', 'short' => 'Subscribe button', 'usage' => ['the "اشترك الآن !" button fill and border', 'the ring and text of the secondary "go to course" button'], 'default' => '#3b82f6'],
+        'bthcoursectatext'  => ['section' => 'bassthalk', 'sub' => 'bthcourse', 'label' => 'Course page — subscribe button text', 'short' => 'Subscribe text', 'usage' => ['the label of the "اشترك الآن !" button'], 'default' => '#ffffff'],
+        'bthcourseopen'     => ['section' => 'bassthalk', 'sub' => 'bthcourse', 'label' => 'Course page — open lesson header', 'short' => 'Open lesson', 'usage' => ['the blue header of the lesson that is open', 'the title of a lesson part ("كبسولة الشرح")'], 'default' => '#0861c5'],
+        'bthcourseopentext' => ['section' => 'bassthalk', 'sub' => 'bthcourse', 'label' => 'Course page — open lesson text', 'short' => 'Open lesson text', 'usage' => ['the title, description and arrow on the open lesson header'], 'default' => '#edfaff'],
+        'bthcoursechevron'  => ['section' => 'bassthalk', 'sub' => 'bthcourse', 'label' => 'Course page — lesson arrow', 'short' => 'Arrow', 'usage' => ['the round blue arrow button on every lesson header'], 'default' => '#0080ff'],
+        'bthcoursepart'     => ['section' => 'bassthalk', 'sub' => 'bthcourse', 'label' => 'Course page — lesson part header', 'short' => 'Part header', 'usage' => ['the light-green bar of a lesson part ("كبسولة الشرح", "كتاب التفوق")'], 'default' => '#e3ffe1'],
+        'bthcourserow'      => ['section' => 'bassthalk', 'sub' => 'bthcourse', 'label' => 'Course page — item row', 'short' => 'Item row', 'usage' => ['the grey rows of the files / videos inside a lesson', 'the closed lesson headers'], 'default' => '#f3f4f6'],
+        'bthcoursefaint'    => ['section' => 'bassthalk', 'sub' => 'bthcourse', 'label' => 'Course page — faint text', 'short' => 'Faint text', 'usage' => ['the teacher title under the name', 'the "إخفاء" link on a lesson part'], 'default' => '#9ca3af'],
+        'bthcourseteacher'  => ['section' => 'bassthalk', 'sub' => 'bthcourse', 'label' => 'Course page — teacher name', 'short' => 'Teacher name', 'usage' => ['the teacher name under the photo'], 'default' => '#4b5563'],
+        'bthcourselabel'    => ['section' => 'bassthalk', 'sub' => 'bthcourse', 'label' => 'Course page — card label', 'short' => 'Card label', 'usage' => ['"الدروس:" above the lessons list in the price card'], 'default' => '#334155'],
+        // Teacher page (local/academy/teacher.php). The photo card reuses Surface /
+        // Border primary / Text primary / Text secondary, the course cards reuse
+        // the "Home — suggested lessons" roles; only the hero and chips are its own.
+        'bthtpherobg'       => ['section' => 'bassthalk', 'sub' => 'bthteacherpage', 'label' => 'Teacher page — hero background', 'short' => 'Hero background', 'usage' => ['the blue band behind the teacher name (its triangle pattern is the hero text, faint)'], 'default' => '#38bdf8'],
+        'bthtpherotext'     => ['section' => 'bassthalk', 'sub' => 'bthteacherpage', 'label' => 'Teacher page — hero text', 'short' => 'Hero text', 'usage' => ['the teacher name', 'the year pills text'], 'default' => '#ffffff'],
+        'bthtpherosub'      => ['section' => 'bassthalk', 'sub' => 'bthteacherpage', 'label' => 'Teacher page — hero title line', 'short' => 'Title line', 'usage' => ['the teacher title under the name'], 'default' => '#e0f2fe'],
+        'bthtpchipbg'       => ['section' => 'bassthalk', 'sub' => 'bthteacherpage', 'label' => 'Teacher page — count chips', 'short' => 'Chips', 'usage' => ['the dark "+ N" chips above the name'], 'default' => '#1e3a8a'],
+        'bthtpchiptext'     => ['section' => 'bassthalk', 'sub' => 'bthteacherpage', 'label' => 'Teacher page — count chips text', 'short' => 'Chips text', 'usage' => ['the number on a chip'], 'default' => '#ffffff'],
+        'bthtptagyears'     => ['section' => 'bassthalk', 'sub' => 'bthteacherpage', 'label' => 'Teacher page — "years" tag', 'short' => 'Years tag', 'usage' => ['the "الصفوف" label on the first chip'], 'default' => '#22d3ee'],
+        'bthtptagcourses'   => ['section' => 'bassthalk', 'sub' => 'bthteacherpage', 'label' => 'Teacher page — "courses" tag', 'short' => 'Courses tag', 'usage' => ['the "الكورسات" label on the second chip'], 'default' => '#f43f5e'],
+        'bthtptagtext'      => ['section' => 'bassthalk', 'sub' => 'bthteacherpage', 'label' => 'Teacher page — tag text', 'short' => 'Tag text', 'usage' => ['the words on the two chip tags'], 'default' => '#ffffff'],
+        'bthtppillbg'       => ['section' => 'bassthalk', 'sub' => 'bthteacherpage', 'label' => 'Teacher page — year pills', 'short' => 'Year pills', 'usage' => ['the pills listing the years taught, under the name'], 'default' => '#0ea5e9'],
+        'bthtppillborder'   => ['section' => 'bassthalk', 'sub' => 'bthteacherpage', 'label' => 'Teacher page — year pill border', 'short' => 'Pill border', 'usage' => ['the ring of the year pills'], 'default' => '#7dd3fc'],
+        'bthtpaccent'       => ['section' => 'bassthalk', 'sub' => 'bthteacherpage', 'label' => 'Teacher page — accent', 'short' => 'Accent', 'usage' => ['"المدرس" in the courses heading and the lines beside it', 'the chosen year filter'], 'default' => '#0ea5e9'],
+        'bthtpstaticon'     => ['section' => 'bassthalk', 'sub' => 'bthteacherpage', 'label' => 'Teacher page — stat icons', 'short' => 'Stat icons', 'usage' => ['the icons beside the counts on the photo card'], 'default' => '#4f46e5'],
+        // Parent dashboard (local/parent/index.php, scss/components/_bthparent.scss).
+        'bthparentcard'     => ['section' => 'bassthalk', 'sub' => 'bthparent', 'label' => 'Parent dashboard — grey card', 'short' => 'Grey card', 'usage' => ['the card behind "لوحة تحكم ولي الأمر"', 'the lecture rows', 'the "no content yet" box'], 'default' => '#f3f4f6'],
+        'bthparenthighlight' => ['section' => 'bassthalk', 'sub' => 'bthparent', 'label' => 'Parent dashboard — highlight', 'short' => 'Highlight', 'usage' => ['"ولي الأمر" in the title', 'the hand icon above the course list'], 'default' => '#11baf0'],
+        'bthparentpara'     => ['section' => 'bassthalk', 'sub' => 'bthparent', 'label' => 'Parent dashboard — paragraph', 'short' => 'Paragraph', 'usage' => ['the paragraph under the title'], 'default' => '#4b5563'],
+        'bthparentaccent'   => ['section' => 'bassthalk', 'sub' => 'bthparent', 'label' => 'Parent dashboard — accent', 'short' => 'Accent', 'usage' => ['a phone field\'s line and label while typing', '"نجلك !" in the stats title', 'the "عرض المحتوى" button'], 'default' => '#06b6d4'],
+        'bthparentbtn'      => ['section' => 'bassthalk', 'sub' => 'bthparent', 'label' => 'Parent dashboard — start button', 'short' => 'Start button', 'usage' => ['the "ابدأ المتابعة" button fill and border', 'its label on hover, when the fill turns transparent'], 'default' => '#22d3ee'],
+        'bthparentbtntext'  => ['section' => 'bassthalk', 'sub' => 'bthparent', 'label' => 'Parent dashboard — start button text', 'short' => 'Start button text', 'usage' => ['the label of "ابدأ المتابعة"'], 'default' => '#ffffff'],
+        'bthparentpanel'    => ['section' => 'bassthalk', 'sub' => 'bthparent', 'label' => 'Parent dashboard — panels', 'short' => 'Panels', 'usage' => ['the course list panel and the stats panel'], 'default' => '#f8f8f8'],
+        'bthparentpanelborder' => ['section' => 'bassthalk', 'sub' => 'bthparent', 'label' => 'Parent dashboard — panel border', 'short' => 'Panel border', 'usage' => ['the border of the two panels', 'the outline of the yellow shapes and of the "لم يتم رفع محتوى" badge'], 'default' => '#000000'],
+        'bthparentcourse'   => ['section' => 'bassthalk', 'sub' => 'bthparent', 'label' => 'Parent dashboard — course item', 'short' => 'Course item', 'usage' => ['each course in the course list'], 'default' => '#a5f3fc'],
+        'bthparentcoursehover' => ['section' => 'bassthalk', 'sub' => 'bthparent', 'label' => 'Parent dashboard — course item hover', 'short' => 'Course hover', 'usage' => ['a course under the cursor, and the chosen one'], 'default' => '#67e8f9'],
+        'bthparentprompt'   => ['section' => 'bassthalk', 'sub' => 'bthparent', 'label' => 'Parent dashboard — prompt', 'short' => 'Prompt', 'usage' => ['"أختر الكورس أولا…" and "لا يوجد كورسات…"'], 'default' => '#155e75'],
+        'bthparenttable'    => ['section' => 'bassthalk', 'sub' => 'bthparent', 'label' => 'Parent dashboard — stats table', 'short' => 'Stats table', 'usage' => ['the box behind a lecture\'s videos / homework / exams table'], 'default' => '#f1f5f9'],
+        'bthparentblob'     => ['section' => 'bassthalk', 'sub' => 'bthparent', 'label' => 'Parent dashboard — yellow shapes', 'short' => 'Yellow shapes', 'usage' => ['the yellow shapes behind the course name and the lecture names', 'the hand icon on hover'], 'default' => '#ffe866'],
+        'bthparentmissed'   => ['section' => 'bassthalk', 'sub' => 'bthparent', 'label' => 'Parent dashboard — missed', 'short' => 'Missed', 'usage' => ['"لم يتم مشاهدة الفيديو" / "لم يتم حضور الاختبار"', 'wrong phone numbers on the form'], 'default' => '#f43f5e'],
+        'bthparentempty'    => ['section' => 'bassthalk', 'sub' => 'bthparent', 'label' => 'Parent dashboard — no content badge', 'short' => 'No content badge', 'usage' => ['the "لم يتم رفع محتوى" badge on an empty lecture'], 'default' => '#fef08a'],
     ];
 }
 
@@ -1184,6 +1287,102 @@ function theme_nit_brand_group_defaults(): array {
         'bthherohighlight'  => '#0d549b',
         'bthherobtn'        => '#14d80a',
         'bthherobtntext'    => '#ffffff',
+        'bthhowbg1'         => '#0080ff',
+        'bthhowbg2'         => '#b5ecff',
+        'bthhowbg3'         => '#adffa4',
+        'bthhowbg4'         => '#60feff',
+        'bthhowbg5'         => '#bbf7d0',
+        'bthhowtext1'       => '#ffffff',
+        'bthhowtext'        => '#111827',
+        'bthselbgtop'       => '#ffffff',
+        'bthselbgbottom'    => '#bfdfff',
+        'bthseltext'        => '#111827',
+        'bthselframebg'     => '#ffffff',
+        'bthselframe'       => '#d6f3ff',
+        'bthselfilter'      => '#0861c5',
+        'bthselmenubg'      => '#edfaff',
+        'bthselmenuhover'   => '#83e2ff',
+        'bthselarrowbg'     => '#0694ff',
+        'bthselarrowhover'  => '#0080ff',
+        'bthselarrowicon'   => '#ffffff',
+        'bthselarrowoff'    => '#d1d5db',
+        'bthselarrowofficon' => '#9ca3af',
+        'bthselcardbg'      => '#0694ff',
+        'bthselcardhover'   => '#0d549b',
+        'bthselcardtext'    => '#ffffff',
+        'bthselyear'        => '#91ff85',
+        'bthselbtnbg'       => '#ffffff',
+        'bthselbtntext'     => '#0084ff',
+        'bthselbtnborder'   => '#e5e7eb',
+        'bthselbtnhover'    => '#f3f4f6',
+        'bthteachbg'        => '#0080ff',
+        'bthteachtitle'     => '#ffffff',
+        'bthteachpanel'     => '#4bf7a1',
+        'bthteachlabel'     => '#111827',
+        'bthteachfilter'    => '#000000',
+        'bthteachmenubg'    => '#ffffff',
+        'bthteachmenuhover' => '#83e2ff',
+        'bthteacharrowbg'   => '#ffffff',
+        'bthteacharrowicon' => '#0080ff',
+        'bthteacharrowhover' => '#edfaff',
+        'bthteacharrowoff'  => '#d1d5db',
+        'bthteacharrowofficon' => '#9ca3af',
+        'bthteachcardbg'    => '#ffffff',
+        'bthteachname'      => '#111827',
+        'bthteachsub'       => '#6b7280',
+        'bthlessonsaccent'  => '#0861c5',
+        'bthlessonsaccenttext' => '#ffffff',
+        'bthlessonstext'    => '#111827',
+        'bthlessonsmuted'   => '#6b7280',
+        'bthlessonscard'    => '#f3f4f6',
+        'bthlessonsprice'   => '#06b6d4',
+        'bthlessonsnav'     => '#0694ff',
+        'bthlessonsnavring' => '#1eb1ff',
+        'bthlessonsnavbg'   => '#ffffff',
+        'bthlessonsdot'     => '#000000',
+        'bthlessonsdotactive' => '#00d5dd',
+        'bthcoursepagebg'   => '#f3f4f6',
+        'bthcourseaccent'   => '#06b6d4',
+        'bthcourseprice'    => '#0e7490',
+        'bthcourseoldprice' => '#94a3b8',
+        'bthcoursediscount' => '#ef4444',
+        'bthcoursecta'      => '#3b82f6',
+        'bthcoursectatext'  => '#ffffff',
+        'bthcourseopen'     => '#0861c5',
+        'bthcourseopentext' => '#edfaff',
+        'bthcoursechevron'  => '#0080ff',
+        'bthcoursepart'     => '#e3ffe1',
+        'bthcourserow'      => '#f3f4f6',
+        'bthcoursefaint'    => '#9ca3af',
+        'bthcourseteacher'  => '#4b5563',
+        'bthcourselabel'    => '#334155',
+        'bthtpherobg'       => '#38bdf8',
+        'bthtpherotext'     => '#ffffff',
+        'bthtpherosub'      => '#e0f2fe',
+        'bthtpchipbg'       => '#1e3a8a',
+        'bthtpchiptext'     => '#ffffff',
+        'bthtptagyears'     => '#22d3ee',
+        'bthtptagcourses'   => '#f43f5e',
+        'bthtptagtext'      => '#ffffff',
+        'bthtppillbg'       => '#0ea5e9',
+        'bthtppillborder'   => '#7dd3fc',
+        'bthtpaccent'       => '#0ea5e9',
+        'bthtpstaticon'     => '#4f46e5',
+        'bthparentcard'     => '#f3f4f6',
+        'bthparenthighlight' => '#11baf0',
+        'bthparentpara'     => '#4b5563',
+        'bthparentaccent'   => '#06b6d4',
+        'bthparentbtn'      => '#22d3ee',
+        'bthparentbtntext'  => '#ffffff',
+        'bthparentpanel'    => '#f8f8f8',
+        'bthparentpanelborder' => '#000000',
+        'bthparentcourse'   => '#a5f3fc',
+        'bthparentcoursehover' => '#67e8f9',
+        'bthparentprompt'   => '#155e75',
+        'bthparenttable'    => '#f1f5f9',
+        'bthparentblob'     => '#ffe866',
+        'bthparentmissed'   => '#f43f5e',
+        'bthparentempty'    => '#fef08a',
     ]);
     return $defaults;
 }
@@ -2557,7 +2756,7 @@ function theme_nit_get_extra_scss($theme) {
 function theme_nit_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload, array $options = []) {
     $fontareas = array_map(static fn($slot) => $slot['filearea'], theme_nit_font_slots());
     // Image file areas served exactly like the fonts (system context, itemid 0).
-    $imageareas = ['loginbackgroundimage', 'brandlogo', 'bthheroimage', 'bthheroimagemobile'];
+    $imageareas = ['loginbackgroundimage', 'brandlogo'];
     $servable = array_merge($fontareas, $imageareas);
 
     if ($context->contextlevel == CONTEXT_SYSTEM && in_array($filearea, $servable, true)) {
@@ -2715,108 +2914,6 @@ function theme_nit_footer_context(): array {
         'haspages' => !empty($pages),
         'socials' => $socials,
         'hassocials' => !empty($socials),
-    ];
-}
-
-/**
- * Default texts of the Bassthalk home sections (Appearance → Bassthalk home).
- *
- * Shared by the admin page (as the settings' defaults) and by
- * theme_nit_bthhome_context(), which uses them while a setting was never saved.
- *
- * @return array<string, string> setting key (without the bthhome_ prefix) => text
- */
-function theme_nit_bthhome_defaults(): array {
-    return [
-        'hero_title1' => 'منصة متكاملة بها كل ما',
-        'hero_title2' => 'يحتاجه الطالب ليتفوق',
-        'hero_highlight' => 'الطالب ليتفوق',
-        'hero_text' => 'منصة متكاملة بتساعدك تذاكر صح، تختار مدرسينك، وتوصل لأعلى درجاتك في الثانوية العامة بكل سهولة وراحة.',
-        'hero_button' => 'ابدأ رحلتك',
-    ];
-}
-
-/**
- * Whether the home page draws the code-owned Bassthalk sections.
- *
- * On by default (the setting is unset until the admin page is first saved).
- *
- * @return bool
- */
-function theme_nit_bthhome_enabled(): bool {
-    $value = get_config('theme_nit', 'bthhome_enabled');
-    return $value === false || (bool) $value;
-}
-
-/**
- * A Bassthalk home text: the saved setting, or its default while never saved.
- *
- * @param string $key setting key without the bthhome_ prefix
- * @return string raw text (not escaped)
- */
-function theme_nit_bthhome_text(string $key): string {
-    $value = get_config('theme_nit', 'bthhome_' . $key);
-    if ($value === false) {
-        $value = theme_nit_bthhome_defaults()[$key] ?? '';
-    }
-    return trim((string) $value);
-}
-
-/**
- * Everything the Bassthalk home sections draw (theme_nit/bassthalk/home).
- *
- * @return array view-model: hero{titleline1, titlebefore, titlehighlight, titleafter, text, button, buttonurl, imageurl, imagemobileurl}
- */
-function theme_nit_bthhome_context(): array {
-    global $OUTPUT;
-
-    // The second title line is split around the highlighted words so the
-    // template can wrap just that part; a highlight that is not in the line is
-    // ignored rather than shown twice.
-    $line2 = theme_nit_bthhome_text('hero_title2');
-    $highlight = theme_nit_bthhome_text('hero_highlight');
-    $before = $line2;
-    $after = '';
-    $hashighlight = ($highlight !== '' && ($pos = core_text::strpos($line2, $highlight)) !== false);
-    if ($hashighlight) {
-        $before = core_text::substr($line2, 0, $pos);
-        $after = core_text::substr($line2, $pos + core_text::strlen($highlight));
-    }
-
-    $theme = theme_config::load('nit');
-    $fileurl = static function (string $setting, string $area) use ($theme): string {
-        $url = $theme->setting_file_url($setting, $area);
-        return $url ? (($url instanceof moodle_url) ? $url->out(false) : (string) $url) : '';
-    };
-    $imageurl = $fileurl('bthhome_hero_image', 'bthheroimage');
-    if ($imageurl === '') {
-        $imageurl = $OUTPUT->image_url('bassthalk_hero', 'theme_nit')->out(false);
-    }
-    // Phones get their own (portrait) picture when one is uploaded.
-    $imagemobileurl = $fileurl('bthhome_hero_imagemobile', 'bthheroimagemobile');
-
-    $title1 = theme_nit_bthhome_text('hero_title1');
-    $text = theme_nit_bthhome_text('hero_text');
-    $button = theme_nit_bthhome_text('hero_button');
-
-    return [
-        'hero' => [
-            'titleline1' => format_string($title1),
-            'hastitleline1' => $title1 !== '',
-            'titlebefore' => format_string($before),
-            'titlehighlight' => $hashighlight ? format_string($highlight) : '',
-            'hashighlight' => $hashighlight,
-            'titleafter' => format_string($after),
-            'hastitleline2' => $line2 !== '',
-            'text' => format_string($text),
-            'hastext' => $text !== '',
-            'button' => format_string($button),
-            'hasbutton' => $button !== '',
-            'buttonurl' => (new moodle_url('/local/academy/start.php'))->out(false),
-            'imageurl' => $imageurl,
-            'imagemobileurl' => $imagemobileurl,
-            'hasimagemobile' => $imagemobileurl !== '',
-        ],
     ];
 }
 
@@ -3032,7 +3129,14 @@ function theme_nit_brand_role_subsections(): array {
         // Bassthalk.
         'bthnavbar'  => 'Navbar extras',
         'bthauth'    => 'Log-in & registration',
-        'bthhome'    => 'Home page',
+        'bthhome'    => 'Home — hero',
+        'bthhow'     => 'Home — how it works',
+        'bthselected' => 'Home — selected courses',
+        'bthteach'   => 'Home — teachers',
+        'bthlessons' => 'Home — suggested lessons',
+        'bthcourse'  => 'Course details page',
+        'bthteacherpage' => 'Teacher page',
+        'bthparent'  => 'Parent dashboard',
     ];
 }
 

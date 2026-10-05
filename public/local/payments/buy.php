@@ -68,6 +68,9 @@ if (!\local_payments\price_resolver::has_pricing($courseid) && !$can_enroll_via_
     $enrollurl = new moodle_url('/local/payments/buy.php',
         ['courseid' => $courseid, 'action' => 'enrollfree', 'sesskey' => sesskey()]);
     echo $OUTPUT->single_button($enrollurl, get_string('registerfree', 'local_payments'), 'post');
+    if (class_exists('\local_nit_finance\local\output')) {
+        echo \local_nit_finance\local\output::lessons_for_sale((int) $courseid, (int) $USER->id);
+    }
     echo $OUTPUT->footer();
     exit;
 }
@@ -112,6 +115,11 @@ try {
     ];
 
     echo $OUTPUT->render_from_template('local_payments/course_page_price', $templatedata);
+
+    // Lessons of this course sold one by one (local_nit_finance).
+    if (class_exists('\local_nit_finance\local\output')) {
+        echo \local_nit_finance\local\output::lessons_for_sale((int) $courseid, (int) $USER->id);
+    }
 
     // NIT: intercept the checkout link → open the coupon/offer modal → proceed with the coupon.
     if ($nitcheckout) {

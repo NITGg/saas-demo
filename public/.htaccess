@@ -1,0 +1,8 @@
+# NIT: short URLs for our own pages (Moodle ships no .htaccess here; this file is ours).
+# Needs mod_rewrite (enabled in docker/Dockerfile: a2enmod rewrite) and AllowOverride.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # bassthalk.com/parent_dashboard — the parent dashboard (local_parent).
+    RewriteRule ^parent_dashboard/?$ local/parent/index.php [L,QSA]
+</IfModule>

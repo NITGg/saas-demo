@@ -75,6 +75,9 @@ if ($hasai) {
 }
 $chat = $hasai ? \local_nit_ai\ui::chat_drawer($cm, $context) : '';
 
+// Watched % + resume from the last position (local_nit_videoprogress).
+$progress = class_exists('\local_nit_videoprogress\ui') ? \local_nit_videoprogress\ui::tracker($cm) : '';
+
 // The shared T1 player frame (local_academy\player); bare embed on any error.
 $rendered = false;
 try {
@@ -82,7 +85,7 @@ try {
     $overview = !empty($moduleinstance->intro)
         ? format_module_intro('vdocipher', $moduleinstance, $cm->id) : '';
     echo \local_academy\player::render($cminfo, $course,
-        '<div class="nit-player__video">' . $iframe . '</div>' . $chat, $overview, true);
+        '<div class="nit-player__video">' . $iframe . '</div>' . $chat . $progress, $overview, true);
     $rendered = true;
 } catch (\Throwable $ex) {
     debugging('mod_vdocipher T1 player failed, using bare embed: ' . $ex->getMessage(), DEBUG_DEVELOPER);
@@ -98,5 +101,6 @@ if (!$rendered) {
         echo '<div style="position:relative;width:100%;max-width:960px;margin:1rem auto;aspect-ratio:16/9;background:#000;">'
             . $iframe . '</div>';
     }
+    echo $progress;
 }
 echo $OUTPUT->footer();

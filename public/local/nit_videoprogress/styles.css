@@ -1,0 +1,176 @@
+/* Video progress (local_nit_videoprogress). Colours come from the brand
+   palette only: every element sits inside .nit-brand-18. */
+
+.nitvp {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px clamp(16px, 3vw, 34px);
+    background: var(--nit-brand-surface);
+    color: var(--nit-brand-textprimary);
+    border-bottom: 1px solid var(--nit-brand-borderprimary);
+    font-family: 'Tajawal', 'Almarai', system-ui, sans-serif;
+}
+.nitvp__row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.nitvp__label {
+    flex: none;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--nit-brand-textsecondary);
+}
+.nitvp__bar {
+    flex: 1;
+    height: 8px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--nit-brand-primary) 14%, var(--nit-brand-surface));
+}
+.nitvp__bar > i {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--nit-brand-primary);
+    transition: width .4s ease;
+}
+.nitvp__pct {
+    flex: none;
+    min-width: 42px;
+    text-align: end;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--nit-brand-primary);
+}
+.nitvp__resume {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--nit-brand-textsecondary);
+}
+.nitvp__resume[hidden] {
+    display: none;
+}
+.nitvp__restart {
+    padding: 4px 14px;
+    border: 1px solid var(--nit-brand-primary);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--nit-brand-primary);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color .2s ease, color .2s ease;
+}
+.nitvp__restart:hover,
+.nitvp__restart:focus-visible {
+    background: var(--nit-brand-primary);
+    color: var(--nit-brand-onprimary);
+}
+
+/* Chip for lesson lists. */
+.nitvp-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--nit-brand-textsecondary);
+    white-space: nowrap;
+}
+.nitvp-chip__ring {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: conic-gradient(var(--nit-brand-primary) var(--nitvp-p, 0%),
+        color-mix(in srgb, var(--nit-brand-primary) 18%, transparent) 0);
+    -webkit-mask: radial-gradient(circle, transparent 4px, black 4.5px);
+    mask: radial-gradient(circle, transparent 4px, black 4.5px);
+}
+.nitvp-chip--done .nitvp-chip__num {
+    color: var(--nit-brand-success);
+}
+
+/* Video progress list (student / guardian pages). */
+.nitvp-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    font-family: 'Tajawal', 'Almarai', system-ui, sans-serif;
+    color: var(--nit-brand-textprimary);
+}
+.nitvp-course {
+    border: 1px solid var(--nit-brand-borderprimary);
+    border-radius: 14px;
+    background: var(--nit-brand-surface);
+    overflow: hidden;
+}
+.nitvp-course__head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--nit-brand-borderprimary);
+}
+.nitvp-course__name {
+    flex: 1;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+}
+.nitvp-lesson {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 18px;
+}
+.nitvp-lesson + .nitvp-lesson {
+    border-top: 1px solid var(--nit-brand-bordersecondary);
+}
+.nitvp-lesson__name {
+    flex: 1;
+    min-width: 0;
+    font-size: 14px;
+}
+.nitvp-lesson__bar {
+    flex: 0 1 180px;
+    height: 6px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--nit-brand-primary) 14%, var(--nit-brand-surface));
+}
+.nitvp-lesson__bar > i {
+    display: block;
+    height: 100%;
+    background: var(--nit-brand-primary);
+}
+.nitvp-lesson__pct {
+    flex: none;
+    min-width: 40px;
+    text-align: end;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--nit-brand-primary);
+}
+.nitvp-lesson__meta {
+    flex: none;
+    font-size: 12px;
+    color: var(--nit-brand-textsecondary);
+}
+@media (max-width: 575.98px) {
+    .nitvp-lesson {
+        flex-wrap: wrap;
+    }
+    .nitvp-lesson__name {
+        flex-basis: 100%;
+    }
+    .nitvp-lesson__bar {
+        flex: 1;
+    }
+}

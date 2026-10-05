@@ -131,6 +131,17 @@ class withdrawal_service extends service {
         $wd->set('timeprocessed', time());
         $wd->update();
 
+        if ($action === 'pay') {
+            // The money left the platform: take it out of the teacher's wallet too.
+            // Earnings recorded before wallets existed may not be in the wallet, so
+            // the balance is allowed to dip below zero rather than block the pay-out.
+            \local_nit_finance\local\wallets::move(\local_nit_finance\local\wallets::TEACHER,
+                (int) $wd->get('teacherid'), -(int) $wd->get('amount_minor'),
+                \local_nit_finance\local\wallets::KIND_WITHDRAWAL,
+                ['itemtype' => 'withdrawal', 'itemid' => (int) $wd->get('id'), 'note' => (string) $wd->get('reference')],
+                true);
+        }
+
         return self::format($wd);
     }
 

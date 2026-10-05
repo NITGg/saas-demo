@@ -167,3 +167,6 @@ $string['price_home'] = 'السعر في {$a} (الدولة الافتراضية
 $string['currency_home'] = 'العملة في {$a}';
 $string['price_other'] = 'السعر لباقي الدول';
 $string['currency_other'] = 'العملة لباقي الدول';
+
+// شحن المحفظة (local_nit_finance).
+$string['topup_badamount'] = 'مبلغ الشحن لازم يكون بين {$a->min} و {$a->max} ج.م.';

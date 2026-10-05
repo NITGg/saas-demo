@@ -24,89 +24,75 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['pluginname'] = 'Parent accounts';
-
-// Capability.
-$string['parent:view'] = 'View a linked child\'s progress';
-
-// The parent role.
-$string['parentrole'] = 'Parent';
-$string['parentroledesc'] = 'A parent or guardian who can follow their linked child\'s marks, quiz activity and events. Assigned automatically in each child\'s context when the accounts are linked by phone number.';
+$string['pluginname'] = 'Parent dashboard';
+$string['cachedef_failures'] = 'Wrong phone pairs on the parent dashboard';
 
 // Settings.
-$string['settingsheading'] = 'Parent accounts';
+$string['settingsheading'] = 'Parent dashboard';
 $string['defaultcountrycode'] = 'Default country code';
-$string['defaultcountrycode_desc'] = 'Digits prefixed to a local number that has no country code, so 010… and +2010… match. Egypt = 20.';
-$string['parentphonefield'] = 'Parent-phone profile field';
-$string['parentphonefield_desc'] = 'The shortname of the student custom profile field that holds the parent\'s phone number (filled at student registration).';
+$string['defaultcountrycode_desc'] = 'Digits put in front of a local number that has no country code, so 010… and +2010… match. Egypt = 20.';
+$string['parentphonefield'] = 'Parent phone field';
+$string['parentphonefield_desc'] = 'Shortname of the student profile field holding the parent\'s phone. The parent dashboard checks the parent\'s number against it and against the father and mother phone fields.';
 
 // Student sign-up field.
 $string['parentphonelabel'] = 'Parent / guardian phone';
 
-// Parent phone-gate page.
-$string['parentsignup'] = 'Create a parent account';
-$string['parentsignupintro'] = 'Enter the phone number your child registered as their parent\'s number. We only let you continue if a student has already listed it.';
-$string['yourphone'] = 'Your phone number';
-$string['continuetosignup'] = 'Continue';
-
-// Parent dashboard.
+// Dashboard — hero and form.
 $string['dashboard'] = 'Parent dashboard';
-$string['marks'] = 'Marks';
-$string['quizactivity'] = 'Quiz activity';
-$string['col_course'] = 'Course';
-$string['col_grade'] = 'Grade';
-$string['col_quiz'] = 'Quiz';
-$string['col_score'] = 'Score';
-$string['col_taken'] = 'Taken';
-$string['col_duration'] = 'Duration';
-$string['noquizzes'] = 'No quiz attempts yet.';
-$string['nomarks'] = 'No marks yet.';
+$string['title_a'] = 'Parent';
+$string['title_b'] = 'dashboard';
+$string['intro'] = 'Follow your child every week — what they watched and the marks they got — so you can be sure of their progress and be part of their learning journey.';
+$string['childphone'] = 'Your child\'s phone';
+$string['yourphone'] = 'Your phone';
+$string['start'] = 'Start following';
+$string['err_invalidphone'] = 'Please enter a valid phone number (e.g. 01012345678). Letters are not allowed.';
+$string['err_nomatch'] = 'These numbers do not match. Check your child\'s phone and the parent phone they registered.';
+$string['err_toomany'] = 'Too many wrong attempts. Please try again in 15 minutes.';
 
-// Linking / flow messages.
-$string['err_noparentnumber'] = 'No student has listed this number. Ask your child to add it to their profile first.';
-$string['err_invalidphone'] = 'Please enter a valid phone number (e.g. 01012345678). Letters and special characters are not allowed.';
-$string['parentsignupbadge'] = 'Creating a parent account (linked to: {$a})';
-$string['parentsignupprompt'] = 'Are you a parent or guardian?';
-$string['parentsignuplink'] = 'Create a parent account here';
-$string['parentphonehint'] = 'Optional: enter your parent\'s phone number so they can follow your progress and grades.';
-$string['mychildren'] = 'My children';
-$string['linkedchildren'] = 'Linked children';
-$string['nochildren'] = 'No children are linked to your account yet.';
+// Dashboard — results.
+$string['courselist'] = 'Your child\'s courses';
+$string['togglelist'] = 'Collapse / expand the course list';
+$string['choosecourse'] = 'Choose a course first to see your child\'s statistics and results';
+$string['nocourses'] = 'Your child is not enrolled in any course yet';
+$string['stats_a'] = 'Statistics of';
+$string['stats_b'] = 'your child!';
+$string['showcontent'] = 'Show content';
+$string['hidecontent'] = 'Hide content';
+$string['nocontent'] = 'No content has been published in this course yet';
+$string['emptyweek'] = 'No content yet';
+$string['startedon'] = 'Started on:';
+$string['col_videos'] = 'Videos';
+$string['col_homework'] = 'Homework';
+$string['col_exams'] = 'Exams';
+$string['studentlevel'] = 'Student level';
 
-// Notifications to parents.
-$string['messageprovider:child_activity'] = 'Updates about linked child (grades, quizzes, and activities)';
+// Items, named by their order in the lecture.
+$string['label_videos'] = 'Video {$a}';
+$string['label_homework'] = 'Homework {$a}';
+$string['label_exams'] = 'Exam {$a}';
+$string['ord1'] = '1';
+$string['ord2'] = '2';
+$string['ord3'] = '3';
+$string['ord4'] = '4';
+$string['ord5'] = '5';
+$string['ord6'] = '6';
+$string['ord7'] = '7';
+$string['ord8'] = '8';
+$string['ord9'] = '9';
+$string['ord10'] = '10';
+$string['done_videos'] = 'Watched';
+$string['done_videos_after'] = 'of the video';
+$string['done_homework'] = 'Homework result';
+$string['done_exams'] = 'Exam result';
+$string['pending_videos'] = 'Watching';
+$string['pending_homework'] = 'Handed in, waiting for marking';
+$string['pending_exams'] = 'Taken, waiting for the result';
+$string['absent_videos'] = 'Not watched';
+$string['absent_homework'] = 'Not handed in';
+$string['absent_exams'] = 'Not taken';
+$string['none_videos'] = 'No videos yet';
+$string['none_homework'] = 'No homework yet';
+$string['none_exams'] = 'No exams yet';
 
-$string['notif_quiz_subject'] = 'Quiz submitted: {$a->child} completed {$a->quiz}';
-$string['notif_quiz_body'] = 'Hello,
-
-Your child {$a->child} has completed the quiz "{$a->quiz}" in the course "{$a->course}".
-Score: {$a->score}
-
-You can view details and progress on your Parent Dashboard:
-{$a->url}';
-
-$string['notif_grade_subject'] = 'New grade for {$a->child}: {$a->item}';
-$string['notif_grade_body'] = 'Hello,
-
-A new grade has been posted for your child {$a->child} for "{$a->item}" in "{$a->course}".
-Grade: {$a->grade}
-
-View your child\'s full progress on your Parent Dashboard:
-{$a->url}';
-
-$string['notif_course_completed_subject'] = 'Congratulations! {$a->child} completed {$a->course}';
-$string['notif_course_completed_body'] = 'Hello,
-
-Great news! Your child {$a->child} has successfully completed the course "{$a->course}".
-
-View certificates and summary on your Parent Dashboard:
-{$a->url}';
-
-$string['notif_course_enrolled_subject'] = '{$a->child} enrolled in a new course: {$a->course}';
-$string['notif_course_enrolled_body'] = 'Hello,
-
-Your child {$a->child} has enrolled in the course "{$a->course}".
-
-Follow their progress anytime on your Parent Dashboard:
-{$a->url}';
-
+// Privacy.
+$string['privacy:metadata'] = 'The parent dashboard stores no personal data; it shows a student\'s existing data when their phone and their parent\'s phone match.';

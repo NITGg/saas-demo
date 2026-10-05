@@ -56,3 +56,37 @@ $string['player_completed'] = 'Completed';
 $string['player_locked'] = 'Complete the previous lessons first';
 $string['player_lesson'] = 'Lesson';
 $string['player_of'] = 'of';
+
+// Study systems & divisions (Plugins → Local plugins).
+$string['academic_page'] = 'Study systems & divisions';
+$string['academic_structure'] = 'Study systems and divisions';
+$string['academic_structure_desc'] = 'The options of the "Study system" and "Division" dropdowns — on the course settings page (group "custom fields") and on the student profile / registration form. Each study system has its own divisions: once a system is chosen, the division list shows only that system\'s divisions. Saving updates every dropdown; a course whose answer was removed from the list loses that answer.';
+$string['academic_system'] = 'Study system';
+$string['academic_divisions'] = 'Its divisions (one per line)';
+$string['academic_divisions_hint'] = 'One division per line';
+$string['academic_add'] = 'Add study system';
+$string['academic_remove'] = 'Remove';
+$string['academic_nosystems'] = 'Add at least one study system.';
+$string['academic_nodivisions'] = 'The study system "{$a}" needs at least one division.';
+$string['academic_years_categories'] = 'The <strong>Years</strong> are the course categories (all levels) — add, rename or reorder them on <a href="{$a}">Manage courses and categories</a>. A course\'s year is the category it is in; the student "Year" field lists the categories automatically.';
+
+// Teacher page (local/academy/teacher.php).
+$string['teacherpage_title'] = 'Teacher page: {$a}';
+$string['teacherpage_notteacher'] = 'This teacher page is not available.';
+$string['teacherpage_years'] = 'Years';
+$string['teacherpage_courses'] = 'Courses';
+$string['teacherpage_coursecount'] = 'Number of courses';
+$string['teacherpage_yearcount'] = 'Number of years';
+$string['teacherpage_studentcount'] = 'Number of students';
+$string['teacherpage_about'] = 'About the teacher';
+$string['teacherpage_heading1'] = 'Teacher\'s';
+$string['teacherpage_heading2'] = 'courses';
+$string['teacherpage_all'] = 'All';
+$string['teacherpage_enter'] = 'Go to the course';
+$string['teacherpage_subscribe'] = 'Subscribe to the course!';
+$string['teacherpage_free'] = 'Join for free';
+$string['teacherpage_more'] = '... show more';
+$string['teacherpage_less'] = 'Show less';
+$string['teacherpage_created'] = 'Created';
+$string['teacherpage_modified'] = 'Last updated';
+$string['teacherpage_empty'] = 'No courses for this year yet.';

@@ -1,0 +1,225 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_academy/teacher_page
+
+    The public teacher page (local/academy/teacher.php) — bassthalk.com/teacher/<id>.
+    Styles: theme/nit/scss/components/_bthteacher.scss; colours from Brand Colors →
+    Bassthalk (the wrapper carries .nit-brand-18).
+
+    Context variables required for this template:
+    * name, title, photo, bio - the teacher
+    * years - [{id, name, short, label, courses}] the years taught
+    * hasyears, filter - whether to draw the year pills / the year filter
+    * counts - {courses, years, students}
+    * courses - course cards: id, fullname, url, enrolurl, image, year, price, summary,
+      createdtext, modifiedtext, yearid, enrolled, free
+
+    Example context (json):
+    {
+        "name": "Mohammed Salah", "title": "Physics teacher", "photo": "", "bio": "",
+        "hasyears": true, "filter": false,
+        "years": [{"id": 6, "name": "الصف الثالث الثانوي", "short": "٣ ث", "label": "الصف الثالث الثانوي", "courses": 1}],
+        "counts": {"courses": 1, "years": 1, "students": 12},
+        "courses": [{"id": 2, "fullname": "First Month", "url": "#", "enrolurl": "#", "image": "", "year": "٣ ث",
+            "price": "420 جنيه", "summary": "", "createdtext": "", "modifiedtext": "", "yearid": 6,
+            "enrolled": false, "free": false}]
+    }
+}}
+<div class="bthtp nit-brand-18" data-bthtp>
+    <section class="bthtp__hero">
+        <div class="bthtp__pattern" aria-hidden="true"></div>
+        <div class="bthtp__hero-in">
+            <div class="bthtp__info">
+                <ul class="bthtp__chips">
+                    <li class="bthtp__chip">
+                        <span class="bthtp__chip-num">+ {{counts.years}}</span>
+                        <span class="bthtp__tag bthtp__tag--years">{{#str}}teacherpage_years, local_academy{{/str}}</span>
+                    </li>
+                    <li class="bthtp__chip">
+                        <span class="bthtp__chip-num">+ {{counts.courses}}</span>
+                        <span class="bthtp__tag bthtp__tag--courses">{{#str}}teacherpage_courses, local_academy{{/str}}</span>
+                    </li>
+                </ul>
+                <h1 class="bthtp__name">{{name}}</h1>
+                {{#title}}<p class="bthtp__title">{{title}}</p>{{/title}}
+                {{#hasyears}}
+                <ul class="bthtp__pills">
+                    {{#years}}<li class="bthtp__pill">{{label}}</li>{{/years}}
+                </ul>
+                {{/hasyears}}
+            </div>
+        </div>
+    </section>
+
+    <div class="bthtp__body">
+        <aside class="bthtp__card">
+            <div class="bthtp__photo">
+                <img src="{{photo}}" alt="{{name}}">
+            </div>
+            <dl class="bthtp__stats">
+                <div class="bthtp__stat">
+                    <dt>
+                        <svg class="bthtp__ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6H2v14a2 2 0 0 0 2 2h14v-2H4zm16-4H8a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2m0 14H8V4h12zM10 9h8v2h-8zm0 3h4v2h-4zm0-6h8v2h-8z"/></svg>
+                        {{#str}}teacherpage_coursecount, local_academy{{/str}}
+                    </dt>
+                    <dd>{{counts.courses}}</dd>
+                </div>
+                <div class="bthtp__stat">
+                    <dt>
+                        <svg class="bthtp__ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3L1 9l11 6l9-4.91V17h2V9zM5 13.18v4L12 21l7-3.82v-4L12 17z"/></svg>
+                        {{#str}}teacherpage_yearcount, local_academy{{/str}}
+                    </dt>
+                    <dd>{{counts.years}}</dd>
+                </div>
+                <div class="bthtp__stat">
+                    <dt>
+                        <svg class="bthtp__ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3s1.34 3 3 3m-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5S5 6.34 5 8s1.34 3 3 3m0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5m8 0c-.29 0-.62.02-.97.05c1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5"/></svg>
+                        {{#str}}teacherpage_studentcount, local_academy{{/str}}
+                    </dt>
+                    <dd>{{counts.students}}</dd>
+                </div>
+            </dl>
+        </aside>
+        {{#bio}}
+        <section class="bthtp__about">
+            <h2 class="bthtp__about-h">{{#str}}teacherpage_about, local_academy{{/str}}</h2>
+            <p class="bthtp__about-p">{{bio}}</p>
+        </section>
+        {{/bio}}
+    </div>
+
+    <section class="bthtp__courses" aria-labelledby="bthtp-courses-h">
+        <div class="bthtp__head">
+            <span class="bthtp__rule" aria-hidden="true"></span>
+            <h2 class="bthtp__h2" id="bthtp-courses-h">{{#str}}teacherpage_heading1, local_academy{{/str}} <span>{{#str}}teacherpage_heading2, local_academy{{/str}}</span></h2>
+            <span class="bthtp__rule bthtp__rule--end" aria-hidden="true"></span>
+        </div>
+
+        {{#filter}}
+        <div class="bthtp__filter" role="group" aria-label="{{#str}}teacherpage_years, local_academy{{/str}}">
+            <button type="button" class="bthtp__fbtn is-active" data-bthtp-year="" aria-pressed="true">{{#str}}teacherpage_all, local_academy{{/str}}</button>
+            {{#years}}
+            <button type="button" class="bthtp__fbtn" data-bthtp-year="{{id}}" aria-pressed="false">{{name}} <span class="bthtp__fcount">{{courses}}</span></button>
+            {{/years}}
+        </div>
+        {{/filter}}
+
+        <div class="bthtp__grid">
+            {{#courses}}
+            {{! data-lp-badged: the card prints its own price, so local_payments' course_cards.js must not add its badge. }}
+            <article class="bthtp__course" data-bthtp-course="{{yearid}}">
+                <a class="bthtp__cimg" href="{{url}}" tabindex="-1" data-lp-badged="1">
+                    {{#image}}<img src="{{image}}" alt="" loading="lazy">{{/image}}
+                    {{^image}}<svg class="bthtp__cnoimg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2M6 4h5v8l-2.5-1.5L6 12z"/></svg>{{/image}}
+                </a>
+                <div class="bthtp__crow">
+                    <a class="bthtp__ctitle" href="{{url}}">{{fullname}}</a>
+                    {{#year}}<span class="bthtp__cyear">{{year}}</span>{{/year}}
+                </div>
+                <div class="bthtp__crow bthtp__crow--meta">
+                    <div class="bthtp__cmain">
+                        <div class="bthtp__cprice">{{price}}</div>
+                        {{#summary}}
+                        <p class="bthtp__cdesc" data-bthtp-desc>{{summary}}</p>
+                        <button type="button" class="bthtp__more" data-bthtp-more hidden
+                            data-less="{{#str}}teacherpage_less, local_academy{{/str}}">{{#str}}teacherpage_more, local_academy{{/str}}</button>
+                        {{/summary}}
+                    </div>
+                    <ul class="bthtp__cdates">
+                        <li title="{{#str}}teacherpage_created, local_academy{{/str}}">
+                            <svg class="bthtp__ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2m0 16H5V9h14zM7 11h5v5H7z"/></svg>
+                            <span>{{createdtext}}</span>
+                        </li>
+                        <li title="{{#str}}teacherpage_modified, local_academy{{/str}}">
+                            <svg class="bthtp__ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2m0 18a8 8 0 1 1 8-8a8 8 0 0 1-8 8m.5-13H11v6l5.2 3.2l.8-1.3l-4.5-2.7z"/></svg>
+                            <span>{{modifiedtext}}</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="bthtp__cbtns">
+                    {{#enrolled}}
+                    <a class="bthtp__btn bthtp__btn--fill" href="{{url}}">{{#str}}teacherpage_enter, local_academy{{/str}}</a>
+                    {{/enrolled}}
+                    {{^enrolled}}
+                        {{#free}}
+                        <a class="bthtp__btn bthtp__btn--fill" href="{{enrolurl}}">{{#str}}teacherpage_free, local_academy{{/str}}</a>
+                        {{/free}}
+                        {{^free}}
+                        <a class="bthtp__btn" href="{{url}}">{{#str}}teacherpage_enter, local_academy{{/str}}</a>
+                        <a class="bthtp__btn bthtp__btn--fill" href="{{enrolurl}}">{{#str}}teacherpage_subscribe, local_academy{{/str}}</a>
+                        {{/free}}
+                    {{/enrolled}}
+                </div>
+            </article>
+            {{/courses}}
+        </div>
+        <p class="bthtp__empty" data-bthtp-empty hidden>{{#str}}teacherpage_empty, local_academy{{/str}}</p>
+    </section>
+</div>
+{{#js}}
+(function() {
+    var root = document.querySelector('[data-bthtp]');
+    if (!root) {
+        return;
+    }
+    // "... عرض باقي التفاصيل": only where the clamped description is cut off.
+    // Measured again once the web fonts are in and on resize — both change the wrap.
+    var toggles = root.querySelectorAll('[data-bthtp-more]');
+    var measure = function() {
+        Array.prototype.forEach.call(toggles, function(btn) {
+            var desc = btn.previousElementSibling;
+            if (!desc.classList.contains('is-open')) {
+                btn.hidden = desc.scrollHeight <= desc.clientHeight + 1;
+            }
+        });
+    };
+    Array.prototype.forEach.call(toggles, function(btn) {
+        var desc = btn.previousElementSibling;
+        var more = btn.textContent;
+        btn.addEventListener('click', function() {
+            var open = desc.classList.toggle('is-open');
+            btn.textContent = open ? btn.getAttribute('data-less') : more;
+        });
+    });
+    measure();
+    if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(measure);
+    }
+    window.addEventListener('resize', measure);
+    // Year filter.
+    var cards = root.querySelectorAll('[data-bthtp-course]');
+    var empty = root.querySelector('[data-bthtp-empty]');
+    var buttons = root.querySelectorAll('[data-bthtp-year]');
+    Array.prototype.forEach.call(buttons, function(btn) {
+        btn.addEventListener('click', function() {
+            var year = btn.getAttribute('data-bthtp-year');
+            var shown = 0;
+            Array.prototype.forEach.call(buttons, function(b) {
+                b.classList.toggle('is-active', b === btn);
+                b.setAttribute('aria-pressed', b === btn ? 'true' : 'false');
+            });
+            Array.prototype.forEach.call(cards, function(card) {
+                var match = !year || card.getAttribute('data-bthtp-course') === year;
+                card.hidden = !match;
+                shown += match ? 1 : 0;
+            });
+            empty.hidden = shown > 0;
+        });
+    });
+})();
+{{/js}}

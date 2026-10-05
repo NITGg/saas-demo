@@ -55,6 +55,13 @@ class homepage_templates {
     public static function sections(): array {
         return [
             ['key' => 'hero',          'file' => 'hero.html',          'region' => 'fullwidth-top',    'weight' => 0, 'signatures' => ['data-nit-section="hero"']],
+            // Bassthalk template only (the other templates ship no such file, so the
+            // section is skipped for them): teachers, how it works, selected courses,
+            // suggested lessons — in bassthalk.com's order after the hero.
+            ['key' => 'teachers',      'file' => 'teachers.html',      'region' => 'fullwidth-top',    'weight' => 1, 'signatures' => ['data-nit-section="teachers"']],
+            ['key' => 'how',           'file' => 'how.html',           'region' => 'fullwidth-top',    'weight' => 2, 'signatures' => ['data-nit-section="how"']],
+            ['key' => 'selected',      'file' => 'selected.html',      'region' => 'fullwidth-top',    'weight' => 3, 'signatures' => ['data-nit-section="selected"']],
+            ['key' => 'lessons',       'file' => 'lessons.html',       'region' => 'fullwidth-top',    'weight' => 4, 'signatures' => ['data-nit-section="lessons"']],
             ['key' => 'categories',    'file' => 'categories.html',    'region' => 'fullwidth-top',    'weight' => 1, 'signatures' => ['data-nit-categories']],
             ['key' => 'courses',       'file' => 'courses.html',       'region' => 'fullwidth-top',    'weight' => 2, 'signatures' => ['data-nit-courses', 'data-nit-my-courses']],
             ['key' => 'about',         'file' => 'about.html',         'region' => 'fullwidth-top',    'weight' => 3, 'signatures' => ['data-nit-section="about"']],
@@ -88,6 +95,9 @@ class homepage_templates {
             't8'  => ['name' => ['en' => 'Playful Rounded', 'ar' => 'مرِح مستدير'],     'font' => 'Archivo',           'accent' => '#FF7A59', 'dark' => false, 'blurb' => ['en' => 'Big rounded shapes, ink borders, pastels.',       'ar' => 'أشكال مستديرة كبيرة وحدود واضحة وألوان باستيل.']],
             't9'  => ['name' => ['en' => 'Elegant Mono',    'ar' => 'أحادي أنيق'],     'font' => 'Syne',              'accent' => '#D6001C', 'dark' => false, 'blurb' => ['en' => 'Monochrome, square corners, hairline rules.',     'ar' => 'أحادي اللون بزوايا قائمة وخطوط رفيعة.']],
             't10' => ['name' => ['en' => 'Vibrant Duotone', 'ar' => 'ثنائي نابض'],     'font' => 'Syne / Changa',     'accent' => '#D6006E', 'dark' => false, 'blurb' => ['en' => 'Two brand-driven colours, bold duotone photos.', 'ar' => 'لونان من هوية الأكاديمية وصور ثنائية جريئة.']],
+            // The bassthalk.com clone: sections measured 1:1 against bassthalk.com,
+            // coloured from the Brand Colors "Bassthalk" group (g18).
+            'bassthalk' => ['name' => ['en' => 'Bassthalk', 'ar' => 'بسطتهالك'], 'font' => 'Tajawal / Almarai', 'accent' => '#0080FF', 'dark' => false, 'blurb' => ['en' => 'The bassthalk.com home page: hero, teachers, how it works, selected courses, suggested lessons.', 'ar' => 'الصفحة الرئيسية لبسطتهالك: الواجهة، المدرسين، إزاي بتشتغل، كورسات مختارة، المحاضرات المقترحة.']],
         ];
     }
 

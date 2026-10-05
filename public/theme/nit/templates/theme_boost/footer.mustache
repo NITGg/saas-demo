@@ -82,7 +82,7 @@
         <div class="nit-sf-cols">
             {{#haspages}}
             <div class="nit-sf-col">
-                <h4>الصفحات</h4>
+                <h4>{{#str}}bth_footerpages, theme_nit{{/str}}</h4>
                 <ul>
                     {{#pages}}<li><a href="{{{url}}}">{{{name}}}</a></li>{{/pages}}
                 </ul>
@@ -90,7 +90,7 @@
             {{/haspages}}
             {{#hassocials}}
             <div class="nit-sf-col">
-                <h4>السوشيال ميديا</h4>
+                <h4>{{#str}}bth_footersocial, theme_nit{{/str}}</h4>
                 <ul>
                     {{#socials}}<li><a href="{{{url}}}" target="_blank" rel="noopener">{{{icon}}}{{label}}</a></li>{{/socials}}
                 </ul>

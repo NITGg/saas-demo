@@ -49,10 +49,13 @@
   }
 
   /* ===== Floating pill ===== */
+  /* The pill is 80px tall (bassthalk); the bar no longer stretches it to $navbar-height. */
+  .nit-navbar.nit-navbar{ height:auto!important; }
+  @media (min-width:992px){ .nit-navbar .nit-navbar-inner{ height:80px; } }
   .nit-navbar.nit-navbar{ background:transparent!important; box-shadow:none!important; border:0!important;
     padding:16px clamp(8px,2.5vw,32px) 0!important; direction:rtl; font-family:'Almarai','Tajawal',sans-serif; }
   .nit-navbar .nit-navbar-inner{ position:relative; background:var(--nit-brand-navbarbackground1)!important; border-radius:9999px; max-width:none; width:100%;
-    min-height:80px; padding-inline:clamp(14px,1.8vw,24px); gap:clamp(8px,1.2vw,16px);
+    min-height:80px; padding-inline:clamp(14px,1.8vw,24px); gap:clamp(8px,1.2vw,16px); 
     box-shadow:0 20px 25px -5px rgba(0,0,0,.1), 0 8px 10px -6px rgba(0,0,0,.1); }
 
   /* scroll progress — inside the pill, clipped to its rounded bottom edge */
@@ -64,21 +67,23 @@
   .nit-navbar .nit-navbar-inner > *:not(.nit-navbar-progress){ position:relative; z-index:1; }
 
   /* brand (right) */
-  .nit-navbar .nit-navbar-logo{ height:52px!important; width:auto!important; }
+  .nit-navbar .nit-navbar-logo{ height:56px!important; width:auto!important; }
   .nit-navbar .nit-navbar-title{ display:none!important; }
   .nit-navbar .nit-navbar-mark{ background:var(--nit-brand-navbariconcolor); }
 
   /* search pill (next to the logo) */
   .nit-search-trigger{ display:inline-flex; align-items:center; gap:8px; height:38px; padding:8px 12px; border-radius:9999px;
     background:var(--nit-brand-bthsearchbg); border:1px solid var(--nit-brand-bthsearchbg); color:var(--nit-brand-textprimary);
-    font-family:'Almarai',sans-serif; font-size:15px; cursor:pointer; white-space:nowrap; flex:none; transition:background-color .2s ease; }
+    font-family:'Almarai',sans-serif; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; flex:none; transition:background-color .2s ease; }
   .nit-search-trigger:hover{ background:color-mix(in srgb, var(--nit-brand-bthsearchbg) 90%, black); border-color:color-mix(in srgb, var(--nit-brand-bthsearchbg) 90%, black); color:var(--nit-brand-textprimary); }
   .nit-search-trigger:focus-visible{ outline:2px solid var(--nit-brand-navbariconcolor); outline-offset:2px; }
   .nit-search-trigger svg{ width:18px; height:18px; flex:none; }
   @media (max-width:767px){ .nit-search-trigger{ width:40px; height:40px; padding:0; justify-content:center; } .nit-search-trigger span{ display:none; } }
 
   /* right cluster */
-  .nit-navbar .nit-navbar-right{ gap:clamp(6px,.9vw,12px); }
+  /* The cluster sits at the far (left) end of the pill, like bassthalk: in RTL the
+     inline-start margin is the right one, so auto there pushes it left. */
+  .nit-navbar .nit-navbar-right{ gap:clamp(6px,.9vw,12px); margin-inline-start:auto!important; margin-inline-end:0!important; }
   .nit-navbar .nit-navbar-search, .nit-navbar .nit-navbar-links{ display:none!important; } /* replaced by the search dialog + gear menu */
 
   /* round icon pads: gear + bell */
@@ -147,11 +152,11 @@
   .nit-navbar .nit-navbar-gearmenu .nit-gear-child{ padding-inline-start:22px; }
 
   /* visitor buttons */
-  .nit-navbar-guest{ display:none; align-items:center; gap:10px; }
+  .nit-navbar-guest{ display:none; align-items:center; gap:32px; }
   body.notloggedin .nit-navbar-guest{ display:inline-flex; }
   body.notloggedin .nit-navbar .usermenu-container,
   body.notloggedin .nit-navbar .nit-navbar-editswitch{ display:none!important; }
-  .nit-navbar-btn{ height:40px; border-radius:6px; padding:8px 16px; font-family:'Almarai',sans-serif; font-size:14px; font-weight:500;
+  .nit-navbar-btn{ height:40px; border-radius:6px; padding:8px 16px; font-family:'Almarai',sans-serif; font-size:14px; font-weight:700;
     display:inline-flex; align-items:center; justify-content:center; text-decoration:none!important; border:2px solid transparent; white-space:nowrap;
     transition:background-color .2s ease, border-color .2s ease; }
   /* !important: Moodle's global `a:not(.btn)…:hover` rule (very high specificity)
@@ -161,10 +166,12 @@
   /* the sign-up button keeps its colours on hover */
   .nit-navbar-btn.signup, .nit-navbar-btn.signup:hover, .nit-navbar-btn.signup:focus{ background:var(--nit-brand-bthsignupbg)!important; border-color:var(--nit-brand-bthsignupbg)!important; color:var(--nit-brand-bthsignuptext)!important; filter:none!important; }
 
+  @media (min-width:992px){ .nit-navbar .nit-navbar-inner{ padding-inline:40px; } }
   @media (max-width:991px){
     .nit-navbar .nit-navbar-inner{ border-radius:24px; min-height:64px; }
     .nit-navbar .nit-navbar-logo{ height:40px!important; }
     .nit-navbar-btn{ padding:6px 10px; font-size:13px; height:36px; }
+    .nit-navbar-guest{ gap:10px; }
   }
 
   /* ===== Search dialog ===== */
@@ -216,9 +223,9 @@
         </a>
 
         {{! Search pill — opens the search dialog. }}
-        <button type="button" class="nit-search-trigger" data-nit-search-open aria-label="ابحث في الموقع" aria-haspopup="dialog" aria-controls="nit-search-modal">
+        <button type="button" class="nit-search-trigger" data-nit-search-open aria-label="{{#str}}bth_searchsite, theme_nit{{/str}}" aria-haspopup="dialog" aria-controls="nit-search-modal">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5A6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5S14 7.01 14 9.5S11.99 14 9.5 14"/></svg>
-            <span>ابحث في الموقع</span>
+            <span>{{#str}}bth_searchsite, theme_nit{{/str}}</span>
         </button>
 
         <div id="usernavigation" class="nit-navbar-right navbar-nav ms-auto h-100 align-items-center">
@@ -271,8 +278,8 @@
 
             {{! Visitor-only buttons (shown via body.notloggedin). }}
             <div class="nit-navbar-guest">
-                <a class="nit-navbar-btn login" href="{{ config.wwwroot }}/login/index.php">تسجيل الدخول</a>
-                <a class="nit-navbar-btn signup" href="{{ config.wwwroot }}/local/academy/register.php">حساب جديد</a>
+                <a class="nit-navbar-btn login" href="{{ config.wwwroot }}/login/index.php">{{#str}}bth_login, theme_nit{{/str}}</a>
+                <a class="nit-navbar-btn signup" href="{{ config.wwwroot }}/local/academy/register.php">{{#str}}bth_signup, theme_nit{{/str}}</a>
             </div>
         </div>
     </div>
@@ -282,16 +289,16 @@
 <div class="nit-search-modal nit-brand-18" id="nit-search-modal" role="dialog" aria-modal="true" aria-labelledby="nit-search-title" aria-hidden="true">
     <div class="nit-search-backdrop" data-nit-search-close></div>
     <form class="nit-search-card" action="{{ config.wwwroot }}/course/search.php" method="get" role="search">
-        <div class="nit-search-title" id="nit-search-title">ابحث في كورسات الموقع ..</div>
+        <div class="nit-search-title" id="nit-search-title">{{#str}}bth_searchtitle, theme_nit{{/str}}</div>
         <div class="nit-search-group">
             <input type="text" name="search" id="nit-search-input" required placeholder=" " autocomplete="off">
             <label for="nit-search-input">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5A6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5S14 7.01 14 9.5S11.99 14 9.5 14"/></svg>
-                <span>ابحث</span>
+                <span>{{#str}}bth_searchlabel, theme_nit{{/str}}</span>
             </label>
             <span class="nit-search-bar"></span>
         </div>
-        <button type="submit" class="nit-search-submit">بحث</button>
+        <button type="submit" class="nit-search-submit">{{#str}}bth_searchsubmit, theme_nit{{/str}}</button>
     </form>
 </div>
 

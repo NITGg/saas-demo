@@ -1,0 +1,131 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_nit_finance/wallet_page
+
+    "My wallet" (local/nit_finance/wallet.php). Colours from Brand Colors →
+    Bassthalk (.nit-brand-18); styles in local/nit_finance/styles.css.
+
+    Example context (json):
+    {
+        "balances": [{"label": "Wallet balance", "amount": "150 EGP", "teacher": false, "negative": false}],
+        "redeem": {"action": "#", "params": [], "sesskey": "abc"},
+        "haspurchases": true,
+        "purchases": [{"name": "Lesson 1", "coursename": "Physics", "typename": "Lesson", "amount": "50 EGP",
+            "method": "Wallet", "date": "4/10/26", "url": "#"}],
+        "hashistory": true,
+        "history": [{"date": "4/10/26, 10:00", "kind": "Purchase", "note": "Lesson 1", "amount": "-50 EGP",
+            "positive": false, "balance": "100 EGP"}],
+        "isteacher": false, "hasteacherhistory": false, "teacherhistory": []
+    }
+}}
+<div class="nitfin nit-brand-18">
+    <div class="nitfin__wrap">
+        <h1 class="nitfin__title">{{#str}}mywallet, local_nit_finance{{/str}}</h1>
+
+        <div class="nitfin-top">
+            <div class="nitfin-balances">
+                {{#balances}}
+                <div class="nitfin-balance{{#teacher}} nitfin-balance--teacher{{/teacher}}{{#negative}} nitfin-balance--negative{{/negative}}">
+                    <span class="nitfin-balance__label">{{label}}</span>
+                    <span class="nitfin-balance__amount">{{amount}}</span>
+                </div>
+                {{/balances}}
+            </div>
+            <div class="nitfin-card">
+                {{#topup}}{{> local_nit_finance/topup_form}}<div class="nitfin-or"><span>{{#str}}or, local_nit_finance{{/str}}</span></div>{{/topup}}
+                {{#redeem}}{{> local_nit_finance/redeem_form}}{{/redeem}}
+            </div>
+        </div>
+
+        <section class="nitfin-section">
+            <h2 class="nitfin-section__title">{{#str}}mypurchases, local_nit_finance{{/str}}</h2>
+            {{#haspurchases}}
+            <ul class="nitfin-purchases">
+                {{#purchases}}
+                <li class="nitfin-purchase">
+                    <span class="nitfin-purchase__type">{{typename}}</span>
+                    <span class="nitfin-purchase__main">
+                        <span class="nitfin-purchase__name">{{name}}</span>
+                        {{#coursename}}<span class="nitfin-purchase__course">{{coursename}}</span>{{/coursename}}
+                    </span>
+                    <span class="nitfin-purchase__meta">{{amount}} · {{method}} · {{date}}</span>
+                    <a class="nitfin-btn nitfin-btn--small" href="{{url}}">{{#str}}open, local_nit_finance{{/str}}</a>
+                </li>
+                {{/purchases}}
+            </ul>
+            {{/haspurchases}}
+            {{^haspurchases}}<p class="nitfin-empty">{{#str}}nopurchases, local_nit_finance{{/str}}</p>{{/haspurchases}}
+        </section>
+
+        <section class="nitfin-section">
+            <h2 class="nitfin-section__title">{{#str}}transactions, local_nit_finance{{/str}}</h2>
+            {{#hashistory}}
+            <div class="nitfin-tablewrap">
+                <table class="nitfin-table">
+                    <thead><tr>
+                        <th>{{#str}}date, local_nit_finance{{/str}}</th>
+                        <th>{{#str}}details, local_nit_finance{{/str}}</th>
+                        <th class="nitfin-num">{{#str}}amount, local_nit_finance{{/str}}</th>
+                        <th class="nitfin-num">{{#str}}balanceafter, local_nit_finance{{/str}}</th>
+                    </tr></thead>
+                    <tbody>
+                        {{#history}}
+                        <tr>
+                            <td class="nitfin-nowrap">{{date}}</td>
+                            <td><strong>{{kind}}</strong>{{#note}} · {{note}}{{/note}}</td>
+                            <td class="nitfin-num nitfin-amount{{#positive}} nitfin-amount--in{{/positive}}" dir="ltr">{{amount}}</td>
+                            <td class="nitfin-num" dir="ltr">{{balance}}</td>
+                        </tr>
+                        {{/history}}
+                    </tbody>
+                </table>
+            </div>
+            {{/hashistory}}
+            {{^hashistory}}<p class="nitfin-empty">{{#str}}notransactions, local_nit_finance{{/str}}</p>{{/hashistory}}
+        </section>
+
+        {{#isteacher}}
+        <section class="nitfin-section">
+            <h2 class="nitfin-section__title">{{#str}}wallet_teacher, local_nit_finance{{/str}}</h2>
+            {{#hasteacherhistory}}
+            <div class="nitfin-tablewrap">
+                <table class="nitfin-table">
+                    <thead><tr>
+                        <th>{{#str}}date, local_nit_finance{{/str}}</th>
+                        <th>{{#str}}details, local_nit_finance{{/str}}</th>
+                        <th class="nitfin-num">{{#str}}amount, local_nit_finance{{/str}}</th>
+                        <th class="nitfin-num">{{#str}}balanceafter, local_nit_finance{{/str}}</th>
+                    </tr></thead>
+                    <tbody>
+                        {{#teacherhistory}}
+                        <tr>
+                            <td class="nitfin-nowrap">{{date}}</td>
+                            <td><strong>{{kind}}</strong>{{#note}} · {{note}}{{/note}}</td>
+                            <td class="nitfin-num nitfin-amount{{#positive}} nitfin-amount--in{{/positive}}" dir="ltr">{{amount}}</td>
+                            <td class="nitfin-num" dir="ltr">{{balance}}</td>
+                        </tr>
+                        {{/teacherhistory}}
+                    </tbody>
+                </table>
+            </div>
+            {{/hasteacherhistory}}
+            {{^hasteacherhistory}}<p class="nitfin-empty">{{#str}}notransactions, local_nit_finance{{/str}}</p>{{/hasteacherhistory}}
+        </section>
+        {{/isteacher}}
+    </div>
+</div>

@@ -1,0 +1,55 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_nit_finance/topup_form
+
+    Online wallet top-up: preset amounts or a typed amount → payment gateway.
+    Shown disabled (with a note) while no gateway is switched on.
+
+    Example context (json):
+    {"action": "#", "sesskey": "abc", "return": "", "min": 10, "max": 50000, "available": false,
+     "settingsurl": "#", "providersurl": "#",
+     "presets": [{"value": 50, "label": "50 EGP"}, {"value": 100, "label": "100 EGP"}]}
+}}
+<form class="nitfin-topup{{^available}} nitfin-topup--off{{/available}}" method="post" action="{{action}}" id="topup">
+    <input type="hidden" name="sesskey" value="{{sesskey}}">
+    {{#return}}<input type="hidden" name="return" value="{{return}}">{{/return}}
+    <span class="nitfin-redeem__label">{{#str}}topuptitle, local_nit_finance{{/str}}</span>
+    <p class="nitfin-redeem__hint">{{#str}}topupdesc, local_nit_finance{{/str}}</p>
+    {{^available}}
+    <p class="nitfin-note" role="status">
+        {{#str}}topupoff, local_nit_finance{{/str}}
+        {{#settingsurl}}<br><a href="{{settingsurl}}">{{#str}}topupoff_settings, local_nit_finance{{/str}}</a>
+        · <a href="{{providersurl}}">{{#str}}topupoff_enable, local_nit_finance{{/str}}</a>{{/settingsurl}}
+    </p>
+    {{/available}}
+    <fieldset class="nitfin-topup__fields" {{^available}}disabled{{/available}}>
+        {{! The typed amount comes first, so Enter in the field submits it (not a preset). }}
+        <div class="nitfin-redeem__row">
+            <label class="visually-hidden" for="nitfin-topup-{{uniqid}}">{{#str}}topupamount, local_nit_finance{{/str}}</label>
+            <input class="nitfin-redeem__input nitfin-topup__input" id="nitfin-topup-{{uniqid}}" name="customamount" type="number"
+                   inputmode="decimal" min="{{min}}" max="{{max}}" step="1" dir="ltr"
+                   placeholder="{{#str}}topupamount, local_nit_finance{{/str}}">
+            <button type="submit" class="nitfin-btn">{{#str}}topupbutton, local_nit_finance{{/str}}</button>
+        </div>
+        <div class="nitfin-topup__presets">
+            {{#presets}}
+            <button type="submit" name="amount" value="{{value}}" class="nitfin-topup__preset" formnovalidate>{{label}}</button>
+            {{/presets}}
+        </div>
+    </fieldset>
+</form>

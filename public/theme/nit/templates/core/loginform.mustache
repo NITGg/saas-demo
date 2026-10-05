@@ -76,8 +76,8 @@
     <div class="login-signup">لا يوجد لديك حساب؟ <a href="{{config.wwwroot}}/local/academy/register.php">انشئ حسابك الآن !</a></div>
 
     <div class="login-aux">
-        {{! Kept by request: parent account. Guest login removed (same purpose as "back to home"). }}
-        <a class="btn-secondary-auth" href="{{config.wwwroot}}/local/parent/signup.php">إنشاء حساب ولي أمر</a>
+        {{! Parents have no account: they follow a student from the phone-gated parent dashboard. Guest login removed (same purpose as "back to home"). }}
+        <a class="btn-secondary-auth" href="{{config.wwwroot}}/parent_dashboard">لوحة تحكم ولي الأمر</a>
     </div>
 
     {{#languagemenu}}

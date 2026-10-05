@@ -429,6 +429,141 @@ class manager {
         ];
     }
 
+    /** Smallest online wallet top-up (EGP). */
+    const WALLET_TOPUP_MIN = 10;
+
+    /** Largest online wallet top-up (EGP). */
+    const WALLET_TOPUP_MAX = 50000;
+
+    /**
+     * Start an online top-up of the student wallet (local_nit_finance).
+     *
+     * Same checkout as a course, with item_type "wallet_topup" and courseid 0;
+     * on success the paid amount is added to the student's wallet (see
+     * fulfil_wallet_topup), from the webhook or the redirect, whichever comes first.
+     *
+     * @param float $amount EGP
+     * @param int|null $userid
+     * @param string $display_lang
+     * @param string $return_url local page to come back to after paying
+     * @return object {order_id, checkout_url, expires_at, provider, transaction_id}
+     */
+    public static function create_wallet_topup_checkout(float $amount, ?int $userid = null,
+            string $display_lang = 'ar', string $return_url = ''): object {
+        global $DB, $USER, $CFG;
+
+        if (!class_exists('\local_nit_finance\local\wallets')) {
+            throw new \moodle_exception('error', 'moodle', '', null, 'Wallets are not installed');
+        }
+        $amount = round($amount, 2);
+        if ($amount < self::WALLET_TOPUP_MIN || $amount > self::WALLET_TOPUP_MAX) {
+            throw new \moodle_exception('topup_badamount', 'local_payments', '',
+                (object) ['min' => self::WALLET_TOPUP_MIN, 'max' => self::WALLET_TOPUP_MAX]);
+        }
+
+        $userid = $userid ?? $USER->id;
+        $user = $DB->get_record('user', ['id' => $userid], 'id, email, firstname, lastname, country', MUST_EXIST);
+        $currency = 'EGP';
+        $country = $user->country ?: 'EG';
+
+        $provider = self::get_provider($country, $currency);
+        $provider_record = $DB->get_record('local_payments_providers', ['name' => $provider->get_name()]);
+
+        $order_id = self::generate_order_id();
+        $ttl = (int) get_config('local_payments', 'payment_ttl') ?: 1800;
+        $expires_at = time() + $ttl;
+
+        $transaction_id = $DB->insert_record('local_payments_transactions', (object) [
+            'userid' => $userid,
+            'courseid' => 0, // Sentinel: a wallet top-up is not tied to a course.
+            'provider_id' => $provider_record->id,
+            'price_id' => null,
+            'order_id' => $order_id,
+            'idempotency_key' => self::generate_idempotency_key($userid, 3000000),
+            'amount' => $amount,
+            'original_amount' => $amount,
+            'currency' => $currency,
+            'status' => status_machine::PENDING,
+            'customer_email' => $user->email,
+            'customer_reference' => (string) $userid,
+            'display_lang' => $display_lang,
+            'country' => $country,
+            'ip_address' => getremoteaddr(),
+            'user_agent' => substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 500),
+            'metadata' => json_encode([
+                'item_type' => 'wallet_topup',
+                'item_id' => $userid,
+                'return_url' => $return_url,
+            ]),
+            'expires_at' => $expires_at,
+            'timecreated' => time(),
+            'timemodified' => time(),
+        ]);
+        self::audit_log($transaction_id, $userid, 'payment_created', '', status_machine::PENDING);
+
+        $request = new payment_request([
+            'order_id' => $order_id,
+            'amount' => $amount,
+            'currency' => $currency,
+            'description' => 'Wallet top-up',
+            'userid' => $userid,
+            'courseid' => 0,
+            'customer_email' => $user->email,
+            'customer_reference' => (string) $userid,
+            'display_lang' => $display_lang,
+            'webhook_url' => $CFG->wwwroot . '/local/payments/webhook.php?provider=' . $provider->get_name(),
+            'success_url' => $CFG->wwwroot . '/local/payments/callback.php?order_id=' . urlencode($order_id),
+            'failure_url' => $CFG->wwwroot . '/local/payments/callback.php?order_id=' . urlencode($order_id) . '&status=failed',
+            'metadata' => ['transaction_id' => $transaction_id],
+            'transaction_id' => $transaction_id,
+        ]);
+        $response = $provider->initialize_payment($request);
+
+        if (!$response->success) {
+            $DB->update_record('local_payments_transactions', (object) [
+                'id' => $transaction_id,
+                'status' => status_machine::FAILED,
+                'reject_reason' => substr($response->error_message, 0, 255),
+                'timemodified' => time(),
+            ]);
+            self::audit_log($transaction_id, $userid, 'status_changed', status_machine::PENDING, status_machine::FAILED);
+            throw new \moodle_exception('paymentinitiationfailed', 'local_payments', '', $response->error_message);
+        }
+
+        $DB->update_record('local_payments_transactions', (object) [
+            'id' => $transaction_id,
+            'provider_session_id' => $response->provider_session_id,
+            'checkout_url' => $response->checkout_url,
+            'timemodified' => time(),
+        ]);
+
+        return (object) [
+            'order_id' => $order_id,
+            'checkout_url' => $response->checkout_url,
+            'expires_at' => $expires_at,
+            'provider' => $provider->get_name(),
+            'transaction_id' => $transaction_id,
+        ];
+    }
+
+    /**
+     * Add a completed top-up payment to the student's wallet. Safe to call from
+     * both the webhook and the redirect for the same payment (credited once).
+     *
+     * @param \stdClass $transaction completed local_payments_transactions row
+     * @return void
+     */
+    private static function fulfil_wallet_topup(\stdClass $transaction): void {
+        try {
+            \local_nit_finance\local\wallets::topup_from_payment((int) $transaction->userid,
+                (int) round((float) $transaction->amount * 100), (int) $transaction->id, (string) $transaction->order_id);
+            self::audit_log($transaction->id, $transaction->userid, 'wallet_topped_up', '', (string) $transaction->amount);
+        } catch (\Throwable $e) {
+            self::log_entry($transaction->provider_id, $transaction->id, 'error',
+                'Wallet top-up fulfilment failed: ' . $e->getMessage());
+        }
+    }
+
     /**
      * Resolve the charged amount for a NIT commerce discount (coupon/offer), for checkout.
      *
@@ -738,6 +873,10 @@ class manager {
             self::fulfil_subscription($transaction, $meta);
             return true;
         }
+        if (($meta->item_type ?? 'course') === 'wallet_topup') {
+            self::fulfil_wallet_topup($transaction);
+            return true;
+        }
 
         // Fulfilment: enrol the student in the purchased course.
         try {
@@ -837,6 +976,8 @@ class manager {
         $item_type = $meta->item_type ?? 'course';
 
         $issubscription = ($item_type === 'subscription');
+        // A wallet top-up enrols in nothing, like a subscription.
+        $notcourse = $issubscription || $item_type === 'wallet_topup';
 
         // If already completed (by webhook), return success immediately.
         if ($transaction->status === status_machine::COMPLETED) {
@@ -845,7 +986,7 @@ class manager {
                 'status' => $transaction->status,
                 'courseid' => (int) $transaction->courseid,
                 'item_type' => $item_type,
-                'enrolled' => $issubscription ? false
+                'enrolled' => $notcourse ? false
                     : enrollment_handler::is_enrolled((int) $transaction->userid, (int) $transaction->courseid),
             ];
         }
@@ -893,6 +1034,16 @@ class manager {
                 // Mirror to the platform revenue ledger (idempotent with the webhook path).
                 self::mirror_revenue($transaction, $meta);
 
+                if ($item_type === 'wallet_topup') {
+                    self::fulfil_wallet_topup($transaction);
+                    return (object) [
+                        'success' => true,
+                        'status' => status_machine::COMPLETED,
+                        'courseid' => 0,
+                        'item_type' => $item_type,
+                        'enrolled' => false,
+                    ];
+                }
                 if ($issubscription) {
                     // Subscription: create the purchase (grants live course access); no course enrolment.
                     self::fulfil_subscription($transaction, $meta);
@@ -925,7 +1076,7 @@ class manager {
                 invoice_generator::create((int) $transaction->id);
                 self::send_confirmation($transaction);
             } else {
-                $enrolled = $issubscription ? false
+                $enrolled = $notcourse ? false
                     : enrollment_handler::is_enrolled((int) $transaction->userid, (int) $transaction->courseid);
             }
 

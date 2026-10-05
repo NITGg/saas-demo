@@ -25,38 +25,6 @@
     border-color: #e03131 !important;
     box-shadow: 0 0 0 3px rgba(224, 49, 49, 0.15) !important;
   }
-  .nit-parent-badge {
-    background: color-mix(in srgb, var(--a-accent, #0E7C66) 12%, transparent);
-    border: 1px solid color-mix(in srgb, var(--a-accent, #0E7C66) 30%, transparent);
-    color: var(--a-ink, #16191D);
-    border-radius: 12px;
-    padding: 14px 16px;
-    margin-bottom: 20px;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    line-height: 1.5;
-  }
-  .nit-parent-badge .ic { font-size: 22px; flex: none; }
-  .nit-parent-prompt {
-    margin-top: 14px;
-    padding: 10px 14px;
-    border-radius: 10px;
-    background: #f8f9fa;
-    border: 1px dashed #dcdcd7;
-    font-size: 13px;
-    text-align: center;
-    color: var(--a-muted, #6E7781);
-  }
-  .nit-parent-prompt a {
-    color: var(--a-accent, #0E7C66);
-    font-weight: 600;
-    text-decoration: none;
-  }
-  .nit-parent-prompt a:hover {
-    text-decoration: underline;
-  }
   .nit-field-hint {
     font-size: 12px;
     color: var(--a-muted, #6E7781);
@@ -65,14 +33,8 @@
 </style>
 
 <div class="signupform">
-    <div id="nit-parent-badge-slot"></div>
     <h1>{{#str}}signupcreatetitle, theme_nit{{/str}}</h1>
     <p class="text-muted mb-4">{{#str}}signupsubtitle, theme_nit{{/str}}</p>
-
-    <div id="nit-parent-student-prompt" class="nit-parent-prompt mb-4" style="display:none;">
-        <span id="nit-parent-prompt-text">{{#str}}parentsignupprompt, local_parent{{/str}}</span>
-        <a href="{{config.wwwroot}}/local/parent/signup.php">{{#str}}parentsignuplink, local_parent{{/str}}</a>
-    </div>
 
     <ol class="nit-auth-steps" id="nit-signup-steps" hidden></ol>
     {{{formhtml}}}
@@ -98,7 +60,6 @@
             account:     isar ? 'الحساب'                   : 'Account',
             details:     isar ? 'بياناتك'                  : 'Your details',
             finish:      isar ? 'إنهاء'                    : 'Finish',
-            parentBadge: isar ? 'إنشاء حساب ولي أمر — سيتم ربط حسابك تلقائياً بأبنائك المسجلين برقم هاتفك.' : 'Creating Parent Account — Your account will be automatically linked to your children.',
             parentHint:  isar ? 'اختياري: اكتب رقم ولي أمرك لكي يتمكن من متابعة درجاتك ونشاطك.' : 'Optional: Enter your parent\'s phone number to let them follow your progress.',
             reqErr:      isar ? 'هذا الحقل مطلوب'          : 'This field is required',
             userErr:     isar ? 'اسم المستخدم يجب أن يكون بحروف صغيرة فقط وبدون مسافات' : 'Username must be lowercase letters only with no spaces',
@@ -107,34 +68,14 @@
             phoneErr:    isar ? 'يرجى إدخال رقم هاتف صحيح (أرقام فقط)' : 'Please enter a valid phone number (digits only)'
         };
 
-        // Detect parent registration mode via URL (?parent=1).
-        var isParent = /[?&]parent=1\b/.test(window.location.search);
+        // Hint under the parent phone field: it is what the parent types on the
+        // parent dashboard (local/parent/index.php) to follow this student.
         var parentPhoneField = form.querySelector('[name="profile_field_parentphone"]');
-        var parentPhoneRow = parentPhoneField && (parentPhoneField.closest('.fitem') || parentPhoneField.closest('.form-group') || parentPhoneField.closest('.row'));
-
-        if (isParent) {
-            // Display parent badge.
-            var badgeSlot = document.getElementById('nit-parent-badge-slot');
-            if (badgeSlot) {
-                badgeSlot.innerHTML = '<div class="nit-parent-badge"><span class="ic">👨‍👩‍👧</span><span>' + T.parentBadge + '</span></div>';
-            }
-            // Hide parent phone field because this user IS the parent.
-            if (parentPhoneRow) {
-                parentPhoneRow.style.display = 'none';
-            }
-        } else {
-            // Regular student signup: show link to parent registration.
-            var studentPrompt = document.getElementById('nit-parent-student-prompt');
-            if (studentPrompt) {
-                studentPrompt.style.display = 'block';
-            }
-            // Add helpful hint under parent phone field if present.
-            if (parentPhoneField && parentPhoneRow) {
-                var hint = document.createElement('div');
-                hint.className = 'nit-field-hint';
-                hint.textContent = T.parentHint;
-                parentPhoneField.parentNode.appendChild(hint);
-            }
+        if (parentPhoneField) {
+            var hint = document.createElement('div');
+            hint.className = 'nit-field-hint';
+            hint.textContent = T.parentHint;
+            parentPhoneField.parentNode.appendChild(hint);
         }
 
         // Restrict all phone fields to valid phone characters only (reject strings).
@@ -168,8 +109,6 @@
         var rows = Array.prototype.slice.call(form.querySelectorAll('.fitem, .form-group.row'))
             .filter(function (r) {
                 if (submitRow && (r === submitRow || submitRow.contains(r) || r.contains(submitRow))) { return false; }
-                // Exclude parent phone row in parent mode.
-                if (isParent && parentPhoneRow && (r === parentPhoneRow || parentPhoneRow.contains(r))) { return false; }
                 return r.querySelector('input, select, textarea') || r.querySelector('.form-control-static, .felement');
             });
 

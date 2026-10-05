@@ -80,22 +80,14 @@ $hasbelowcontent = $editing || (strpos($belowcontent, 'data-block=') !== false);
 $hasfullwidthbottom = $editing || (strpos($fullwidthbottom, 'data-block=') !== false);
 // NIT: end full-width regions.
 
-// NIT: Bassthalk home — the code-owned sections (theme_nit/bassthalk/home) replace
-// the old nit_section blocks, so outside edit mode those blocks are hidden: a
-// region holding nothing else is not drawn at all, and in a mixed region the
-// body class hides just the nit_section blocks (see bassthalk/home.mustache).
-$bthhome = theme_nit_bthhome_enabled();
-if ($bthhome && !$editing) {
-    $extraclasses[] = 'nit-bth-home';
-    $nitonlysections = static function (string $html): bool {
-        return substr_count($html, 'data-block=') === substr_count($html, 'data-block="nit_section"');
-    };
-    $hasfullwidthtop = $hasfullwidthtop && !$nitonlysections($fullwidthtop);
-    $hasabovecontent = $hasabovecontent && !$nitonlysections($abovecontent);
-    $hasbelowcontent = $hasbelowcontent && !$nitonlysections($belowcontent);
-    $hasfullwidthbottom = $hasfullwidthbottom && !$nitonlysections($fullwidthbottom);
+// NIT: the Bassthalk homepage template (theme/nit/blocks/templates/bassthalk) —
+// its sections are nit_section blocks; the hero runs up behind the floating
+// navbar and the page has no download-apps band (see scss/post.scss).
+$bthtemplate = (\theme_nit\local\homepage_templates::current() === 'bassthalk');
+if ($bthtemplate) {
+    $extraclasses[] = 'nit-bth-template';
 }
-// NIT: end Bassthalk home.
+// NIT: end Bassthalk template.
 
 $courseindex = core_course_drawer();
 if (!$courseindex) {
@@ -277,8 +269,6 @@ $templatecontext = [
     'hasbelowcontent' => $hasbelowcontent,
     'fullwidthbottom' => $fullwidthbottom,
     'hasfullwidthbottom' => $hasfullwidthbottom,
-    // NIT: Bassthalk home sections (false when switched off).
-    'bthhome' => $bthhome ? theme_nit_bthhome_context() : false,
     // NIT: end.
 ];
 
@@ -489,6 +479,8 @@ if (\theme_nit\local\editor::can_edit()) {
             'auto' => get_string('edit_auto', 'theme_nit'),
             'toolarge' => get_string('edit_toolarge', 'theme_nit'),
             'advanced' => get_string('edit_advanced', 'theme_nit'),
+            'hidepanel' => get_string('edit_hidepanel', 'theme_nit'),
+            'showpanel' => get_string('edit_showpanel', 'theme_nit'),
         ],
     ];
     // Publish the config in <head> BEFORE editor.js runs (it reads window.NIT_EDIT
@@ -551,6 +543,7 @@ $nitdownloadband =
 // — main / below-content / fullwidth-top — so a server-side string insert into one
 // region is unreliable; the DOM move always lands it right above the footer).
 $templatecontext['nitdownload'] = $nitdownloadband;
-$templatecontext['hasnitdownload'] = true;
+// The Bassthalk template has no download band.
+$templatecontext['hasnitdownload'] = !$bthtemplate;
 
 echo $OUTPUT->render_from_template('theme_nit/frontpage', $templatecontext);

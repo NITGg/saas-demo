@@ -1,0 +1,37 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_nit_finance/redeem_form
+
+    "Have a code?" — posts action=redeem with the code.
+
+    Example context (json):
+    {"action": "/local/nit_finance/wallet.php", "params": [], "sesskey": "abc"}
+}}
+<form class="nitfin-redeem" method="post" action="{{action}}">
+    {{#params}}<input type="hidden" name="{{name}}" value="{{value}}">{{/params}}
+    <input type="hidden" name="sesskey" value="{{sesskey}}">
+    <input type="hidden" name="action" value="redeem">
+    <label class="nitfin-redeem__label" for="nitfin-code-{{uniqid}}">{{#str}}redeemcode, local_nit_finance{{/str}}</label>
+    <p class="nitfin-redeem__hint">{{#str}}redeemcode_desc, local_nit_finance{{/str}}</p>
+    <div class="nitfin-redeem__row">
+        <input class="nitfin-redeem__input" id="nitfin-code-{{uniqid}}" name="code" type="text" dir="ltr"
+               autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="20" required
+               placeholder="{{#str}}codeplaceholder, local_nit_finance{{/str}}">
+        <button type="submit" class="nitfin-btn nitfin-btn--outline">{{#str}}redeem, local_nit_finance{{/str}}</button>
+    </div>
+</form>

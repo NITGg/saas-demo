@@ -38,6 +38,16 @@ class observer {
     }
 
     /**
+     * A course category was created, renamed, moved, shown/hidden or deleted:
+     * the categories are the Years, so refresh the student "Year" dropdown.
+     *
+     * @param \core\event\base $event
+     */
+    public static function category_changed(\core\event\base $event): void {
+        \local_academy\local\academic_structure::sync_years();
+    }
+
+    /**
      * Make a newly-created course available IMMEDIATELY. Core defaults a new
      * course's start date to TOMORROW (course/edit_form.php), which gates its
      * content (and the course's own visibility, via show_started_courses_task)

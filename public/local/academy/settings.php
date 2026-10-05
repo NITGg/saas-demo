@@ -36,4 +36,23 @@ if ($hassiteconfig) {
 
     $settings->add(new admin_setting_configcheckbox('local_academy/player_lockorder',
         get_string('player_lockorder', 'local_academy'), get_string('player_lockorder_desc', 'local_academy'), 0));
+
+    // Years, study systems and their divisions — the options of the course and
+    // student dropdown fields (see \local_academy\local\academic_structure).
+    $academic = new admin_settingpage('local_academy_academic', get_string('academic_page', 'local_academy'));
+    if ($ADMIN->fulltree) {
+        $academic->add(new \local_academy\admin_setting_academicstructure(
+            'local_academy/' . \local_academy\local\academic_structure::CONFIG,
+            get_string('academic_structure', 'local_academy'),
+            get_string('academic_structure_desc', 'local_academy'),
+            json_encode(\local_academy\local\academic_structure::defaults(), JSON_UNESCAPED_UNICODE)
+        ));
+    }
+    $ADMIN->add('localplugins', $academic);
+
+    // "Site pages manager": the content of the Bassthalk-style pages that are
+    // not HTML blocks (the footer), one tab each. The settings belong to theme_nit.
+    if (class_exists('\theme_nit\local\sitepages_settings')) {
+        $ADMIN->add('localplugins', \theme_nit\local\sitepages_settings::page($ADMIN->fulltree));
+    }
 }

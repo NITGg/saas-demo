@@ -1,0 +1,256 @@
+<!--
+  Bassthalk home — last section: "كورسات مختارة / مخصوص ليك" + "المحاضرات المقترحة" (course slider).
+  Paste into a "NIT Section" block, mode "Raw HTML".
+  Source of truth: theme/nit/blocks/templates/bassthalk/lessons.html (see README.md there).
+  Texts: Arabic + English via {mlang ar}…{mlang}{mlang en}…{mlang} (edit both); the layout follows the page direction.
+  Measured against bassthalk.com at 1280×832 (3.2 cards per view, 16px apart, one card per click,
+  dots under the slider). Colours: Brand Colors → Bassthalk → "Home — suggested lessons".
+
+  The cards are NOT written here: the script loads /local/academy/homedata.php?section=lessons —
+  the newest visible courses; for a logged-in student, the courses of their own year (and division).
+  Each card: the course picture, name, year, price (fee enrolment / payments plugin, "مجاني" when
+  free), description, created / updated dates, "الدخول للكورس" and "الإشتراك في الكورس !".
+  "الكل" opens the course catalogue. The look of one card is the <template data-nit-les-card> below.
+-->
+<style>
+  .nit-bth-les{ position:relative; overflow:hidden; min-height:100vh; padding:80px 0; font-family:'Almarai',sans-serif;
+    font-size:16px; line-height:24px; color:var(--nit-brand-bthlessonstext); background:var(--nit-brand-background); }
+  .nit-bth-les-top{ position:relative; z-index:10; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 48px; }
+  .nit-bth-les-head{ display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 8px; font-family:'Tajawal',sans-serif; }
+  .nit-bth-les-head h2{ margin:0; font-family:'Tajawal',sans-serif; font-size:30px; line-height:36px; font-weight:700; text-align:center; color:inherit; }
+  .nit-bth-les-head p{ max-width:384px; margin:40px 0 0; font-family:'Tajawal',sans-serif; font-size:20px; line-height:28px; text-align:center; }
+  .nit-bth-les-body{ position:relative; padding:40px 0; }
+  .nit-bth-les-bar{ display:flex; justify-content:space-between; align-items:center; padding:32px 16px; font-weight:700; }
+  .nit-bth-les-bar h3{ margin:0; font-family:'Almarai',sans-serif; font-size:24px; line-height:32px; font-weight:700; color:var(--nit-brand-bthlessonstext); }
+  .nit-bth-les-bar h3 span{ color:var(--nit-brand-bthlessonsaccent); }
+  .nit-bth-les a.nit-bth-les-all, .nit-bth-les a.nit-bth-les-all:visited{ display:inline; padding:8px 32px; border:2px solid var(--nit-brand-bthlessonsaccent); border-radius:6px;
+    background:var(--nit-brand-bthlessonsaccent)!important; color:var(--nit-brand-bthlessonsaccenttext)!important; font-weight:700; text-decoration:none!important; transition:all .4s ease; }
+  .nit-bth-les a.nit-bth-les-all:hover, .nit-bth-les a.nit-bth-les-all:focus-visible{ background:transparent!important; color:var(--nit-brand-bthlessonsaccent)!important; }
+  .nit-bth-les-shell{ padding:0 8px; }
+  .nit-bth-les-viewport{ overflow:hidden; padding-bottom:8px; }
+  .nit-bth-les-track{ display:flex; gap:16px; transition:transform .3s ease; will-change:transform; touch-action:pan-y; }
+  .nit-bth-les-slide{ flex:none; width:var(--nit-les-w, 300px); padding:16px; }
+  .nit-bth-les-card{ display:flex; flex-direction:column; gap:16px; height:100%; padding:16px; border:2px solid var(--nit-brand-bthlessonscard); border-radius:12px;
+    background:var(--nit-brand-bthlessonscard); color:var(--nit-brand-bthlessonstext); transition:all .4s ease; }
+  .nit-bth-les-img{ position:relative; overflow:hidden; border-radius:12px; }
+  .nit-bth-les-img img{ display:block; width:100%; height:240px; max-width:none; margin:0; object-fit:cover; }
+  .nit-bth-les-info{ display:flex; flex-direction:column; gap:12px; min-width:0; }
+  .nit-bth-les-row1{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; width:100%; min-width:0; font-size:18px; line-height:28px; }
+  .nit-bth-les a.nit-bth-les-title{ flex:1; min-width:0; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+    font-weight:500; color:var(--nit-brand-bthlessonsaccent)!important; text-decoration:none!important; transition:all .4s ease; }
+  .nit-bth-les a.nit-bth-les-title:hover{ text-decoration:underline!important; }
+  .nit-bth-les-year{ flex-shrink:0; white-space:nowrap; }
+  .nit-bth-les-year:empty{ display:none; }
+  .nit-bth-les-row2{ display:flex; flex-direction:column; gap:12px; width:100%; min-width:0; }
+  .nit-bth-les-main{ display:flex; flex-direction:column; gap:8px; min-width:0; }
+  .nit-bth-les-price{ font-weight:700; color:var(--nit-brand-bthlessonsprice); }
+  .nit-bth-les-desc{ font-family:'Tajawal',sans-serif; font-size:14px; line-height:20px; color:var(--nit-brand-bthlessonsmuted); }
+  .nit-bth-les-more{ display:inline; margin:0; padding:0 8px; border:0; border-radius:6px; font:700 14px/20px 'Tajawal',sans-serif; color:inherit; text-decoration:underline;
+    cursor:pointer; background:color-mix(in srgb, var(--nit-brand-bthlessonscard) 10%, transparent); }
+  .nit-bth-les-more[hidden]{ display:none; }
+  .nit-bth-les-dates{ display:none; flex-direction:column; align-items:flex-start; gap:4px; flex-shrink:0; font-family:'Tajawal',sans-serif; font-size:12px; line-height:16px;
+    color:var(--nit-brand-bthlessonsmuted); }
+  .nit-bth-les-dates > div{ display:flex; align-items:center; gap:4px; }
+  .nit-bth-les-dates svg{ width:1em; height:1em; flex:none; transform:translateY(-2px); }
+  .nit-bth-les-foot{ display:flex; flex-direction:column; gap:12px; width:100%; margin-top:auto; padding-top:4px; }
+  .nit-bth-les-footrow{ display:flex; justify-content:space-between; align-items:center; gap:12px; width:100%; }
+  .nit-bth-les-footrow .nit-bth-les-dates{ display:flex; width:50%; }
+  .nit-bth-les-btns{ display:flex; flex-direction:column; width:50%; }
+  .nit-bth-les-btns > * + *{ margin-top:4px; }
+  .nit-bth-les a.nit-bth-les-btn, .nit-bth-les a.nit-bth-les-btn:visited{ display:block; width:100%; padding:8px 16px; border:2px solid var(--nit-brand-bthlessonsaccent); border-radius:12px;
+    font-size:16px; line-height:24px; text-align:center; text-decoration:none!important; transition:all .4s ease; }
+  .nit-bth-les a.nit-bth-les-btn.is-enter{ background:transparent!important; color:var(--nit-brand-bthlessonsaccent)!important; }
+  .nit-bth-les a.nit-bth-les-btn.is-enter:hover{ background:var(--nit-brand-bthlessonsaccent)!important; color:var(--nit-brand-bthlessonsaccenttext)!important; }
+  .nit-bth-les a.nit-bth-les-btn.is-buy{ background:var(--nit-brand-bthlessonsaccent)!important; color:var(--nit-brand-bthlessonsaccenttext)!important; }
+  .nit-bth-les a.nit-bth-les-btn.is-buy:hover{ background:transparent!important; color:var(--nit-brand-bthlessonsaccent)!important; }
+  .nit-bth-les-nav{ position:relative; display:grid; grid-template-columns:44px 1fr 44px; align-items:center; column-gap:12px; width:50vw; max-width:100%;
+    min-height:48px; margin:12px auto 8px; }
+  .nit-bth-les-navbtn{ display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; width:44px; height:44px; padding:0; border-radius:9999px;
+    border:2px solid var(--nit-brand-bthlessonsnavring); background:var(--nit-brand-bthlessonsnavbg); color:var(--nit-brand-bthlessonsnav);
+    box-shadow:0 1px 3px rgba(15,23,42,.12); font-size:24px; cursor:pointer; transition:all .2s; }
+  .nit-bth-les-navbtn:first-of-type{ grid-column:1; justify-self:start; }
+  .nit-bth-les-navbtn:last-of-type{ grid-column:3; justify-self:end; }
+  .nit-bth-les-navbtn:hover:not(:disabled){ background:var(--nit-brand-bthlessonsnav); color:var(--nit-brand-bthlessonsnavbg); }
+  .nit-bth-les-navbtn:disabled{ opacity:.35; cursor:not-allowed; }
+  .nit-bth-les-navbtn:focus{ outline:none; }
+  .nit-bth-les-navbtn:focus-visible{ box-shadow:0 0 0 2px var(--nit-brand-bthlessonsnavring); }
+  .nit-bth-les-navbtn svg{ width:1em; height:1em; }
+  html[dir="ltr"] .nit-bth-les-navbtn svg{ transform:scaleX(-1); }
+  .nit-bth-les-dots{ grid-column:2; display:flex; justify-content:center; align-items:center; min-width:0; overflow:hidden; white-space:nowrap; }
+  .nit-bth-les-dots button{ flex-shrink:0; width:8px; height:8px; margin:0 3px; padding:0; border:0; border-radius:50%; cursor:pointer;
+    background:var(--nit-brand-bthlessonsdot); opacity:.2; }
+  .nit-bth-les-dots button.is-active{ background:var(--nit-brand-bthlessonsdotactive); opacity:1; }
+  .nit-bth-les-empty{ padding:40px 16px; text-align:center; font:500 18px/28px 'Tajawal',sans-serif; color:var(--nit-brand-bthlessonsmuted); }
+  .nit-bth-les-empty[hidden], .nit-bth-les-nav[hidden]{ display:none; }
+  @media (min-width:768px){
+    .nit-bth-les{ padding:160px 0; }
+    .nit-bth-les-head{ padding:0 40px; }
+    .nit-bth-les-head h2{ font-size:48px; line-height:1; }
+    .nit-bth-les-bar{ padding:32px 80px; }
+    .nit-bth-les-bar h3{ font-size:36px; line-height:40px; }
+    .nit-bth-les-shell{ padding:0 24px; }
+    .nit-bth-les-row2{ flex-direction:row; justify-content:space-between; }
+    .nit-bth-les-row2 .nit-bth-les-dates{ display:flex; align-items:flex-end; }
+    .nit-bth-les-footrow .nit-bth-les-dates{ display:none; }
+    .nit-bth-les-btns{ width:100%; }
+  }
+  @media (min-width:1024px){
+    .nit-bth-les-head h2{ font-size:72px; }
+  }
+</style>
+<section class="nit-bth-section nit-bth-les nit-brand-18" data-nit-section="lessons" aria-labelledby="nit-bth-les-title">
+  <div class="nit-bth-les-top">
+    <div class="nit-bth-les-head">
+      <h2 id="nit-bth-les-title">{mlang ar}كورسات مختارة<br>مخصوص ليك{mlang}{mlang en}Courses picked<br>just for you{mlang}</h2>
+      <p>{mlang ar}ريحنا دماغك وجمعنا لك كورسات على مزاجك، مختارة بحب وعناية كأننا بنعمل شوبينج لأحسن شوية كورسات تساعدك وتنميك!{mlang}{mlang en}We did the work for you and gathered courses to your taste, picked with care as if we were shopping for the best courses to help you grow!{mlang}</p>
+    </div>
+  </div>
+  <div class="nit-bth-les-body">
+    <div class="nit-bth-les-bar">
+      <h3>{mlang ar}المحاضرات <span>المقترحة</span>{mlang}{mlang en}Suggested <span>lectures</span>{mlang}</h3>
+      <div><a class="nit-bth-les-all" href="/course/index.php" data-nit-les-all>{mlang ar}الكل{mlang}{mlang en}All{mlang}</a></div>
+    </div>
+    <div class="nit-bth-les-shell">
+      <div class="nit-bth-les-viewport">
+        <div class="nit-bth-les-track" data-nit-les-track></div>
+      </div>
+      <div class="nit-bth-les-empty" data-nit-les-empty hidden>{mlang ar}لا توجد محاضرات مقترحة حاليًا.{mlang}{mlang en}No suggested lectures yet.{mlang}</div>
+      <div class="nit-bth-les-nav" data-nit-les-nav>
+        <button type="button" class="nit-bth-les-navbtn" aria-label="{mlang ar}الشريحة السابقة{mlang}{mlang en}Previous slide{mlang}" data-nit-les-prev disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8.59 16.58L13.17 12L8.59 7.41L10 6l6 6l-6 6z"/></svg>
+        </button>
+        <div class="nit-bth-les-dots" data-nit-les-dots data-label="{mlang ar}الشريحة{mlang}{mlang en}Slide{mlang}"></div>
+        <button type="button" class="nit-bth-les-navbtn" aria-label="{mlang ar}الشريحة التالية{mlang}{mlang en}Next slide{mlang}" data-nit-les-next disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M15.41 16.58L10.83 12l4.58-4.59L14 6l-6 6l6 6z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+  <template data-nit-les-card>
+    <div class="nit-bth-les-slide">
+      <div class="nit-bth-les-card">
+        <div class="nit-bth-les-img"><img src="{{image}}" alt="{{fullname}}" loading="lazy"></div>
+        <div class="nit-bth-les-info">
+          <div class="nit-bth-les-row1">
+            <a class="nit-bth-les-title" href="{{url}}">{{fullname}}</a>
+            <div class="nit-bth-les-year">{{year}}</div>
+          </div>
+          <div class="nit-bth-les-row2">
+            <div class="nit-bth-les-main">
+              <div class="nit-bth-les-price">{{price}}</div>
+              <div class="nit-bth-les-desc"><span data-nit-les-desc></span><button type="button" class="nit-bth-les-more" data-nit-les-more hidden>{mlang ar}... عرض باقي التفاصيل{mlang}{mlang en}... show more details{mlang}</button></div>
+            </div>
+            <div class="nit-bth-les-dates">
+              <div><span>{{createdtext}}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2m0 16H5V9h14zM7 11h5v5H7z"/></svg></div>
+              <div><span>{{modifiedtext}}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2m0 18a8 8 0 1 1 8-8a8 8 0 0 1-8 8m.5-13H11v6l5.2 3.2l.8-1.3l-4.5-2.7z"/></svg></div>
+            </div>
+          </div>
+        </div>
+        <div class="nit-bth-les-foot">
+          <div class="nit-bth-les-footrow">
+            <div class="nit-bth-les-dates">
+              <div><span>{{createdtext}}</span></div>
+              <div><span>{{modifiedtext}}</span></div>
+            </div>
+            <div class="nit-bth-les-btns">
+              <a class="nit-bth-les-btn is-enter" href="{{url}}">{mlang ar}الدخول للكورس{mlang}{mlang en}Enter the course{mlang}</a>
+              <a class="nit-bth-les-btn is-buy" href="{{enrolurl}}">{mlang ar}الإشتراك في الكورس !{mlang}{mlang en}Subscribe to the course!{mlang}</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+  <script>
+  (function(){
+    var root = document.currentScript && document.currentScript.closest('[data-nit-section="lessons"]');
+    if (!root || root.getAttribute('data-ready')) { return; }
+    root.setAttribute('data-ready', '1');
+    var track = root.querySelector('[data-nit-les-track]'), viewport = track.parentNode;
+    var prev = root.querySelector('[data-nit-les-prev]'), next = root.querySelector('[data-nit-les-next]');
+    var dots = root.querySelector('[data-nit-les-dots]'), nav = root.querySelector('[data-nit-les-nav]');
+    var empty = root.querySelector('[data-nit-les-empty]'), tpl = root.querySelector('template[data-nit-les-card]');
+    var GAP = 16, SHORT = 40, index = 0, count = 0, positions = [0];
+
+    function esc(s){ var d = document.createElement('div'); d.textContent = (s == null ? '' : String(s)); return d.innerHTML; }
+    function day(ts){
+      // In the page language: "السبت، ٣ أكتوبر ٢٠٢٦" / "Saturday, 3 October 2026".
+      var locale = (document.documentElement.lang || 'ar').indexOf('ar') === 0 ? 'ar-EG' : 'en-GB';
+      try { return new Date(ts * 1000).toLocaleDateString(locale, {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'}); }
+      catch (e) { return ''; }
+    }
+    // Cards per view, like the original slider: 1 / 1.5 / 2.3 / 3.2.
+    function perView(){
+      var w = window.innerWidth;
+      return w >= 1024 ? 3.2 : (w >= 768 ? 2.3 : (w >= 640 ? 1.5 : 1));
+    }
+    function layout(){
+      var spv = perView(), width = viewport.clientWidth;
+      var slide = (width - GAP * (spv - 1)) / spv;
+      track.style.setProperty('--nit-les-w', slide + 'px');
+      // One stop per card until the last card is fully in view.
+      var max = Math.max(0, count * slide + GAP * (count - 1) - width);
+      positions = [];
+      for (var p = 0; p < max - 1; p += slide + GAP) { positions.push(p); }
+      positions.push(max);
+      if (index > positions.length - 1) { index = positions.length - 1; }
+      dots.innerHTML = '';
+      positions.forEach(function(_, i){
+        var b = document.createElement('button');
+        b.type = 'button'; b.setAttribute('aria-label', dots.getAttribute('data-label') + ' ' + (i + 1));
+        b.addEventListener('click', function(){ index = i; render(); });
+        dots.appendChild(b);
+      });
+      render();
+    }
+    function render(){
+      var dir = getComputedStyle(root).direction === 'rtl' ? 1 : -1;
+      track.style.transform = 'translate3d(' + (dir * (positions[index] || 0)) + 'px,0,0)';
+      prev.disabled = index <= 0;
+      next.disabled = index >= positions.length - 1;
+      Array.prototype.forEach.call(dots.children, function(b, i){ b.classList.toggle('is-active', i === index); });
+    }
+    prev.addEventListener('click', function(){ if (index > 0) { index--; render(); } });
+    next.addEventListener('click', function(){ if (index < positions.length - 1) { index++; render(); } });
+    window.addEventListener('resize', layout);
+    var startX = null;
+    track.addEventListener('pointerdown', function(e){ startX = e.clientX; });
+    track.addEventListener('pointerup', function(e){
+      if (startX === null) { return; }
+      var dx = e.clientX - startX; startX = null;
+      if (Math.abs(dx) < 40) { return; }
+      var fw = (getComputedStyle(root).direction === 'rtl' ? dx : -dx);
+      if (fw > 0 && index < positions.length - 1) { index++; } else if (fw < 0 && index > 0) { index--; }
+      render();
+    });
+
+    fetch('/local/academy/homedata.php?section=lessons', {credentials: 'same-origin'})
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        if (data.all) { root.querySelector('[data-nit-les-all]').setAttribute('href', data.all); }
+        var html = tpl.innerHTML;
+        (data.courses || []).forEach(function(c){
+          c.createdtext = day(c.created); c.modifiedtext = day(c.modified);
+          var holder = document.createElement('div');
+          holder.innerHTML = html.replace(/\{\{(\w+)\}\}/g, function(m, k){ return esc(c[k] !== undefined ? c[k] : ''); }).trim();
+          var slide = holder.firstElementChild;
+          if (!c.image) { var im = slide.querySelector('.nit-bth-les-img'); if (im) { im.remove(); } }
+          // A long description shows its start and "… عرض باقي التفاصيل" (which shows the rest).
+          var desc = slide.querySelector('[data-nit-les-desc]'), more = slide.querySelector('[data-nit-les-more]');
+          var text = c.summary || '';
+          desc.textContent = text.length > SHORT ? text.slice(0, SHORT) : text;
+          if (text.length > SHORT) {
+            more.hidden = false;
+            more.addEventListener('click', function(){ desc.textContent = text; more.hidden = true; });
+          }
+          track.appendChild(slide);
+          count++;
+        });
+        empty.hidden = count > 0;
+        nav.hidden = count === 0;
+        layout();
+      })
+      .catch(function(){ empty.hidden = false; nav.hidden = true; });
+  })();
+  </script>
+</section>
