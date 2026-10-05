@@ -112,3 +112,6 @@ $string['err_registrationdisabled'] = 'التسجيل مغلق في هذه ال�
 $string['err_invalidregistration'] = 'برجاء تصحيح الحقول المحددة.';
 $string['err_toomanyregistrations'] = 'تم إنشاء حسابات كثيرة من نفس الشبكة. حاول مرة أخرى بعد ساعة.';
 $string['reg_passwordmismatch'] = 'كلمتا السر غير متطابقتين';
+$string['registration_heading'] = 'تسجيل الطلاب';
+$string['registration_enabled'] = 'السماح للطلاب بإنشاء حساب';
+$string['registration_enabled_desc'] = 'يفتح صفحة التسجيل (/local/academy/register.php) والتسجيل من التطبيق. الحساب الجديد يتفعّل فورًا والطالب يدخل بالإيميل. مستقل عن إعداد "التسجيل الذاتي" في Moodle.';

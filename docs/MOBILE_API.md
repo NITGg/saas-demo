@@ -595,7 +595,7 @@ terms page:
   `governorate`, `division`; step 3 `religion`, `gender`, `email`, `password`. **All are required.**
 - `type`: `text`, `phone`, `nationalid` (14 digits), `email`, `password`, `menu`. For `menu` show
   `label`, send `value`. Divisions: show only those whose `systems` contains the chosen study system.
-- `enabled:false` → registration is closed on this academy: hide the "create account" button.
+- `enabled:false` → registration is closed on this academy (admin: Site administration → Plugins → Local plugins → Academy → "Allow students to create an account"; independent of Moodle's "Self registration"): hide the "create account" button.
 - Show `passwordpolicy` under the password field; open `termsurl` in a webview for the terms checkbox.
 - Confirm-password is checked by the app (it is not sent).
 

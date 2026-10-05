@@ -111,9 +111,28 @@ final class registration_test extends \advanced_testcase {
         $this->assertSame(['division'], array_keys($errors));
     }
 
-    public function test_closed_registration_is_refused(): void {
+    public function test_registration_does_not_need_moodle_self_registration(): void {
+        $this->resetAfterTest();
+        set_config('registerauth', ''); // Moodle's self registration off (as on production).
+        $this->assertTrue(registration::enabled());
+        $user = registration::register($this->valid(), true);
+        $this->assertTrue(is_enabled_auth($user->auth));
+        $this->assertEquals(1, $user->confirmed);
+    }
+
+    public function test_auth_method_falls_back_to_manual(): void {
         $this->resetAfterTest();
         set_config('registerauth', '');
+        set_config('auth', ''); // Only manual + nologin remain enabled.
+        $this->assertSame('manual', registration::auth_method());
+        set_config('auth', 'email');
+        $this->assertSame('email', registration::auth_method());
+    }
+
+    public function test_closed_registration_is_refused(): void {
+        $this->resetAfterTest();
+        set_config('registration', 0, 'local_academy');
+        $this->assertFalse(registration::enabled());
         $this->expectException(\moodle_exception::class);
         $this->expectExceptionMessage(get_string('err_registrationdisabled', 'local_academy'));
         registration::register($this->valid(), true);

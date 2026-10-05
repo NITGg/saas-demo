@@ -56,13 +56,32 @@ class registration {
         'religion', 'gender', 'email', 'password'];
 
     /**
-     * Whether self-registration is open on this site (Moodle's "Self registration"
-     * setting must name an auth plugin).
+     * Whether the academy registration is open: our own setting
+     * local_academy/registration (on by default). It does NOT depend on Moodle's
+     * "Self registration" (registerauth), which also opens core /login/signup.php.
      *
      * @return bool
      */
     public static function enabled(): bool {
-        return !empty(get_config('core', 'registerauth'));
+        $value = get_config('local_academy', 'registration');
+        return $value === false || $value === null || $value === '' || (bool) $value;
+    }
+
+    /**
+     * The auth method new students get: Moodle's self-registration method when it
+     * is set and enabled, else "email" when enabled, else "manual" (always on).
+     * All of them sign in with email + password; the account is confirmed at once.
+     *
+     * @return string
+     */
+    public static function auth_method(): string {
+        $registerauth = (string) get_config('core', 'registerauth');
+        foreach ([$registerauth, 'email'] as $auth) {
+            if ($auth !== '' && is_enabled_auth($auth)) {
+                return $auth;
+            }
+        }
+        return 'manual';
     }
 
     /**
@@ -256,9 +275,8 @@ class registration {
         }
         self::throttle();
 
-        $auth = (string) get_config('core', 'registerauth') ?: 'email';
         $user = (object) [
-            'auth'        => $auth,
+            'auth'        => self::auth_method(),
             'confirmed'   => 1, // Active at once: no approval / email confirmation.
             'mnethostid'  => $CFG->mnet_localhost_id,
             'username'    => self::unique_username($data['email']),

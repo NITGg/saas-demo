@@ -135,3 +135,6 @@ $string['err_registrationdisabled'] = 'Registration is closed on this academy.';
 $string['err_invalidregistration'] = 'Please correct the highlighted fields.';
 $string['err_toomanyregistrations'] = 'Too many accounts were created from this network. Please try again in an hour.';
 $string['reg_passwordmismatch'] = 'The two passwords do not match.';
+$string['registration_heading'] = 'Student registration';
+$string['registration_enabled'] = 'Allow students to create an account';
+$string['registration_enabled_desc'] = 'Opens the registration page (/local/academy/register.php) and the mobile app registration. New accounts are active at once and sign in with their email. Independent of Moodle\'s "Self registration" setting.';

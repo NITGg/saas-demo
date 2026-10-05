@@ -75,5 +75,11 @@ function xmldb_local_academy_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026100500, 'local', 'academy');
     }
 
+    if ($oldversion < 2026100501) {
+        // Production had "Force users to log in" on: "/" went to the login page.
+        \local_academy\local\site_defaults::apply();
+        upgrade_plugin_savepoint(true, 2026100501, 'local', 'academy');
+    }
+
     return true;
 }

@@ -37,6 +37,12 @@ if ($hassiteconfig) {
     $settings->add(new admin_setting_configcheckbox('local_academy/player_lockorder',
         get_string('player_lockorder', 'local_academy'), get_string('player_lockorder_desc', 'local_academy'), 0));
 
+    // Student registration (/local/academy/register.php + the app's register_student).
+    $settings->add(new admin_setting_heading('local_academy/registrationheading',
+        get_string('registration_heading', 'local_academy'), ''));
+    $settings->add(new admin_setting_configcheckbox('local_academy/registration',
+        get_string('registration_enabled', 'local_academy'), get_string('registration_enabled_desc', 'local_academy'), 1));
+
     // Years, study systems and their divisions — the options of the course and
     // student dropdown fields (see \local_academy\local\academic_structure).
     $academic = new admin_settingpage('local_academy_academic', get_string('academic_page', 'local_academy'));

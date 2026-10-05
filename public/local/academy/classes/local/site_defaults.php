@@ -22,7 +22,8 @@ namespace local_academy\local;
  * - The multilang2 filter on, for content AND headings, with format_string()
  *   filtering: every {mlang ar}…{mlang}{mlang en}…{mlang} text (governorates,
  *   study systems, course and category names…) depends on it.
- * - The site home page as the home page (the logo / "Home" link), not the dashboard.
+ * - The site home page as the home page (the logo / "Home" link), not the
+ *   dashboard, and open to visitors who are not logged in.
  *
  * @package    local_academy
  * @copyright  2026 NIT
@@ -44,5 +45,9 @@ class site_defaults {
         }
 
         set_config('defaulthomepage', HOMEPAGE_SITE);
+        // The home page is public: visitors see it before logging in. index.php
+        // also sends visitors to the login page when the dashboard is disabled.
+        set_config('forcelogin', 0);
+        set_config('enablemyhome', 1);
     }
 }
