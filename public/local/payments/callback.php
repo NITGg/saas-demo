@@ -42,17 +42,11 @@ if ($kashier_status === 'FAILED') {
 
     $PAGE->set_title(get_string('payment_failure', 'local_payments'));
     echo $OUTPUT->header();
-    $failedmeta = $transaction ? json_decode($transaction->metadata ?? '{}') : null;
     $templatedata = [
         'success'      => false,
         'status'       => 'FAILED',
         'order_id'     => $order_id,
-        'retry_url'    => !$transaction ? (new moodle_url('/'))->out(false)
-            : ((($failedmeta->item_type ?? '') === 'wallet_topup')
-                ? (new moodle_url('/local/nit_finance/wallet.php'))->out(false)
-                : ((($failedmeta->item_type ?? '') === 'package')
-                    ? (new moodle_url('/local/nit_flex/packages.php'))->out(false)
-                    : (new moodle_url('/local/payments/buy.php', ['courseid' => $transaction->courseid]))->out(false))),
+        'retry_url'    => \local_payments\local\return_pages::retry($transaction ?: null)->out(false),
         'history_url'  => (new moodle_url('/local/payments/history.php'))->out(false),
     ];
     echo $OUTPUT->render_from_template('local_payments/payment_failure', $templatedata);
@@ -88,8 +82,10 @@ try {
                 get_string('payment_success', 'local_payments'), null, \core\output\notification::NOTIFY_SUCCESS);
         }
         if ($item_type === 'subscription') {
+            // Back to the page the subscription was bought from (e.g. the student hub), else home.
+            $paidtx = $DB->get_record('local_payments_transactions', ['order_id' => $order_id], 'metadata');
             redirect(
-                new moodle_url('/'),
+                \local_payments\local\return_pages::started_from($paidtx ?: null) ?? new moodle_url('/'),
                 get_string('payment_success', 'local_payments'),
                 null,
                 \core\output\notification::NOTIFY_SUCCESS
@@ -117,9 +113,7 @@ try {
             'success'     => false,
             'status'      => $result->status,
             'order_id'    => $order_id,
-            'retry_url'   => $transaction
-                ? (new moodle_url('/local/payments/buy.php', ['courseid' => $transaction->courseid]))->out(false)
-                : (new moodle_url('/'))->out(false),
+            'retry_url'   => \local_payments\local\return_pages::retry($transaction ?: null)->out(false),
             'history_url' => (new moodle_url('/local/payments/history.php'))->out(false),
         ];
         echo $OUTPUT->render_from_template('local_payments/payment_failure', $templatedata);

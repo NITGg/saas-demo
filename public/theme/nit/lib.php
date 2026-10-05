@@ -3067,6 +3067,52 @@ function theme_nit_navmenu_default(string $menu): array {
 }
 
 /**
+ * Add the gear menu's current links (Moodle's primary navigation as the admin
+ * sees it) that the default rows miss, so the editor starts from today's menu.
+ *
+ * @param array $rows default rows
+ * @param array $nav primary navigation items (text, url, haschildren, children)
+ * @return array
+ */
+function theme_nit_navmenu_merge_current(array $rows, array $nav): array {
+    global $CFG;
+    $path = function(string $url) use ($CFG): string {
+        if (strpos($url, $CFG->wwwroot) === 0) {
+            $url = substr($url, strlen($CFG->wwwroot));
+        }
+        $p = (string) parse_url($url, PHP_URL_PATH);
+        return rtrim($p === '' ? '/' : $p, '/') ?: '/';
+    };
+    $known = array_map(fn($r) => $path((string) $r['url']), $rows);
+    $flat = [];
+    foreach ($nav as $item) {
+        $item = (array) $item;
+        if (!empty($item['haschildren'])) {
+            foreach ((array) ($item['children'] ?? []) as $child) {
+                $flat[] = (array) $child;
+            }
+        } else {
+            $flat[] = $item;
+        }
+    }
+    foreach ($flat as $item) {
+        $url = (string) ($item['url'] ?? '');
+        $text = trim(strip_tags((string) ($item['text'] ?? '')));
+        if ($url === '' || $text === '' || !empty($item['divider']) || strpos($url, $CFG->wwwroot) !== 0) {
+            continue;
+        }
+        if (!in_array($path($url), $known, true)) {
+            $local = substr($url, strlen($CFG->wwwroot)) ?: '/';
+            // Management pages stay with admins; the rest is for everyone (the admin can change it).
+            $admin = preg_match('~^/(admin/|.*/manage|.*/admin)~', $path($url));
+            $rows[] = ['name' => $text, 'url' => $local, 'show' => $admin ? 'admin' : 'all'];
+            $known[] = $path($url);
+        }
+    }
+    return $rows;
+}
+
+/**
  * Whether a navbar menu link is for this user.
  *
  * @param string $show all | student | teacher | admin

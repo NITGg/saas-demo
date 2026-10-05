@@ -102,7 +102,8 @@ class gateway extends base_provider {
         $body = [
             'amount' => (string) $request->amount,
             'currency' => $request->currency,
-            'display' => $request->display_lang,
+            // Kashier knows only "ar" and "en"; callers pass Moodle's language (e.g. "ar_eg", "en_us").
+            'display' => strpos((string) $request->display_lang, 'ar') === 0 ? 'ar' : 'en',
             'merchantId' => $this->get_merchant_id(),
             'order' => $request->order_id,
             'type' => 'one-time',

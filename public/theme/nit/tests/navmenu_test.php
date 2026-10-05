@@ -59,6 +59,25 @@ final class navmenu_test extends \advanced_testcase {
         $this->assertSame([], $names());
     }
 
+    public function test_editor_starts_from_the_current_gear_menu(): void {
+        global $CFG;
+        $rows = theme_nit_navmenu_merge_current(
+            [['name' => 'Home', 'url' => '/', 'show' => 'all']],
+            [
+                ['text' => 'Home', 'url' => $CFG->wwwroot . '/?redirect=0', 'haschildren' => false],
+                ['text' => 'Library', 'url' => $CFG->wwwroot . '/local/library/index.php', 'haschildren' => false],
+                ['text' => 'More', 'haschildren' => true, 'children' => [
+                    ['text' => 'Reports', 'url' => $CFG->wwwroot . '/local/x/manage_reports.php'],
+                ]],
+                ['text' => 'Elsewhere', 'url' => 'https://example.com/', 'haschildren' => false],
+            ]);
+        $this->assertSame([
+            ['name' => 'Home', 'url' => '/', 'show' => 'all'],
+            ['name' => 'Library', 'url' => '/local/library/index.php', 'show' => 'all'],
+            ['name' => 'Reports', 'url' => '/local/x/manage_reports.php', 'show' => 'admin'],
+        ], $rows);
+    }
+
     public function test_user_menu_keeps_language_and_logout(): void {
         $moodle = [
             (object) ['itemtype' => 'link', 'url' => new \moodle_url('/user/profile.php'), 'title' => 'Profile'],

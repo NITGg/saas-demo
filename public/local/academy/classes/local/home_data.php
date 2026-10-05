@@ -33,47 +33,36 @@ namespace local_academy\local;
  */
 class home_data {
 
-    /** Most courses the selected-courses carousel carries. */
-    public const SELECTED_LIMIT = 30;
+    /** Most courses the "كورسات مختارة" carousel carries (every visible course, filtered by year on the page). */
+    public const SELECTED_LIMIT = 200;
 
     /** Most courses the suggested-lessons slider carries. */
     public const LESSONS_LIMIT = 30;
 
     /**
-     * "كورسات مختارة": the years for the filter and the visible courses whose
-     * "is-special" field is ticked.
+     * "كورسات مختارة": the years for the filter and every visible course (the
+     * page filters them by year). The "is-special" courses go to the suggested
+     * lessons section instead ({@see lessons()}).
      *
      * @return array{years:array<int, array{id:int, name:string}>, courses:array<int, array>}
      */
     public static function selected(): array {
         return [
             'years' => self::year_options(),
-            'courses' => self::special_courses(),
+            'courses' => self::selected_courses(),
         ];
     }
 
     /**
-     * Visible courses with "is-special" ticked, as card data.
+     * Every visible course, in the site's course order, as card data.
      *
      * @return array<int, array{id:int, fullname:string, url:string, image:string, year:string, years:int[], teachers:int, lessons:int}>
      */
-    public static function special_courses(): array {
+    public static function selected_courses(): array {
         global $DB;
 
-        $fieldids = self::course_field_ids([course_fields::SPECIAL]);
-        if (empty($fieldids[course_fields::SPECIAL])) {
-            return [];
-        }
-        $courses = $DB->get_records_sql(
-            "SELECT c.*
-               FROM {course} c
-               JOIN {customfield_data} d ON d.instanceid = c.id AND d.fieldid = :fieldid
-              WHERE d.intvalue = 1 AND c.visible = 1 AND c.id <> :siteid
-           ORDER BY c.sortorder",
-            ['fieldid' => $fieldids[course_fields::SPECIAL], 'siteid' => SITEID],
-            0,
-            self::SELECTED_LIMIT
-        );
+        $courses = $DB->get_records_select('course', 'visible = 1 AND id <> :siteid', ['siteid' => SITEID],
+            'sortorder', '*', 0, self::SELECTED_LIMIT);
 
         $years = self::years_by_category();
         $teacherroles = self::teacher_roles();
@@ -95,6 +84,25 @@ class home_data {
             ];
         }
         return $out;
+    }
+
+    /**
+     * Ids of the visible courses whose "is-special" field is ticked.
+     *
+     * @return int[]
+     */
+    public static function special_course_ids(): array {
+        global $DB;
+        $fieldids = self::course_field_ids([course_fields::SPECIAL]);
+        if (empty($fieldids[course_fields::SPECIAL])) {
+            return [];
+        }
+        return array_map('intval', $DB->get_fieldset_sql(
+            "SELECT c.id
+               FROM {course} c
+               JOIN {customfield_data} d ON d.instanceid = c.id AND d.fieldid = :fieldid
+              WHERE d.intvalue = 1 AND c.visible = 1 AND c.id <> :siteid",
+            ['fieldid' => $fieldids[course_fields::SPECIAL], 'siteid' => SITEID]));
     }
 
     /**
@@ -169,17 +177,23 @@ class home_data {
     }
 
     /**
-     * "المحاضرات المقترحة": the newest visible courses — for a student whose
-     * year is set, the courses of that year (its category or a sub-category),
-     * and of their division when the course has one.
+     * "المحاضرات المقترحة": the "is-special" courses, newest first (while no
+     * course is ticked: the newest visible courses) — for a student whose year
+     * is set, the courses of that year (its category or a sub-category), and of
+     * their division when the course has one.
      *
      * @return array{all:string, courses:array<int, array>}
      */
     public static function lessons(): array {
         global $DB;
 
-        $courses = $DB->get_records_select('course', 'visible = 1 AND id <> :siteid', ['siteid' => SITEID],
-            'timecreated DESC, id DESC', '*', 0, 200);
+        $special = self::special_course_ids();
+        if ($special) {
+            $courses = $DB->get_records_list('course', 'id', $special, 'timecreated DESC, id DESC');
+        } else {
+            $courses = $DB->get_records_select('course', 'visible = 1 AND id <> :siteid', ['siteid' => SITEID],
+                'timecreated DESC, id DESC', '*', 0, 200);
+        }
         $answers = $courses ? self::course_answers(array_keys($courses)) : [];
         $years = self::years_by_category();
         $me = self::me();

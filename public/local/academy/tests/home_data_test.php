@@ -56,27 +56,41 @@ final class home_data_test extends \advanced_testcase {
         return '';
     }
 
-    public function test_selected_lists_ticked_visible_courses_with_their_category_year(): void {
+    public function test_selected_lists_every_visible_course_with_its_category_year(): void {
         $gen = $this->getDataGenerator();
-        $ticked = $gen->create_course(['fullname' => 'الفيزياء', 'category' => $this->third->id]);
+        $physics = $gen->create_course(['fullname' => 'الفيزياء', 'category' => $this->third->id]);
         $hidden = $gen->create_course(['visible' => 0, 'category' => $this->third->id]);
-        $plain = $gen->create_course(['category' => $this->third->id]);
+        $plain = $gen->create_course(['category' => $this->first->id]);
+
+        $teacher = $gen->create_user();
+        $gen->enrol_user($teacher->id, $physics->id, 'editingteacher');
+        $gen->create_module('page', ['course' => $physics->id]);
+        $gen->create_module('page', ['course' => $physics->id]);
+
+        $courses = home_data::selected_courses();
+        $ids = array_column($courses, 'id');
+        $this->assertEqualsCanonicalizing([(int) $physics->id, (int) $plain->id], $ids, 'every visible course, ticked or not');
+        $this->assertNotContains((int) $hidden->id, $ids);
+        $card = $courses[array_search((int) $physics->id, $ids, true)];
+        $this->assertSame('الفيزياء', $card['fullname']);
+        $this->assertSame('الثانوية / الصف الثالث الثانوي', $card['year']);
+        $this->assertSame([(int) $this->stage->id, (int) $this->third->id], $card['years'], 'its category and its parent');
+        $this->assertSame(1, $card['teachers']);
+        $this->assertSame(2, $card['lessons']);
+    }
+
+    public function test_suggested_lessons_are_the_special_courses(): void {
+        $gen = $this->getDataGenerator();
+        $ticked = $gen->create_course(['fullname' => 'مميز', 'category' => $this->third->id]);
+        $hidden = $gen->create_course(['visible' => 0, 'category' => $this->third->id]);
+        $plain = $gen->create_course(['fullname' => 'عادي', 'category' => $this->third->id]);
         $this->set_fields($ticked->id, [course_fields::SPECIAL => 1]);
         $this->set_fields($hidden->id, [course_fields::SPECIAL => 1]);
 
-        $teacher = $gen->create_user();
-        $gen->enrol_user($teacher->id, $ticked->id, 'editingteacher');
-        $gen->create_module('page', ['course' => $ticked->id]);
-        $gen->create_module('page', ['course' => $ticked->id]);
-
-        $courses = home_data::special_courses();
-        $this->assertSame([(int) $ticked->id], array_column($courses, 'id'));
-        $this->assertSame('الفيزياء', $courses[0]['fullname']);
-        $this->assertSame('الثانوية / الصف الثالث الثانوي', $courses[0]['year']);
-        $this->assertSame([(int) $this->stage->id, (int) $this->third->id], $courses[0]['years'], 'its category and its parent');
-        $this->assertSame(1, $courses[0]['teachers']);
-        $this->assertSame(2, $courses[0]['lessons']);
-        $this->assertNotContains((int) $plain->id, array_column($courses, 'id'));
+        $this->setUser(null);
+        $this->assertSame([(int) $ticked->id], home_data::special_course_ids());
+        $this->assertSame(['مميز'], array_column(home_data::lessons()['courses'], 'fullname'));
+        $this->assertNotEmpty($plain->id);
     }
 
     public function test_selected_year_filter_lists_the_categories(): void {
@@ -155,10 +169,19 @@ final class home_data_test extends \advanced_testcase {
         force_current_language('');
     }
 
-    public function test_no_is_special_field_means_no_courses(): void {
+    public function test_suggested_lessons_without_special_courses_are_the_newest(): void {
         global $DB;
+        $this->setUser(null);
+        $old = $this->getDataGenerator()->create_course(['timecreated' => time() - DAYSECS]);
+        $new = $this->getDataGenerator()->create_course(['timecreated' => time()]);
+        $this->assertSame([(int) $new->id, (int) $old->id], array_column(home_data::lessons()['courses'], 'id'));
+
         $DB->delete_records('customfield_field', ['shortname' => course_fields::SPECIAL]);
-        $this->getDataGenerator()->create_course();
-        $this->assertSame([], home_data::special_courses());
+        $this->assertSame([], home_data::special_course_ids());
+        $this->assertCount(2, home_data::lessons()['courses']);
+    }
+
+    public function test_no_course_at_all_is_empty(): void {
+        $this->assertSame([], home_data::selected_courses());
     }
 }

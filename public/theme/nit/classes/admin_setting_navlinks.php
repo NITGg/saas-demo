@@ -18,6 +18,8 @@ namespace theme_nit;
 
 defined('MOODLE_INTERNAL') || die();
 
+require_once($CFG->dirroot . '/theme/nit/lib.php');
+
 /**
  * Admin setting: the links of a navbar menu (the gear menu or the avatar menu),
  * edited like the footer "pages" column. Both menus are for signed-in users, so
@@ -54,7 +56,23 @@ class admin_setting_navlinks extends admin_setting_footerpages {
         return $labels;
     }
 
+    /**
+     * The editor starts from the links the menu shows today: the known pages
+     * (with their roles) plus anything else in the gear menu right now.
+     *
+     * @return array
+     */
     protected function default_rows(): array {
-        return \theme_nit_navmenu_default($this->menu);
+        global $PAGE, $OUTPUT;
+        $rows = \theme_nit_navmenu_default($this->menu);
+        if ($this->menu !== 'gear') {
+            return $rows;
+        }
+        try {
+            $nav = (new \core\navigation\output\primary($PAGE))->export_for_template($OUTPUT)['mobileprimarynav'] ?? [];
+        } catch (\Throwable $e) {
+            return $rows;
+        }
+        return \theme_nit_navmenu_merge_current($rows, $nav);
     }
 }

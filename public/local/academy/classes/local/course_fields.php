@@ -36,7 +36,7 @@ class course_fields {
     /** Name of the custom-field group on the course settings page. */
     public const CATEGORY = 'custom fields';
 
-    /** "Show in the home page's selected courses" checkbox. */
+    /** "Show in the home page's suggested lessons" checkbox. */
     public const SPECIAL = 'is_special';
 
     /**
@@ -60,7 +60,7 @@ class course_fields {
             'name' => 'is-special',
             'shortname' => self::SPECIAL,
             'type' => 'checkbox',
-            'description' => 'ظاهر في قسم "كورسات مختارة" بالصفحة الرئيسية.',
+            'description' => 'ظاهر في قسم "المحاضرات المقترحة" بالصفحة الرئيسية.',
             'descriptionformat' => FORMAT_HTML,
             'configdata' => json_encode([
                 'required' => 0,
