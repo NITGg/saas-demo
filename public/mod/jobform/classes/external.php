@@ -466,6 +466,302 @@ class mod_jobform_external extends external_api {
         ]);
     }
 
+    // ---------------------------------------------------------------------
+    // Teacher: get_submissions — the activity's submissions, paged.
+    // ---------------------------------------------------------------------
+
+    /**
+     * Resolve a submission id to [course, cm, jobform, submission], with a clear error.
+     *
+     * @param int $submissionid
+     * @return array [stdClass $course, cm_info $cm, stdClass $jobform, stdClass $submission]
+     */
+    protected static function resolve_submission(int $submissionid): array {
+        global $DB;
+        $submission = $DB->get_record('jobform_submission', ['id' => $submissionid]);
+        if (!$submission) {
+            throw new moodle_exception('errorsubmissionnotfound', 'mod_jobform', '', $submissionid);
+        }
+        $cmrec = get_coursemodule_from_instance('jobform', $submission->jobformid);
+        if (!$cmrec) {
+            throw new moodle_exception('errorsubmissionnotfound', 'mod_jobform', '', $submissionid);
+        }
+        [$course, $cm, $jobform] = self::resolve_cm((int) $cmrec->id);
+        return [$course, $cm, $jobform, $submission];
+    }
+
+    /**
+     * The user block shared by the teacher functions.
+     *
+     * @param stdClass $user needs id, picture, imagealt, email + name fields
+     * @param context $context
+     * @return array
+     */
+    protected static function export_user(stdClass $user, context $context): array {
+        global $PAGE;
+        $picture = new user_picture($user);
+        $picture->size = 1; // Big.
+        return [
+            'id'              => (int) $user->id,
+            'fullname'        => fullname($user, has_capability('moodle/site:viewfullnames', $context)),
+            'profileimageurl' => $picture->get_url($PAGE)->out(false),
+        ];
+    }
+
+    /**
+     * Structure of the user block.
+     *
+     * @return external_single_structure
+     */
+    protected static function user_structure(): external_single_structure {
+        return new external_single_structure([
+            'id'              => new external_value(PARAM_INT, 'User id'),
+            'fullname'        => new external_value(PARAM_RAW, 'Full name'),
+            'profileimageurl' => new external_value(PARAM_URL, 'Profile picture URL'),
+        ]);
+    }
+
+    /**
+     * Parameters for get_submissions.
+     *
+     * @return external_function_parameters
+     */
+    public static function get_submissions_parameters(): external_function_parameters {
+        return new external_function_parameters([
+            'cmid'    => new external_value(PARAM_INT, 'Course module id'),
+            'page'    => new external_value(PARAM_INT, 'Page number (0-based)', VALUE_DEFAULT, 0),
+            'perpage' => new external_value(PARAM_INT, 'Submissions per page (1..100)', VALUE_DEFAULT, 20),
+            'status'  => new external_value(PARAM_ALPHA,
+                'submitted (default — what the web Submissions tab lists) | draft | all', VALUE_DEFAULT, 'submitted'),
+        ]);
+    }
+
+    /**
+     * List the activity's submissions for a teacher, newest first.
+     *
+     * @param int $cmid
+     * @param int $page
+     * @param int $perpage
+     * @param string $status
+     * @return array
+     */
+    public static function get_submissions(int $cmid, int $page = 0, int $perpage = 20,
+            string $status = 'submitted'): array {
+        $params = self::validate_parameters(self::get_submissions_parameters(),
+            ['cmid' => $cmid, 'page' => $page, 'perpage' => $perpage, 'status' => $status]);
+
+        [$course, $cm, $jobform] = self::resolve_cm($params['cmid']);
+        $context = context_module::instance($cm->id);
+        self::validate_context($context);
+        require_capability('mod/jobform:viewsubmissions', $context);
+
+        $status = in_array($params['status'], [submission_manager::STATUS_SUBMITTED,
+            submission_manager::STATUS_DRAFT, 'all'], true) ? $params['status'] : submission_manager::STATUS_SUBMITTED;
+        $page = max(0, $params['page']);
+        $perpage = max(1, min(100, $params['perpage']));
+
+        $result = submission_manager::list_submissions((int) $jobform->id, $status, $page, $perpage);
+        $submissions = [];
+        foreach ($result['rows'] as $row) {
+            $user = clone $row;
+            $user->id = $row->userid;
+            $submissions[] = [
+                'id'           => (int) $row->id,
+                'user'         => self::export_user($user, $context),
+                'status'       => $row->status,
+                'timecreated'  => (int) $row->timecreated,
+                'timemodified' => (int) $row->timemodified,
+            ];
+        }
+
+        return [
+            'jobform'     => ['id' => (int) $jobform->id, 'cmid' => (int) $cm->id, 'name' => format_string($jobform->name)],
+            'total'       => $result['total'],
+            'page'        => $page,
+            'perpage'     => $perpage,
+            'candelete'   => has_capability('mod/jobform:viewsubmissions', $context) ? 1 : 0,
+            'submissions' => $submissions,
+            'warnings'    => [],
+        ];
+    }
+
+    /**
+     * Returns for get_submissions.
+     *
+     * @return external_single_structure
+     */
+    public static function get_submissions_returns(): external_single_structure {
+        return new external_single_structure([
+            'jobform' => new external_single_structure([
+                'id'   => new external_value(PARAM_INT, 'Activity instance id'),
+                'cmid' => new external_value(PARAM_INT, 'Course module id'),
+                'name' => new external_value(PARAM_RAW, 'Activity name'),
+            ]),
+            'total'       => new external_value(PARAM_INT, 'Submissions matching the status filter'),
+            'page'        => new external_value(PARAM_INT, 'Page returned'),
+            'perpage'     => new external_value(PARAM_INT, 'Page size used'),
+            'candelete'   => new external_value(PARAM_INT, '1 if the caller may delete submissions'),
+            'submissions' => new external_multiple_structure(new external_single_structure([
+                'id'           => new external_value(PARAM_INT, 'Submission id'),
+                'user'         => self::user_structure(),
+                'status'       => new external_value(PARAM_ALPHA, 'draft | submitted'),
+                'timecreated'  => new external_value(PARAM_INT, 'First saved'),
+                'timemodified' => new external_value(PARAM_INT, 'Last changed / sent'),
+            ])),
+            'warnings' => new external_warnings(),
+        ]);
+    }
+
+    // ---------------------------------------------------------------------
+    // Teacher: get_submission — one submission with labelled answers.
+    // ---------------------------------------------------------------------
+
+    /**
+     * Parameters for get_submission.
+     *
+     * @return external_function_parameters
+     */
+    public static function get_submission_parameters(): external_function_parameters {
+        return new external_function_parameters([
+            'submissionid' => new external_value(PARAM_INT, 'Submission id'),
+            'lang' => new external_value(PARAM_LANG,
+                'Language for the labels / values (e.g. "ar"). Defaults to the user\'s language.', VALUE_DEFAULT, ''),
+        ]);
+    }
+
+    /**
+     * One submission with every field's label and formatted value (teacher view).
+     *
+     * @param int $submissionid
+     * @param string $lang
+     * @return array
+     */
+    public static function get_submission(int $submissionid, string $lang = ''): array {
+        global $DB;
+        $params = self::validate_parameters(self::get_submission_parameters(),
+            ['submissionid' => $submissionid, 'lang' => $lang]);
+
+        [$course, $cm, $jobform, $submission] = self::resolve_submission($params['submissionid']);
+        $context = context_module::instance($cm->id);
+        self::validate_context($context);
+        require_capability('mod/jobform:viewsubmissions', $context);
+
+        if (!empty($params['lang'])) {
+            force_current_language($params['lang']);
+        }
+
+        $user = $DB->get_record('user', ['id' => $submission->userid]);
+        $groups = [];
+        foreach (group_manager::get_groups($jobform->id) as $group) {
+            $groups[] = [
+                'id'        => (int) $group->id,
+                'name'      => mlang::resolve($group->name),
+                'sortorder' => (int) $group->sortorder,
+            ];
+        }
+
+        return [
+            'submission' => [
+                'id'           => (int) $submission->id,
+                'cmid'         => (int) $cm->id,
+                'jobformid'    => (int) $jobform->id,
+                'status'       => $submission->status,
+                'timecreated'  => (int) $submission->timecreated,
+                'timemodified' => (int) $submission->timemodified,
+                'user'         => $user
+                    ? self::export_user($user, $context)
+                    : ['id' => (int) $submission->userid, 'fullname' => '', 'profileimageurl' => ''],
+            ],
+            'groups'   => $groups,
+            'answers'  => submission_manager::get_answer_rows((int) $jobform->id, (int) $submission->id),
+            'warnings' => [],
+        ];
+    }
+
+    /**
+     * Returns for get_submission.
+     *
+     * @return external_single_structure
+     */
+    public static function get_submission_returns(): external_single_structure {
+        return new external_single_structure([
+            'submission' => new external_single_structure([
+                'id'           => new external_value(PARAM_INT, 'Submission id'),
+                'cmid'         => new external_value(PARAM_INT, 'Course module id'),
+                'jobformid'    => new external_value(PARAM_INT, 'Activity instance id'),
+                'status'       => new external_value(PARAM_ALPHA, 'draft | submitted'),
+                'timecreated'  => new external_value(PARAM_INT, 'First saved'),
+                'timemodified' => new external_value(PARAM_INT, 'Last changed / sent'),
+                'user'         => new external_single_structure([
+                    'id'              => new external_value(PARAM_INT, 'User id'),
+                    'fullname'        => new external_value(PARAM_RAW, 'Full name'),
+                    'profileimageurl' => new external_value(PARAM_RAW, 'Profile picture URL'),
+                ]),
+            ]),
+            'groups' => new external_multiple_structure(new external_single_structure([
+                'id'        => new external_value(PARAM_INT, 'Group id'),
+                'name'      => new external_value(PARAM_RAW, 'Group name in the requested language'),
+                'sortorder' => new external_value(PARAM_INT, 'Display order'),
+            ])),
+            'answers' => new external_multiple_structure(new external_single_structure([
+                'fieldid' => new external_value(PARAM_INT, 'Field id'),
+                'name'    => new external_value(PARAM_RAW, 'Field label in the requested language'),
+                'type'    => new external_value(PARAM_ALPHA, 'text|number|email|phone|date|checkbox|url|select|fixed'),
+                'groupid' => new external_value(PARAM_INT, 'Group id (0 = ungrouped)'),
+                'value'   => new external_value(PARAM_RAW, 'Stored value (raw)'),
+                'display' => new external_value(PARAM_RAW, 'Formatted value to show (plain text)'),
+            ]), 'One row per current field of the activity, in field order'),
+            'warnings' => new external_warnings(),
+        ]);
+    }
+
+    // ---------------------------------------------------------------------
+    // Teacher: delete_submission — same rule as the web Submissions tab.
+    // ---------------------------------------------------------------------
+
+    /**
+     * Parameters for delete_submission.
+     *
+     * @return external_function_parameters
+     */
+    public static function delete_submission_parameters(): external_function_parameters {
+        return new external_function_parameters([
+            'submissionid' => new external_value(PARAM_INT, 'Submission id'),
+        ]);
+    }
+
+    /**
+     * Permanently delete a submission and its answers (needs mod/jobform:viewsubmissions,
+     * exactly like the delete action of view.php's Submissions tab).
+     *
+     * @param int $submissionid
+     * @return array
+     */
+    public static function delete_submission(int $submissionid): array {
+        $params = self::validate_parameters(self::delete_submission_parameters(), ['submissionid' => $submissionid]);
+
+        [$course, $cm, $jobform, $submission] = self::resolve_submission($params['submissionid']);
+        $context = context_module::instance($cm->id);
+        self::validate_context($context);
+        require_capability('mod/jobform:viewsubmissions', $context);
+
+        submission_manager::delete_submission((int) $submission->id, (int) $jobform->id);
+
+        return ['status' => true, 'warnings' => []];
+    }
+
+    /**
+     * Returns for delete_submission.
+     *
+     * @return external_single_structure
+     */
+    public static function delete_submission_returns(): external_single_structure {
+        return new external_single_structure([
+            'status'   => new external_value(PARAM_BOOL, 'True when deleted'),
+            'warnings' => new external_warnings(),
+        ]);
+    }
+
     /**
      * Validate the incoming answers and normalise them into stored values.
      *

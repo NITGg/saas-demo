@@ -23,6 +23,20 @@ $string['err_unknownfunction']  = 'Unknown function';
 $string['err_internal']         = 'An internal error occurred. Please try again later.';
 $string['err_nopermission']     = 'You do not have permission to view this.';
 $string['err_teachernotfound']  = 'Teacher not found.';
+$string['err_siteunavailable']  = 'This academy is currently unavailable. Please contact the academy administration.';
+$string['err_invalidjson']      = 'The parameter "{$a}" must be valid JSON.';
+$string['err_requiredfield']    = 'The field "{$a}" is required.';
+$string['err_invalidphone']     = 'Please enter a valid phone number (e.g. 01012345678).';
+$string['err_invalidlanguage']  = 'Unknown language.';
+$string['err_invalidoption']    = 'Invalid choice for "{$a}".';
+$string['err_divisionmismatch'] = 'This division does not belong to the chosen study system.';
+$string['err_invalidnationalid'] = 'The national ID is 14 digits.';
+$string['err_coursenotfound']   = 'Course not found.';
+$string['err_notenrolled']      = 'You are not enrolled in this course.';
+$string['err_lessonlocked']     = 'Complete the previous lessons first.';
+$string['err_lessonforsale']    = 'This lesson must be bought first.';
+$string['err_coursenotfree']    = 'This course is not free.';
+$string['err_enrolfailed']      = 'Could not enrol you in this course.';
 
 // Password reset (OTP).
 $string['err_invalidemail']     = 'Please enter a valid email address.';

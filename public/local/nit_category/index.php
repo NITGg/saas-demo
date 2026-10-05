@@ -54,120 +54,35 @@ $PAGE->set_pagelayout('nit_fullwidth');
 //   * a chosen subcat  -> just that one section.
 //   * no subcategories -> a single section for the (leaf) parent itself.
 // Each course's category is thus its enclosing section, matching the header above it.
-// Sort order from the catalog control (?sort=). Real, functional orderings —
-// nothing is decorative-only.
-$sort = optional_param('sort', 'recommended', PARAM_ALPHA);
-$sortmap = [
-    'recommended' => ['sortorder' => 1],       // the site's curated order
-    'newest'      => ['timecreated' => -1],     // most recently created first
-    'az'          => ['fullname' => 1],         // alphabetical
-];
-$sortorder = $sortmap[$sort] ?? $sortmap['recommended'];
-if (!isset($sortmap[$sort])) {
-    $sort = 'recommended';
-}
-// Price filter (?price=) — REAL: a course is "paid" iff local_payments has pricing
-// for it, else "free". Only these two are Moodle-backed data, so the catalog has
-// no fabricated Level/Rating filters. No-op when the payments plugin is absent.
-$pricefilter = optional_param('price', 'all', PARAM_ALPHA);
-if (!in_array($pricefilter, ['all', 'free', 'paid'], true)) {
-    $pricefilter = 'all';
-}
-// Level filter (?level=) — REAL: reads the "level" course custom field. Empty =
-// all; only offered when the field exists (course_meta::level_enabled()).
-$levelfilter = optional_param('level', '', PARAM_TEXT);
+// Filters from the catalog controls (?sort= ?price= ?level= ?rating=) — all REAL,
+// Moodle-backed data, validated and applied by local_nit_category\catalogue (shared
+// with the mobile API, so both always agree):
+//   sort   recommended | newest | az
+//   price  all | free | paid  (paid iff local_payments has pricing; no-op without it)
+//   level  the "level" course custom field (only offered when the field exists)
+//   rating minimum average stars from local_nit_reviews (only when present)
+$filters = \local_nit_category\catalogue::normalise_filters(
+    optional_param('sort', 'recommended', PARAM_ALPHA),
+    optional_param('price', 'all', PARAM_ALPHA),
+    optional_param('level', '', PARAM_TEXT),
+    optional_param('rating', 0, PARAM_INT)
+);
+$sort         = $filters['sort'];
+$pricefilter  = $filters['price'];
+$levelfilter  = $filters['level'];
+$ratingfilter = $filters['rating'];
 $leveloptions = \local_nit_category\course_meta::level_options();
-if ($levelfilter !== '' && !in_array($levelfilter, $leveloptions, true)) {
-    $levelfilter = '';
-}
-// Rating filter (?rating=) — REAL: minimum average stars from local_nit_reviews.
-// 0 = all; only offered when the reviews plugin is present.
-$hasreviews   = class_exists('\local_nit_reviews\api');
-$ratingfilter = optional_param('rating', 0, PARAM_INT);
-if ($ratingfilter < 1 || $ratingfilter > 5 || !$hasreviews) {
-    $ratingfilter = 0;
-}
-$fetchcourses = function (core_course_category $cat, bool $recursive) use ($sortorder): array {
-    return $cat->get_courses([
-        'recursive'      => $recursive,
-        'sort'           => $sortorder,
-        'summary'        => true,
-        'coursecontacts' => true,
-    ]);
-};
-
-// Build a category "node": its own (direct) courses plus a node for every child
-// category, recursively. This lets each subcategory — at any depth — render as its
-// own titled group under its parent, instead of a parent lumping every descendant
-// course into one flat list.
-$buildnode = function (core_course_category $cat) use (&$buildnode, $fetchcourses): array {
-    $children = [];
-    foreach ($cat->get_children() as $child) {
-        $children[] = $buildnode($child);
-    }
-    return [
-        'cat'      => $cat,
-        'courses'  => $fetchcourses($cat, false), // direct only; descendants are child nodes
-        'children' => $children,
-    ];
-};
+$hasreviews   = \local_nit_category\catalogue::has_reviews();
 
 // Total courses in a node's whole subtree (its own + every descendant's).
-$counttree = function (array $node) use (&$counttree): int {
-    $n = count($node['courses']);
-    foreach ($node['children'] as $child) {
-        $n += $counttree($child);
-    }
-    return $n;
-};
+$counttree = static fn(array $node): int => \local_nit_category\catalogue::count_tree($node);
 
-$rootnodes = [];
-if (empty($subcategories)) {
-    // Flat category (no children): just its own courses.
-    $rootnodes[] = $buildnode($category);
-} else if ($subid) {
-    // One subcategory selected: render that subtree (its courses + nested subcategories).
-    $rootnodes[] = $buildnode($targetcat);
-} else {
-    // "All": courses that live directly under the parent (not inside any child) get
-    // their own section first so nothing is dropped, then every subcategory subtree.
-    $directcourses = $fetchcourses($category, false);
-    if (!empty($directcourses)) {
-        $rootnodes[] = ['cat' => $category, 'courses' => $directcourses, 'children' => []];
-    }
-    foreach ($subcategories as $sc) {
-        $rootnodes[] = $buildnode($sc);
-    }
-}
+// The category "nodes" to render (each subcategory, at any depth, is its own titled
+// group): filtered, with empty subtrees dropped.
+$rootnodes = \local_nit_category\catalogue::root_nodes($category, $subcategories,
+    $subid ? $targetcat : null, $filters);
 
-// Apply the price + level filters (recursively removes non-matching courses),
-// then drop empty subtrees, so counts and the header total stay correct.
-$haspricefilter = ($pricefilter !== 'all' && class_exists('\local_payments\price_resolver'));
-if ($haspricefilter || $levelfilter !== '' || $ratingfilter > 0) {
-    $wantpaid = ($pricefilter === 'paid');
-    $filternode = function (array $node) use (&$filternode, $haspricefilter, $wantpaid, $levelfilter, $ratingfilter): array {
-        $node['courses'] = array_values(array_filter($node['courses'], static function ($c) use ($haspricefilter, $wantpaid, $levelfilter, $ratingfilter) {
-            if ($haspricefilter) {
-                $paid = (bool) \local_payments\price_resolver::has_pricing((int) $c->id);
-                if ($wantpaid ? !$paid : $paid) { return false; }
-            }
-            if ($levelfilter !== '' && \local_nit_category\course_meta::get_level((int) $c->id) !== $levelfilter) {
-                return false;
-            }
-            if ($ratingfilter > 0) {
-                $agg = \local_nit_reviews\api::get_aggregate((int) $c->id);
-                if ($agg->count < 1 || $agg->avg < $ratingfilter) { return false; }
-            }
-            return true;
-        }));
-        $node['children'] = array_map($filternode, $node['children']);
-        return $node;
-    };
-    $rootnodes = array_map($filternode, $rootnodes);
-}
-
-// Drop empty subtrees and tally the visible total.
-$rootnodes = array_values(array_filter($rootnodes, static fn($n) => $counttree($n) > 0));
+// Tally the visible total.
 $totalcourses = 0;
 foreach ($rootnodes as $n) {
     $totalcourses += $counttree($n);
@@ -229,50 +144,15 @@ $description  = $istop ? '' : format_text($category->description, $category->des
 $categoryname = $istop ? $t('All courses', 'كل الدورات') : $category->get_formatted_name();
 
 // NIT: checkout modal + course offer/price support (guarded — degrade if the plugins are absent).
-$nitcheckout = class_exists('\local_payments\price_resolver')
-    && file_exists($CFG->dirroot . '/local/nit_commerce/lib.php')
-    && class_exists('\local_nit_commerce\discount_manager');
+$nitcheckout = \local_nit_category\catalogue::checkout_available();
 if ($nitcheckout) {
     require_once($CFG->dirroot . '/local/nit_commerce/lib.php');
     $PAGE->requires->js(new moodle_url('/local/nit_commerce/checkout_modal.js'), true);
 }
 // Per-course state for a card: enrolment, subscription coverage, pricing, offer.
-$nitcourseinfo = function ($courseid) use ($nitcheckout) {
+$nitcourseinfo = static function ($courseid): array {
     global $USER;
-    $out = ['enrolled' => false, 'covered' => false, 'free' => true, 'haspricing' => false,
-        'price' => 0.0, 'offerlabel' => '', 'offerfinal' => 0.0];
-    $uid = (int) ($USER->id ?? 0);
-    $ctx = context_course::instance($courseid);
-    $out['enrolled'] = $uid > 0 && is_enrolled($ctx, $uid, '', true);
-
-    if (!$nitcheckout) {
-        return $out;
-    }
-    $out['haspricing'] = (bool) \local_payments\price_resolver::has_pricing($courseid);
-    $out['free'] = !$out['haspricing'];
-
-    // Covered by an active subscription (grants access without buying). Only relevant when not
-    // already enrolled and the course is paid (a free course is just "enrol").
-    if (!$out['enrolled'] && $out['haspricing']
-            && class_exists('\local_nit_subscriptions\subscription_purchase_manager')) {
-        $out['covered'] = (bool) \local_payments\price_resolver::is_covered_by_active_subscription($courseid, $uid);
-    }
-
-    if ($out['haspricing']) {
-        try {
-            $pricing = \local_payments\price_resolver::resolve($courseid, $uid);
-            $base = (float) $pricing->price;
-            $out['price'] = $base;
-            $summary = \local_nit_commerce\discount_manager::offer_summary('course', (int) $courseid, $base);
-            if ($summary) {
-                $out['offerlabel'] = $summary['label'];   // e.g. "-40%"
-                $out['offerfinal'] = (float) $summary['final'];
-            }
-        } catch (\Throwable $e) {
-            // Leave defaults on any pricing error.
-        }
-    }
-    return $out;
+    return \local_nit_category\catalogue::course_state((int) $courseid, (int) ($USER->id ?? 0));
 };
 
 echo $OUTPUT->header();

@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_nit_ai';
-$plugin->version   = 2026090800;        // YYYYMMDDXX.
+$plugin->version   = 2026090801;        // YYYYMMDDXX.
 $plugin->requires  = 2024100700;        // Moodle 4.5 LTS baseline.
 $plugin->supported = [405, 502];        // Supported branch range: 4.5 LTS .. 5.2.
 $plugin->maturity  = MATURITY_ALPHA;

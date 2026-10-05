@@ -2,7 +2,7 @@
 /**
  * REST endpoint — returns Jitsi JWT token + room info for Flutter / mobile clients.
  *
- * GET  /mod/jitsi/api_token.php?id={cm_id}&wstoken={moodle_token}
+ * GET  /mod/jitsi/api_token.php?id={cm_id}&wstoken={moodle_token}   (or &token=)
  *
  * Response (JSON):
  * {
@@ -16,7 +16,10 @@
  * }
  *
  * Error response:
- * { "error": "message" }
+ * { "error": "message", "errorcode": "<code>" }   (HTTP 401 / 403 / 404)
+ *
+ * The token is validated by \local_academy\token_auth (expiry, IP restriction,
+ * service enabled, account state) like every other token API.
  */
 
 define('NO_MOODLE_COOKIES', true);   // stateless — authenticate via token only
@@ -28,33 +31,58 @@ header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Headers: Authorization, Content-Type');
 
-function api_error(string $msg, int $code = 400): void {
+function api_error(string $msg, int $code = 400, string $errorcode = ''): void {
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
     http_response_code($code);
-    echo json_encode(['error' => $msg]);
+    $out = ['error' => $msg];
+    if ($errorcode !== '') {
+        $out['errorcode'] = $errorcode;
+    }
+    echo json_encode($out);
     exit;
 }
 
+ob_start();
+
 // ── Authenticate via Moodle web service token ────────────────────────────
-$wstoken = required_param('wstoken', PARAM_ALPHANUM);
-$token   = $DB->get_record('external_tokens', ['token' => $wstoken]);
-if (!$token) {
-    api_error('Invalid token', 401);
+// Same validation as every token API (expiry, IP restriction, service enabled,
+// suspended / unconfirmed / deleted account). `wstoken` (original) or `token`.
+$wstoken = optional_param('wstoken', '', PARAM_ALPHANUM);
+if ($wstoken === '') {
+    $wstoken = optional_param('token', '', PARAM_ALPHANUM);
 }
-$user = $DB->get_record('user', ['id' => $token->userid, 'deleted' => 0]);
+if ($wstoken === '') {
+    api_error('Authentication required', 401, 'authrequired');
+}
+$user = \local_academy\token_auth::validate($wstoken);
 if (!$user) {
-    api_error('User not found', 401);
+    api_error('Invalid token', 401, 'invalidtoken');
 }
 \core\session\manager::set_user($user);
+if (class_exists('\local_academy\api\endpoint') && \local_academy\api\endpoint::site_locked((int) $user->id)) {
+    api_error(get_string('err_siteunavailable', 'local_academy'), 403, 'siteunavailable');
+}
 
 // ── Load activity ─────────────────────────────────────────────────────────
-$id = required_param('id', PARAM_INT);
-$cm     = get_coursemodule_from_id('jitsi', $id, 0, false, MUST_EXIST);
+$id = optional_param('id', 0, PARAM_INT);
+$cm = $id ? get_coursemodule_from_id('jitsi', $id, 0, false, IGNORE_MISSING) : false;
+if (!$cm) {
+    api_error('Jitsi activity not found', 404, 'invalidcoursemodule');
+}
 $course = $DB->get_record('course', ['id' => $cm->course], '*', MUST_EXIST);
 $jitsi  = $DB->get_record('jitsi', ['id' => $cm->instance], '*', MUST_EXIST);
 
-require_login($course, false, $cm);
+try {
+    require_login($course, false, $cm, false, true);
+} catch (\Throwable $e) {
+    api_error('You cannot access this activity', 403, 'nopermissions');
+}
 $context    = context_module::instance($cm->id);
-require_capability('mod/jitsi:view', $context);
+if (!has_capability('mod/jitsi:view', $context)) {
+    api_error('You cannot access this activity', 403, 'nopermissions');
+}
 
 $is_moderator = has_capability('mod/jitsi:moderate', $context);
 
@@ -66,14 +94,14 @@ if ($session && !$is_moderator) {
         'userid'    => $USER->id,
     ]);
     if (!$allowed) {
-        api_error('You are not enrolled in this session', 403);
+        api_error('You are not enrolled in this session', 403, 'notallowed');
     }
     $now = time();
     if ($now < $session->start_time - 1800) {
-        api_error('Session not open yet', 403);
+        api_error('Session not open yet', 403, 'sessionnotavailable');
     }
     if ($now > $session->start_time + ($session->duration * 60)) {
-        api_error('Session has ended', 403);
+        api_error('Session has ended', 403, 'sessionended');
     }
 }
 

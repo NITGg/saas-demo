@@ -51,7 +51,7 @@ class get_purchased_courses extends external_api {
         foreach ($records as $r) {
             $result[] = [
                 'courseid' => (int) $r->courseid,
-                'course_name' => $r->fullname,
+                'course_name' => format_string($r->fullname),
                 'amount' => (float) $r->amount,
                 'currency' => $r->currency,
                 'order_id' => $r->order_id,

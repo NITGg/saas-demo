@@ -110,6 +110,28 @@ final class teacher_page_test extends \advanced_testcase {
         $this->assertSame(['courses' => 3, 'years' => 2, 'students' => 2], $page['counts']);
     }
 
+    public function test_title_and_division_are_shown_in_the_page_language(): void {
+        // Bilingual values ({mlang}) reached the page raw: "Arabic teacher{mlang}{mlang en}…".
+        set_config('filterall', 1);
+        filter_set_global_state('multilang2', TEXTFILTER_ON);
+        academic_structure::save(['systems' => [['name' => 'عام',
+            'divisions' => ['ادبى', '{mlang ar}علمى علوم{mlang}{mlang en}Science{mlang}']]]]);
+        $gen = $this->getDataGenerator();
+        $course = $gen->create_course(['category' => $this->third->id]);
+        $this->set_fields($course->id, [academic_structure::COURSE_SYSTEM => 1, academic_structure::COURSE_DIVISION => 2]);
+        $teacher = $gen->create_user();
+        profile_save_custom_fields($teacher->id,
+            ['teachertitle' => '{mlang ar}أستاذ اللغة العربية{mlang}{mlang en}Arabic teacher{mlang}']);
+        $gen->enrol_user($teacher->id, $course->id, 'editingteacher');
+
+        force_current_language('en');
+        $page = teacher_page::get((int) $teacher->id);
+        $this->assertSame('Arabic teacher', $page['title']);
+        $this->assertSame('Science', $page['courses'][0]['division']);
+        $this->assertSame('الصف الثالث الثانوي - Science', $page['years'][0]['label']);
+        force_current_language('');
+    }
+
     public function test_enrolled_flag_follows_the_viewer(): void {
         $gen = $this->getDataGenerator();
         $mine = $gen->create_course(['category' => $this->third->id]);

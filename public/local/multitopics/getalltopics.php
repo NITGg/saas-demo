@@ -7,13 +7,20 @@
  *   - other_fields: reserved course-level extras (empty object)
  *   - parents[]: top-level sections with nested topics and activities
  *
- * Auth: wstoken validated against Moodle's external_tokens table.
- * Visibility: only sections/activities where uservisible = true are returned.
+ * Auth: `wstoken` (or `token`) validated by \local_academy\token_auth (401 when
+ * missing/invalid); 403 siteunavailable when the academy licence is locked.
+ * Visibility: sections where uservisible = true; activities the user can open
+ * (uservisible) plus restricted ones Moodle shows greyed-out on the course page
+ * (restricted = true + restrictioninfo, and no playable/downloadable URLs).
+ * Per activity: locked (lesson-order lock), forsale (needs buying, local_nit_finance),
+ * completed, completiontracking, watched_percent — from \local_academy\player::walk().
+ * Locked / for-sale / restricted activities never carry fileurl / otpurl / embedurl.
  */
 
 define('NO_MOODLE_COOKIES', true);
 
 require(__DIR__ . '/../../config.php');
+require_once($CFG->libdir . '/completionlib.php');
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -55,8 +62,8 @@ function mt_ws_fileurl(\moodle_url $url, string $token): string {
     return $s;
 }
 
-// ── 1. Validate wstoken ────────────────────────────────────────────────────
-$wstoken  = optional_param('wstoken',  '', PARAM_ALPHANUM);
+// ── 1. Validate the token (`wstoken`, or `token` like our other endpoints) ──
+$wstoken  = \local_academy\api\endpoint::request_token();
 $courseid = optional_param('courseid', 0,  PARAM_INT);
 
 if (!$wstoken) {
@@ -66,33 +73,19 @@ if (!$courseid) {
     api_error('invalidparameter', 'courseid is required');
 }
 
-// Full web-service token validation — not just a raw token→user lookup: enforce
-// expiry, IP restriction, the service being enabled, and the account state, so
-// an expired / IP-locked / disabled-service / suspended token cannot authenticate.
-$now = time();
-$token_record = $DB->get_record('external_tokens', ['token' => $wstoken]);
-if (!$token_record
-        || (!empty($token_record->validuntil) && $token_record->validuntil < $now)
-        || (!empty($token_record->iprestriction)
-            && !address_in_subnet(getremoteaddr(), $token_record->iprestriction))) {
+// Full web-service token validation (expiry, IP restriction, enabled service,
+// live / confirmed / non-suspended local account) — the one shared check.
+$tokenuser = \local_academy\token_auth::validate($wstoken);
+if (!$tokenuser) {
     api_error('invalidtoken', 'Invalid token', 401);
 }
-$service = $DB->get_record('external_services', ['id' => $token_record->externalserviceid]);
-if (!$service || empty($service->enabled)) {
-    api_error('invalidtoken', 'Invalid token', 401);
-}
+\core\session\manager::set_user($tokenuser);
 
-// Load user from token and enforce a live, confirmed, non-suspended local account.
-$USER = $DB->get_record('user', ['id' => $token_record->userid, 'deleted' => 0]);
-if (!$USER
-        || $USER->mnethostid != $CFG->mnet_localhost_id
-        || !empty($USER->suspended)
-        || empty($USER->confirmed)
-        || isguestuser($USER)) {
-    api_error('invalidtoken', 'Token user not found', 401);
+// Academy licence lock (suspended / expired past grace) — same rule as every
+// other mobile endpoint; site admins stay through.
+if (\local_academy\api\endpoint::site_locked((int) $USER->id)) {
+    api_error('siteunavailable', get_string('err_siteunavailable', 'local_academy'), 403);
 }
-$DB->set_field('external_tokens', 'lastaccess', $now, ['id' => $token_record->id]);
-\core\session\manager::set_user($USER);
 
 // ── 2. Load course ─────────────────────────────────────────────────────────
 $course = $DB->get_record('course', ['id' => $courseid]);
@@ -224,19 +217,55 @@ function mt_quiz_requires(cm_info $cm): array {
     return array_keys($tokens);
 }
 
+/**
+ * The learner state of one activity: lesson-order lock, for sale, completion and
+ * watched %. Lessons come from \local_academy\player::walk() (the same walk the
+ * web player uses); anything the walk skips (labels, restricted items) is never
+ * locked / for sale and gets its completion straight from completion_info.
+ *
+ * @param cm_info $cm
+ * @param array $lessons cmid => walk() lesson entry
+ * @param completion_info $completion
+ * @param int $userid
+ * @return array{locked:bool, forsale:bool, completed:bool, completiontracking:string, watched_percent:?int}
+ */
+function mt_lesson_state(cm_info $cm, array $lessons, completion_info $completion, int $userid): array {
+    $l = $lessons[(int) $cm->id] ?? null;
+    if ($l) {
+        return [
+            'locked'             => (bool) $l['locked'],
+            'forsale'            => (bool) $l['forsale'],
+            'completed'          => (bool) $l['done'],
+            'completiontracking' => !$l['tracked'] ? 'none' : ($l['manual'] ? 'manual' : 'auto'),
+            'watched_percent'    => $l['watched'] !== null ? (int) $l['watched'] : null,
+        ];
+    }
+    $mode = $completion->is_enabled($cm);
+    $done = false;
+    if ($mode != COMPLETION_TRACKING_NONE) {
+        $cdata = $completion->get_data($cm, false, $userid);
+        $done = in_array((int) $cdata->completionstate, [COMPLETION_COMPLETE, COMPLETION_COMPLETE_PASS], true);
+    }
+    return [
+        'locked'             => false,
+        'forsale'            => false,
+        'completed'          => $done,
+        'completiontracking' => $mode == COMPLETION_TRACKING_NONE ? 'none'
+            : ($mode == COMPLETION_TRACKING_MANUAL ? 'manual' : 'auto'),
+        'watched_percent'    => null,
+    ];
+}
+
 // Build activity list for each section.
 function build_activities(array $cms, object $modinfo, string $wstoken, string $wwwroot,
-                           object $DB, object $USER): array {
+                           object $DB, object $USER, array $lessons, completion_info $completion): array {
     global $CFG;
     $result = [];
     foreach ($cms as $cmid) {
         $cm = $modinfo->get_cm($cmid);
-        if (!$cm->uservisible) {
-            continue;
-        }
-        // Skip activities the user can't access yet due to access restrictions
-        // (date/group/grade/profile conditions) — restricted items are not returned.
-        if (!$cm->available) {
+        // Activities the user can open, plus restricted ones Moodle shows greyed-out
+        // on the course page ("Not available unless: …"). Fully hidden ones are skipped.
+        if (!$cm->uservisible && !$cm->is_visible_on_course_page()) {
             continue;
         }
 
@@ -273,12 +302,15 @@ function build_activities(array $cms, object $modinfo, string $wstoken, string $
             // PDF resource, so the app can show certificate-specific UI (download,
             // share, "your certificate", etc.).
             'iscertificate'   => false,
-            // Access restrictions (e.g. date/group/grade conditions) — cm is still
-            // uservisible here (fully-hidden cms were skipped above), but may be
-            // greyed-out with a "not available unless..." message.
-            'restricted'      => !$cm->available,
+            // Access restrictions (e.g. date/group/grade conditions): a restricted
+            // cm is shown greyed-out with its "not available unless..." text and
+            // cannot be opened (no file/video URLs). Staff who bypass restrictions
+            // get restricted=false but still see the restriction text.
+            'restricted'      => !$cm->uservisible,
             'restrictioninfo' => build_restriction_info($cm),
         ];
+        // Lesson-order lock, for sale, completion, watched % (player walk).
+        $act += mt_lesson_state($cm, $lessons, $completion, (int) $USER->id);
 
         // ── Resource: get file URL and type ─────────────────────────────────
         if ($cm->modname === 'resource') {
@@ -492,6 +524,23 @@ function build_activities(array $cms, object $modinfo, string $wstoken, string $
             $act['fileurl']       = $act['downloadurl'];
         }
 
+        // Something the user may not open yet (restricted, locked by lesson order,
+        // or not bought) must not carry a playable / downloadable URL.
+        if ($act['restricted'] || $act['locked'] || $act['forsale']) {
+            $act['fileurl']  = '';
+            $act['otpurl']   = '';
+            $act['embedurl'] = '';
+            if (isset($act['downloadurl'])) {
+                $act['downloadurl'] = '';
+            }
+            if (!empty($act['introattachments'])) {
+                foreach ($act['introattachments'] as &$material) {
+                    $material['fileurl'] = '';
+                }
+                unset($material);
+            }
+        }
+
         $result[] = $act;
     }
     return $result;
@@ -503,6 +552,13 @@ $topics_map  = [];   // sectionnum => topic entry (child of a parent)
 
 $wwwroot = $CFG->wwwroot;
 
+// Learner state per lesson (lock order, for sale, completion, watched %) — one walk.
+$lessons = [];
+foreach (\local_academy\player::walk($course)['lessons'] as $lesson) {
+    $lessons[$lesson['cmid']] = $lesson;
+}
+$completion = new completion_info($course);
+
 foreach ($sections as $snum => $sinfo) {
     if ($snum === 0) {
         continue; // Skip section 0 (general).
@@ -513,7 +569,7 @@ foreach ($sections as $snum => $sinfo) {
 
     $section_name = format_string($sinfo->name ?: get_section_name($course, $sinfo));
     $cms_in_sec   = $modinfo->sections[$snum] ?? [];
-    $activities   = build_activities($cms_in_sec, $modinfo, $wstoken, $wwwroot, $DB, $USER);
+    $activities   = build_activities($cms_in_sec, $modinfo, $wstoken, $wwwroot, $DB, $USER, $lessons, $completion);
 
     $parent_snum = $section_parent[$snum] ?? 0;
 

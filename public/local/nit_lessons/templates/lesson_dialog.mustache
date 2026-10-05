@@ -1,0 +1,197 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_nit_lessons/lesson_dialog
+
+    The dialog behind every live-lesson button (request, answer, reschedule, cancel…). A button
+    with data-act posts to action.php; data-need says what to ask first: none | reason |
+    reasonrequired | note | time | request. Time pickers read the JSON in the closest
+    [data-slots] (days with one-hour slots, built on the server).
+
+    Example context (json):
+    {"actionurl": "#", "sesskey": "abc", "back": "hub", "status": ""}
+}}
+<dialog class="nitlx-dialog" id="nitlx-actdialog" aria-labelledby="nitlx-acttitle">
+    <form method="post" action="{{actionurl}}" class="nitlx-dialog__body">
+        <input type="hidden" name="sesskey" value="{{sesskey}}">
+        <input type="hidden" name="back" value="{{back}}">
+        <input type="hidden" name="status" value="{{status}}">
+        <input type="hidden" name="do" value="">
+        <input type="hidden" name="value" value="">
+        <input type="hidden" name="lessonid" value="">
+        <input type="hidden" name="teacherid" value="">
+        <input type="hidden" name="time" value="">
+        <h2 class="nitlx-dialog__title" id="nitlx-acttitle"></h2>
+        <p class="nitlx-dialog__text" data-region="confirm" hidden></p>
+
+        <label class="nitfin-field" data-region="subject" hidden>
+            <span class="nitlx-label">{{#str}}field_subject, local_nit_lessons{{/str}}</span>
+            <select class="nitfin-redeem__input" name="subject"></select>
+        </label>
+
+        <div class="nitlx-slots" data-region="slots" hidden>
+            <span class="nitlx-label">{{#str}}pickday, local_nit_lessons{{/str}}</span>
+            <div class="nitlx-slots__days" data-region="days"></div>
+            <span class="nitlx-label">{{#str}}picktime, local_nit_lessons{{/str}}</span>
+            <div class="nitlx-slots__times" data-region="times"></div>
+        </div>
+
+        <label class="nitfin-field" data-region="reason" hidden>
+            <span class="nitlx-label" data-region="reasonlabel"></span>
+            <textarea class="nitfin-redeem__input nitlx-textarea" name="reason" rows="3" maxlength="1000"></textarea>
+        </label>
+        <p class="nitlx-couponmsg nitlx-couponmsg--error" data-region="error" role="alert" hidden></p>
+
+        <div class="nitlx-dialog__pay">
+            <button type="submit" class="nitfin-btn" data-region="submit">{{#str}}confirm{{/str}}</button>
+            <button type="button" class="nitlx-linkbtn" data-action="close">{{#str}}cancel{{/str}}</button>
+        </div>
+    </form>
+</dialog>
+{{#js}}
+(function() {
+    var dialog = document.getElementById('nitlx-actdialog');
+    if (!dialog || dialog.dataset.ready) {
+        return;
+    }
+    dialog.dataset.ready = '1';
+    var form = dialog.querySelector('form');
+    var str = function(key) {
+        return M.util.get_string(key, 'local_nit_lessons');
+    };
+    var region = function(name) {
+        return dialog.querySelector('[data-region="' + name + '"]');
+    };
+    var need = 'none';
+
+    var buildPicker = function(days) {
+        var daysbox = region('days');
+        var timesbox = region('times');
+        daysbox.innerHTML = '';
+        timesbox.innerHTML = '';
+        form.elements.time.value = '';
+        if (!days || !days.length) {
+            daysbox.textContent = str('noslots');
+            return;
+        }
+        var showDay = function(day, button) {
+            daysbox.querySelectorAll('.nitlx-slots__day').forEach(function(b) {
+                b.classList.toggle('is-active', b === button);
+            });
+            timesbox.innerHTML = '';
+            form.elements.time.value = '';
+            day.slots.forEach(function(slot) {
+                var t = document.createElement('button');
+                t.type = 'button';
+                t.className = 'nitlx-slots__time';
+                t.textContent = slot.l;
+                t.dir = 'ltr';
+                t.disabled = !slot.f;
+                t.addEventListener('click', function() {
+                    timesbox.querySelectorAll('.nitlx-slots__time').forEach(function(b) {
+                        b.classList.toggle('is-active', b === t);
+                    });
+                    form.elements.time.value = slot.t;
+                });
+                timesbox.appendChild(t);
+            });
+        };
+        days.forEach(function(day, i) {
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'nitlx-slots__day';
+            var dow = document.createElement('span');
+            dow.textContent = day.dow;
+            var date = document.createElement('strong');
+            date.textContent = day.day;
+            b.appendChild(dow);
+            b.appendChild(date);
+            b.addEventListener('click', function() {
+                showDay(day, b);
+            });
+            daysbox.appendChild(b);
+            if (i === 0) {
+                showDay(day, b);
+            }
+        });
+    };
+
+    var open = function(btn) {
+        need = btn.getAttribute('data-need') || 'none';
+        form.elements.do.value = btn.getAttribute('data-act');
+        form.elements.value.value = btn.getAttribute('data-value') || '';
+        form.elements.lessonid.value = btn.getAttribute('data-lesson') || '';
+        form.elements.teacherid.value = btn.getAttribute('data-teacher') || '';
+        form.elements.time.value = '';
+        form.elements.reason.value = '';
+        region('error').hidden = true;
+        document.getElementById('nitlx-acttitle').textContent = btn.getAttribute('data-title') || btn.textContent.trim();
+        var confirmtext = btn.getAttribute('data-confirm') || '';
+        region('confirm').textContent = confirmtext;
+        region('confirm').hidden = !confirmtext;
+
+        var subjects = btn.getAttribute('data-subjects');
+        region('subject').hidden = !subjects;
+        var select = form.elements.subject;
+        select.innerHTML = '';
+        if (subjects) {
+            JSON.parse(subjects).forEach(function(s) {
+                var o = document.createElement('option');
+                o.value = s.value;
+                o.textContent = s.name;
+                select.appendChild(o);
+            });
+        }
+
+        var wantstime = need === 'time' || need === 'request';
+        region('slots').hidden = !wantstime;
+        if (wantstime) {
+            var holder = btn.closest('[data-slots]');
+            buildPicker(holder ? JSON.parse(holder.getAttribute('data-slots')) : []);
+        }
+
+        var wantsreason = ['reason', 'reasonrequired', 'note', 'request'].indexOf(need) !== -1;
+        region('reason').hidden = !wantsreason;
+        form.elements.reason.required = need === 'reasonrequired' || need === 'request';
+        region('reasonlabel').textContent = str(need === 'request' ? 'field_note'
+            : (need === 'note' ? 'field_completenote' : (need === 'reasonrequired' ? 'field_reason' : 'field_reasonoptional')));
+        dialog.showModal();
+    };
+
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('[data-act]');
+        if (btn && !btn.disabled && !btn.closest('dialog')) {
+            e.preventDefault();
+            open(btn);
+        }
+    });
+    form.addEventListener('submit', function(e) {
+        if ((need === 'time' || need === 'request') && !form.elements.time.value) {
+            e.preventDefault();
+            region('error').textContent = str('picktimefirst');
+            region('error').hidden = false;
+            return;
+        }
+        setTimeout(function() {
+            region('submit').disabled = true;
+        }, 0);
+    });
+    dialog.querySelector('[data-action="close"]').addEventListener('click', function() {
+        dialog.close();
+    });
+})();
+{{/js}}

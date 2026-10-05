@@ -1,5 +1,11 @@
 # Mobile App ↔ Academy API — integration guide
 
+> **Superseded (2026-10-05):** the complete, up-to-date API reference is
+> [`MOBILE_API.md`](MOBILE_API.md). Some functions listed below never existed
+> (`local_profilefields_get_signup_form` / `signup_user` / `get_profile` / `update_profile`,
+> `local_payments_get_provider_payment_methods` / `get_refund_options` / `submit_refund`).
+> This file is kept only for the platform-side notes (nit2 billing, academy lifecycle appendix).
+
 How the mobile app talks to a single academy. Every academy is its own Moodle
 site at `https://<slug>.academy2026.nitg-eg.com`; the app is one binary that
 points at whichever academy the user opened. There is **no cross-academy API** —

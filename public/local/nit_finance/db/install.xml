@@ -5,6 +5,7 @@
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="lessonid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="source" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="cm" SEQUENCE="false" COMMENT="cm = an activity sold on its own (lessonid = cmid) | lesson = a live lesson paid with a Flex (lessonid = nit_lesson.id)"/>
         <FIELD NAME="teacherid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="studentid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="purchaseid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
@@ -26,6 +27,7 @@
       </KEYS>
       <INDEXES>
         <INDEX NAME="lesson_status_idx" UNIQUE="false" FIELDS="lessonid, status"/>
+        <INDEX NAME="source_lesson_idx" UNIQUE="false" FIELDS="source, lessonid"/>
         <INDEX NAME="teacher_status_idx" UNIQUE="false" FIELDS="teacherid, status"/>
       </INDEXES>
     </TABLE>

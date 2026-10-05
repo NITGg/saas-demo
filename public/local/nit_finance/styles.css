@@ -493,3 +493,76 @@ a.nitfin-chip:hover {
         grid-template-columns: 1fr;
     }
 }
+
+/* "My earnings" (teachers): four cards in a row, a withdrawal form, status badges. */
+.nitfin-earncards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    margin-bottom: 32px;
+}
+.nitfin-earncards .nitfin-balance {
+    min-height: 110px;
+    padding: 20px 24px;
+    background: var(--nit-brand-surface);
+    border: 1px solid var(--nit-brand-borderprimary);
+    color: var(--nit-brand-textprimary);
+}
+.nitfin-earncards .nitfin-balance--teacher {
+    background: linear-gradient(135deg, var(--nit-brand-success),
+        color-mix(in srgb, var(--nit-brand-success) 70%, var(--nit-brand-textprimary)));
+    border-color: transparent;
+    color: var(--nit-brand-onprimary);
+}
+.nitfin-earncards .nitfin-balance__amount {
+    font-size: 28px;
+}
+.nitfin-withdraw {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    align-items: end;
+}
+.nitfin-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+}
+.nitfin-field .nitfin-redeem__label {
+    font-size: 15px;
+}
+.nitfin-field--wide {
+    grid-column: 1 / -1;
+}
+.nitfin-withdraw .nitfin-btn {
+    justify-self: start;
+}
+.nitfin-badge {
+    display: inline-block;
+    padding: 2px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    background: color-mix(in srgb, var(--nit-brand-textsecondary) 14%, transparent);
+    color: var(--nit-brand-textprimary);
+}
+.nitfin-badge--pending {
+    background: color-mix(in srgb, var(--nit-brand-warning) 22%, transparent);
+}
+.nitfin-badge--approved {
+    background: color-mix(in srgb, var(--nit-brand-primary) 18%, transparent);
+}
+.nitfin-badge--paid,
+.nitfin-badge--active {
+    background: color-mix(in srgb, var(--nit-brand-success) 22%, transparent);
+}
+.nitfin-badge--rejected,
+.nitfin-badge--reversed {
+    background: color-mix(in srgb, var(--nit-brand-error) 18%, transparent);
+}
+@media (max-width: 575px) {
+    .nitfin-withdraw {
+        grid-template-columns: 1fr;
+    }
+}

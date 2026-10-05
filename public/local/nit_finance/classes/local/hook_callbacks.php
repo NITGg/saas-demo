@@ -41,5 +41,16 @@ class hook_callbacks {
             null,
             'local_nit_finance_wallet'
         );
+        // Teachers: earnings and withdrawal requests.
+        global $USER;
+        if (earnings_page::is_teacher((int) $USER->id)) {
+            $hook->get_primaryview()->add(
+                get_string('myearnings', 'local_nit_finance'),
+                new \moodle_url('/local/nit_finance/earnings.php'),
+                \navigation_node::TYPE_CUSTOM,
+                null,
+                'local_nit_finance_earnings'
+            );
+        }
     }
 }

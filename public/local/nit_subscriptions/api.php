@@ -15,28 +15,60 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * JSON API for NIT Subscriptions. Mirrors the reference api.php protocol:
- *   ?function=<name> ... → {"status":"success","data":...} | {"status":"error","error":...}
+ * JSON API for NIT Subscriptions. Two auth modes share one dispatcher:
  *
- * Auth is the logged-in session; state-changing calls require POST + sesskey. The get_available_*
- * reads are public so a home-page marketing block can render them for guests.
+ * - Session mode (the admin web UIs + checkout modal): no token. Logged-in session; state-changing
+ *   calls require POST + sesskey. get_available_subscriptions is public so a home-page marketing
+ *   block can render it for guests.
+ *     ?function=<name> ... → {"status":"success","data":...} | {"status":"error","error":...}
+ *
+ * - Token mode (the mobile app): send `token` (or `wstoken`) = a web-service token. No cookies,
+ *   no sesskey; writes still require POST. Shared mobile envelope (local_academy\api\endpoint):
+ *     → {"status":"success","data":...} | {"status":"fail","error":...,"errorcode":...}
+ *
+ * Capability checks and the licence gate apply in both modes.
  *
  * @package    local_nit_subscriptions
  * @copyright  2026 NIT
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-define('AJAX_SCRIPT', true);
-define('NO_MOODLE_COOKIES', false);
+// A token in the request switches to the cookie-less mobile mode (decided before config.php).
+$nittokenmode = (($_GET['token'] ?? '') !== '') || (($_POST['token'] ?? '') !== '')
+    || (($_GET['wstoken'] ?? '') !== '') || (($_POST['wstoken'] ?? '') !== '');
+if ($nittokenmode) {
+    define('NO_MOODLE_COOKIES', true);
+} else {
+    define('AJAX_SCRIPT', true);
+    define('NO_MOODLE_COOKIES', false);
+}
 require(__DIR__ . '/../../config.php');
 require_once($CFG->dirroot . '/local/nit_subscriptions/lib.php');
 
 use local_nit_subscriptions\subscription_manager;
 use local_nit_subscriptions\subscription_purchase_manager;
 use local_nit_subscriptions\course_purchase_manager;
+use local_academy\api\endpoint as api;
 
 $function = optional_param('function', '', PARAM_ALPHANUMEXT);
+$context = context_system::instance();
 
+// ── Token mode (mobile app) ──
+if ($nittokenmode) {
+    api::boot();
+    api::authenticate();
+    $PAGE->set_context($context);
+    nit_subscriptions_force_lang();
+    if (!local_nit_subscriptions_feature()) {
+        api::fail('featureunavailable', get_string('feature_unavailable_desc', 'local_nit_subscriptions'));
+    }
+    api::run(function (string $function) use ($context) {
+        return nit_subscriptions_dispatch($function, $context, true);
+    });
+    exit;
+}
+
+// ── Session mode (web UIs) ──
 // Public reads a guest can call for a front-page block.
 $publicfns = ['get_available_subscriptions'];
 
@@ -44,7 +76,6 @@ if (!in_array($function, $publicfns, true)) {
     require_login(null, false);
 }
 
-$context = context_system::instance();
 $PAGE->set_context($context);
 
 // Licence gate: when the tier doesn't include subscriptions, refuse every call
@@ -56,18 +87,19 @@ if (!local_nit_subscriptions_feature()) {
 }
 
 // Honour an explicit language for multilang name/description resolution.
-$alang = optional_param('alang', '', PARAM_LANG);
-if ($alang === '') {
-    $alang = optional_param('lang', '', PARAM_LANG);
-}
-if ($alang !== '') {
-    force_current_language($alang);
-}
+nit_subscriptions_force_lang();
 
 header('Content-Type: application/json; charset=utf-8');
 
+try {
+    nit_subscriptions_respond(['status' => 'success',
+        'data' => nit_subscriptions_dispatch($function, $context, false)]);
+} catch (\Throwable $e) {
+    nit_subscriptions_respond(['status' => 'error', 'error' => $e->getMessage()]);
+}
+
 /**
- * Emit a JSON envelope and stop.
+ * Emit a JSON envelope and stop (session mode).
  *
  * @param array $payload
  * @return void
@@ -77,19 +109,47 @@ function nit_subscriptions_respond(array $payload): void {
     exit;
 }
 
-try {
-    $ispost = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST';
+/**
+ * Honour an explicit language (alang, else lang) for multilang names and messages.
+ *
+ * @return void
+ */
+function nit_subscriptions_force_lang(): void {
+    $alang = optional_param('alang', '', PARAM_LANG);
+    if ($alang === '') {
+        $alang = optional_param('lang', '', PARAM_LANG);
+    }
+    if ($alang !== '') {
+        force_current_language($alang);
+    }
+}
 
-    // Writes must be POST + sesskey.
+/**
+ * Run one API function as the current user and return its data. Errors are thrown; each mode
+ * renders them in its own envelope.
+ *
+ * @param string $function
+ * @param context $context system context
+ * @param bool $tokenmode true = mobile token request (no sesskey; shared envelope)
+ * @return mixed
+ */
+function nit_subscriptions_dispatch(string $function, context $context, bool $tokenmode) {
+    global $USER, $DB, $CFG;
+
+    // Writes must be POST (+ sesskey in session mode).
     $writes = ['create_subscription', 'update_subscription', 'activate_subscription',
         'deactivate_subscription', 'delete_subscription', 'set_subscription_courses',
         'create_subscription_checkout', 'unsubscribe_user', 'revoke_course_purchase',
-        'save_reminder_settings'];
+        'save_reminder_settings', 'enrol_course'];
     if (in_array($function, $writes, true)) {
-        if (!$ispost) {
-            throw new \moodle_exception('err_postrequired', 'local_nit_subscriptions');
+        if ($tokenmode) {
+            api::require_post();
+        } else {
+            if (strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+                throw new \moodle_exception('err_postrequired', 'local_nit_subscriptions');
+            }
+            require_sesskey();
         }
-        require_sesskey();
     }
 
     // Admin-only functions.
@@ -102,14 +162,10 @@ try {
         require_capability('local/nit_subscriptions:managesubscriptions', $context);
     }
 
-    global $USER, $DB;
-
     switch ($function) {
         // ── Admin: plan catalog ──
         case 'get_subscriptions':
-            nit_subscriptions_respond(['status' => 'success',
-                'data' => array_values(subscription_manager::get_subscriptions())]);
-            break;
+            return array_values(subscription_manager::get_subscriptions());
 
         case 'create_subscription':
             $id = subscription_manager::create_subscription([
@@ -121,8 +177,7 @@ try {
                 'b2b_enabled'   => optional_param('b2b_enabled', 0, PARAM_INT),
                 'seat_options'  => nit_subscriptions_seat_options(),
             ], $USER->id);
-            nit_subscriptions_respond(['status' => 'success', 'data' => ['id' => $id]]);
-            break;
+            return ['id' => $id];
 
         case 'update_subscription':
             subscription_manager::update_subscription(required_param('id', PARAM_INT), [
@@ -134,66 +189,52 @@ try {
                 'b2b_enabled'   => optional_param('b2b_enabled', 0, PARAM_INT),
                 'seat_options'  => nit_subscriptions_seat_options(),
             ], $USER->id);
-            nit_subscriptions_respond(['status' => 'success', 'data' => []]);
-            break;
+            return [];
 
         case 'activate_subscription':
             subscription_manager::activate_subscription(required_param('id', PARAM_INT), $USER->id);
-            nit_subscriptions_respond(['status' => 'success', 'data' => []]);
-            break;
+            return [];
 
         case 'deactivate_subscription':
             subscription_manager::deactivate_subscription(required_param('id', PARAM_INT), $USER->id);
-            nit_subscriptions_respond(['status' => 'success', 'data' => []]);
-            break;
+            return [];
 
         case 'delete_subscription':
             subscription_manager::delete_subscription(required_param('id', PARAM_INT));
-            nit_subscriptions_respond(['status' => 'success', 'data' => []]);
-            break;
+            return [];
 
         // ── Admin: course access ──
         case 'get_categories_with_courses':
-            nit_subscriptions_respond(['status' => 'success',
-                'data' => subscription_manager::get_categories_with_courses()]);
-            break;
+            return subscription_manager::get_categories_with_courses();
 
         case 'set_subscription_courses':
             $courseids = json_decode(optional_param('courseids', '[]', PARAM_RAW), true);
             if (!is_array($courseids)) {
                 $courseids = [];
             }
-            $courses = subscription_manager::set_subscription_courses(
+            return subscription_manager::set_subscription_courses(
                 required_param('subscriptionid', PARAM_INT), $courseids, $USER->id);
-            nit_subscriptions_respond(['status' => 'success', 'data' => $courses]);
-            break;
 
         // ── Admin: user subscriptions ──
         case 'get_all_user_subscriptions':
-            nit_subscriptions_respond(['status' => 'success',
-                'data' => subscription_purchase_manager::get_all_user_subscriptions()]);
-            break;
+            return subscription_purchase_manager::get_all_user_subscriptions();
 
         case 'unsubscribe_user':
             subscription_purchase_manager::unsubscribe(required_param('purchaseid', PARAM_INT));
-            nit_subscriptions_respond(['status' => 'success', 'data' => []]);
-            break;
+            return [];
 
         // ── Admin: single-course purchases ("Manage courses") ──
         // List every user's paid single-course purchase (a completed local_payments transaction with
         // item_type=course), so the admin can see who bought what and revoke it.
         case 'get_all_course_purchases':
-            nit_subscriptions_respond(['status' => 'success',
-                'data' => course_purchase_manager::get_all_course_purchases()]);
-            break;
+            return course_purchase_manager::get_all_course_purchases();
 
         // "Unbuy" a course: unenrol the buyer and mark the transaction cancelled (or refunded).
         case 'revoke_course_purchase':
             course_purchase_manager::revoke_course_purchase(
                 required_param('transactionid', PARAM_INT),
                 (bool) optional_param('refund', 0, PARAM_BOOL));
-            nit_subscriptions_respond(['status' => 'success', 'data' => []]);
-            break;
+            return [];
 
         // ── Student: my active subscription (for the home-block banner + button state) ──
         case 'get_my_active_subscription':
@@ -213,8 +254,13 @@ try {
                     'price_paid'     => (float) $active->price_paid,
                 ];
             }
-            nit_subscriptions_respond(['status' => 'success', 'data' => $data]);
-            break;
+            return $data;
+
+        // ── Student: enrol into a FREE course or one covered by the active subscription ──
+        // (the logic of enrol.php; a paid, uncovered course fails with err_paymentrequired).
+        case 'enrol_course':
+            return subscription_purchase_manager::enrol_free_or_covered(
+                required_param('courseid', PARAM_INT), (int) $USER->id);
 
         // ── Admin: expiry-reminder settings (the "Renewal reminders" tab) ──
         case 'get_reminder_settings':
@@ -222,15 +268,12 @@ try {
             $settings['preview'] = \local_nit_subscriptions\reminder_manager::preview($settings['days']);
             $settings['max_days'] = \local_nit_subscriptions\reminder_manager::MAX_DAYS;
             $settings['max_entries'] = \local_nit_subscriptions\reminder_manager::MAX_ENTRIES;
-            nit_subscriptions_respond(['status' => 'success', 'data' => $settings]);
-            break;
+            return $settings;
 
         // How many people the days currently typed into the form would reach, without saving.
         case 'preview_reminder_settings':
             $days = array_filter(explode(',', optional_param('days', '', PARAM_SEQUENCE)), 'strlen');
-            nit_subscriptions_respond(['status' => 'success',
-                'data' => \local_nit_subscriptions\reminder_manager::preview($days)]);
-            break;
+            return \local_nit_subscriptions\reminder_manager::preview($days);
 
         // Saving does not just store the numbers: it re-runs the whole calculation, so anyone
         // the new window now covers is notified immediately rather than at the next cron.
@@ -239,20 +282,15 @@ try {
             $result = \local_nit_subscriptions\reminder_manager::save_settings(
                 (bool) optional_param('enabled', 0, PARAM_BOOL), $days);
             $result['preview'] = \local_nit_subscriptions\reminder_manager::preview($result['days']);
-            nit_subscriptions_respond(['status' => 'success', 'data' => $result]);
-            break;
+            return $result;
 
         // ── Student: my subscriptions (active first) for a "My subscriptions" screen ──
         case 'get_my_subscriptions':
-            nit_subscriptions_respond(['status' => 'success',
-                'data' => subscription_purchase_manager::get_my_subscriptions($USER->id)]);
-            break;
+            return subscription_purchase_manager::get_my_subscriptions($USER->id);
 
         // ── Student: my subscription payments (gateway transactions), newest first ──
         case 'get_subscription_payment_history':
-            nit_subscriptions_respond(['status' => 'success',
-                'data' => subscription_purchase_manager::get_subscription_payment_history($USER->id)]);
-            break;
+            return subscription_purchase_manager::get_subscription_payment_history($USER->id);
 
         // ── Student: start a Kashier checkout for a subscription ──
         case 'create_subscription_checkout':
@@ -265,8 +303,12 @@ try {
             if (!method_exists('\local_payments\manager', 'create_subscription_checkout')) {
                 throw new \moodle_exception('err_paymentsunavailable', 'local_nit_subscriptions');
             }
-            $checkout = \local_payments\manager::create_subscription_checkout(
-                required_param('subscriptionid', PARAM_INT),
+            $subscriptionid = required_param('subscriptionid', PARAM_INT);
+            if (!$DB->record_exists('nit_subscription', ['id' => $subscriptionid])) {
+                throw new \moodle_exception('err_subnotfound', 'local_nit_subscriptions');
+            }
+            return \local_payments\manager::create_subscription_checkout(
+                $subscriptionid,
                 $USER->id,
                 null,
                 optional_param('alang', current_language(), PARAM_LANG),
@@ -275,20 +317,16 @@ try {
                 optional_param('coupon_code', '', PARAM_TEXT),
                 optional_param('return_url', '', PARAM_RAW_TRIMMED)
             );
-            nit_subscriptions_respond(['status' => 'success', 'data' => $checkout]);
-            break;
 
         // ── Public: available plans for the home-page block ──
         case 'get_available_subscriptions':
-            nit_subscriptions_respond(['status' => 'success',
-                'data' => nit_subscriptions_available()]);
-            break;
-
-        default:
-            throw new \moodle_exception('err_unknownfunction', 'local_nit_subscriptions');
+            return nit_subscriptions_available();
     }
-} catch (\Throwable $e) {
-    nit_subscriptions_respond(['status' => 'error', 'error' => $e->getMessage()]);
+
+    if ($tokenmode) {
+        api::unknown();
+    }
+    throw new \moodle_exception('err_unknownfunction', 'local_nit_subscriptions');
 }
 
 /**

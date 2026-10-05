@@ -96,3 +96,7 @@ $string['none_exams'] = 'No exams yet';
 
 // Privacy.
 $string['privacy:metadata'] = 'The parent dashboard stores no personal data; it shows a student\'s existing data when their phone and their parent\'s phone match.';
+
+// Mobile API (api.php).
+$string['err_toomanyattempts'] = 'Too many wrong attempts. Please try again in 15 minutes.';
+$string['err_studentnotfound'] = 'These numbers do not match. Check your child\'s phone and the parent phone they registered.';

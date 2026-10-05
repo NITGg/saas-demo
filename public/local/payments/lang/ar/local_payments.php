@@ -170,3 +170,16 @@ $string['currency_other'] = 'العملة لباقي الدول';
 
 // شحن المحفظة (local_nit_finance).
 $string['topup_badamount'] = 'مبلغ الشحن لازم يكون بين {$a->min} و {$a->max} ج.م.';
+
+// واجهة الإدارة للتطبيق (api.php).
+$string['err_coursenotfound']      = 'الكورس غير موجود.';
+$string['err_pricenotfound']       = 'قاعدة التسعير غير موجودة.';
+$string['err_invalidcountry']      = 'رمز الدولة غير معروف. استخدم رمزاً من حرفين، أو * للسعر الافتراضي.';
+$string['err_invalidcurrency']     = 'هذه العملة غير مدعومة.';
+$string['err_pricepositive']       = 'يجب أن يكون السعر أكبر من صفر.';
+$string['err_onedefault']          = 'مسموح بسعر افتراضي واحد فقط لكل كورس.';
+$string['err_oneactivepercountry'] = 'توجد قاعدة تسعير مفعّلة لهذه الدولة بالفعل. ألغِ تفعيلها أولاً أو عدّلها.';
+$string['err_invalidstatus']       = 'حالة المعاملة غير معروفة.';
+$string['err_providernotfound']    = 'مزوّد الدفع غير موجود.';
+$string['err_invalidpriority']     = 'لا يمكن أن تكون الأولوية سالبة.';
+$string['err_nothingtochange']     = 'أرسل enabled و/أو priority للتعديل.';

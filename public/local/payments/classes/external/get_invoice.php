@@ -37,7 +37,10 @@ class get_invoice extends external_api {
             force_current_language($wslang);
         }
 
-        $txn = $DB->get_record('local_payments_transactions', ['id' => $params['transaction_id']], '*', MUST_EXIST);
+        $txn = $DB->get_record('local_payments_transactions', ['id' => $params['transaction_id']]);
+        if (!$txn) {
+            throw new \moodle_exception('transactionnotfound', 'local_payments');
+        }
 
         // Users can only see their own invoices unless they have viewalltransactions.
         if ($txn->userid != $USER->id) {
@@ -54,7 +57,7 @@ class get_invoice extends external_api {
             'currency' => $txn->currency,
             'status' => $invoice ? $invoice->status : '',
             'order_id' => $txn->order_id,
-            'course_name' => $course->fullname ?? '',
+            'course_name' => !empty($course->fullname) ? format_string($course->fullname) : '',
             'payment_date' => (int) $txn->timecreated,
             'invoice_date' => $invoice ? (int) $invoice->timecreated : 0,
         ];

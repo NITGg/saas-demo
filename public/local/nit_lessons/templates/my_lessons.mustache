@@ -1,0 +1,54 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_nit_lessons/my_lessons
+
+    "My live lessons" for teachers (local/nit_lessons/my_lessons.php).
+
+    Example context (json):
+    {
+        "sesskey": "abc", "actionurl": "#", "back": "teacher", "status": "",
+        "filter": [{"value": "", "label": "All", "selected": true}],
+        "haslessons": false, "lessons": [], "notbookable": true, "available": false,
+        "profileurl": "#", "earningsurl": "#"
+    }
+}}
+<div class="nitfin nitlx nit-brand-18" id="nitlx-mylessons">
+    <div class="nitfin__wrap">
+        <div class="nitlx-titlebar">
+            <h1 class="nitfin__title">{{#str}}mylessons, local_nit_lessons{{/str}}</h1>
+            <div class="nitlx-titlebar__links">
+                <a class="nitfin-btn nitfin-btn--small nitfin-btn--outline" href="{{profileurl}}">{{#str}}teacherprofile, local_nit_lessons{{/str}}</a>
+                <a class="nitfin-btn nitfin-btn--small" href="{{earningsurl}}">{{#str}}myearnings, local_nit_finance{{/str}}</a>
+            </div>
+        </div>
+        {{#notbookable}}
+        <p class="nitfin-note nitlx-note">{{#str}}notbookable, local_nit_lessons{{/str}}
+            <a href="{{profileurl}}">{{#str}}teacherprofile, local_nit_lessons{{/str}}</a></p>
+        {{/notbookable}}
+
+        <form class="nitlx-toolbar" method="get" action="">
+            <label class="visually-hidden" for="nitlx-status">{{#str}}status{{/str}}</label>
+            <select class="nitfin-redeem__input" id="nitlx-status" name="status" onchange="this.form.submit()">
+                {{#filter}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/filter}}
+            </select>
+        </form>
+        {{#haslessons}}<div class="nitlx-lessons">{{#lessons}}{{> local_nit_lessons/lesson_card}}{{/lessons}}</div>{{/haslessons}}
+        {{^haslessons}}<p class="nitfin-empty">{{#str}}nolessons_teacher, local_nit_lessons{{/str}}</p>{{/haslessons}}
+    </div>
+    {{> local_nit_lessons/lesson_dialog}}
+</div>

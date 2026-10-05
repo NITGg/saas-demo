@@ -50,7 +50,9 @@ if ($kashier_status === 'FAILED') {
         'retry_url'    => !$transaction ? (new moodle_url('/'))->out(false)
             : ((($failedmeta->item_type ?? '') === 'wallet_topup')
                 ? (new moodle_url('/local/nit_finance/wallet.php'))->out(false)
-                : (new moodle_url('/local/payments/buy.php', ['courseid' => $transaction->courseid]))->out(false)),
+                : ((($failedmeta->item_type ?? '') === 'package')
+                    ? (new moodle_url('/local/nit_flex/packages.php'))->out(false)
+                    : (new moodle_url('/local/payments/buy.php', ['courseid' => $transaction->courseid]))->out(false))),
         'history_url'  => (new moodle_url('/local/payments/history.php'))->out(false),
     ];
     echo $OUTPUT->render_from_template('local_payments/payment_failure', $templatedata);
@@ -80,7 +82,12 @@ try {
                 get_string('toppedup', 'local_nit_finance', \local_nit_finance\local\money::format((int) round($paidtx->amount * 100))),
                 null, \core\output\notification::NOTIFY_SUCCESS);
         }
-        if ($item_type === 'package' || $item_type === 'subscription') {
+        if ($item_type === 'package') {
+            // Lesson package: back to "My lessons & Flex", where the new Flex balance shows.
+            redirect(new moodle_url('/local/nit_lessons/student.php', ['tab' => 'packages']),
+                get_string('payment_success', 'local_payments'), null, \core\output\notification::NOTIFY_SUCCESS);
+        }
+        if ($item_type === 'subscription') {
             redirect(
                 new moodle_url('/'),
                 get_string('payment_success', 'local_payments'),

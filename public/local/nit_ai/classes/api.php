@@ -317,24 +317,55 @@ class api {
      * @return bool
      */
     public static function is_available(object $cm, \context $context, string $currentsourceref = ''): bool {
+        return self::availability($cm, $context, $currentsourceref)['available'];
+    }
+
+    /**
+     * The same gates as is_available(), in the same order, but saying which one
+     * failed — so a client (the mobile app) can tell "no AI here" apart from
+     * "not set up yet" without guessing.
+     *
+     * Reasons: '' (available), nopermission, notentitled, notranscript, disabled,
+     * notapproved, stale, placementdisabled, noprovider, disabledincontext.
+     *
+     * @param \cm_info|\stdClass $cm
+     * @param \context $context
+     * @param string $currentsourceref
+     * @return array{available: bool, reason: string}
+     */
+    public static function availability(object $cm, \context $context, string $currentsourceref = ''): array {
+        $no = static fn(string $reason): array => ['available' => false, 'reason' => $reason];
+
         if (!has_capability('local/nit_ai:use', $context)) {
-            return false;
+            return $no('nopermission');
         }
         if (!self::is_entitled($context)) {
-            return false;
+            return $no('notentitled');
         }
 
         $record = self::get((int) $cm->id);
-        if (!$record || !$record->enabled || !$record->approved) {
-            return false;
+        if (!$record) {
+            return $no('notranscript');
+        }
+        if (!$record->enabled) {
+            return $no('disabled');
+        }
+        if (!$record->approved) {
+            return $no('notapproved');
         }
         if (self::is_stale($record, $currentsourceref)) {
-            return false;
+            return $no('stale');
         }
-
-        return self::placement_enabled()
-            && self::provider_ready()
-            && self::allowed_in_context($context);
+        if (!self::placement_enabled()) {
+            return $no('placementdisabled');
+        }
+        if (!self::provider_ready()) {
+            return $no('noprovider');
+        }
+        if (!self::allowed_in_context($context)) {
+            return $no('disabledincontext');
+        }
+        return ['available' => true, 'reason' => ''];
     }
 
     /**

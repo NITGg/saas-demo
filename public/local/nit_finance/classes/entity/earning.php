@@ -38,6 +38,12 @@ class earning extends entity {
     /** Reversed earning: no longer counts. */
     const STATUS_REVERSED = 'reversed';
 
+    /** An activity sold on its own (lessonid is the cmid). */
+    const SOURCE_CM = 'cm';
+
+    /** A live lesson paid with a Flex (lessonid is nit_lesson.id). */
+    const SOURCE_LESSON = 'lesson';
+
     /**
      * Property definitions.
      *
@@ -46,6 +52,7 @@ class earning extends entity {
     protected static function define_properties() {
         return [
             'lessonid'              => ['type' => PARAM_INT],
+            'source'                => ['type' => PARAM_ALPHA, 'default' => self::SOURCE_CM],
             'teacherid'             => ['type' => PARAM_INT],
             'studentid'             => ['type' => PARAM_INT, 'default' => 0],
             'purchaseid'            => ['type' => PARAM_INT, 'default' => 0],

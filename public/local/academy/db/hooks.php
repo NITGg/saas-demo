@@ -22,4 +22,9 @@ $callbacks = [
         'hook' => \core\hook\output\before_footer_html_generation::class,
         'callback' => [\local_academy\local\linked_selects::class, 'before_footer'],
     ],
+    [
+        // course/view.php → the course details page for learners and visitors.
+        'hook' => \core\hook\after_config::class,
+        'callback' => [\local_academy\local\course_route::class, 'after_config'],
+    ],
 ];

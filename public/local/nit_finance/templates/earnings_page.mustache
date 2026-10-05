@@ -1,0 +1,137 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_nit_finance/earnings_page
+
+    "My earnings" for teachers (local/nit_finance/earnings.php). Colours from Brand
+    Colors → Bassthalk (.nit-brand-18); styles in local/nit_finance/styles.css.
+
+    Example context (json):
+    {
+        "cards": [{"label": "Available balance", "amount": "120 EGP", "main": true, "negative": false}],
+        "action": "#", "sesskey": "abc", "canwithdraw": true, "available": "120",
+        "methods": [{"value": "bank", "label": "Bank transfer"}],
+        "haswithdrawals": true,
+        "withdrawals": [{"date": "4/10/26", "amount": "50 EGP", "method": "Bank transfer", "status": "pending",
+            "statuslabel": "Pending", "note": ""}],
+        "hasearnings": true,
+        "earnings": [{"date": "4/10/26", "item": "Live lesson #3 · Physics", "student": "Ali", "value": "100 EGP",
+            "share": "40 EGP (40%)", "status": "active", "statuslabel": "Counted"}]
+    }
+}}
+<div class="nitfin nit-brand-18">
+    <div class="nitfin__wrap">
+        <h1 class="nitfin__title">{{#str}}myearnings, local_nit_finance{{/str}}</h1>
+
+        <div class="nitfin-balances nitfin-earncards">
+            {{#cards}}
+            <div class="nitfin-balance{{#main}} nitfin-balance--teacher{{/main}}{{#negative}} nitfin-balance--negative{{/negative}}">
+                <span class="nitfin-balance__label">{{label}}</span>
+                <span class="nitfin-balance__amount" dir="ltr">{{amount}}</span>
+            </div>
+            {{/cards}}
+        </div>
+
+        <section class="nitfin-section nitfin-card">
+            <h2 class="nitfin-section__title">{{#str}}earn_request, local_nit_finance{{/str}}</h2>
+            {{^canwithdraw}}<p class="nitfin-empty">{{#str}}earn_nothingtowithdraw, local_nit_finance{{/str}}</p>{{/canwithdraw}}
+            {{#canwithdraw}}
+            <form class="nitfin-withdraw" method="post" action="{{action}}">
+                <input type="hidden" name="sesskey" value="{{sesskey}}">
+                <input type="hidden" name="action" value="withdraw">
+                <label class="nitfin-field">
+                    <span class="nitfin-redeem__label">{{#str}}earn_amount, local_nit_finance{{/str}}</span>
+                    <input class="nitfin-redeem__input" name="amount" type="number" inputmode="decimal" min="1"
+                           step="0.01" max="{{available}}" value="{{available}}" dir="ltr" required>
+                </label>
+                <label class="nitfin-field">
+                    <span class="nitfin-redeem__label">{{#str}}earn_method, local_nit_finance{{/str}}</span>
+                    <select class="nitfin-redeem__input" name="method">
+                        {{#methods}}<option value="{{value}}">{{label}}</option>{{/methods}}
+                    </select>
+                </label>
+                <label class="nitfin-field nitfin-field--wide">
+                    <span class="nitfin-redeem__label">{{#str}}earn_account, local_nit_finance{{/str}}</span>
+                    <input class="nitfin-redeem__input" name="account" type="text" maxlength="255" required
+                           placeholder="{{#str}}earn_account_ph, local_nit_finance{{/str}}">
+                </label>
+                <button type="submit" class="nitfin-btn">{{#str}}earn_send, local_nit_finance{{/str}}</button>
+            </form>
+            {{/canwithdraw}}
+        </section>
+
+        <section class="nitfin-section">
+            <h2 class="nitfin-section__title">{{#str}}earn_withdrawals, local_nit_finance{{/str}}</h2>
+            {{#haswithdrawals}}
+            <div class="nitfin-tablewrap">
+                <table class="nitfin-table">
+                    <thead><tr>
+                        <th>{{#str}}date, local_nit_finance{{/str}}</th>
+                        <th class="nitfin-num">{{#str}}amount, local_nit_finance{{/str}}</th>
+                        <th>{{#str}}method, local_nit_finance{{/str}}</th>
+                        <th>{{#str}}status, local_nit_finance{{/str}}</th>
+                        <th>{{#str}}note, local_nit_finance{{/str}}</th>
+                    </tr></thead>
+                    <tbody>
+                        {{#withdrawals}}
+                        <tr>
+                            <td class="nitfin-nowrap">{{date}}</td>
+                            <td class="nitfin-num" dir="ltr">{{amount}}</td>
+                            <td>{{method}}</td>
+                            <td><span class="nitfin-badge nitfin-badge--{{status}}">{{statuslabel}}</span></td>
+                            <td>{{note}}</td>
+                        </tr>
+                        {{/withdrawals}}
+                    </tbody>
+                </table>
+            </div>
+            {{/haswithdrawals}}
+            {{^haswithdrawals}}<p class="nitfin-empty">{{#str}}earn_nowithdrawals, local_nit_finance{{/str}}</p>{{/haswithdrawals}}
+        </section>
+
+        <section class="nitfin-section">
+            <h2 class="nitfin-section__title">{{#str}}earn_list, local_nit_finance{{/str}}</h2>
+            {{#hasearnings}}
+            <div class="nitfin-tablewrap">
+                <table class="nitfin-table">
+                    <thead><tr>
+                        <th>{{#str}}date, local_nit_finance{{/str}}</th>
+                        <th>{{#str}}item, local_nit_finance{{/str}}</th>
+                        <th>{{#str}}earn_student, local_nit_finance{{/str}}</th>
+                        <th class="nitfin-num">{{#str}}earn_value, local_nit_finance{{/str}}</th>
+                        <th class="nitfin-num">{{#str}}earn_share, local_nit_finance{{/str}}</th>
+                        <th>{{#str}}status, local_nit_finance{{/str}}</th>
+                    </tr></thead>
+                    <tbody>
+                        {{#earnings}}
+                        <tr>
+                            <td class="nitfin-nowrap">{{date}}</td>
+                            <td>{{item}}</td>
+                            <td>{{student}}</td>
+                            <td class="nitfin-num" dir="ltr">{{value}}</td>
+                            <td class="nitfin-num" dir="ltr">{{share}}</td>
+                            <td><span class="nitfin-badge nitfin-badge--{{status}}">{{statuslabel}}</span></td>
+                        </tr>
+                        {{/earnings}}
+                    </tbody>
+                </table>
+            </div>
+            {{/hasearnings}}
+            {{^hasearnings}}<p class="nitfin-empty">{{#str}}earn_none, local_nit_finance{{/str}}</p>{{/hasearnings}}
+        </section>
+    </div>
+</div>

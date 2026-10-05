@@ -1,0 +1,59 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_nit_lessons/lesson_card
+
+    One live lesson with its action buttons (see local_nit_lessons/lesson_dialog).
+
+    Example context (json):
+    {
+        "id": 3, "subject": "Physics", "with": "With Mr Ali", "when": "Monday, 5 October 2026, 5:00 PM",
+        "confirmed": true, "status": "confirmed", "statuslabel": "Confirmed", "note": "Chapter 2",
+        "rejectreason": "", "cancelreason": "", "flex": "Flex booked", "suggested": "", "reschedule": "",
+        "hasactions": true, "joinurl": "",
+        "actions": [{"do": "start", "value": "", "label": "Start", "need": "none", "style": "primary", "confirm": ""}]
+    }
+}}
+<article class="nitlx-lesson nitlx-lesson--{{status}}" {{#slots}}data-slots="{{slots}}"{{/slots}}>
+    <header class="nitlx-lesson__head">
+        <div>
+            <h3 class="nitlx-lesson__subject">{{subject}}</h3>
+            <p class="nitlx-lesson__with">{{with}}</p>
+        </div>
+        <span class="nitlx-badge nitlx-badge--{{status}}">{{statuslabel}}</span>
+    </header>
+    <ul class="nitlx-lesson__facts">
+        <li>{{#pix}}i/calendar, core{{/pix}}
+            {{#confirmed}}{{#str}}lesson_at, local_nit_lessons{{/str}} {{when}}{{/confirmed}}
+            {{^confirmed}}{{#str}}lesson_requestedfor, local_nit_lessons{{/str}} {{when}}{{/confirmed}}</li>
+        {{#flex}}<li>{{#pix}}i/star, core{{/pix}}{{flex}}</li>{{/flex}}
+        {{#note}}<li>{{#pix}}i/edit, core{{/pix}}{{note}}</li>{{/note}}
+        {{#rejectreason}}<li class="nitlx-lesson__reason"><strong>{{#str}}rejectreason, local_nit_lessons{{/str}}</strong> {{rejectreason}}</li>{{/rejectreason}}
+        {{#cancelreason}}<li class="nitlx-lesson__reason"><strong>{{#str}}cancelreason, local_nit_lessons{{/str}}</strong> {{cancelreason}}</li>{{/cancelreason}}
+    </ul>
+    {{#suggested}}<p class="nitlx-lesson__notice">{{suggested}}</p>{{/suggested}}
+    {{#reschedule}}<p class="nitlx-lesson__notice">{{reschedule}}</p>{{/reschedule}}
+    {{#hasactions}}
+    <div class="nitlx-lesson__actions">
+        {{#joinurl}}<a class="nitfin-btn nitfin-btn--small nitlx-join" href="{{joinurl}}" target="_blank" rel="noopener">{{#str}}act_join, local_nit_lessons{{/str}}</a>{{/joinurl}}
+        {{#actions}}
+        <button type="button" class="nitlx-actbtn nitlx-actbtn--{{style}}" data-act="{{do}}" data-value="{{value}}"
+                data-need="{{need}}" data-lesson="{{id}}" data-confirm="{{confirm}}" data-title="{{label}}">{{label}}</button>
+        {{/actions}}
+    </div>
+    {{/hasactions}}
+</article>

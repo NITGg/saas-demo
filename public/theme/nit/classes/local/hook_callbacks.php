@@ -100,28 +100,9 @@ class hook_callbacks {
             return;
         }
 
-        // Course view for ENROLLED learners → the player, at their resume lesson
-        // (first not-yet-completed lesson of ANY type — video lessons open their
-        // module page, everything else the generic player frame). Prospects fall
-        // through to the T1 course detail (format renderer) and edit mode / staff
-        // keep the real Moodle course for management. An enrolled learner in a
-        // course with no lesson yet sees the detail page in the full-width layout
-        // (no course-index drawer).
-        if (strpos($pt, 'course-view') === 0
-                && $PAGE->course !== null && !empty($PAGE->course->id) && (int) $PAGE->course->id !== SITEID
-                && !(method_exists($PAGE, 'user_is_editing') && $PAGE->user_is_editing())
-                && optional_param('section', null, PARAM_INT) === null
-                && optional_param('sectionid', null, PARAM_INT) === null
-                && isloggedin() && !isguestuser()) {
-            $ctx = \context_course::instance($PAGE->course->id);
-            if (!has_capability('moodle/course:update', $ctx) && !is_siteadmin()) {
-                $url = self::resume_lesson_url($PAGE->course);
-                if ($url !== '') {
-                    redirect($url);
-                }
-                $PAGE->set_pagelayout('nit_fullwidth');
-            }
-        }
+        // Learners and visitors never reach course/view.php: local_academy sends them
+        // to the course details page (local/academy/course.php, as on bassthalk.com),
+        // whose button resumes their lesson in the player.
 
         // Route a user's OWN profile to the T1 "Profile & settings" page. Viewing
         // someone else's profile (an admin/teacher) is left on the core page.
@@ -149,35 +130,6 @@ class hook_callbacks {
         $SESSION->theme_nit_appembed = 1;
 
         $PAGE->set_pagelayout('embedded');
-    }
-
-    /**
-     * The player URL an enrolled learner should land on for a course, or '' when
-     * the course view must stay as it is.
-     *
-     * '' for: staff (anyone who may update the course keeps the real Moodle
-     * course), users without content access (prospects → detail landing via the
-     * format renderer), and courses with no video lesson. Otherwise the first
-     * video lesson the user has not yet completed (their "resume" point), falling
-     * back to the first video lesson.
-     *
-     * @param \stdClass $course
-     * @return string
-     */
-    private static function resume_lesson_url(\stdClass $course): string {
-        global $USER;
-        $ctx = \context_course::instance($course->id);
-        if (has_capability('moodle/course:update', $ctx) || is_siteadmin()) {
-            return '';
-        }
-        if (!is_enrolled($ctx, $USER, '', true) && !has_capability('moodle/course:view', $ctx)) {
-            return '';
-        }
-        if (!class_exists('\local_academy\player')) {
-            return '';
-        }
-        $cm = \local_academy\player::resume_cm($course);
-        return $cm ? \local_academy\player::url_for($cm) : '';
     }
 
     /**

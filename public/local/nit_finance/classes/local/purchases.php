@@ -140,6 +140,7 @@ final class purchases {
             // The teacher's earning, as the withdrawal flow counts it.
             $DB->insert_record('nit_earning', (object) [
                 'lessonid' => $item->type === catalog::CM ? $item->id : 0,
+                'source' => 'cm',
                 'teacherid' => $teacherid,
                 'studentid' => $userid,
                 'purchaseid' => $purchase->id,

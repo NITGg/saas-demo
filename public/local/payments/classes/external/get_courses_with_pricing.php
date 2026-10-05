@@ -81,7 +81,7 @@ class get_courses_with_pricing extends external_api {
         foreach ($core_result['courses'] as $course_data) {
             $courseid = (int) $course_data['id'];
 
-            if ($courseid === SITEID) {
+            if ($courseid === (int) SITEID) {
                 continue;
             }
 

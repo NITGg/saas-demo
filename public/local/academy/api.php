@@ -1,244 +1,224 @@
 <?php
 /**
- * Academy token-authenticated JSON API (quiz slice).
+ * Academy token-authenticated JSON API for the mobile app.
  *
- * Protocol (unchanged from the old academy):
  *   GET|POST /local/academy/api.php?function=<name>&token=<wstoken>&...
- *   → {"status":"success","data":...} | {"status":"fail","error":"..."}
+ *   → {"status":"success","data":...}
+ *   → {"status":"fail","error":"<readable>","errorcode":"<code>"}
  *
- * The token is validated against Moodle's external_tokens table and $USER is set
- * to the token's owner; state-changing calls require POST.
+ * HTTP 401 = missing/dead token (log the user out), 403 = academy suspended or
+ * expired. State-changing calls require POST. Optional `lang=ar|en` picks the
+ * language of names and messages. See docs/MOBILE_API.md.
  */
 
 define('NO_MOODLE_COOKIES', true);
 require(__DIR__ . '/../../config.php');
 
-header('Content-Type: application/json; charset=utf-8');
-ob_start();
+use local_academy\api\endpoint as api;
 
-/**
- * Emit a JSON envelope and stop, dropping any stray output first.
- */
-function academy_respond($payload) {
-    while (ob_get_level() > 0) {
-        ob_end_clean();
-    }
-    echo json_encode($payload);
-    exit;
-}
-
-/**
- * Reject non-POST requests for state-changing calls.
- */
-function academy_require_post() {
-    if (strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
-        academy_respond(['status' => 'fail', 'error' => get_string('err_postrequired', 'local_academy')]);
-    }
-}
-
-$function = optional_param('function', '', PARAM_ALPHANUMEXT);
-$token    = optional_param('token', '', PARAM_ALPHANUM);
-
-// ── Authenticate via web-service token (sets $USER to the token's user) ──
-if (empty($token)) {
-    academy_respond(['status' => 'fail', 'error' => get_string('err_authrequired', 'local_academy')]);
-}
-// Full web-service token validation (expiry, IP restriction, service enabled,
-// account state) — not just a raw token→user lookup.
-$USER = \local_academy\token_auth::validate($token);
-if (!$USER) {
-    academy_respond(['status' => 'fail', 'error' => get_string('err_invalidtoken', 'local_academy')]);
-}
-\core\session\manager::set_user($USER);
+api::boot();
+$USER = api::authenticate();
 $userid = (int) $USER->id;
+$token = api::token();
+if (($lang = optional_param('lang', '', PARAM_LANG)) !== '') {
+    force_current_language($lang);
+}
 
 // The quiz + teacher managers append this token to returned file/image URLs so
 // clients can load them directly (webservice/pluginfile.php + token).
 \local_academy\quiz_manager::set_token($token);
 \local_academy\teacher_manager::set_token($token);
 
-try {
+api::run(function (string $function) use ($USER, $userid, $token, $DB) {
+    $isadmin = has_capability('local/academy:manageplatform', context_system::instance());
+
     switch ($function) {
         // ── Quiz API ──────────────────────────────────────────────────────────────
 
         // List quizzes. Students only see their enrolled courses; admins see all.
         case 'get_quizzes':
             $courseid = optional_param('courseid', 0, PARAM_INT);
-            $is_admin = has_capability('local/academy:manageplatform', context_system::instance());
-            academy_respond(['status' => 'success', 'data' => \local_academy\quiz_manager::get_quizzes($userid, $is_admin, $courseid)]);
-            break;
+            return \local_academy\quiz_manager::get_quizzes($userid, $isadmin, $courseid);
 
         // Get a quiz with structured questions. Correct answers shown to admin only.
         case 'get_quiz':
-            $cmid     = required_param('cmid', PARAM_INT);
-            $is_admin = has_capability('local/academy:manageplatform', context_system::instance());
-            academy_respond(['status' => 'success', 'data' => \local_academy\quiz_manager::get_quiz($cmid, $userid, $is_admin, $is_admin)]);
-            break;
+            $cmid = required_param('cmid', PARAM_INT);
+            return \local_academy\quiz_manager::get_quiz($cmid, $userid, $isadmin, $isadmin);
 
-        // Start a new attempt (any authenticated user, acts as themselves).
+        // Start a new attempt (acts as the token's user).
         case 'start_quiz_attempt':
-            academy_require_post();
-            $quizid = required_param('quizid', PARAM_INT);
-            academy_respond(['status' => 'success', 'data' => \local_academy\quiz_manager::start_attempt($quizid, $userid)]);
-            break;
+            api::require_post();
+            return \local_academy\quiz_manager::start_attempt(required_param('quizid', PARAM_INT), $userid);
 
         // Submit answers and finish an attempt (one-shot: grade all + close).
         case 'submit_quiz_attempt':
-            academy_require_post();
+            api::require_post();
             $attemptid = required_param('attemptid', PARAM_INT);
-            $raw       = required_param('answers', PARAM_RAW);
-            $answers   = json_decode($raw, true);
-            if (!is_array($answers)) {
-                academy_respond(['status' => 'fail', 'error' => 'answers must be a JSON array']);
-            }
-            academy_respond(['status' => 'success', 'data' => \local_academy\quiz_manager::submit_attempt($attemptid, $userid, $answers)]);
-            break;
+            $answers = api::json_param('answers');
+            return \local_academy\quiz_manager::submit_attempt($attemptid, $userid, $answers);
 
         // Save the answer to ONE question without finishing the attempt.
         case 'save_quiz_answer':
-            academy_require_post();
+            api::require_post();
             $attemptid  = required_param('attemptid', PARAM_INT);
             $questionid = required_param('questionid', PARAM_INT);
             $raw        = required_param('answer', PARAM_RAW);
             // Accept either a JSON value ("3" or "[3,5]") or a bare scalar (3).
             $answer = json_decode($raw, true);
             if ($answer === null && trim($raw) !== 'null') {
-                $answer = is_numeric($raw) ? (int)$raw : $raw;
+                $answer = is_numeric($raw) ? (int) $raw : $raw;
             }
-            academy_respond(['status' => 'success', 'data' => \local_academy\quiz_manager::save_answer($attemptid, $userid, $questionid, $answer)]);
-            break;
+            return \local_academy\quiz_manager::save_answer($attemptid, $userid, $questionid, $answer);
 
         // Submit all saved answers and finish the attempt.
         case 'finish_quiz_attempt':
-            academy_require_post();
-            $attemptid = required_param('attemptid', PARAM_INT);
-            academy_respond(['status' => 'success', 'data' => \local_academy\quiz_manager::finish_attempt($attemptid, $userid)]);
-            break;
+            api::require_post();
+            return \local_academy\quiz_manager::finish_attempt(required_param('attemptid', PARAM_INT), $userid);
 
         // Review a finished attempt. Correct answers shown to admin only.
         case 'get_quiz_attempt':
-            $attemptid = required_param('attemptid', PARAM_INT);
-            $is_admin  = has_capability('local/academy:manageplatform', context_system::instance());
-            academy_respond(['status' => 'success', 'data' => \local_academy\quiz_manager::get_attempt($attemptid, $userid, $is_admin)]);
-            break;
+            return \local_academy\quiz_manager::get_attempt(required_param('attemptid', PARAM_INT), $userid, $isadmin);
 
-        // List the current user's attempts on a quiz.
+        // The current user's attempts on a quiz.
         case 'get_my_quiz_attempts':
-            $quizid = required_param('quizid', PARAM_INT);
-            academy_respond(['status' => 'success', 'data' => \local_academy\quiz_manager::get_my_attempts($quizid, $userid)]);
-            break;
+            return \local_academy\quiz_manager::get_my_attempts(required_param('quizid', PARAM_INT), $userid);
 
         // ── Password reset (OTP) + change password ──────────────────────────────────
-        // Forgot-password endpoints are pre-login: call them with the shared
-        // Registration API token. change_password is post-login: call it with the
-        // user's own token.
+        // Forgot-password calls are pre-login: send the shared registration token
+        // (getsettings.php → admin_token). change_password uses the user's own token.
 
-        // Step 1: email a 6-digit OTP. Always returns generic success.
+        // Step 1: email a 6-digit OTP. Always answers generic success.
         case 'request_password_otp':
-            academy_require_post();
-            $email = required_param('email', PARAM_RAW_TRIMMED);
-            try {
-                $data = \local_academy\password_reset_manager::request_otp($email);
-            } catch (\moodle_exception $e) {
-                academy_respond(['status' => 'fail', 'error' => $e->getMessage()]);
-            }
-            academy_respond(['status' => 'success', 'data' => $data]);
-            break;
+            api::require_post();
+            return \local_academy\password_reset_manager::request_otp(required_param('email', PARAM_RAW_TRIMMED));
 
-        // Step 2: verify the OTP -> returns a single-use reset token.
+        // Step 2: verify the OTP → a single-use reset token.
         case 'verify_password_otp':
-            academy_require_post();
-            $email = required_param('email', PARAM_RAW_TRIMMED);
-            $otp   = required_param('otp', PARAM_ALPHANUM);
-            try {
-                $data = \local_academy\password_reset_manager::verify_otp($email, $otp);
-            } catch (\moodle_exception $e) {
-                academy_respond(['status' => 'fail', 'error' => $e->getMessage()]);
-            }
-            academy_respond(['status' => 'success', 'data' => $data]);
-            break;
+            api::require_post();
+            return \local_academy\password_reset_manager::verify_otp(
+                required_param('email', PARAM_RAW_TRIMMED), required_param('otp', PARAM_ALPHANUM));
 
         // Step 3: set the new password using the verified reset token.
         case 'reset_password':
-            academy_require_post();
-            $resettoken  = required_param('resettoken', PARAM_ALPHANUM);
-            $newpassword = required_param('newpassword', PARAM_RAW);
-            try {
-                $data = \local_academy\password_reset_manager::reset_password($resettoken, $newpassword);
-            } catch (\moodle_exception $e) {
-                academy_respond(['status' => 'fail', 'error' => $e->getMessage()]);
-            }
-            academy_respond(['status' => 'success', 'data' => $data]);
-            break;
+            api::require_post();
+            return \local_academy\password_reset_manager::reset_password(
+                required_param('resettoken', PARAM_ALPHANUM), required_param('newpassword', PARAM_RAW));
 
-        // Logged-in user changes their own password (needs the current one).
+        // Signed-in user changes their own password (needs the current one).
+        // Note: every web-service token of the user is invalidated → log in again.
         case 'change_password':
-            academy_require_post();
-            $current     = required_param('currentpassword', PARAM_RAW);
-            $newpassword = required_param('newpassword', PARAM_RAW);
-            try {
-                $data = \local_academy\password_reset_manager::change_password($userid, $current, $newpassword);
-            } catch (\moodle_exception $e) {
-                academy_respond(['status' => 'fail', 'error' => $e->getMessage()]);
-            }
-            academy_respond(['status' => 'success', 'data' => $data]);
-            break;
+            api::require_post();
+            return \local_academy\password_reset_manager::change_password($userid,
+                required_param('currentpassword', PARAM_RAW), required_param('newpassword', PARAM_RAW));
 
-        // ── Courses: is this course free? ───────────────────────────────────────────
+        // ── Courses ───────────────────────────────────────────────────────────────
+
         // Free = no active pricing rule. Returns price/currency too when paid.
         case 'is_course_free':
             $courseid = required_param('courseid', PARAM_INT);
             $isfree = !class_exists('\local_payments\price_resolver')
                 || !\local_payments\price_resolver::has_pricing($courseid);
-            $data = ['courseid' => (int) $courseid, 'is_free' => $isfree];
+            $data = ['courseid' => $courseid, 'is_free' => $isfree];
             if (!$isfree) {
                 try {
                     $p = \local_payments\price_resolver::resolve($courseid, $userid);
                     $data['price']    = (float) $p->price;
                     $data['currency'] = $p->currency;
                 } catch (\Throwable $e) {
-                    $data['is_free'] = true; // no rule resolvable for this user -> free
+                    $data['is_free'] = true; // No rule resolvable for this user → free.
                 }
             }
-            academy_respond(['status' => 'success', 'data' => $data]);
-            break;
+            return $data;
 
-        // ── Courses: self-enrol into a FREE course ──────────────────────────────────
-        // Lets a student register themselves on a course that has NO active pricing.
-        // Paid courses are rejected — they must go through the payment flow — so this
-        // can't be used to bypass payment.
+        // Self-enrol into a FREE course. Paid courses are rejected (they go through
+        // the payment flow), so this cannot bypass payment.
         case 'enrol_free_course':
-            academy_require_post();
+            api::require_post();
             $courseid = required_param('courseid', PARAM_INT);
             if (!class_exists('\local_payments\price_resolver')) {
-                academy_respond(['status' => 'fail', 'error' => 'Payments module not available']);
+                api::fail('notinstalled', 'Payments module not available');
             }
             if ($courseid == SITEID || !$DB->record_exists('course', ['id' => $courseid, 'visible' => 1])) {
-                academy_respond(['status' => 'fail', 'error' => 'Course not available']);
+                api::fail('coursenotfound', get_string('err_coursenotfound', 'local_academy'));
             }
             if (\local_payments\price_resolver::has_pricing($courseid)) {
-                academy_respond(['status' => 'fail', 'error' => 'This course is not free']);
+                api::fail('coursenotfree', get_string('err_coursenotfree', 'local_academy'));
             }
-            $enrolled = \local_payments\enrollment_handler::enrol_user($userid, (int) $courseid, 5);
-            academy_respond([
-                'status' => $enrolled ? 'success' : 'fail',
-                'data'   => ['courseid' => (int) $courseid, 'enrolled' => $enrolled],
-            ]);
-            break;
+            $enrolled = \local_payments\enrollment_handler::enrol_user($userid, $courseid, 5);
+            if (!$enrolled) {
+                api::fail('enrolfailed', get_string('err_enrolfailed', 'local_academy'));
+            }
+            return ['courseid' => $courseid, 'enrolled' => true];
 
-        // Current user's profile with ready-to-use (token-embedded) image URLs.
+        // A course's lessons in order with the learner's state (locked, for sale,
+        // completed, watched %) + where to resume.
+        case 'get_course_lessons':
+            return \local_academy\api\courses::lessons(required_param('courseid', PARAM_INT));
+
+        // Record that a lesson was opened (view event + view completion). Fails
+        // with lessonlocked / lessonforsale when the lesson cannot be opened yet.
+        case 'log_lesson_view':
+            api::require_post();
+            return \local_academy\api\courses::log_view(required_param('cmid', PARAM_INT));
+
+        // Certificates in my courses + PDF download URLs.
+        case 'get_my_certificates':
+            return \local_academy\api\courses::my_certificates($userid, $token);
+
+        // ── Profile ───────────────────────────────────────────────────────────────
+
+        // Basic profile (unchanged legacy shape).
         case 'get_my_profile':
-            academy_respond(['status' => 'success', 'data' => \local_academy\profile_manager::get_my_profile($USER, $token)]);
-            break;
+            return \local_academy\profile_manager::get_my_profile($USER, $token);
+
+        // Full profile: basic + phone, bio, language, roles + every academy field.
+        case 'get_full_profile':
+            return \local_academy\profile_manager::get_full_profile($USER, $token);
+
+        // Update my profile. Send only what changes; `fields` is a JSON object
+        // {shortname: value} for the academy fields (dropdowns take an option `value`).
+        case 'update_my_profile':
+            api::require_post();
+            $data = [];
+            foreach (['firstname', 'lastname', 'phone', 'bio', 'language'] as $key) {
+                if (isset($_POST[$key])) {
+                    $data[$key] = required_param($key, PARAM_RAW);
+                }
+            }
+            if (isset($_POST['fields'])) {
+                $data['fields'] = api::json_param('fields');
+            }
+            \local_academy\profile_manager::update_profile($userid, $data);
+            return \local_academy\profile_manager::get_full_profile($USER, $token);
+
+        // The academy profile fields as a form spec (labels, groups, options) —
+        // also usable before login with the shared registration token.
+        case 'get_profile_fields':
+            return \local_academy\profile_manager::field_specs();
+
+        // Years (course categories), study systems and their divisions.
+        case 'get_academic_structure':
+            $years = array_map(static fn(array $y) => [
+                'id' => $y['id'], 'value' => $y['key'], 'name' => $y['name'], 'path' => $y['ids'],
+            ], \local_academy\local\academic_structure::years());
+            $systems = [];
+            foreach (\local_academy\local\academic_structure::get()['systems'] as $system) {
+                $systems[] = [
+                    'value' => $system['name'],
+                    'name' => format_string($system['name'], true, ['context' => context_system::instance(), 'escape' => false]),
+                    'divisions' => array_map(static fn(string $d) => [
+                        'value' => $d,
+                        'name' => format_string($d, true, ['context' => context_system::instance(), 'escape' => false]),
+                    ], $system['divisions']),
+                ];
+            }
+            return ['years' => $years, 'systems' => $systems];
 
         // ── Teachers (instructor directory) ─────────────────────────────────────────
-        // Same names/params/response as the old academy so existing clients work.
 
-        // Admin: full teacher directory with filters + pagination (manageplatform).
+        // Admin: full teacher directory with filters + pagination.
         case 'get_all_teachers':
-            if (!has_capability('local/academy:manageplatform', context_system::instance())) {
-                academy_respond(['status' => 'fail', 'error' => get_string('err_authrequired', 'local_academy')]);
-            }
+            api::require_capability('local/academy:manageplatform');
             $filters = [];
             foreach (['courseid', 'categoryid', 'page', 'perpage'] as $f) {
                 if (isset($_REQUEST[$f]) && $_REQUEST[$f] !== '') {
@@ -248,57 +228,33 @@ try {
             if (isset($_REQUEST['search']) && $_REQUEST['search'] !== '') {
                 $filters['search'] = required_param('search', PARAM_TEXT);
             }
-            academy_respond(['status' => 'success', 'data' => \local_academy\teacher_manager::get_all_teachers($filters)]);
-            break;
+            return \local_academy\teacher_manager::get_all_teachers($filters);
 
-        // Public: browse instructors (bare array, email dropped). Optional subject.
+        // Browse instructors (bare array, email dropped).
         case 'browse_teachers':
-            $subject = optional_param('subject', '', PARAM_TEXT);
-            academy_respond(['status' => 'success', 'data' => \local_academy\teacher_manager::browse_teachers($subject)]);
-            break;
+            return \local_academy\teacher_manager::browse_teachers(optional_param('subject', '', PARAM_TEXT));
 
-        // Public: a single instructor's profile + the courses they teach.
+        // A single instructor's profile + the courses they teach.
         case 'get_teacher':
-            $teacherid = required_param('teacherid', PARAM_INT);
             try {
-                $teacher = \local_academy\teacher_manager::get_teacher($teacherid);
+                return \local_academy\teacher_manager::get_teacher(required_param('teacherid', PARAM_INT));
             } catch (\moodle_exception $e) {
-                academy_respond(['status' => 'fail', 'error' => get_string('err_teachernotfound', 'local_academy')]);
+                api::fail('teachernotfound', get_string('err_teachernotfound', 'local_academy'));
             }
-            academy_respond(['status' => 'success', 'data' => $teacher]);
-            break;
+            return null;
 
-        // Just the courses a given instructor teaches (superset helper).
+        // Just the courses a given instructor teaches.
         case 'get_teacher_courses':
-            $teacherid = required_param('teacherid', PARAM_INT);
-            academy_respond(['status' => 'success', 'data' => \local_academy\teacher_manager::get_teacher_courses($teacherid)]);
-            break;
+            return \local_academy\teacher_manager::get_teacher_courses(required_param('teacherid', PARAM_INT));
 
         // ── Licence / subscription (admin or owner) ─────────────────────────────
-        // The academy's own plan for the mobile app: package resources (caps +
-        // features), live usage vs those caps, and the current subscription term
-        // (expiry / days-left / status). Mirrors the web page /local/license/status.php.
-        // Admin/owner only — students don't need it.
+        // Package resources, live usage vs caps, and the subscription term.
         case 'get_license_status':
-            if (!has_capability('local/academy:manageplatform', context_system::instance())) {
-                academy_respond(['status' => 'fail', 'errorcode' => 'nopermissions',
-                    'error' => get_string('err_nopermission', 'local_academy')]);
-            }
+            api::require_capability('local/academy:manageplatform');
             if (!class_exists('\local_license\license')) {
-                academy_respond(['status' => 'fail', 'errorcode' => 'notinstalled',
-                    'error' => 'The licence plugin is not installed on this academy.']);
+                api::fail('notinstalled', 'The licence plugin is not installed on this academy.');
             }
-            // Data assembly lives in a pure, unit-testable builder; this dispatcher
-            // owns the token/capability gate and the success envelope.
-            academy_respond(['status' => 'success', 'data' => \local_academy\license_status::build()]);
-            break;
-
-        default:
-            academy_respond(['status' => 'fail', 'error' => get_string('err_unknownfunction', 'local_academy')]);
+            return \local_academy\license_status::build();
     }
-} catch (\Throwable $e) {
-    // Log the real cause for developers, but never leak internal exception text
-    // (DB errors, paths, stack internals) to the client.
-    debugging('local_academy api error: ' . $e->getMessage(), DEBUG_DEVELOPER);
-    academy_respond(['status' => 'fail', 'error' => get_string('err_internal', 'local_academy')]);
-}
+    return api::unknown();
+});

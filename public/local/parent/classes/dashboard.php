@@ -179,6 +179,40 @@ class dashboard {
     }
 
     /**
+     * The whole parent lookup for the mobile app, in the same order as the web
+     * page (index.php): IP throttle first, then phone format, then the match.
+     * Only a well-formed pair that matches no student counts as a failure, and
+     * the error never says which of the two phones was wrong.
+     *
+     * @param string $childphone the student's phone as typed
+     * @param string $parentphone the parent's phone as typed
+     * @param string $ip the client address (getremoteaddr())
+     * @return array{student: array{id:int, fullname:string}, courses: array} courses as report()
+     * @throws \moodle_exception err_toomanyattempts | err_invalidphone | err_studentnotfound
+     */
+    public static function child_report(string $childphone, string $parentphone, string $ip): array {
+        global $DB;
+        $childphone = trim($childphone);
+        $parentphone = trim($parentphone);
+        if (self::is_blocked($ip)) {
+            throw new \moodle_exception('err_toomanyattempts', 'local_parent');
+        }
+        if (!self::valid_phone($childphone) || !self::valid_phone($parentphone)) {
+            throw new \moodle_exception('err_invalidphone', 'local_parent');
+        }
+        $studentid = self::find_student($childphone, $parentphone);
+        if (!$studentid) {
+            self::record_failure($ip);
+            throw new \moodle_exception('err_studentnotfound', 'local_parent');
+        }
+        $student = $DB->get_record('user', ['id' => $studentid], '*', MUST_EXIST);
+        return [
+            'student' => ['id' => (int) $student->id, 'fullname' => fullname($student)],
+            'courses' => self::report($studentid),
+        ];
+    }
+
+    /**
      * The student's courses with every lecture's videos, homework and exams.
      *
      * Courses are the ones the student is actively enrolled in. A lecture is a

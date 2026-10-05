@@ -238,6 +238,72 @@ class subscription_purchase_manager {
     }
 
     /**
+     * Enrol a user into a course they can open without buying it — the logic of enrol.php for
+     * the mobile API: a FREE course (no active local_payments pricing) or a course covered by the
+     * user's active subscription (enrolment ends when the subscription expires). A paid course not
+     * covered by a subscription is refused with err_paymentrequired (the app must start a checkout).
+     *
+     * Not run inside a DB transaction: enrolment sends mail, which must happen after commit.
+     *
+     * @param int $courseid
+     * @param int $userid
+     * @return array {courseid, enrolled, already_enrolled, access: free|subscription|enrolled, timeend}
+     * @throws \moodle_exception err_coursenotfound | err_paymentrequired | err_enrolfailed
+     */
+    public static function enrol_free_or_covered(int $courseid, int $userid): array {
+        global $DB, $CFG;
+        require_once($CFG->libdir . '/enrollib.php');
+
+        if ($courseid <= 0 || $courseid == SITEID || !$DB->record_exists('course', ['id' => $courseid])) {
+            throw new \moodle_exception('err_coursenotfound', 'local_nit_subscriptions');
+        }
+        $context = \context_course::instance($courseid);
+
+        // Already enrolled — nothing to do.
+        if (is_enrolled($context, $userid, '', true)) {
+            return ['courseid' => $courseid, 'enrolled' => true, 'already_enrolled' => true,
+                'access' => 'enrolled', 'timeend' => 0];
+        }
+
+        // A hidden course is not open for self-enrolment (unless the user may see hidden courses).
+        if (!$DB->get_field('course', 'visible', ['id' => $courseid])
+                && !has_capability('moodle/course:viewhiddencourses', $context, $userid)) {
+            throw new \moodle_exception('err_coursenotfound', 'local_nit_subscriptions');
+        }
+
+        $haspayments = class_exists('\local_payments\price_resolver');
+        $free = !$haspayments || !\local_payments\price_resolver::has_pricing($courseid);
+        $covered = $haspayments
+            && \local_payments\price_resolver::is_covered_by_active_subscription($courseid, $userid);
+
+        if (!$free && !$covered) {
+            // Paid course with no subscription coverage — must be purchased.
+            throw new \moodle_exception('err_paymentrequired', 'local_nit_subscriptions');
+        }
+
+        // Access end date: subscription-covered → when the subscription expires; free → no end.
+        $until = 0;
+        if ($covered) {
+            $active = self::get_active_subscription($userid);
+            if ($active) {
+                $until = (int) $active->expires_at;
+            }
+        }
+
+        if (!self::grant_course_access($courseid, $userid, $until) || !is_enrolled($context, $userid, '', true)) {
+            throw new \moodle_exception('err_enrolfailed', 'local_nit_subscriptions');
+        }
+
+        return [
+            'courseid'         => $courseid,
+            'enrolled'         => true,
+            'already_enrolled' => false,
+            'access'           => $covered ? 'subscription' : 'free',
+            'timeend'          => ($until > time()) ? $until : 0,
+        ];
+    }
+
+    /**
      * The effective status of a purchase record (expired if past its expiry).
      *
      * @param \stdClass $record

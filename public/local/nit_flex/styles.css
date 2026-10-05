@@ -1,0 +1,673 @@
+/* local_nit_flex + local_nit_lessons — packages, "My lessons & Flex", teacher pages.
+   Built on the local_nit_finance page styles (.nitfin, .nitfin-btn, .nitfin-table…).
+   Every colour comes from the brand palette (.nit-brand-18 → Brand Colors → Bassthalk);
+   only neutral rgba(0,0,0,…) shadows are literal. Logical properties keep RTL right. */
+
+.nitlx-intro {
+    margin: -12px 0 24px;
+    color: var(--nit-brand-textsecondary);
+    font-size: 17px;
+}
+.nitlx-note {
+    margin: 0 0 24px;
+}
+.nitlx-gap {
+    margin-block-start: 40px;
+}
+.nitlx-narrow {
+    max-width: 760px;
+}
+.nitlx-label {
+    display: block;
+    margin: 0 0 6px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--nit-brand-textprimary);
+}
+.nitlx-hint {
+    margin: 0 0 12px;
+    font-size: 14px;
+    color: var(--nit-brand-textsecondary);
+}
+.nitlx a:not(.nitfin-btn) {
+    color: var(--nit-brand-primary);
+}
+
+/* Summary cards (wallet balance, current package). */
+.nitlx-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+}
+.nitlx-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 20px 24px;
+    border: 1px solid var(--nit-brand-borderprimary);
+    border-radius: 16px;
+    background: var(--nit-brand-surface);
+}
+.nitlx-stat--accent {
+    border-color: color-mix(in srgb, var(--nit-brand-primary) 40%, transparent);
+    background: color-mix(in srgb, var(--nit-brand-primary) 7%, var(--nit-brand-surface));
+}
+.nitlx-stat__label {
+    font-size: 14px;
+    color: var(--nit-brand-textsecondary);
+}
+.nitlx-stat__value {
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+.nitlx-stat__meta {
+    font-size: 14px;
+    color: var(--nit-brand-textsecondary);
+}
+.nitlx-stat__link {
+    margin-top: 4px;
+    font-weight: 700;
+    font-size: 15px;
+}
+
+/* Package cards (also used for subscription plans). */
+.nitlx-pkgs {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 24px;
+    margin-top: 8px;
+}
+.nitlx-pkg {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 28px 24px 24px;
+    border: 1px solid var(--nit-brand-borderprimary);
+    border-radius: 20px;
+    background: var(--nit-brand-surface);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .05);
+    transition: transform .3s ease, box-shadow .3s ease;
+}
+.nitlx-pkg:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 32px rgba(0, 0, 0, .08);
+}
+#page-content .nitlx .nitlx-pkg__name {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.3;
+}
+.nitlx-pkg__flex {
+    color: var(--nit-brand-primary);
+    font-weight: 700;
+    font-size: 18px;
+}
+.nitlx-pkg__flex span {
+    font-size: 44px;
+    line-height: 1;
+}
+.nitlx-pkg__price {
+    display: flex;
+    align-items: baseline;
+    justify-content: flex-end;
+    flex-direction: row-reverse;
+    gap: 10px;
+}
+.nitlx-pkg__price strong {
+    font-size: 24px;
+}
+.nitlx-pkg__price del {
+    color: var(--nit-brand-textsecondary);
+    font-size: 16px;
+}
+.nitlx-pkg__facts {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    color: var(--nit-brand-textsecondary);
+    font-size: 15px;
+}
+.nitlx-pkg__facts li::before {
+    content: "✓";
+    margin-inline-end: 8px;
+    color: var(--nit-brand-success);
+    font-weight: 700;
+}
+.nitlx-pkg__desc {
+    font-size: 15px;
+    color: var(--nit-brand-textsecondary);
+}
+.nitlx-pkg__desc p:last-child {
+    margin-bottom: 0;
+}
+.nitlx-pkg .nitfin-btn,
+.nitlx-pkg form {
+    margin-top: auto;
+}
+.nitlx :is(button.nitfin-btn, a.nitfin-btn):disabled,
+.nitlx button.nitfin-btn[disabled] {
+    opacity: .45;
+    cursor: not-allowed;
+    background: var(--nit-brand-primary) !important;
+    color: var(--nit-brand-onprimary) !important;
+}
+
+/* Dialogs (buy a package, lesson actions). */
+.nitlx-dialog {
+    width: min(520px, calc(100vw - 32px));
+    max-height: calc(100vh - 32px);
+    padding: 0;
+    border: 0;
+    border-radius: 20px;
+    background: var(--nit-brand-surface);
+    color: var(--nit-brand-textprimary);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, .25);
+    font-family: 'Tajawal', 'Almarai', system-ui, sans-serif;
+}
+.nitlx-dialog::backdrop {
+    background: rgba(0, 0, 0, .45);
+}
+.nitlx-dialog__body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 28px;
+}
+.nitlx-dialog .nitlx-dialog__title {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--nit-brand-textprimary);
+}
+.nitlx-dialog__text {
+    margin: 0;
+    color: var(--nit-brand-textsecondary);
+}
+.nitlx-dialog__pay {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.nitlx-dialog__hint {
+    margin: 0;
+    font-size: 14px;
+    color: var(--nit-brand-error);
+}
+.nitlx-couponmsg {
+    margin: -8px 0 0;
+    min-height: 1em;
+    font-size: 14px;
+    color: var(--nit-brand-success);
+}
+.nitlx-couponmsg--error {
+    color: var(--nit-brand-error);
+}
+.nitlx-total {
+    margin: 0;
+    padding: 16px;
+    border-radius: 12px;
+    background: var(--nit-brand-background);
+}
+.nitlx-total > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 4px 0;
+}
+.nitlx-total dt {
+    font-weight: 500;
+}
+.nitlx-total dd {
+    margin: 0;
+}
+.nitlx-total__final {
+    margin-top: 6px;
+    padding-top: 10px !important;
+    border-top: 1px solid var(--nit-brand-borderprimary);
+    font-size: 18px;
+    font-weight: 700;
+}
+.nitlx button.nitlx-linkbtn,
+.nitlx-dialog button.nitlx-linkbtn {
+    align-self: center;
+    padding: 6px 12px;
+    border: 0;
+    background: transparent;
+    color: var(--nit-brand-textsecondary);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+.nitlx button.nitlx-linkbtn:hover {
+    color: var(--nit-brand-primary);
+}
+.nitlx-textarea {
+    height: auto !important;
+    min-height: 90px;
+    padding: 12px 16px !important;
+    resize: vertical;
+}
+
+/* "My lessons & Flex": Flex bar and tabs. */
+.nitlx-flexbar {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 24px;
+    padding: 20px 28px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, var(--nit-brand-primary),
+        color-mix(in srgb, var(--nit-brand-primary) 70%, var(--nit-brand-textprimary)));
+    color: var(--nit-brand-onprimary);
+}
+.nitlx-flexbar__count {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 96px;
+}
+.nitlx-flexbar__num {
+    font-size: 44px;
+    font-weight: 700;
+    line-height: 1;
+}
+.nitlx-flexbar__label {
+    font-size: 14px;
+    opacity: .9;
+}
+.nitlx-flexbar__info {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+}
+.nitlx-flexbar__info strong {
+    font-size: 18px;
+}
+.nitlx-flexbar__info span {
+    font-size: 14px;
+    opacity: .9;
+}
+.nitlx a.nitfin-btn.nitlx-flexbar__btn {
+    border-color: var(--nit-brand-onprimary) !important;
+    background: var(--nit-brand-onprimary) !important;
+    color: var(--nit-brand-primary) !important;
+}
+.nitlx a.nitfin-btn.nitlx-flexbar__btn:hover {
+    background: transparent !important;
+    color: var(--nit-brand-onprimary) !important;
+}
+.nitlx-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    padding: 6px;
+    overflow-x: auto;
+    border-radius: 16px;
+    background: var(--nit-brand-surface);
+    border: 1px solid var(--nit-brand-borderprimary);
+}
+.nitlx a.nitlx-tab {
+    flex: 1 0 auto;
+    padding: 10px 18px;
+    border-radius: 12px;
+    color: var(--nit-brand-textsecondary);
+    font-weight: 700;
+    text-align: center;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background-color .2s ease, color .2s ease;
+}
+.nitlx a.nitlx-tab:hover {
+    color: var(--nit-brand-primary);
+    background: color-mix(in srgb, var(--nit-brand-primary) 8%, transparent);
+}
+.nitlx a.nitlx-tab.is-active {
+    background: var(--nit-brand-primary);
+    color: var(--nit-brand-onprimary);
+}
+.nitlx-toolbar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    max-width: 520px;
+}
+.nitlx-toolbar .nitfin-redeem__input {
+    flex: 1;
+}
+
+/* Teachers to book. */
+.nitlx-teachers {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+.nitlx-teacher {
+    display: grid;
+    grid-template-columns: 72px 1fr;
+    gap: 12px 16px;
+    padding: 20px;
+    border: 1px solid var(--nit-brand-borderprimary);
+    border-radius: 18px;
+    background: var(--nit-brand-surface);
+}
+.nitlx-teacher__pic {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+#page-content .nitlx .nitlx-teacher__name {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+}
+.nitlx-teacher__headline {
+    margin: 2px 0 8px;
+    font-size: 14px;
+    color: var(--nit-brand-textsecondary);
+}
+.nitlx button.nitlx-teacher__btn {
+    grid-column: 1 / -1;
+}
+.nitlx-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.nitlx-chips li {
+    padding: 2px 12px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--nit-brand-primary) 10%, transparent);
+    color: var(--nit-brand-primary);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+/* Lesson cards. */
+.nitlx-lessons {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.nitlx-lesson {
+    padding: 20px 24px;
+    border: 1px solid var(--nit-brand-borderprimary);
+    border-inline-start: 4px solid var(--nit-brand-borderprimary);
+    border-radius: 16px;
+    background: var(--nit-brand-surface);
+}
+.nitlx-lesson--confirmed,
+.nitlx-lesson--in_progress {
+    border-inline-start-color: var(--nit-brand-success);
+}
+.nitlx-lesson--pending,
+.nitlx-lesson--waiting_student,
+.nitlx-lesson--waiting_teacher {
+    border-inline-start-color: var(--nit-brand-warning);
+}
+.nitlx-lesson__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+#page-content .nitlx .nitlx-lesson__subject {
+    margin: 0;
+    font-size: 19px;
+    font-weight: 700;
+}
+.nitlx-lesson__with {
+    margin: 2px 0 0;
+    color: var(--nit-brand-textsecondary);
+}
+.nitlx-lesson__facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 24px;
+    margin: 12px 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 15px;
+}
+.nitlx-lesson__facts .icon {
+    margin-inline-end: 6px;
+    color: var(--nit-brand-textsecondary);
+}
+.nitlx-lesson__reason {
+    flex-basis: 100%;
+    color: var(--nit-brand-textsecondary);
+}
+.nitlx-lesson__notice {
+    margin: 12px 0 0;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--nit-brand-warning) 15%, transparent);
+    font-size: 15px;
+}
+.nitlx-lesson__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+}
+.nitlx button.nitlx-actbtn {
+    min-height: 38px;
+    padding: 6px 16px;
+    border: 2px solid var(--nit-brand-primary);
+    border-radius: 10px;
+    background: transparent;
+    color: var(--nit-brand-primary);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color .3s ease, color .3s ease;
+}
+.nitlx button.nitlx-actbtn:hover,
+.nitlx button.nitlx-actbtn--primary {
+    background: var(--nit-brand-primary);
+    color: var(--nit-brand-onprimary);
+}
+.nitlx button.nitlx-actbtn--primary:hover {
+    background: transparent;
+    color: var(--nit-brand-primary);
+}
+.nitlx button.nitlx-actbtn--danger {
+    border-color: var(--nit-brand-error);
+    color: var(--nit-brand-error);
+}
+.nitlx button.nitlx-actbtn--danger:hover {
+    background: var(--nit-brand-error);
+    color: var(--nit-brand-onprimary);
+}
+.nitlx a.nitfin-btn.nitlx-join {
+    border-color: var(--nit-brand-success) !important;
+    background: var(--nit-brand-success) !important;
+}
+.nitlx a.nitfin-btn.nitlx-join:hover {
+    background: transparent !important;
+    color: var(--nit-brand-success) !important;
+}
+
+/* Status badges. */
+.nitlx-badge {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    background: color-mix(in srgb, var(--nit-brand-textsecondary) 14%, transparent);
+    color: var(--nit-brand-textprimary);
+}
+.nitlx-badge--pending,
+.nitlx-badge--waiting_student,
+.nitlx-badge--waiting_teacher,
+.nitlx-badge--flx-reserve {
+    background: color-mix(in srgb, var(--nit-brand-warning) 22%, transparent);
+}
+.nitlx-badge--confirmed,
+.nitlx-badge--active,
+.nitlx-badge--completed,
+.nitlx-badge--flx-purchase,
+.nitlx-badge--flx-assign,
+.nitlx-badge--flx-return {
+    background: color-mix(in srgb, var(--nit-brand-success) 22%, transparent);
+}
+.nitlx-badge--in_progress {
+    background: var(--nit-brand-success);
+    color: var(--nit-brand-onprimary);
+}
+.nitlx-badge--student_absent,
+.nitlx-badge--teacher_absent,
+.nitlx-badge--cancelled,
+.nitlx-badge--cancelled_teacher,
+.nitlx-badge--rejected,
+.nitlx-badge--failed,
+.nitlx-badge--flx-consume,
+.nitlx-badge--flx-expire,
+.nitlx-badge--flx-adjust {
+    background: color-mix(in srgb, var(--nit-brand-error) 16%, transparent);
+}
+
+/* Slot picker. */
+.nitlx-slots__days,
+.nitlx-slots__times {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 12px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+.nitlx-slots__days {
+    grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+}
+.nitlx-slots__times {
+    grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+}
+.nitlx-dialog button:is(.nitlx-slots__day, .nitlx-slots__time) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 8px 4px;
+    border: 1px solid var(--nit-brand-borderprimary);
+    border-radius: 10px;
+    background: var(--nit-brand-surface);
+    color: var(--nit-brand-textprimary);
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+}
+.nitlx-dialog button.nitlx-slots__day span {
+    font-size: 12px;
+    color: var(--nit-brand-textsecondary);
+}
+.nitlx-dialog button:is(.nitlx-slots__day, .nitlx-slots__time):hover:not(:disabled) {
+    border-color: var(--nit-brand-primary);
+}
+.nitlx-dialog button:is(.nitlx-slots__day, .nitlx-slots__time).is-active {
+    border-color: var(--nit-brand-primary);
+    background: var(--nit-brand-primary);
+    color: var(--nit-brand-onprimary);
+}
+.nitlx-dialog button.nitlx-slots__day.is-active span {
+    color: var(--nit-brand-onprimary);
+}
+.nitlx-dialog button.nitlx-slots__time:disabled {
+    opacity: .4;
+    text-decoration: line-through;
+    cursor: not-allowed;
+}
+
+/* Teacher pages. */
+.nitlx-titlebar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+.nitlx-titlebar .nitfin__title {
+    margin: 0;
+}
+.nitlx-titlebar__links {
+    display: flex;
+    gap: 8px;
+}
+.nitlx-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+.nitlx-fieldset {
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+.nitlx-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.nitlx-row .nitfin-redeem__input {
+    flex: 1;
+}
+.nitlx-row input[type="time"] {
+    flex: 0 1 140px;
+}
+.nitlx button.nitlx-iconbtn {
+    flex: 0 0 auto;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--nit-brand-borderprimary);
+    border-radius: 10px;
+    background: transparent;
+    color: var(--nit-brand-error);
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+}
+.nitlx-switch {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.nitlx-switch input {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--nit-brand-primary);
+}
+
+@media (max-width: 767px) {
+    .nitlx-flexbar {
+        flex-wrap: wrap;
+        padding: 18px;
+    }
+    .nitlx-flexbar__info {
+        flex-basis: calc(100% - 120px);
+    }
+    .nitlx-flexbar .nitfin-btn {
+        width: 100%;
+    }
+    .nitlx-teachers {
+        grid-template-columns: 1fr;
+    }
+    .nitlx-row {
+        flex-wrap: wrap;
+    }
+    .nitlx-dialog__body {
+        padding: 20px;
+    }
+}

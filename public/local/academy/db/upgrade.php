@@ -67,5 +67,13 @@ function xmldb_local_academy_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026100404, 'local', 'academy');
     }
 
+    if ($oldversion < 2026100500) {
+        // Production lacked the dev site settings: the multilang2 filter (raw
+        // {mlang} tags on the register page) and the site home page (the logo
+        // went to /my/).
+        \local_academy\local\site_defaults::apply();
+        upgrade_plugin_savepoint(true, 2026100500, 'local', 'academy');
+    }
+
     return true;
 }

@@ -81,3 +81,4 @@ $string['privacy:metadata:jobform_submission:status'] = 'هل الاستمارة
 $string['privacy:metadata:jobform_submission:timemodified'] = 'آخر تعديل على الاستمارة.';
 $string['privacy:metadata:jobform_submission_data'] = 'الإجابات جوه الاستمارة.';
 $string['privacy:metadata:jobform_submission_data:value'] = 'القيمة اللي الطالب كتبها في الحقل.';
+$string['errorsubmissionnotfound'] = 'الاستمارة المرسلة رقم {$a} غير موجودة (ربما تم حذفها).';

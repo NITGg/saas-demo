@@ -1,0 +1,228 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_nit_lessons/student_hub
+
+    "My lessons & Flex" (local/nit_lessons/student.php): Flex balance and five tabs.
+    Colours from Brand Colors → Bassthalk; styles in local/nit_flex/styles.css.
+
+    Example context (json):
+    {
+        "sesskey": "abc", "actionurl": "#", "packagesurl": "#", "flex": 4, "hasflex": true,
+        "package": "Flex 10", "expires": "5/11/26", "reserved": 1,
+        "tabs": [{"key": "book", "label": "Book a lesson", "url": "#", "active": true}],
+        "isbook": true, "search": "", "hasteachers": false, "teachers": []
+    }
+}}
+<div class="nitfin nitlx nit-brand-18" id="nitlx-hub">
+    <div class="nitfin__wrap">
+        <h1 class="nitfin__title">{{#str}}studenthub, local_nit_lessons{{/str}}</h1>
+
+        <div class="nitlx-flexbar">
+            <div class="nitlx-flexbar__count">
+                <span class="nitlx-flexbar__num">{{flex}}</span>
+                <span class="nitlx-flexbar__label">{{#str}}flexavailable, local_nit_lessons{{/str}}</span>
+            </div>
+            <div class="nitlx-flexbar__info">
+                {{#package}}
+                <strong>{{package}}</strong>
+                <span>{{#str}}flexbooked, local_nit_lessons, {{reserved}}{{/str}}{{#expires}} · {{#str}}expireson, local_nit_flex, {{expires}}{{/str}}{{/expires}}</span>
+                {{/package}}
+                {{^package}}<span>{{#str}}nopackage, local_nit_lessons{{/str}}</span>{{/package}}
+            </div>
+            <a class="nitfin-btn nitfin-btn--small nitlx-flexbar__btn" href="{{packagesurl}}">{{#str}}availablepackages, local_nit_flex{{/str}}</a>
+        </div>
+
+        <nav class="nitlx-tabs" aria-label="{{#str}}studenthub, local_nit_lessons{{/str}}">
+            {{#tabs}}
+            <a class="nitlx-tab{{#active}} is-active{{/active}}" href="{{url}}" {{#active}}aria-current="page"{{/active}}>{{label}}</a>
+            {{/tabs}}
+        </nav>
+
+        {{#isbook}}
+        <section class="nitlx-panel">
+            <form class="nitlx-toolbar" method="get" action="">
+                <input type="hidden" name="tab" value="book">
+                <input class="nitfin-redeem__input" type="search" name="search" value="{{search}}"
+                       placeholder="{{#str}}searchsubject, local_nit_lessons{{/str}}">
+                <button type="submit" class="nitfin-btn nitfin-btn--outline">{{#str}}search{{/str}}</button>
+            </form>
+            {{^hasflex}}
+            <p class="nitfin-note nitlx-note">{{#str}}needflex, local_nit_lessons{{/str}}
+                <a href="{{packagesurl}}">{{#str}}availablepackages, local_nit_flex{{/str}}</a></p>
+            {{/hasflex}}
+            {{#hasteachers}}
+            <div class="nitlx-teachers">
+                {{#teachers}}
+                <article class="nitlx-teacher" data-slots="{{slots}}">
+                    <img class="nitlx-teacher__pic" src="{{picture}}" alt="" width="72" height="72">
+                    <div class="nitlx-teacher__body">
+                        <h3 class="nitlx-teacher__name">{{name}}</h3>
+                        {{#headline}}<p class="nitlx-teacher__headline">{{headline}}</p>{{/headline}}
+                        <ul class="nitlx-chips">{{#subjects}}<li>{{name}}</li>{{/subjects}}</ul>
+                    </div>
+                    <button type="button" class="nitfin-btn nitfin-btn--small nitlx-teacher__btn" data-act="request"
+                            data-need="request" data-teacher="{{id}}" data-subjects="{{subjectsjson}}"
+                            data-title="{{#str}}requestwith, local_nit_lessons, {{name}}{{/str}}"
+                            {{^hasflex}}disabled{{/hasflex}}>{{#str}}requestlesson, local_nit_lessons{{/str}}</button>
+                </article>
+                {{/teachers}}
+            </div>
+            {{/hasteachers}}
+            {{^hasteachers}}<p class="nitfin-empty">{{#str}}noteachers, local_nit_lessons{{/str}}</p>{{/hasteachers}}
+        </section>
+        {{/isbook}}
+
+        {{#islessons}}
+        <section class="nitlx-panel">
+            <form class="nitlx-toolbar" method="get" action="">
+                <input type="hidden" name="tab" value="lessons">
+                <label class="visually-hidden" for="nitlx-status">{{#str}}status{{/str}}</label>
+                <select class="nitfin-redeem__input" id="nitlx-status" name="status" onchange="this.form.submit()">
+                    {{#filter}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/filter}}
+                </select>
+            </form>
+            {{#haslessons}}<div class="nitlx-lessons">{{#lessons}}{{> local_nit_lessons/lesson_card}}{{/lessons}}</div>{{/haslessons}}
+            {{^haslessons}}<p class="nitfin-empty">{{#str}}nolessons, local_nit_lessons{{/str}}</p>{{/haslessons}}
+        </section>
+        {{/islessons}}
+
+        {{#ispackages}}
+        <section class="nitlx-panel">
+            <h2 class="nitfin-section__title">{{#str}}mypackages, local_nit_lessons{{/str}}</h2>
+            {{#hasmypackages}}
+            <div class="nitfin-tablewrap"><table class="nitfin-table">
+                <thead><tr>
+                    <th>{{#str}}package, local_nit_flex{{/str}}</th>
+                    <th>{{#str}}flexcolumn, local_nit_flex{{/str}}</th>
+                    <th>{{#str}}status{{/str}}</th>
+                    <th class="nitfin-num">{{#str}}paid, local_nit_flex{{/str}}</th>
+                    <th>{{#str}}activated, local_nit_lessons{{/str}}</th>
+                    <th>{{#str}}expires, local_nit_flex{{/str}}</th>
+                </tr></thead>
+                <tbody>{{#mypackages}}<tr>
+                    <td>{{name}}</td><td>{{flex}}</td>
+                    <td><span class="nitlx-badge nitlx-badge--{{status}}">{{statuslabel}}</span></td>
+                    <td class="nitfin-num" dir="ltr">{{paid}}</td><td class="nitfin-nowrap">{{activated}}</td>
+                    <td class="nitfin-nowrap">{{expires}}</td>
+                </tr>{{/mypackages}}</tbody>
+            </table></div>
+            {{/hasmypackages}}
+            {{^hasmypackages}}<p class="nitfin-empty">{{#str}}nopackage, local_nit_lessons{{/str}} <a href="{{packagesurl}}">{{#str}}availablepackages, local_nit_flex{{/str}}</a></p>{{/hasmypackages}}
+
+            <h2 class="nitfin-section__title nitlx-gap">{{#str}}paymenthistory, local_nit_lessons{{/str}}</h2>
+            {{#haspayments}}
+            <div class="nitfin-tablewrap"><table class="nitfin-table">
+                <thead><tr>
+                    <th>{{#str}}date, local_nit_finance{{/str}}</th><th>{{#str}}package, local_nit_flex{{/str}}</th>
+                    <th class="nitfin-num">{{#str}}amount, local_nit_finance{{/str}}</th>
+                    <th>{{#str}}method, local_nit_finance{{/str}}</th><th>{{#str}}reference, local_nit_lessons{{/str}}</th>
+                </tr></thead>
+                <tbody>{{#payments}}<tr>
+                    <td class="nitfin-nowrap">{{date}}</td><td>{{name}}</td><td class="nitfin-num" dir="ltr">{{amount}}</td>
+                    <td>{{method}}</td><td dir="ltr">{{ref}}</td>
+                </tr>{{/payments}}</tbody>
+            </table></div>
+            {{/haspayments}}
+            {{^haspayments}}<p class="nitfin-empty">{{#str}}nopayments, local_nit_lessons{{/str}}</p>{{/haspayments}}
+
+            <h2 class="nitfin-section__title nitlx-gap">{{#str}}flexhistory, local_nit_lessons{{/str}}</h2>
+            {{#hashistory}}
+            <div class="nitfin-tablewrap"><table class="nitfin-table">
+                <thead><tr>
+                    <th>{{#str}}date, local_nit_finance{{/str}}</th><th>{{#str}}type, local_nit_lessons{{/str}}</th>
+                    <th class="nitfin-num">{{#str}}change, local_nit_lessons{{/str}}</th>
+                    <th class="nitfin-num">{{#str}}balanceafter, local_nit_finance{{/str}}</th>
+                    <th>{{#str}}lesson, local_nit_lessons{{/str}}</th>
+                </tr></thead>
+                <tbody>{{#history}}<tr>
+                    <td class="nitfin-nowrap">{{date}}</td>
+                    <td><span class="nitlx-badge nitlx-badge--flx-{{type}}">{{typelabel}}</span></td>
+                    <td class="nitfin-num" dir="ltr">{{change}}</td><td class="nitfin-num">{{balance}}</td><td>{{lesson}}</td>
+                </tr>{{/history}}</tbody>
+            </table></div>
+            {{/hashistory}}
+            {{^hashistory}}<p class="nitfin-empty">{{#str}}noflexhistory, local_nit_lessons{{/str}}</p>{{/hashistory}}
+        </section>
+        {{/ispackages}}
+
+        {{#issubavailable}}
+        <section class="nitlx-panel">
+            {{#subactive}}<p class="nitfin-note nitlx-note">{{#str}}subalreadyactive, local_nit_lessons{{/str}}</p>{{/subactive}}
+            {{#hassubs}}
+            {{^subonline}}<p class="nitfin-note nitlx-note">{{#str}}subnoonline, local_nit_lessons{{/str}}</p>{{/subonline}}
+            <div class="nitlx-pkgs">
+                {{#subs}}
+                <article class="nitlx-pkg">
+                    <h2 class="nitlx-pkg__name">{{name}}</h2>
+                    <div class="nitlx-pkg__price" dir="ltr"><strong>{{price}}</strong></div>
+                    <ul class="nitlx-pkg__facts"><li>{{days}}</li></ul>
+                    {{#description}}<div class="nitlx-pkg__desc">{{description}}</div>{{/description}}
+                    <ul class="nitlx-chips">{{#courses}}<li>{{name}}</li>{{/courses}}</ul>
+                    <form method="post" action="">
+                        <input type="hidden" name="sesskey" value="{{sesskey}}">
+                        <input type="hidden" name="tab" value="subavailable">
+                        <input type="hidden" name="action" value="buysub">
+                        <input type="hidden" name="subscriptionid" value="{{id}}">
+                        <button type="submit" class="nitfin-btn nitfin-btn--block" {{#disabled}}disabled{{/disabled}}>{{#str}}subscribe, local_nit_lessons{{/str}}</button>
+                    </form>
+                </article>
+                {{/subs}}
+            </div>
+            {{/hassubs}}
+            {{^hassubs}}<p class="nitfin-empty">{{#str}}nosubs, local_nit_lessons{{/str}}</p>{{/hassubs}}
+        </section>
+        {{/issubavailable}}
+
+        {{#ismysubs}}
+        <section class="nitlx-panel">
+            {{#hasmysubs}}
+            <div class="nitfin-tablewrap"><table class="nitfin-table">
+                <thead><tr>
+                    <th>{{#str}}subscription, local_nit_lessons{{/str}}</th><th>{{#str}}status{{/str}}</th>
+                    <th>{{#str}}activated, local_nit_lessons{{/str}}</th><th>{{#str}}expires, local_nit_flex{{/str}}</th>
+                    <th class="nitfin-num">{{#str}}daysleft, local_nit_lessons{{/str}}</th><th>{{#str}}courses{{/str}}</th>
+                </tr></thead>
+                <tbody>{{#mysubs}}<tr>
+                    <td>{{name}}</td><td><span class="nitlx-badge nitlx-badge--{{status}}">{{statuslabel}}</span></td>
+                    <td class="nitfin-nowrap">{{activated}}</td><td class="nitfin-nowrap">{{expires}}</td>
+                    <td class="nitfin-num">{{daysleft}}</td><td>{{courses}}</td>
+                </tr>{{/mysubs}}</tbody>
+            </table></div>
+            {{/hasmysubs}}
+            {{^hasmysubs}}<p class="nitfin-empty">{{#str}}nomysubs, local_nit_lessons{{/str}}</p>{{/hasmysubs}}
+
+            <h2 class="nitfin-section__title nitlx-gap">{{#str}}subpayments, local_nit_lessons{{/str}}</h2>
+            {{#hassubpayments}}
+            <div class="nitfin-tablewrap"><table class="nitfin-table">
+                <thead><tr>
+                    <th>{{#str}}date, local_nit_finance{{/str}}</th><th>{{#str}}subscription, local_nit_lessons{{/str}}</th>
+                    <th class="nitfin-num">{{#str}}amount, local_nit_finance{{/str}}</th><th>{{#str}}status{{/str}}</th>
+                    <th>{{#str}}reference, local_nit_lessons{{/str}}</th>
+                </tr></thead>
+                <tbody>{{#subpayments}}<tr>
+                    <td class="nitfin-nowrap">{{date}}</td><td>{{name}}</td><td class="nitfin-num" dir="ltr">{{amount}}</td>
+                    <td><span class="nitlx-badge nitlx-badge--{{status}}">{{statuslabel}}</span></td><td dir="ltr">{{ref}}</td>
+                </tr>{{/subpayments}}</tbody>
+            </table></div>
+            {{/hassubpayments}}
+            {{^hassubpayments}}<p class="nitfin-empty">{{#str}}nopayments, local_nit_lessons{{/str}}</p>{{/hassubpayments}}
+        </section>
+        {{/ismysubs}}
+    </div>
+    {{> local_nit_lessons/lesson_dialog}}
+</div>

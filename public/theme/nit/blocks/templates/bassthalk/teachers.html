@@ -257,12 +257,15 @@
     });
 
     // A teacher shows when one of their courses matches the chosen year and division.
+    // A course with no study system / division set is for all of them (e.g. a first
+    // secondary year course, before the divisions split).
     function apply(){
       slides.forEach(function(s){
         var courses = s._courses || [];
         s.hidden = !courses.some(function(c){
           return (!filter.year || (c.years || []).indexOf(Number(filter.year)) !== -1)
-            && (!filter.division || (c.system === filter.system && c.division === filter.division));
+            && (!filter.division || ((!c.system || c.system === filter.system)
+              && (!c.division || c.division === filter.division)));
         });
       });
       start = 0; settle();

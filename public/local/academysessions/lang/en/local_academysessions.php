@@ -25,3 +25,15 @@ $string['academysessions:viewattendance'] = 'View attendance reports';
 $string['lifecycle_task'] = 'Session lifecycle management';
 $string['cleanup_task'] = 'Cleanup expired recordings';
 $string['meetinglink'] = 'Meeting link (Google Meet)';
+$string['recording'] = 'Recording';
+
+// Mobile API errors (local/academysessions/api.php).
+$string['err_sessionnotfound'] = 'Session not found.';
+$string['err_notallowed'] = 'You are not allowed to attend this session.';
+$string['err_sessionended'] = 'This session has ended.';
+$string['err_sessionnotavailable'] = 'The session is not open yet. The link opens 30 minutes before the start.';
+$string['err_notjoined'] = 'You have not joined this session.';
+$string['err_notjitsiactivity'] = 'Live session room not found.';
+$string['err_invalidvalue'] = 'Invalid value for "{$a}".';
+$string['err_notsessionteacher'] = 'Only the teacher of this session can change it.';
+$string['err_studentnotenrolled'] = 'Student {$a} is not enrolled in this course.';

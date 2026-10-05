@@ -1,0 +1,227 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_nit_flex/packages_page
+
+    "Available packages" (local/nit_flex/packages.php): package cards and a buy dialog
+    (wallet or online, with a coupon box). Colours from Brand Colors → Bassthalk.
+
+    Example context (json):
+    {
+        "packages": [{"id": 1, "name": "Flex 10", "description": "", "flex": 10, "validity": "Valid for 30 days",
+            "price": "1000 EGP", "priceminor": 100000, "original": "", "perflex": "100 EGP per lesson", "disabled": false}],
+        "haspackages": true, "active": null, "balance": "50 EGP", "balanceminor": 5000,
+        "action": "#", "sesskey": "abc", "canonline": true, "cancoupon": true, "previewurl": "#",
+        "topupurl": "#", "hubpackagesurl": "#"
+    }
+}}
+<div class="nitfin nitlx nit-brand-18" id="nitlx-packages" data-balance="{{balanceminor}}" data-preview="{{previewurl}}">
+    <div class="nitfin__wrap">
+        <h1 class="nitfin__title">{{#str}}availablepackages, local_nit_flex{{/str}}</h1>
+        <p class="nitlx-intro">{{#str}}packagesintro, local_nit_flex{{/str}}</p>
+
+        <div class="nitlx-summary">
+            <div class="nitlx-stat">
+                <span class="nitlx-stat__label">{{#str}}walletbalance, local_nit_flex{{/str}}</span>
+                <span class="nitlx-stat__value" dir="ltr">{{balance}}</span>
+                <a class="nitlx-stat__link" href="{{topupurl}}">{{#str}}topupwallet, local_nit_flex{{/str}}</a>
+            </div>
+            {{#active}}
+            <div class="nitlx-stat nitlx-stat--accent">
+                <span class="nitlx-stat__label">{{#str}}activepackage, local_nit_flex{{/str}} · {{name}}</span>
+                <span class="nitlx-stat__value">{{#str}}flexleft, local_nit_flex, { "remaining": {{remaining}}, "total": {{total}} }{{/str}}</span>
+                <span class="nitlx-stat__meta">{{#str}}expireson, local_nit_flex, {{expires}}{{/str}}</span>
+                <a class="nitlx-stat__link" href="{{bookurl}}">{{#str}}booklesson, local_nit_flex{{/str}}</a>
+            </div>
+            {{/active}}
+        </div>
+        {{#active}}<p class="nitfin-note nitlx-note">{{#str}}onlyonepackage, local_nit_flex{{/str}}</p>{{/active}}
+
+        {{#haspackages}}
+        <div class="nitlx-pkgs">
+            {{#packages}}
+            <article class="nitlx-pkg">
+                <h2 class="nitlx-pkg__name">{{name}}</h2>
+                <div class="nitlx-pkg__flex"><span>{{flex}}</span> {{#str}}flexunit, local_nit_flex{{/str}}</div>
+                <div class="nitlx-pkg__price" dir="ltr">
+                    {{#original}}<del>{{original}}</del>{{/original}}
+                    <strong>{{price}}</strong>
+                </div>
+                <ul class="nitlx-pkg__facts">
+                    <li>{{perflex}}</li>
+                    <li>{{validity}}</li>
+                </ul>
+                {{#description}}<div class="nitlx-pkg__desc">{{{description}}}</div>{{/description}}
+                <button type="button" class="nitfin-btn nitfin-btn--block nitlx-pkg__buy" data-buy="{{id}}"
+                        data-name="{{name}}" data-flex="{{flex}}" data-price="{{priceminor}}" {{#disabled}}disabled{{/disabled}}>
+                    {{#str}}buypackage, local_nit_flex{{/str}}
+                </button>
+            </article>
+            {{/packages}}
+        </div>
+        {{/haspackages}}
+        {{^haspackages}}<p class="nitfin-empty">{{#str}}nopackages, local_nit_flex{{/str}}</p>{{/haspackages}}
+    </div>
+
+    <dialog class="nitlx-dialog" id="nitlx-buydialog" aria-labelledby="nitlx-buytitle">
+        <form method="post" action="{{action}}" class="nitlx-dialog__body">
+            <input type="hidden" name="sesskey" value="{{sesskey}}">
+            <input type="hidden" name="action" value="buy">
+            <input type="hidden" name="packageid" value="">
+            <h2 class="nitlx-dialog__title" id="nitlx-buytitle"></h2>
+            <p class="nitlx-dialog__text" data-region="summary"></p>
+
+            {{#cancoupon}}
+            <label class="nitfin-field">
+                <span class="nitlx-label">{{#str}}coupon, local_nit_flex{{/str}}</span>
+                <span class="nitfin-redeem__row">
+                    <input class="nitfin-redeem__input" type="text" name="coupon" maxlength="100" dir="ltr" autocomplete="off">
+                    <button type="button" class="nitfin-btn nitfin-btn--outline" data-action="applycoupon">{{#str}}applycoupon, local_nit_flex{{/str}}</button>
+                </span>
+            </label>
+            <p class="nitlx-couponmsg" data-region="couponmsg" role="status"></p>
+            {{/cancoupon}}
+
+            <dl class="nitlx-total">
+                <div><dt>{{#str}}price, local_nit_flex{{/str}}</dt><dd dir="ltr" data-region="original"></dd></div>
+                <div data-region="discountrow" hidden><dt>{{#str}}discount, local_nit_flex{{/str}}</dt><dd dir="ltr" data-region="discount"></dd></div>
+                <div class="nitlx-total__final"><dt>{{#str}}total, local_nit_flex{{/str}}</dt><dd dir="ltr" data-region="final"></dd></div>
+            </dl>
+
+            <div class="nitlx-dialog__pay">
+                <button type="submit" name="method" value="wallet" class="nitfin-btn" data-region="paywallet">
+                    {{#str}}paywallet, local_nit_flex{{/str}}
+                </button>
+                <p class="nitlx-dialog__hint" data-region="nobalance" hidden>
+                    {{#str}}notenoughwallet, local_nit_flex, {{balance}}{{/str}}
+                    <a href="{{topupurl}}">{{#str}}topupwallet, local_nit_flex{{/str}}</a>
+                </p>
+                {{#canonline}}
+                <button type="submit" name="method" value="online" class="nitfin-btn nitfin-btn--outline">
+                    {{#str}}payonline, local_nit_flex{{/str}}
+                </button>
+                {{/canonline}}
+                <button type="button" class="nitlx-linkbtn" data-action="close">{{#str}}cancel{{/str}}</button>
+            </div>
+        </form>
+    </dialog>
+</div>
+{{#js}}
+(function() {
+    var root = document.getElementById('nitlx-packages');
+    var dialog = document.getElementById('nitlx-buydialog');
+    if (!root || !dialog) {
+        return;
+    }
+    var form = dialog.querySelector('form');
+    var balance = parseInt(root.getAttribute('data-balance'), 10) || 0;
+    var current = null;
+    var region = function(name) {
+        return dialog.querySelector('[data-region="' + name + '"]');
+    };
+    var fmt = function(minor) {
+        var pounds = minor / 100;
+        var text = (minor % 100 === 0) ? String(pounds) : pounds.toFixed(2);
+        return M.util.get_string('amountwithcurrency', 'local_nit_finance', text);
+    };
+    var show = function(originalminor, finalminor) {
+        region('original').textContent = fmt(originalminor);
+        region('final').textContent = fmt(finalminor);
+        var discount = originalminor - finalminor;
+        region('discountrow').hidden = discount <= 0;
+        region('discount').textContent = '-' + fmt(discount);
+        var enough = balance >= finalminor;
+        region('paywallet').disabled = !enough;
+        region('nobalance').hidden = enough;
+    };
+    var preview = function(code) {
+        var msg = region('couponmsg');
+        var params = new URLSearchParams({
+            'function': 'preview_discount', 'item_type': 'package', 'item_id': current.id,
+            'coupon_code': code, 'sesskey': M.cfg.sesskey
+        });
+        return fetch(root.getAttribute('data-preview') + '?' + params.toString(), {credentials: 'same-origin'})
+            .then(function(r) {
+                return r.json();
+            })
+            .then(function(j) {
+                if (!j || j.status !== 'success') {
+                    throw new Error((j && j.error) || '');
+                }
+                var d = j.data;
+                show(Math.round(d.original * 100), Math.round(d.final * 100));
+                if (msg) {
+                    msg.textContent = d.coupon_error ? d.coupon_error
+                        : (code && d.coupon_discount > 0 ? M.util.get_string('couponapplied', 'local_nit_flex') : '');
+                    msg.classList.toggle('nitlx-couponmsg--error', !!d.coupon_error);
+                }
+            })
+            .catch(function() {
+                if (msg) {
+                    msg.textContent = M.util.get_string('couponcheckfailed', 'local_nit_flex');
+                    msg.classList.add('nitlx-couponmsg--error');
+                }
+            });
+    };
+    root.querySelectorAll('[data-buy]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            current = {
+                id: btn.getAttribute('data-buy'),
+                name: btn.getAttribute('data-name'),
+                flex: btn.getAttribute('data-flex'),
+                price: parseInt(btn.getAttribute('data-price'), 10) || 0
+            };
+            form.elements.packageid.value = current.id;
+            if (form.elements.coupon) {
+                form.elements.coupon.value = '';
+            }
+            if (region('couponmsg')) {
+                region('couponmsg').textContent = '';
+            }
+            document.getElementById('nitlx-buytitle').textContent = current.name;
+            region('summary').textContent = M.util.get_string('buysummary', 'local_nit_flex', current.flex);
+            show(current.price, current.price);
+            if (form.elements.coupon) {
+                preview('');
+            }
+            dialog.showModal();
+        });
+    });
+    var apply = dialog.querySelector('[data-action="applycoupon"]');
+    if (apply) {
+        apply.addEventListener('click', function() {
+            preview(form.elements.coupon.value.trim());
+        });
+        form.elements.coupon.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                preview(form.elements.coupon.value.trim());
+            }
+        });
+    }
+    dialog.querySelector('[data-action="close"]').addEventListener('click', function() {
+        dialog.close();
+    });
+    form.addEventListener('submit', function() {
+        form.querySelectorAll('button[type="submit"]').forEach(function(b) {
+            setTimeout(function() {
+                b.disabled = true;
+            }, 0);
+        });
+    });
+})();
+{{/js}}

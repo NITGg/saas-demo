@@ -38,3 +38,6 @@ $string['privacy:metadata:userid'] = 'الطالب.';
 $string['privacy:metadata:position'] = 'آخر موضع تشغيل بالثواني.';
 $string['privacy:metadata:percent'] = 'نسبة ما شاهده الطالب من الفيديو.';
 $string['privacy:metadata:timemodified'] = 'آخر وقت شاهد فيه الطالب.';
+$string['err_notvideo'] = 'هذا الدرس ليس فيديو.';
+$string['err_invalidslices'] = 'أجزاء المشاهدة غير صحيحة: أرسل أرقامًا من 0 إلى 99 مفصولة بفواصل.';
+$string['err_notenrolled'] = 'أنت غير مشترك في هذا الكورس.';

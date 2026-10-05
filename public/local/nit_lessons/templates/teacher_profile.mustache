@@ -1,0 +1,127 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_nit_lessons/teacher_profile
+
+    Teacher profile for live lessons (local/nit_lessons/teacher_profile.php).
+
+    Example context (json):
+    {
+        "action": "#", "sesskey": "abc", "available": true, "headline": "Physics teacher",
+        "subjects": [{"value": "Physics"}], "suggestions": [{"value": "Physics 3rd year"}],
+        "hours": [{"start": "16:00", "end": "20:00", "days": [{"value": 0, "label": "Sunday", "selected": true}]}],
+        "hashours": true, "daynames": [{"value": 0, "label": "Sunday"}], "timezone": "Africa/Cairo", "mylessonsurl": "#"
+    }
+}}
+<div class="nitfin nitlx nit-brand-18" id="nitlx-tprofile">
+    <div class="nitfin__wrap nitlx-narrow">
+        <div class="nitlx-titlebar">
+            <h1 class="nitfin__title">{{#str}}teacherprofile, local_nit_lessons{{/str}}</h1>
+            <a class="nitfin-btn nitfin-btn--small nitfin-btn--outline" href="{{mylessonsurl}}">{{#str}}mylessons, local_nit_lessons{{/str}}</a>
+        </div>
+        <p class="nitlx-intro">{{#str}}teacherprofile_intro, local_nit_lessons{{/str}}</p>
+
+        <form class="nitfin-card nitlx-form" method="post" action="{{action}}">
+            <input type="hidden" name="sesskey" value="{{sesskey}}">
+            <input type="hidden" name="action" value="save">
+
+            <label class="nitlx-switch">
+                <input type="checkbox" name="available" value="1" {{#available}}checked{{/available}}>
+                <span>{{#str}}takebookings, local_nit_lessons{{/str}}</span>
+            </label>
+
+            <label class="nitfin-field">
+                <span class="nitlx-label">{{#str}}headline, local_nit_lessons{{/str}}</span>
+                <input class="nitfin-redeem__input" type="text" name="headline" value="{{headline}}" maxlength="255"
+                       placeholder="{{#str}}headline_ph, local_nit_lessons{{/str}}">
+            </label>
+
+            <fieldset class="nitlx-fieldset">
+                <legend class="nitlx-label">{{#str}}subjects, local_nit_lessons{{/str}}</legend>
+                <datalist id="nitlx-subjectlist">{{#suggestions}}<option value="{{value}}">{{/suggestions}}</datalist>
+                <div data-region="subjects">
+                    {{#subjects}}
+                    <div class="nitlx-row">
+                        <input class="nitfin-redeem__input" type="text" name="subjects[]" value="{{value}}" maxlength="255"
+                               list="nitlx-subjectlist" placeholder="{{#str}}subject_ph, local_nit_lessons{{/str}}">
+                        <button type="button" class="nitlx-iconbtn" data-remove aria-label="{{#str}}remove{{/str}}">×</button>
+                    </div>
+                    {{/subjects}}
+                </div>
+                <button type="button" class="nitlx-linkbtn" data-add="subject">+ {{#str}}addsubject, local_nit_lessons{{/str}}</button>
+            </fieldset>
+
+            <fieldset class="nitlx-fieldset">
+                <legend class="nitlx-label">{{#str}}workinghours, local_nit_lessons{{/str}}</legend>
+                <p class="nitlx-hint">{{#str}}workinghours_help, local_nit_lessons, {{timezone}}{{/str}}</p>
+                <div data-region="hours">
+                    {{#hours}}
+                    <div class="nitlx-row">
+                        <select class="nitfin-redeem__input" name="day[]">{{#days}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/days}}</select>
+                        <input class="nitfin-redeem__input" type="time" name="start[]" value="{{start}}" step="900" dir="ltr">
+                        <span>{{#str}}to, local_nit_lessons{{/str}}</span>
+                        <input class="nitfin-redeem__input" type="time" name="end[]" value="{{end}}" step="900" dir="ltr">
+                        <button type="button" class="nitlx-iconbtn" data-remove aria-label="{{#str}}remove{{/str}}">×</button>
+                    </div>
+                    {{/hours}}
+                </div>
+                <button type="button" class="nitlx-linkbtn" data-add="hour">+ {{#str}}addhours, local_nit_lessons{{/str}}</button>
+            </fieldset>
+
+            <button type="submit" class="nitfin-btn">{{#str}}savechanges{{/str}}</button>
+        </form>
+
+        <template id="nitlx-tpl-subject">
+            <div class="nitlx-row">
+                <input class="nitfin-redeem__input" type="text" name="subjects[]" maxlength="255" list="nitlx-subjectlist"
+                       placeholder="{{#str}}subject_ph, local_nit_lessons{{/str}}">
+                <button type="button" class="nitlx-iconbtn" data-remove aria-label="{{#str}}remove{{/str}}">×</button>
+            </div>
+        </template>
+        <template id="nitlx-tpl-hour">
+            <div class="nitlx-row">
+                <select class="nitfin-redeem__input" name="day[]">{{#daynames}}<option value="{{value}}">{{label}}</option>{{/daynames}}</select>
+                <input class="nitfin-redeem__input" type="time" name="start[]" value="16:00" step="900" dir="ltr">
+                <span>{{#str}}to, local_nit_lessons{{/str}}</span>
+                <input class="nitfin-redeem__input" type="time" name="end[]" value="20:00" step="900" dir="ltr">
+                <button type="button" class="nitlx-iconbtn" data-remove aria-label="{{#str}}remove{{/str}}">×</button>
+            </div>
+        </template>
+    </div>
+</div>
+{{#js}}
+(function() {
+    var root = document.getElementById('nitlx-tprofile');
+    if (!root) {
+        return;
+    }
+    root.addEventListener('click', function(e) {
+        var remove = e.target.closest('[data-remove]');
+        if (remove) {
+            remove.closest('.nitlx-row').remove();
+            return;
+        }
+        var add = e.target.closest('[data-add]');
+        if (add) {
+            var kind = add.getAttribute('data-add');
+            var tpl = document.getElementById('nitlx-tpl-' + kind);
+            root.querySelector('[data-region="' + (kind === 'hour' ? 'hours' : 'subjects') + '"]')
+                .appendChild(tpl.content.cloneNode(true));
+        }
+    });
+})();
+{{/js}}

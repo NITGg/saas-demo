@@ -42,6 +42,8 @@ require_once($CFG->dirroot . '/user/profile/lib.php');
 const DEMO_CATEGORY = 'nit_parent_demo';
 /** Demo student. */
 const DEMO_USERNAME = 'nit_parent_demo';
+/** Demo student login (local development only). */
+const DEMO_PASSWORD = 'Pd-7kQm2Wx9-Lr4';
 const DEMO_STUDENT_PHONE = '01011112222';
 const DEMO_PARENT_PHONE = '01233334444';
 const DEMO_MOTHER_PHONE = '01555556666';
@@ -57,7 +59,10 @@ if ($options['help']) {
 $category = $DB->get_record('course_categories', ['idnumber' => DEMO_CATEGORY]);
 $student = $DB->get_record('user', ['username' => DEMO_USERNAME, 'deleted' => 0]);
 if (($category || $student) && !$options['reset']) {
-    cli_writeln('The demo already exists. Use --reset to rebuild it.');
+    if ($student) {
+        update_internal_user_password($student, DEMO_PASSWORD);
+    }
+    cli_writeln('The demo already exists (login password refreshed). Use --reset to rebuild it.');
     print_logins();
     exit(0);
 }
@@ -77,6 +82,7 @@ $category = $gen->create_category(['name' => 'تجريبي — لوحة ولي �
 
 $student = $gen->create_user([
     'username' => DEMO_USERNAME,
+    'password' => DEMO_PASSWORD,
     'firstname' => 'يوسف',
     'lastname' => 'أحمد',
     'email' => DEMO_USERNAME . '@example.com',
@@ -195,6 +201,7 @@ function add_item($gen, stdClass $course, int $section, string $type, string $na
  * Print what to type on the dashboard.
  */
 function print_logins(): void {
+    cli_writeln('Student login: ' . DEMO_USERNAME . ' / ' . DEMO_USERNAME . '@example.com (password: DEMO_PASSWORD in this file)');
     cli_writeln('Parent dashboard: /parent_dashboard');
     cli_writeln('  student phone: ' . DEMO_STUDENT_PHONE);
     cli_writeln('  parent phone:  ' . DEMO_PARENT_PHONE . '  (or the mother phone ' . DEMO_MOTHER_PHONE . ')');

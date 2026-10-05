@@ -127,6 +127,27 @@ class format_topics_renderer extends \format_topics\output\renderer {
     }
 
     /**
+     * The course detail page on its own — for /local/academy/course.php, which
+     * shows it to every learner and to visitors (course/view.php needs a log-in).
+     *
+     * @param stdClass $course
+     * @return string HTML
+     */
+    public function render_course_details(stdClass $course): string {
+        return $this->acad_render_page(course_get_format($course));
+    }
+
+    /**
+     * Whether the viewer is a visitor (not logged in, or the guest user): they
+     * see the lessons but cannot open them, and the button takes them to log in.
+     *
+     * @return bool
+     */
+    protected function acad_is_visitor(): bool {
+        return !isloggedin() || isguestuser();
+    }
+
+    /**
      * Build the full branded page for the given course format.
      *
      * @param \core_courseformat\base $format the course format
@@ -298,7 +319,9 @@ class format_topics_renderer extends \format_topics\output\renderer {
         $users = get_role_users(array_keys($roles), $context, false, $fields);
         $seen  = [];
         foreach ($users as $u) {
-            if (isset($seen[$u->id])) {
+            // Site admins are enrolled as teacher in every course they create
+            // (\local_academy\observer::course_created) — they are not teachers.
+            if (isset($seen[$u->id]) || is_siteadmin($u->id)) {
                 continue;
             }
             $seen[$u->id] = true;
@@ -642,8 +665,12 @@ class format_topics_renderer extends \format_topics\output\renderer {
                 'class'   => 'bthc__teacher-pic',
                 'loading' => 'lazy',
             ]);
-            $profileurl = new moodle_url('/user/view.php', ['id' => $t->id, 'course' => $course->id]);
-            $title = $t->teachertitle !== '' ? s($t->teachertitle) : get_string('acad_instructorrole', 'theme_nit');
+            // The public teacher page (as on bassthalk.com); the title may carry {mlang}.
+            $profileurl = new moodle_url('/local/academy/teacher.php', ['id' => $t->id]);
+            $title = $this->acad_ml($t->teachertitle, $data);
+            if ($title === '') {
+                $title = get_string('acad_instructorrole', 'theme_nit');
+            }
             $tutors .= html_writer::div(
                 html_writer::link($profileurl, $photo, ['class' => 'bthc__teacher-photo', 'tabindex' => '-1']) .
                 html_writer::div(
@@ -800,7 +827,7 @@ class format_topics_renderer extends \format_topics\output\renderer {
         // enrolled/covered -> no marker (they already have access).
         $isenrolled = is_enrolled($context, $USER->id, '', true);
         $isfree     = !$this->acad_has_pricing($course->id);
-        $accessible = $isenrolled || $isfree;
+        $accessible = !$this->acad_is_visitor() && ($isenrolled || $isfree);
 
         // Progress "(done/total)" on each lesson needs completion tracking and an
         // enrolled learner; otherwise the header shows the number of items.
@@ -1060,7 +1087,11 @@ class format_topics_renderer extends \format_topics\output\renderer {
 
         // Lessons sold one by one (local_nit_finance) and watched % (local_nit_videoprogress).
         [$salemarker, $saleurl] = $nomarker ? ['', null] : $this->acad_sale_marker($cm);
-        $url = $saleurl ?? $cm->url;
+        // A visitor sees what the course holds but cannot open a lesson.
+        // Lessons open inside the course player frame (video lessons are their own player).
+        $lessonurl = ($cm->url && class_exists('\local_academy\player'))
+            ? new moodle_url(\local_academy\player::url_for($cm)) : $cm->url;
+        $url = $this->acad_is_visitor() ? null : ($saleurl ?? $lessonurl);
         $name = $url
             ? html_writer::link($url, format_string($cm->name), ['class' => 'bthc__item-link'])
             : format_string($cm->name);
@@ -1250,7 +1281,11 @@ class format_topics_renderer extends \format_topics\output\renderer {
 
         // CTA — enrolled -> continue; covered -> enrol + continue; paid ->
         // Subscribe (checkout modal); free -> enrol. Mirrors nit_category exactly.
-        if ($info['enrolled']) {
+        if ($this->acad_is_visitor()) {
+            // Log in first; the course page sets itself as the page to come back to.
+            $cta = html_writer::link(get_login_url(),
+                get_string($info['haspricing'] ? 'acad_subscribe' : 'acad_enrol', 'theme_nit'), ['class' => 'bthc__btn']);
+        } else if ($info['enrolled']) {
             $cta = html_writer::link($detailsurl, get_string('acad_gotocourse', 'theme_nit'),
                 ['class' => 'bthc__btn']);
         } else if ($info['covered']) {
@@ -1327,14 +1362,18 @@ class format_topics_renderer extends \format_topics\output\renderer {
     }
 
     /**
-     * URL of the FIRST navigable lesson (activity) in the course, so an enrolled
-     * learner's "continue" goes into the content instead of looping back to this
-     * detail page. Returns '' when the course has no viewable activity yet.
+     * URL of the lesson an enrolled learner resumes at (else the FIRST navigable
+     * activity), so "continue" goes into the content instead of looping back to
+     * this detail page. Returns '' when the course has no viewable activity yet.
      *
      * @param stdClass $course
      * @return string
      */
     protected function acad_first_lesson_url($course): string {
+        // The learner's resume point (first lesson not yet completed) when the player knows it.
+        if (class_exists('\local_academy\player') && ($cm = \local_academy\player::resume_cm($course))) {
+            return \local_academy\player::url_for($cm);
+        }
         try {
             $modinfo = get_fast_modinfo($course);
             foreach ($modinfo->get_section_info_all() as $secinfo) {

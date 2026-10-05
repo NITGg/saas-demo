@@ -209,6 +209,48 @@ final class codes {
     }
 
     /**
+     * Codes matching the admin filters, newest first, with the name of who used each one.
+     *
+     * Same filters as the admin codes page: status (active | used | disabled, anything
+     * else = all), batch (exact) and q (part of the code, any case).
+     *
+     * @param array $filters status, batch, q
+     * @param int $page 0-based
+     * @param int $perpage
+     * @return array{total:int, rows:\stdClass[]}
+     */
+    public static function search(array $filters, int $page = 0, int $perpage = 50): array {
+        global $DB;
+        $status = (string) ($filters['status'] ?? '');
+        $batch = (string) ($filters['batch'] ?? '');
+        $q = trim((string) ($filters['q'] ?? ''));
+        $where = [];
+        $params = [];
+        if (in_array($status, [self::STATUS_ACTIVE, self::STATUS_USED, self::STATUS_DISABLED], true)) {
+            $where[] = 'c.status = :status';
+            $params['status'] = $status;
+        }
+        if ($batch !== '') {
+            $where[] = 'c.batch = :batch';
+            $params['batch'] = $batch;
+        }
+        if ($q !== '') {
+            $where[] = $DB->sql_like('c.code', ':q', false);
+            $params['q'] = '%' . $DB->sql_like_escape(strtoupper($q)) . '%';
+        }
+        $wheresql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
+        $total = $DB->count_records_sql("SELECT COUNT(1) FROM {nit_access_code} c $wheresql", $params);
+        $userfields = \core_user\fields::for_name()->get_sql('u', false, 'used_', '', false)->selects;
+        $rows = $DB->get_records_sql(
+            "SELECT c.*, $userfields
+               FROM {nit_access_code} c
+          LEFT JOIN {user} u ON u.id = c.usedby
+               $wheresql
+           ORDER BY c.id DESC", $params, max(0, $page) * $perpage, $perpage);
+        return ['total' => $total, 'rows' => array_values($rows)];
+    }
+
+    /**
      * Stop an unused code from working.
      *
      * @param int $id

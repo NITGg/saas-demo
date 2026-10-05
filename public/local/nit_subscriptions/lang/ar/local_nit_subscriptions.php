@@ -211,3 +211,7 @@ $string['reminder_msg_action']  = 'جدّد اشتراكك';
 $string['reminder_msg_subject_today'] = 'انتهى اشتراكك "{$a->plan}"';
 $string['reminder_msg_body_today']    = 'انتهى اشتراكك "{$a->plan}" في {$a->expires}، لذا لم تعد الكورسات التي كان يغطيها متاحة لك. لم يضع شيء مما أنجزته — تقدّمك ودرجاتك وشهاداتك محفوظة، والتجديد يعيدك إلى ما توقفت عنده بالضبط.';
 $string['reminder_msg_small_today']   = 'انتهى اشتراكك — جدّد لتتابع من حيث توقفت.';
+
+// واجهة التطبيق: enrol_course.
+$string['err_paymentrequired'] = 'هذا الكورس مدفوع وغير مشمول في اشتراكك. اشترِه أولاً.';
+$string['err_enrolfailed']     = 'تعذّر تسجيلك في هذا الكورس.';

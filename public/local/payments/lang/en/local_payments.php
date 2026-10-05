@@ -178,3 +178,16 @@ $string['currency_other'] = 'Currency for other countries';
 
 // Wallet top-up (local_nit_finance).
 $string['topup_badamount'] = 'Top-up amount must be between {$a->min} and {$a->max} EGP.';
+
+// Mobile admin API (api.php).
+$string['err_coursenotfound']      = 'Course not found.';
+$string['err_pricenotfound']       = 'Pricing rule not found.';
+$string['err_invalidcountry']      = 'Unknown country code. Use a two-letter code, or * for the default price.';
+$string['err_invalidcurrency']     = 'This currency is not supported.';
+$string['err_pricepositive']       = 'Price must be greater than zero.';
+$string['err_onedefault']          = 'Only one default price is allowed per course.';
+$string['err_oneactivepercountry'] = 'There is already an active pricing rule for this country. Deactivate it first, or edit that rule instead.';
+$string['err_invalidstatus']       = 'Unknown transaction status.';
+$string['err_providernotfound']    = 'Payment provider not found.';
+$string['err_invalidpriority']     = 'Priority cannot be negative.';
+$string['err_nothingtochange']     = 'Send enabled and/or priority to change.';

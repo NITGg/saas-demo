@@ -7,7 +7,8 @@
  * student-entry gate in view.php (and the mobile session payload) only lets students
  * into the room while the teacher is actually in the call.
  *
- * Only moderators may call this; sesskey validates the request.
+ * Only moderators may call this; sesskey validates the request. The logic lives in
+ * \mod_jitsi\local\presence::set() (shared with the mobile token API).
  */
 
 require_once('../../config.php');
@@ -23,34 +24,7 @@ $context = context_module::instance($cm->id);
 require_login($course, false, $cm);
 require_capability('mod/jitsi:moderate', $context);
 
-$session = $DB->get_record('academy_live_sessions', ['jitsiid' => $cm->instance]);
-
-if ($session) {
-    $DB->set_field('academy_live_sessions', 'teacher_joined_at',
-        $present ? time() : null, ['id' => $session->id]);
-
-    // Track first join time in attendance table for historical reports,
-    // since teacher_joined_at is cleared when they leave the room.
-    if ($present && !$DB->record_exists('academy_session_attendance', ['sessionid' => $session->id, 'userid' => $USER->id])) {
-        $att = new \stdClass();
-        $att->sessionid        = $session->id;
-        $att->userid           = $USER->id;
-        $att->joined_at        = time();
-        $att->duration_seconds = 0;
-        $DB->insert_record('academy_session_attendance', $att);
-    }
-
-    // Audit timeline: record when the teacher actually entered the meeting room — a distinct
-    // step from clicking "Start" (which creates the room). record_once so leaving/rejoining
-    // does not add duplicate rows. Keyed off the lesson that owns this session.
-    if ($present && class_exists('\local_academy\audit_manager')
-            && $DB->get_manager()->table_exists('academy_lessons')) {
-        $lessonid = $DB->get_field('academy_lessons', 'id', ['sessionid' => $session->id]);
-        if ($lessonid) {
-            \local_academy\audit_manager::record_once($lessonid, 'teacher_joined', $USER->id, 'teacher');
-        }
-    }
-}
+\mod_jitsi\local\presence::set($cm, (int) $USER->id, (bool) $present);
 
 header('Content-Type: application/json');
 echo json_encode(['status' => 'ok', 'present' => (bool)$present]);

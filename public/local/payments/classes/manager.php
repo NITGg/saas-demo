@@ -429,6 +429,163 @@ class manager {
         ];
     }
 
+    /**
+     * Create a checkout for a Flex lesson package (local_nit_flex), item_type=package, courseid 0.
+     *
+     * Fulfilled on payment success by {@see self::fulfil_package()}, which grants the package
+     * (or credits the student wallet when the package can no longer be granted).
+     *
+     * @param int $packageid
+     * @param int|null $userid
+     * @param string $display_lang
+     * @param string $coupon_code optional coupon entered at checkout
+     * @param string $return_url local page to come back to
+     * @return object {order_id, checkout_url, expires_at, provider, transaction_id, amount, original_amount, currency}
+     */
+    public static function create_package_checkout(int $packageid, ?int $userid = null, string $display_lang = 'ar',
+            string $coupon_code = '', string $return_url = ''): object {
+        global $DB, $USER, $CFG;
+
+        if (!class_exists('\local_nit_flex\api\purchase')) {
+            throw new \moodle_exception('error', 'moodle', '', null, 'Lesson packages are not installed');
+        }
+        $userid = $userid ?? $USER->id;
+        $user = $DB->get_record('user', ['id' => $userid], 'id, email, firstname, lastname, country', MUST_EXIST);
+        $package = $DB->get_record('nit_package', ['id' => $packageid], '*', MUST_EXIST);
+        if ($package->status !== 'active') {
+            throw new \moodle_exception('err_packagenotavailable', 'local_nit_flex');
+        }
+        if (\local_nit_flex\api\purchase::active($userid)) {
+            throw new \moodle_exception('err_alreadyhaspackage', 'local_nit_flex');
+        }
+
+        $originalamount = round(((int) $package->price_minor) / 100, 2);
+        $disc = self::apply_nit_discount('package', $packageid, $userid, $originalamount, $coupon_code);
+        $amount = $disc['amount'];
+        $discountmeta = $disc['discount'];
+        if ($amount <= 0) {
+            throw new \moodle_exception('err_freeonwallet', 'local_nit_flex');
+        }
+
+        $currency = 'EGP';
+        $country = $user->country ?: 'EG';
+        $provider = self::get_provider($country, $currency);
+        $provider_record = $DB->get_record('local_payments_providers', ['name' => $provider->get_name()]);
+
+        $order_id = self::generate_order_id();
+        $ttl = (int) get_config('local_payments', 'payment_ttl') ?: 1800;
+        $expires_at = time() + $ttl;
+
+        $transaction_id = $DB->insert_record('local_payments_transactions', (object) [
+            'userid' => $userid,
+            'courseid' => 0, // Sentinel: a package is not tied to a course.
+            'provider_id' => $provider_record->id,
+            'price_id' => null,
+            'order_id' => $order_id,
+            'idempotency_key' => self::generate_idempotency_key($userid, $packageid + 1000000),
+            'amount' => $amount,
+            'original_amount' => $originalamount,
+            'currency' => $currency,
+            'status' => status_machine::PENDING,
+            'customer_email' => $user->email,
+            'customer_reference' => (string) $userid,
+            'display_lang' => $display_lang,
+            'country' => $country,
+            'ip_address' => getremoteaddr(),
+            'user_agent' => substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 500),
+            'metadata' => json_encode([
+                'item_type' => 'package',
+                'item_id' => $packageid,
+                'package_name' => $package->name,
+                'discount' => $discountmeta,
+                'coupon_code' => $coupon_code,
+                'return_url' => $return_url,
+            ]),
+            'expires_at' => $expires_at,
+            'timecreated' => time(),
+            'timemodified' => time(),
+        ]);
+        self::audit_log($transaction_id, $userid, 'payment_created', '', status_machine::PENDING);
+
+        $request = new payment_request([
+            'order_id' => $order_id,
+            'amount' => $amount,
+            'currency' => $currency,
+            'description' => 'Lesson package: ' . format_string($package->name),
+            'userid' => $userid,
+            'courseid' => 0,
+            'customer_email' => $user->email,
+            'customer_reference' => (string) $userid,
+            'display_lang' => $display_lang,
+            'webhook_url' => $CFG->wwwroot . '/local/payments/webhook.php?provider=' . $provider->get_name(),
+            'success_url' => $CFG->wwwroot . '/local/payments/callback.php?order_id=' . urlencode($order_id),
+            'failure_url' => $CFG->wwwroot . '/local/payments/callback.php?order_id=' . urlencode($order_id) . '&status=failed',
+            'metadata' => ['transaction_id' => $transaction_id],
+            'transaction_id' => $transaction_id,
+        ]);
+        $response = $provider->initialize_payment($request);
+
+        if (!$response->success) {
+            $DB->update_record('local_payments_transactions', (object) [
+                'id' => $transaction_id,
+                'status' => status_machine::FAILED,
+                'reject_reason' => substr($response->error_message, 0, 255),
+                'timemodified' => time(),
+            ]);
+            self::audit_log($transaction_id, $userid, 'status_changed', status_machine::PENDING, status_machine::FAILED);
+            throw new \moodle_exception('paymentinitiationfailed', 'local_payments', '', $response->error_message);
+        }
+
+        $DB->update_record('local_payments_transactions', (object) [
+            'id' => $transaction_id,
+            'provider_session_id' => $response->provider_session_id,
+            'checkout_url' => $response->checkout_url,
+            'timemodified' => time(),
+        ]);
+
+        // Reserve coupon/offer usage for this pending checkout (released if it fails).
+        self::reserve_nit_discount($discountmeta, $userid, $transaction_id, 'package', $packageid);
+
+        return (object) [
+            'order_id' => $order_id,
+            'checkout_url' => $response->checkout_url,
+            'expires_at' => $expires_at,
+            'provider' => $provider->get_name(),
+            'transaction_id' => $transaction_id,
+            'amount' => (float) $amount,
+            'original_amount' => (float) $originalamount,
+            'currency' => $currency,
+        ];
+    }
+
+    /**
+     * Grant a paid package (local_nit_flex) and record coupon/offer usage. Safe to call from
+     * both the webhook and the redirect: local_nit_flex grants once per order.
+     *
+     * @param \stdClass $transaction completed local_payments_transactions row
+     * @param \stdClass $meta decoded metadata
+     * @return void
+     */
+    private static function fulfil_package(\stdClass $transaction, \stdClass $meta): void {
+        try {
+            if (class_exists('\local_nit_flex\api\purchase')) {
+                \local_nit_flex\api\purchase::fulfil_from_gateway(
+                    (int) $transaction->userid,
+                    (int) ($meta->item_id ?? 0),
+                    (int) round((float) $transaction->amount * 100),
+                    (string) $transaction->order_id,
+                    (int) $transaction->id
+                );
+                self::audit_log($transaction->id, $transaction->userid, 'package_purchased', '',
+                    (string) ($meta->item_id ?? 0));
+            }
+        } catch (\Throwable $e) {
+            self::log_entry($transaction->provider_id, $transaction->id, 'error',
+                'Package fulfilment failed: ' . $e->getMessage());
+        }
+        self::record_nit_discount($transaction, $meta, 'package', (int) ($meta->item_id ?? 0));
+    }
+
     /** Smallest online wallet top-up (EGP). */
     const WALLET_TOPUP_MIN = 10;
 
@@ -877,6 +1034,10 @@ class manager {
             self::fulfil_wallet_topup($transaction);
             return true;
         }
+        if (($meta->item_type ?? 'course') === 'package') {
+            self::fulfil_package($transaction, $meta);
+            return true;
+        }
 
         // Fulfilment: enrol the student in the purchased course.
         try {
@@ -976,8 +1137,8 @@ class manager {
         $item_type = $meta->item_type ?? 'course';
 
         $issubscription = ($item_type === 'subscription');
-        // A wallet top-up enrols in nothing, like a subscription.
-        $notcourse = $issubscription || $item_type === 'wallet_topup';
+        // A wallet top-up or a lesson package enrols in nothing, like a subscription.
+        $notcourse = $issubscription || $item_type === 'wallet_topup' || $item_type === 'package';
 
         // If already completed (by webhook), return success immediately.
         if ($transaction->status === status_machine::COMPLETED) {
@@ -1034,6 +1195,16 @@ class manager {
                 // Mirror to the platform revenue ledger (idempotent with the webhook path).
                 self::mirror_revenue($transaction, $meta);
 
+                if ($item_type === 'package') {
+                    self::fulfil_package($transaction, $meta);
+                    return (object) [
+                        'success' => true,
+                        'status' => status_machine::COMPLETED,
+                        'courseid' => 0,
+                        'item_type' => $item_type,
+                        'enrolled' => false,
+                    ];
+                }
                 if ($item_type === 'wallet_topup') {
                     self::fulfil_wallet_topup($transaction);
                     return (object) [

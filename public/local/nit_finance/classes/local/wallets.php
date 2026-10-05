@@ -175,9 +175,10 @@ final class wallets {
      * @param string $type
      * @param int $userid
      * @param int $limit
+     * @param int $offset lines to skip (paging)
      * @return \stdClass[]
      */
-    public static function history(string $type, int $userid = 0, int $limit = 50): array {
+    public static function history(string $type, int $userid = 0, int $limit = 50, int $offset = 0): array {
         global $DB;
         $userid = $type === self::PLATFORM ? 0 : $userid;
         return array_values($DB->get_records_sql(
@@ -186,7 +187,25 @@ final class wallets {
                JOIN {nit_wallet} w ON w.id = t.walletid
               WHERE w.ownertype = :type AND w.userid = :userid
            ORDER BY t.timecreated DESC, t.id DESC",
-            ['type' => $type, 'userid' => $userid], 0, $limit));
+            ['type' => $type, 'userid' => $userid], max(0, $offset), $limit));
+    }
+
+    /**
+     * How many ledger lines a wallet has.
+     *
+     * @param string $type
+     * @param int $userid
+     * @return int
+     */
+    public static function history_count(string $type, int $userid = 0): int {
+        global $DB;
+        $userid = $type === self::PLATFORM ? 0 : $userid;
+        return $DB->count_records_sql(
+            "SELECT COUNT(1)
+               FROM {nit_wallet_txn} t
+               JOIN {nit_wallet} w ON w.id = t.walletid
+              WHERE w.ownertype = :type AND w.userid = :userid",
+            ['type' => $type, 'userid' => $userid]);
     }
 
     /**

@@ -210,3 +210,7 @@ $string['reminder_msg_action']  = 'Renew your subscription';
 $string['reminder_msg_subject_today'] = 'Your subscription "{$a->plan}" has ended';
 $string['reminder_msg_body_today']    = 'Your subscription "{$a->plan}" ended on {$a->expires}, so the courses it covered are no longer open to you. Nothing you did has been lost — your progress, grades and certificates are saved, and renewing puts you back exactly where you left off.';
 $string['reminder_msg_small_today']   = 'Your subscription has ended — renew to pick up where you left off.';
+
+// Mobile API: enrol_course.
+$string['err_paymentrequired'] = 'This course is paid and not covered by your subscription. Please buy it first.';
+$string['err_enrolfailed']     = 'Could not enrol you in this course.';

@@ -64,7 +64,7 @@ class get_payment_history extends external_api {
                 'transaction_id' => (int) $txn->id,
                 'order_id' => $txn->order_id,
                 'courseid' => (int) $txn->courseid,
-                'course_name' => $coursename ?: '',
+                'course_name' => $coursename ? format_string($coursename) : '',
                 'amount' => (float) $txn->amount,
                 'original_amount' => (float) ($txn->original_amount ?? $txn->amount),
                 'currency' => $txn->currency,

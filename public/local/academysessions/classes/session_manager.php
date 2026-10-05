@@ -103,13 +103,26 @@ class session_manager {
         return ($now >= $start - 1800) && ($now <= $end);
     }
 
-    public static function record_attendance($sessionid, $userid) {
+    /**
+     * Record that a user entered the session (first join only).
+     *
+     * @param int $sessionid
+     * @param int $userid
+     * @param bool $rejoin true = a user who left earlier is back: clear left_at so the row is
+     *                     closed again by record_leave() / end_session(). The default keeps the
+     *                     original behaviour (an existing row is left untouched).
+     * @return int attendance row id
+     */
+    public static function record_attendance($sessionid, $userid, $rejoin = false) {
         global $DB;
         $existing = $DB->get_record('academy_session_attendance', array(
             'sessionid' => $sessionid,
             'userid' => $userid
         ));
         if ($existing) {
+            if ($rejoin && !empty($existing->left_at)) {
+                $DB->set_field('academy_session_attendance', 'left_at', null, ['id' => $existing->id]);
+            }
             return $existing->id;
         }
         $record = new \stdClass();
@@ -118,6 +131,28 @@ class session_manager {
         $record->joined_at = time();
         $record->duration_seconds = 0;
         return $DB->insert_record('academy_session_attendance', $record);
+    }
+
+    /**
+     * Record that a user left the session: stamps left_at and the time spent
+     * (left_at - first joined_at). A later leave (after a rejoin) overwrites both.
+     *
+     * @param int $sessionid
+     * @param int $userid
+     * @param int|null $now defaults to time()
+     * @return \stdClass|null the updated attendance row; null when the user never joined
+     */
+    public static function record_leave($sessionid, $userid, $now = null) {
+        global $DB;
+        $att = $DB->get_record('academy_session_attendance', ['sessionid' => $sessionid, 'userid' => $userid]);
+        if (!$att) {
+            return null;
+        }
+        $now = $now ?? time();
+        $att->left_at = max((int) $now, (int) $att->joined_at);
+        $att->duration_seconds = $att->left_at - (int) $att->joined_at;
+        $DB->update_record('academy_session_attendance', $att);
+        return $att;
     }
 
     public static function end_session($sessionid) {

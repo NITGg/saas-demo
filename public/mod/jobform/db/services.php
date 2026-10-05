@@ -63,4 +63,32 @@ $functions = [
         'capabilities' => 'mod/jobform:submit',
         'services'     => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
+
+    // Teacher functions (Submissions tab).
+    'mod_jobform_get_submissions' => [
+        'classname'    => 'mod_jobform_external',
+        'methodname'   => 'get_submissions',
+        'description'  => 'Lists a Job Form activity\'s submissions (newest first, paged) for a teacher.',
+        'type'         => 'read',
+        'capabilities' => 'mod/jobform:viewsubmissions',
+        'services'     => [MOODLE_OFFICIAL_MOBILE_SERVICE],
+    ],
+
+    'mod_jobform_get_submission' => [
+        'classname'    => 'mod_jobform_external',
+        'methodname'   => 'get_submission',
+        'description'  => 'Returns one submission with every field\'s label and formatted answer (teacher view).',
+        'type'         => 'read',
+        'capabilities' => 'mod/jobform:viewsubmissions',
+        'services'     => [MOODLE_OFFICIAL_MOBILE_SERVICE],
+    ],
+
+    'mod_jobform_delete_submission' => [
+        'classname'    => 'mod_jobform_external',
+        'methodname'   => 'delete_submission',
+        'description'  => 'Permanently deletes a submission and its answers (teacher).',
+        'type'         => 'write',
+        'capabilities' => 'mod/jobform:viewsubmissions',
+        'services'     => [MOODLE_OFFICIAL_MOBILE_SERVICE],
+    ],
 ];

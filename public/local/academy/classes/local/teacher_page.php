@@ -78,7 +78,8 @@ class teacher_page {
         foreach ($courses as $course) {
             $catid = (int) $course->category;
             $year = $years[$catid] ?? null;
-            $division = $answers[(int) $course->id]['division'];
+            // The stored option text may carry {mlang} markup — shown in the page language.
+            $division = format_string($answers[(int) $course->id]['division'], true, ['escape' => false]);
             $coursecontext = \context_course::instance($course->id);
             $card = home_data::course_card($course, $year ? $year['leaf'] : '');
             if (strpos($card['image'], '/course/generated/') !== false) {
@@ -118,7 +119,7 @@ class teacher_page {
         return [
             'id' => (int) $user->id,
             'name' => fullname($user),
-            'title' => trim((string) ($values['teachertitle'] ?? '')),
+            'title' => trim(format_string((string) ($values['teachertitle'] ?? ''), true, ['escape' => false])), // May carry {mlang}.
             'photo' => $picture->get_url($PAGE)->out(false),
             'bio' => $bio,
             'years' => array_values($yearlist),

@@ -44,5 +44,32 @@ function xmldb_local_nit_finance_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026100400, 'local', 'nit_finance');
     }
 
+    if ($oldversion < 2026100500) {
+        // Earnings come from two places now: activity sales (lessonid = cmid) and live
+        // lessons paid with a Flex (lessonid = nit_lesson.id). Tell them apart.
+        $table = new xmldb_table('nit_earning');
+        $field = new xmldb_field('source', XMLDB_TYPE_CHAR, '10', null, XMLDB_NOTNULL, null, 'cm', 'lessonid');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        $index = new xmldb_index('source_lesson_idx', XMLDB_INDEX_NOTUNIQUE, ['source', 'lessonid']);
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+        // Earnings written by the live-lesson engine before this field existed.
+        if ($dbman->table_exists('nit_lesson')) {
+            $DB->execute("UPDATE {nit_earning}
+                             SET source = 'lesson'
+                           WHERE EXISTS (SELECT 1 FROM {nit_lesson} l
+                                          WHERE l.id = {nit_earning}.lessonid
+                                            AND l.purchaseid = {nit_earning}.purchaseid
+                                            AND l.teacherid = {nit_earning}.teacherid)
+                             AND NOT EXISTS (SELECT 1 FROM {nit_purchase} p
+                                              WHERE p.id = {nit_earning}.purchaseid
+                                                AND p.itemtype = 'cm' AND p.itemid = {nit_earning}.lessonid)");
+        }
+        upgrade_plugin_savepoint(true, 2026100500, 'local', 'nit_finance');
+    }
+
     return true;
 }

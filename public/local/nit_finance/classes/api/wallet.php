@@ -38,11 +38,35 @@ final class wallet {
      * @param int $studentid
      * @param int $purchaseid
      * @param int $flexvalueminor value of one Flex, minor units
+     * @param bool $teacherpaid false when the student missed the lesson (the platform keeps it all)
      * @return array earning summary
      */
     public static function distribute(int $lessonid, int $teacherid, int $studentid, int $purchaseid,
-            int $flexvalueminor): array {
-        return (new earnings_service())->distribute($lessonid, $teacherid, $studentid, $purchaseid, $flexvalueminor);
+            int $flexvalueminor, bool $teacherpaid = true): array {
+        return (new earnings_service())->distribute($lessonid, $teacherid, $studentid, $purchaseid,
+            $flexvalueminor, $teacherpaid);
+    }
+
+    /**
+     * Credit the platform with Flex that expired unused.
+     *
+     * @param int $userid
+     * @param int $purchaseid
+     * @param int $amountminor
+     * @return void
+     */
+    public static function expired_flex(int $userid, int $purchaseid, int $amountminor): void {
+        (new earnings_service())->expired_flex($userid, $purchaseid, $amountminor);
+    }
+
+    /**
+     * A teacher's earnings, newest first.
+     *
+     * @param int $teacherid
+     * @return array
+     */
+    public static function teacher_earnings(int $teacherid): array {
+        return (new earnings_service())->for_teacher($teacherid);
     }
 
     /**

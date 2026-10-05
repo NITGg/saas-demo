@@ -341,11 +341,7 @@ if (!in_array($user->auth, $allowedlinkauth, true)) {
     local_googleauth_fail('auth_not_linkable', 403);
 }
 
-// Import the Google avatar as the Moodle user picture (only if they have none).
-// Failure here must never block sign-in, so it is best-effort inside the helper.
-local_googleauth_sync_picture($user, $info->picture ?? null);
-
-// 5) Standard account gates (mirror /login/token.php).
+// 5) Standard account gates (mirror /login/token.php) — before touching the account.
 if (isguestuser($user)) {
     local_googleauth_fail('guest_not_allowed', 403);
 }
@@ -361,6 +357,15 @@ if (!empty($CFG->maintenance_enabled)
         && !has_capability('moodle/site:maintenanceaccess', $systemcontext, $user)) {
     local_googleauth_fail('site_maintenance', 503);
 }
+// A suspended / expired academy (local_license) signs nobody in but site admins —
+// the same lock every token API applies.
+if (class_exists('\local_academy\api\endpoint') && \local_academy\api\endpoint::site_locked((int) $user->id)) {
+    local_googleauth_fail('site_unavailable', 403);
+}
+
+// Import the Google avatar as the Moodle user picture (only if they have none).
+// Failure here must never block sign-in, so it is best-effort inside the helper.
+local_googleauth_sync_picture($user, $info->picture ?? null);
 
 // 5) Set the current user and mint the web service token.
 enrol_check_plugins($user);

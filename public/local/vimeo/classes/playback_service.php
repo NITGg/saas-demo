@@ -26,16 +26,56 @@ class playback_service {
      * @return array ['videoid','embedurl']
      */
     public static function get_playback(int $cmid, \stdClass $user): array {
-        global $DB;
-
-        $row = $DB->get_record(video_service::TABLE, ['cmid' => $cmid]);
+        $row = self::video_row($cmid);
         if (!$row) {
             throw new api_exception(get_string('err_novideo', 'local_vimeo'));
         }
 
         self::require_view($cmid, $user);
+        self::require_lesson_open($cmid, $user);
 
         return self::embed($row);
+    }
+
+    /**
+     * The video of an activity: our mapping row (resource2 / attach_video), else
+     * the Vimeo id stored on a mod_vimeo activity itself.
+     *
+     * @param int $cmid
+     * @return \stdClass|null object with videoid (+ videohash)
+     */
+    public static function video_row(int $cmid): ?\stdClass {
+        global $DB;
+        $row = $DB->get_record(video_service::TABLE, ['cmid' => $cmid]);
+        if ($row) {
+            return $row;
+        }
+        $sql = "SELECT v.videoid, v.videohash
+                  FROM {course_modules} cm
+                  JOIN {modules} m ON m.id = cm.module AND m.name = 'vimeo'
+                  JOIN {vimeo} v ON v.id = cm.instance
+                 WHERE cm.id = :cmid";
+        $mod = $DB->get_manager()->table_exists('vimeo') ? $DB->get_record_sql($sql, ['cmid' => $cmid]) : false;
+        return ($mod && trim((string) $mod->videoid) !== '') ? $mod : null;
+    }
+
+    /**
+     * The same lesson rules the web player enforces (mod/vimeo/view.php →
+     * local_academy\player): lesson-order lock and lessons sold one by one.
+     * Fails with errorcode lessonlocked / lessonforsale. Staff who manage videos
+     * always pass.
+     *
+     * @param int $cmid
+     * @param \stdClass $user the viewer (must be the current $USER)
+     */
+    protected static function require_lesson_open(int $cmid, \stdClass $user): void {
+        if (!class_exists('\local_academy\api\courses')) {
+            return;
+        }
+        if (has_capability('local/vimeo:manage', \context_module::instance($cmid), $user)) {
+            return;
+        }
+        \local_academy\api\courses::require_lesson_open($cmid);
     }
 
     /**

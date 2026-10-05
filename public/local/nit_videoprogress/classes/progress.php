@@ -207,6 +207,89 @@ class progress {
     }
 
     /**
+     * The video lesson behind a cmid, after the same access checks as the
+     * local_nit_videoprogress_save web service: a vimeo/vdocipher activity,
+     * the user is logged in to its course (enrolled), the lesson is available
+     * to them, and they hold mod/<provider>:view.
+     *
+     * @param int $cmid
+     * @return array [course, cm_info]
+     * @throws \moodle_exception err_notvideo, require_login_exception, required_capability_exception
+     */
+    public static function require_lesson(int $cmid): array {
+        try {
+            [$course, $cm] = get_course_and_cm_from_cmid($cmid);
+        } catch (\dml_missing_record_exception $e) {
+            throw new \moodle_exception('err_notvideo', 'local_nit_videoprogress');
+        }
+        if (!in_array($cm->modname, self::PROVIDERS, true)) {
+            throw new \moodle_exception('err_notvideo', 'local_nit_videoprogress');
+        }
+        require_login($course, false, $cm, false, true);
+        require_capability('mod/' . $cm->modname . ':view', \context_module::instance($cm->id));
+        return [$course, $cm];
+    }
+
+    /**
+     * Parse the slices a player reports: comma-separated numbers 0-99
+     * (e.g. "12,13,14"). Anything else is rejected so a broken client is noticed.
+     *
+     * @param string $raw
+     * @return int[]
+     * @throws \moodle_exception err_invalidslices
+     */
+    public static function parse_slices(string $raw): array {
+        $raw = trim($raw);
+        if ($raw === '') {
+            return [];
+        }
+        if (!preg_match('/^\d{1,3}(,\d{1,3})*$/', $raw)) {
+            throw new \moodle_exception('err_invalidslices', 'local_nit_videoprogress');
+        }
+        $out = [];
+        foreach (explode(',', $raw) as $slice) {
+            $slice = (int) $slice;
+            if ($slice >= self::SLICES) {
+                throw new \moodle_exception('err_invalidslices', 'local_nit_videoprogress');
+            }
+            $out[$slice] = $slice;
+        }
+        return array_values($out);
+    }
+
+    /**
+     * One lesson's progress as the app sees it (a lesson not started yet is all zeros).
+     *
+     * @param \cm_info $cm
+     * @param \stdClass|null $row the nit_video_progress row, or null
+     * @return array
+     */
+    public static function export(\cm_info $cm, ?\stdClass $row): array {
+        $mask = $row ? str_pad(substr((string) $row->watched, 0, self::SLICES), self::SLICES, '0')
+            : str_repeat('0', self::SLICES);
+        $slices = [];
+        for ($i = 0; $i < self::SLICES; $i++) {
+            if ($mask[$i] === '1') {
+                $slices[] = $i;
+            }
+        }
+        return [
+            'cmid' => (int) $cm->id,
+            'courseid' => (int) $cm->course,
+            'provider' => (string) $cm->modname,
+            'name' => format_string($cm->name, true, ['context' => $cm->context]),
+            'started' => (bool) $row,
+            'percent' => $row ? (int) $row->percent : 0,
+            'position' => $row ? (int) $row->position : 0,
+            'duration' => $row ? (int) $row->duration : 0,
+            'resume_position' => self::resume_position($row),
+            'watched' => $mask,
+            'slices' => $slices,
+            'lastwatched' => $row ? (int) $row->timemodified : 0,
+        ];
+    }
+
+    /**
      * Seconds as m:ss or h:mm:ss.
      *
      * @param int $seconds

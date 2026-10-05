@@ -84,6 +84,65 @@ class submission_manager {
     }
 
     /**
+     * One page of an activity's submissions, newest first, with the student's name fields.
+     *
+     * @param int $jobformid
+     * @param string $status STATUS_SUBMITTED (what the teacher's Submissions tab lists),
+     *                       STATUS_DRAFT, or 'all'
+     * @param int $page 0-based
+     * @param int $perpage 0 = no limit
+     * @return array{total: int, rows: object[]} rows: id, userid, status, timecreated, timemodified + user name fields
+     */
+    public static function list_submissions(int $jobformid, string $status = self::STATUS_SUBMITTED,
+            int $page = 0, int $perpage = 0): array {
+        global $DB;
+        $where = 's.jobformid = :jobformid';
+        $params = ['jobformid' => $jobformid];
+        if ($status !== 'all') {
+            $where .= ' AND s.status = :status';
+            $params['status'] = $status;
+        }
+        $total = (int) $DB->count_records_sql(
+            "SELECT COUNT(1) FROM {jobform_submission} s JOIN {user} u ON u.id = s.userid WHERE $where", $params);
+        $userfields = \core_user\fields::for_name()->get_sql('u', false, '', '', false)->selects;
+        $rows = $DB->get_records_sql(
+            "SELECT s.id, s.userid, s.status, s.timecreated, s.timemodified, u.picture, u.imagealt, u.email,
+                    $userfields
+               FROM {jobform_submission} s
+               JOIN {user} u ON u.id = s.userid
+              WHERE $where
+           ORDER BY s.timemodified DESC, s.id DESC",
+            $params, $perpage > 0 ? $page * $perpage : 0, $perpage > 0 ? $perpage : 0);
+        return ['total' => $total, 'rows' => array_values($rows)];
+    }
+
+    /**
+     * A submission's answers against the activity's current fields (the same view
+     * as view_submission.php): one row per field, in field order, with the label
+     * and the display value in the current language.
+     *
+     * @param int $jobformid
+     * @param int $submissionid
+     * @return array[] [{fieldid, name, type, groupid, value, display}]
+     */
+    public static function get_answer_rows(int $jobformid, int $submissionid): array {
+        $answers = self::get_answers($submissionid);
+        $rows = [];
+        foreach (instance_manager::get_fields($jobformid) as $field) {
+            $value = $answers[$field->id] ?? '';
+            $rows[] = [
+                'fieldid' => (int) $field->id,
+                'name'    => \local_jobform\mlang::resolve($field->name),
+                'type'    => (string) $field->type,
+                'groupid' => (int) $field->groupid,
+                'value'   => (string) $value,
+                'display' => \local_jobform\field_types::format_value($field, (string) $value),
+            ];
+        }
+        return $rows;
+    }
+
+    /**
      * Get the stored answers for a submission as fieldid => value.
      *
      * @param int $submissionid

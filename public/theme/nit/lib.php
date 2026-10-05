@@ -1775,7 +1775,9 @@ function theme_nit_site_export(): array {
         // supportedapp is set from the dynamic licence below (defaults true only
         // when local_license isn't installed at all — a non-SaaS host).
         'supportedapp'    => true,
-        'provisioned'     => (bool) (int) (get_config('theme_nit', 'provisioned') ?? 1),
+        // get_config() answers false (not null) when unset → default provisioned.
+        'provisioned'     => in_array(get_config('theme_nit', 'provisioned'), [false, null, ''], true)
+            ? true : (bool) (int) get_config('theme_nit', 'provisioned'),
         'status'          => 'active',        // active | expired | suspended
         'defaultlanguage' => $CFG->lang ?? 'en',
         'languages'       => array_values(array_keys(
@@ -1791,6 +1793,9 @@ function theme_nit_site_export(): array {
         }
         if (method_exists($lic, 'is_expired') && $lic::is_expired()) {
             $site['status'] = 'expired';
+        }
+        if (method_exists($lic, 'is_suspended') && $lic::is_suspended()) {
+            $site['status'] = 'suspended';
         }
         if (method_exists($lic, 'expiry') && ($exp = (int) $lic::expiry()) > 0) {
             $site['expires'] = $exp;

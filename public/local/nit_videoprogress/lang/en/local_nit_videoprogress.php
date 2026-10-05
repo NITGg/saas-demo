@@ -38,3 +38,6 @@ $string['privacy:metadata:userid'] = 'The student.';
 $string['privacy:metadata:position'] = 'The last playback position, in seconds.';
 $string['privacy:metadata:percent'] = 'The share of the video the student played.';
 $string['privacy:metadata:timemodified'] = 'When the student last watched.';
+$string['err_notvideo'] = 'This is not a video lesson.';
+$string['err_invalidslices'] = 'Invalid watched parts: send comma-separated numbers from 0 to 99.';
+$string['err_notenrolled'] = 'You are not enrolled in this course.';

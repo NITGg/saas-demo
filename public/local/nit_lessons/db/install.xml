@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/nit_lessons/db" VERSION="2026080500" COMMENT="NIT Lessons: lesson lifecycle + time-negotiation proposals.">
+  <TABLES>
+    <TABLE NAME="nit_lesson" COMMENT="Lesson requests/sessions between a student and a teacher (Flex engine).">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="studentid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="teacherid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="subject" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="30" NOTNULL="true" DEFAULT="pending" SEQUENCE="false" COMMENT="pending|waiting_student|waiting_teacher|confirmed|in_progress|completed|student_absent|teacher_absent|cancelled|cancelled_teacher|rejected"/>
+        <FIELD NAME="requested_time" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="confirmed_time" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="duration" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="60" SEQUENCE="false" COMMENT="minutes"/>
+        <FIELD NAME="note" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="reject_reason" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="cancel_reason" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="purchaseid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="purchase the Flex was reserved from"/>
+        <FIELD NAME="flex_state" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="none" SEQUENCE="false" COMMENT="none|reserved|consumed|returned"/>
+        <FIELD NAME="actual_start" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="actual_end" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="sessionid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="meeting-room session id (0 = none)"/>
+        <FIELD NAME="cmid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="course_module id of the room (0 = none)"/>
+        <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="student_status_idx" UNIQUE="false" FIELDS="studentid, status"/>
+        <INDEX NAME="teacher_status_idx" UNIQUE="false" FIELDS="teacherid, status"/>
+        <INDEX NAME="purchaseid_idx" UNIQUE="false" FIELDS="purchaseid"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="nit_lesson_proposal" COMMENT="Suggested/rescheduled times during lesson negotiation.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="lessonid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="proposedby" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="role" TYPE="char" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="student|teacher"/>
+        <FIELD NAME="proposed_time" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="type" TYPE="char" LENGTH="12" NOTNULL="true" DEFAULT="suggest" SEQUENCE="false" COMMENT="suggest|reschedule"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="12" NOTNULL="true" DEFAULT="pending" SEQUENCE="false" COMMENT="pending|accepted|rejected|superseded"/>
+        <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="lessonid_fk" TYPE="foreign" FIELDS="lessonid" REFTABLE="nit_lesson" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="lesson_status_idx" UNIQUE="false" FIELDS="lessonid, status"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="nit_teacher_profile" COMMENT="A teacher's live-lesson settings: whether they take private lessons.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="available" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="1 = students can book live lessons"/>
+        <FIELD NAME="headline" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid_uk" UNIQUE="true" FIELDS="userid"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="nit_teacher_subject" COMMENT="Subjects a teacher gives live lessons in.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="teacherid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="subject" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="teacherid_idx" UNIQUE="false" FIELDS="teacherid"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="nit_teacher_hour" COMMENT="Weekly hours a teacher can be booked (server time).">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="teacherid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="dayofweek" TYPE="int" LENGTH="1" NOTNULL="true" SEQUENCE="false" COMMENT="0 = Sunday … 6 = Saturday"/>
+        <FIELD NAME="starttime" TYPE="char" LENGTH="5" NOTNULL="true" SEQUENCE="false" COMMENT="HH:MM"/>
+        <FIELD NAME="endtime" TYPE="char" LENGTH="5" NOTNULL="true" SEQUENCE="false" COMMENT="HH:MM"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="teacherid_idx" UNIQUE="false" FIELDS="teacherid"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>

@@ -81,3 +81,4 @@ $string['privacy:metadata:jobform_submission:status'] = 'Whether the submission 
 $string['privacy:metadata:jobform_submission:timemodified'] = 'When the submission was last changed.';
 $string['privacy:metadata:jobform_submission_data'] = 'The answers within a submission.';
 $string['privacy:metadata:jobform_submission_data:value'] = 'The value the student entered for a field.';
+$string['errorsubmissionnotfound'] = 'Submission {$a} was not found (it may have been deleted).';

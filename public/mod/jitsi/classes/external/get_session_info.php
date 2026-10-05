@@ -86,9 +86,26 @@ class get_session_info extends external_api {
         $whiteboard_url = rtrim($excalidraw_app, '/') . '/#room=' . rawurlencode($wb_room);
 
         // ── Recordings ────────────────────────────────────────────────────────
-        // Recording (Bunny/MinIO) removed for the SaaS; VdoCipher playback lands in
-        // a later phase. Return an empty list for now.
+        // Vimeo recordings stored by record_notify.php (academy_session_recordings),
+        // with the web page's rules: staff always; students of a linked session once
+        // it is over; standalone rooms always.
         $recordings = [];
+        if (class_exists('\local_academysessions\recordings')) {
+            $linked = $DB->get_record('academy_live_sessions', ['jitsiid' => $jitsi->id]) ?: null;
+            if ($is_teacher || \local_academysessions\recordings::visible_to_students($linked)) {
+                foreach (\local_academysessions\recordings::list_for((int) $cm->id,
+                        $linked ? (int) $linked->id : 0) as $rec) {
+                    $recordings[] = [
+                        'id'           => $rec['id'],
+                        'title'        => $rec['title'],
+                        'status'       => $rec['status'],
+                        'playback_url' => $rec['playback_url'],
+                        'embed_url'    => $rec['embed_url'],
+                        'timecreated'  => $rec['timecreated'],
+                    ];
+                }
+            }
+        }
 
         return [
             'cmid'          => $cm->id,
@@ -122,9 +139,9 @@ class get_session_info extends external_api {
                     'id'            => new external_value(PARAM_INT,  'Recording DB id'),
                     'title'         => new external_value(PARAM_TEXT, 'Recording title'),
                     'status'        => new external_value(PARAM_ALPHA,'Status: syncing|ready'),
-                    'playback_url'  => new external_value(PARAM_URL,  'HLS .m3u8 for native player', VALUE_OPTIONAL),
+                    'playback_url'  => new external_value(PARAM_URL,  'Vimeo player URL (https://player.vimeo.com/video/<id>)', VALUE_OPTIONAL),
                     'thumbnail_url' => new external_value(PARAM_URL,  'Thumbnail image URL', VALUE_OPTIONAL),
-                    'embed_url'     => new external_value(PARAM_URL,  'Bunny iframe embed URL', VALUE_OPTIONAL),
+                    'embed_url'     => new external_value(PARAM_URL,  'Vimeo iframe embed URL (same as playback_url)', VALUE_OPTIONAL),
                     'timecreated'   => new external_value(PARAM_INT,  'Unix timestamp'),
                 ])
             ),

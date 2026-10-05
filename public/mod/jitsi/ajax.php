@@ -46,7 +46,7 @@ if ($function === 'end_room') {
     $context = context_module::instance($cm->id);
     require_capability('mod/jitsi:moderate', $context);
 
-    set_config('ended_' . $cm->id, time(), 'mod_jitsi');
+    \mod_jitsi\local\presence::end_room((int) $cm->id);
 
     echo json_encode(['status' => 'success']);
     exit;
