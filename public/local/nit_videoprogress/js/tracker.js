@@ -293,7 +293,8 @@
                 return;
             }
             resumed = true;
-            if (d > 0 && resumeAt >= d - 10) {
+            // Near the end = finished (same rule as progress::margin(): 10 s, or a tenth of a short video).
+            if (d > 0 && resumeAt >= d - Math.min(10, Math.max(1, Math.floor(d / 10)))) {
                 return;
             }
             player.seek(resumeAt);

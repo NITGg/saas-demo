@@ -74,6 +74,12 @@ final class progress_test extends \advanced_testcase {
         $this->assertSame(0, progress::resume_position((object) ['position' => 3, 'duration' => 600]));
         $this->assertSame(0, progress::resume_position((object) ['position' => 595, 'duration' => 600]));
         $this->assertSame(262, progress::resume_position((object) ['position' => 262, 'duration' => 600]));
+        // A 16-second video: the margins shrink to 1 s, so it resumes almost anywhere
+        // (with fixed 5 s / 10 s margins it only resumed at second 5).
+        $this->assertSame(8, progress::resume_position((object) ['position' => 8, 'duration' => 16]));
+        $this->assertSame(14, progress::resume_position((object) ['position' => 14, 'duration' => 16]));
+        $this->assertSame(0, progress::resume_position((object) ['position' => 15, 'duration' => 16]), 'last second');
+        $this->assertSame(0, progress::resume_position((object) ['position' => 0, 'duration' => 16]));
     }
 
     public function test_save_endpoint_records_for_current_user(): void {

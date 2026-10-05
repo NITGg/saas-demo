@@ -133,13 +133,27 @@ class progress {
         }
         $position = (int) $row->position;
         $duration = (int) $row->duration;
-        if ($position < self::MIN_RESUME) {
+        if ($position < self::margin($duration, self::MIN_RESUME)) {
             return 0;
         }
-        if ($duration > 0 && $position >= $duration - self::END_MARGIN) {
+        if ($duration > 0 && $position >= $duration - self::margin($duration, self::END_MARGIN)) {
             return 0;
         }
         return $position;
+    }
+
+    /**
+     * A start / end margin scaled to the video: the full margin for a long video,
+     * a tenth of the video (at least 1 s) for a short one — with fixed 5 s / 10 s
+     * margins a 16-second video could only resume between second 5 and 6.
+     * tracker.js uses the same rule.
+     *
+     * @param int $duration seconds (0 = unknown: the full margin)
+     * @param int $max MIN_RESUME or END_MARGIN
+     * @return int seconds
+     */
+    public static function margin(int $duration, int $max): int {
+        return $duration > 0 ? min($max, max(1, intdiv($duration, 10))) : $max;
     }
 
     /**
