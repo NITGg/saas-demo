@@ -58,6 +58,16 @@ class admin_setting_footerpages extends \admin_setting {
     }
 
     /**
+     * Whether a saved empty list opens with the default rows (an emptied footer
+     * column stays empty; an emptied navbar menu falls back to Moodle's links).
+     *
+     * @return bool
+     */
+    protected function empty_shows_defaults(): bool {
+        return false;
+    }
+
+    /**
      * Get the stored JSON.
      *
      * @return string|null
@@ -120,7 +130,7 @@ class admin_setting_footerpages extends \admin_setting {
             }
         } else {
             $decoded = ($data === null || $data === false) ? null : json_decode((string) $data, true);
-            $rows = is_array($decoded) ? $decoded : $this->default_rows();
+            $rows = is_array($decoded) && ($decoded || !$this->empty_shows_defaults()) ? $decoded : $this->default_rows();
         }
 
         $full = $this->get_full_name();

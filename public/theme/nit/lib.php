@@ -3149,8 +3149,8 @@ function theme_nit_navmenu_links(string $menu): ?array {
         return null;
     }
     $rows = json_decode((string) $raw, true);
-    if (!is_array($rows)) {
-        return null;
+    if (!is_array($rows) || !$rows) {
+        return null; // An emptied list keeps Moodle's links: a menu is never left blank.
     }
     $links = [];
     foreach ($rows as $row) {

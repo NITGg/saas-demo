@@ -56,6 +56,10 @@ class admin_setting_navlinks extends admin_setting_footerpages {
         return $labels;
     }
 
+    protected function empty_shows_defaults(): bool {
+        return true;
+    }
+
     /**
      * The editor starts from the links the menu shows today: the known pages
      * (with their roles) plus anything else in the gear menu right now.

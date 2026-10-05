@@ -33,6 +33,12 @@ final class navmenu_test extends \advanced_testcase {
         // The installed default ('') is "not saved" too.
         set_config('navmenu_gear', '', 'theme_nit');
         $this->assertNull(theme_nit_navmenu_links('gear'));
+        // An emptied list (saved from an empty editor) never leaves the menu blank,
+        // and the editor opens with today's links again.
+        set_config('navmenu_gear', '[]', 'theme_nit');
+        $this->assertNull(theme_nit_navmenu_links('gear'));
+        $html = (new admin_setting_navlinks('gear', 'Gear', ''))->output_html('[]');
+        $this->assertStringContainsString('value="/my/"', $html);
     }
 
     public function test_links_follow_who_sees_it(): void {
