@@ -611,6 +611,13 @@
     padding: 0;
     border: 0;
 }
+.nitlx-fieldset > legend {
+    float: none;
+    width: auto;
+}
+.nitlx-form :is(input, select, textarea) {
+    text-transform: none;
+}
 .nitlx-row {
     display: flex;
     align-items: center;
@@ -675,4 +682,5 @@
 .nitlx-dialog :is(input, select, textarea, button) {
     font-family: inherit;
     letter-spacing: normal;
+    text-transform: none;
 }

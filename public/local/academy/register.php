@@ -7,12 +7,13 @@
 // any later version. See <http://www.gnu.org/licenses/>.
 
 /**
- * Bassthalk-style student registration — 3-step wizard (UI stage).
+ * Bassthalk-style student registration — 3-step wizard.
  *
- * Account creation / approval is wired in a later stage; this page renders the
- * measured 1:1 Bassthalk /register UI. Dropdown values are the agreed defaults
- * (admin-configurable later); the grade (الصف) list is the site's top-level
- * categories (the "Year" level).
+ * Renders the measured 1:1 Bassthalk /register UI. On submit the account is
+ * created by \local_academy\local\registration (the same code as the mobile
+ * register_student call): active at once, signs in with the email, every answer
+ * saved in the academy profile fields. Server errors are shown on their fields.
+ * The grade (الصف) list is the site's course categories (the "Year" level).
  *
  * @package    local_academy
  * @copyright  2026 NIT
@@ -49,6 +50,34 @@ $genders = \local_academy\local\user_fields::menu_options('gender');
 $loginurl = (new moodle_url('/login/index.php'))->out(false);
 $homeurl = (new moodle_url('/'))->out(false);
 
+// ---- submit: create the account, sign in, go to the start page ----
+$regold = [];     // Values to put back in the form after a failed submit (never the password).
+$regerrors = [];  // Field name => message.
+if (data_submitted() && confirm_sesskey()) {
+    $raw = [];
+    foreach (\local_academy\local\registration::FIELDS as $name) {
+        $raw[$name] = optional_param($name, '', PARAM_RAW);
+    }
+    $agreed = (bool) optional_param('agree', 0, PARAM_BOOL);
+    try {
+        if (optional_param('password2', '', PARAM_RAW) !== $raw['password']) {
+            throw new \local_academy\local\invalid_registration(['password2' => get_string('reg_passwordmismatch', 'local_academy')]);
+        }
+        $newuser = \local_academy\local\registration::register($raw, $agreed);
+        complete_user_login($newuser);
+        redirect(new moodle_url('/local/academy/start.php'), get_string('reg_success', 'local_academy'),
+            null, \core\output\notification::NOTIFY_SUCCESS);
+    } catch (\local_academy\local\invalid_registration $e) {
+        $regerrors = $e->errors;
+    } catch (\moodle_exception $e) {
+        $regerrors = ['_form' => $e->getMessage()];
+    }
+    $regold = \local_academy\local\registration::clean($raw);
+    unset($regold['password']);
+    $regold['agree'] = $agreed;
+}
+$GLOBALS['regold'] = $regold;
+
 echo $OUTPUT->header();
 
 // ---- icons ----
@@ -68,18 +97,22 @@ function reg_text($name, $label, $icon, $hint = '', $type = 'text', $pw = false)
     $eye = $pw ? '<button type="button" class="reg-eye" tabindex="-1" onclick="var i=this.parentNode.querySelector(\'input\');var on=i.type===\'password\';i.type=on?\'text\':\'password\';">' . $GLOBALS['ic']['eye'] . '</button>' : '';
     $pwcls = $pw ? ' reg-haspw' : '';
     $h = $hint ? '<div class="reg-hint">' . s($hint) . '</div>' : '';
+    $old = $pw ? '' : (string) ($GLOBALS['regold'][$name] ?? ''); // Refill after a failed submit.
+    $val = $old !== '' ? ' value="' . s($old) . '"' : '';
     return '<div class="reg-cell"><div class="reg-field' . $pwcls . '">'
-        . '<input type="' . $type . '" name="' . $name . '" id="f_' . $name . '" placeholder=" " autocomplete="off" required>'
+        . '<input type="' . $type . '" name="' . $name . '" id="f_' . $name . '" placeholder=" " autocomplete="off" required' . $val . '>'
         . '<span class="reg-lab">' . $icon . '<span>' . s($label) . '</span></span>'
         . $eye
         . '</div>' . $h . '<div class="reg-err"></div></div>';
 }
 function reg_select($name, $placeholder, array $opts, $valuefield = null) {
-    $o = '<option value="" selected disabled hidden></option>';
+    $old = (string) ($GLOBALS['regold'][$name] ?? ''); // Re-select after a failed submit.
+    $sel = static fn(string $value): string => ($old !== '' && $value === $old) ? ' selected' : '';
+    $o = '<option value=""' . ($old === '' ? ' selected' : '') . ' disabled hidden></option>';
     foreach ($opts as $k => $v) {
-        if (is_array($v)) { $o .= '<option value="' . s($v['value']) . '">' . s($v['label']) . '</option>'; }
-        else if (is_object($v)) { $o .= '<option value="' . (int)$v->id . '">' . format_string($v->name) . '</option>'; }
-        else { $o .= '<option value="' . s($v) . '">' . format_string($v) . '</option>'; }
+        if (is_array($v)) { $o .= '<option value="' . s($v['value']) . '"' . $sel((string) $v['value']) . '>' . s($v['label']) . '</option>'; }
+        else if (is_object($v)) { $o .= '<option value="' . (int)$v->id . '"' . $sel((string) $v->id) . '>' . format_string($v->name) . '</option>'; }
+        else { $o .= '<option value="' . s($v) . '"' . $sel((string) $v) . '>' . format_string($v) . '</option>'; }
     }
     return '<div class="reg-cell"><div class="reg-field reg-sel">'
         . '<select name="' . $name . '" id="f_' . $name . '" data-ph="' . s($placeholder) . '" required>' . $o . '</select>'
@@ -215,6 +248,10 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
       <h1>طلب انشاء حساب :</h1>
       <p class="nit-reg-sub">ادخل بياناتك بشكل صحيح وسيتم مراجعة طلبك خلال ساعات لـ بضع ايام, وتقدر تسجل دخول عشان تشوف حالة الطلب بتاعك</p>
 
+      <?php if (!empty($regerrors)) {
+          echo $OUTPUT->notification($regerrors['_form'] ?? get_string('reg_failed', 'local_academy'),
+              \core\output\notification::NOTIFY_ERROR);
+      } ?>
       <form method="post" action="<?php echo $PAGE->url->out(false); ?>" id="regform" autocomplete="off">
         <input type="hidden" name="sesskey" value="<?php echo sesskey(); ?>">
 
@@ -263,7 +300,7 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
             <?php echo reg_text('password', 'كلمة السر', $ic['lock'], '', 'password', true); ?>
             <?php echo reg_text('password2', 'تأكيد كلمة السر', $ic['lock'], '', 'password', true); ?>
           </div>
-          <label class="nit-reg-terms"><input type="checkbox" name="agree" id="f_agree"> <span>أوافق على <a href="#" class="reg-terms-open">الشروط والأحكام</a> واتفاقية شراء الكورس في منصة بسطتهالك.</span></label>
+          <label class="nit-reg-terms"><input type="checkbox" name="agree" value="1" id="f_agree"<?php echo !empty($regold['agree']) ? ' checked' : ''; ?>><span>أوافق على <a href="#" class="reg-terms-open">الشروط والأحكام</a> واتفاقية شراء الكورس في منصة بسطتهالك.</span></label>
           <div class="reg-err" id="agree-err" style="margin-top:6px;"></div>
           <div class="nit-reg-btns"><button type="button" class="btn-prev" data-prev>السابق</button><button type="submit" class="btn-next">طلب انشاء حساب !</button></div>
           <div class="nit-reg-bottom">يوجد لديك حساب بالفعل؟ <a href="<?php echo $loginurl; ?>">ادخل إلى حسابك الآن !</a></div>
@@ -298,7 +335,21 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
 <script>
 (function(){
   var DIV = <?php echo json_encode($divisions, JSON_UNESCAPED_UNICODE); ?>;
-  var DEFAULT_SYSTEM = 'عام'; // admin default (hardcoded for now)
+  // Default study system: "عام" (stored bilingual, e.g. "{mlang en}general{mlang}{mlang ar}عام{mlang}").
+  var DEFAULT_SYSTEM = <?php
+      $defaultsystem = '';
+      foreach ($systems as $sys) {
+          if ($sys === 'عام' || strpos($sys, '}عام{') !== false) {
+              $defaultsystem = $sys;
+              break;
+          }
+      }
+      echo json_encode($defaultsystem, JSON_UNESCAPED_UNICODE);
+  ?>;
+  // After a failed submit: the server's messages per field + the division to re-select.
+  var SERVER_ERRORS = <?php echo json_encode((object) array_diff_key($regerrors, ['_form' => 1]), JSON_UNESCAPED_UNICODE); ?>;
+  var OLD_DIVISION = <?php echo json_encode((string) ($regold['division'] ?? ''), JSON_UNESCAPED_UNICODE); ?>;
+  var HAS_OLD = <?php echo $regold ? 'true' : 'false'; ?>;
   var steps = [].slice.call(document.querySelectorAll('.reg-step'));
   var meta = [{p:'30%',l:'الخطوه الاولى'},{p:'60%',l:'الخطوه التانيه'},{p:'90%',l:'الخطوه الاخيره'}];
   var cur = 0;
@@ -373,10 +424,23 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
   }
   if(sysSel && divSel){
     sysSel.addEventListener('change', fillDivisions);
-    // admin default: pre-select the default system and fill its divisions.
-    if(DEFAULT_SYSTEM && DIV[DEFAULT_SYSTEM]){ sysSel.value = DEFAULT_SYSTEM; sysSel.style.color = 'var(--ink)'; }
+    // admin default: pre-select the default system and fill its divisions
+    // (after a failed submit keep the student's own choice instead).
+    if(!HAS_OLD && DEFAULT_SYSTEM && DIV[DEFAULT_SYSTEM]){ sysSel.value = DEFAULT_SYSTEM; sysSel.style.color = 'var(--ink)'; }
     fillDivisions();
+    if(OLD_DIVISION){ divSel.value = OLD_DIVISION; if(divSel.value){ divSel.style.color = 'var(--ink)'; } }
   }
+
+  // ---- server-side errors (failed submit): mark the fields, open the first one's step ----
+  var firstStep = -1;
+  Object.keys(SERVER_ERRORS).forEach(function(name){
+    var f = name === 'agree' ? null : document.getElementById('f_' + name);
+    if(name === 'agree'){ var ae = document.getElementById('agree-err'); if(ae){ ae.textContent = SERVER_ERRORS[name]; } f = document.getElementById('f_agree'); }
+    else if(f){ setErr(f, SERVER_ERRORS[name]); }
+    if(f){ var st = steps.indexOf(f.closest('.reg-step')); if(st >= 0 && (firstStep < 0 || st < firstStep)){ firstStep = st; } }
+  });
+  if(firstStep >= 0){ show(firstStep); }
+  else if(HAS_OLD){ show(steps.length - 1); }
 
   // ---- terms modal ----
   var modal = document.getElementById('reg-terms-modal');

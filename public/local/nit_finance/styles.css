@@ -497,7 +497,7 @@ a.nitfin-chip:hover {
 /* "My earnings" (teachers): four cards in a row, a withdrawal form, status badges. */
 .nitfin-earncards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     margin-bottom: 32px;
 }
 .nitfin-earncards .nitfin-balance {
@@ -561,8 +561,18 @@ a.nitfin-chip:hover {
 .nitfin-badge--reversed {
     background: color-mix(in srgb, var(--nit-brand-error) 18%, transparent);
 }
+@media (max-width: 991px) {
+    .nitfin-earncards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
 @media (max-width: 575px) {
     .nitfin-withdraw {
         grid-template-columns: 1fr;
     }
+}
+.nitfin :is(input, select, textarea) {
+    font-family: inherit;
+    letter-spacing: normal;
+    text-transform: none;
 }

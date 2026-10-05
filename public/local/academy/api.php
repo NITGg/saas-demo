@@ -111,6 +111,43 @@ api::run(function (string $function) use ($USER, $userid, $token, $DB) {
             return \local_academy\password_reset_manager::change_password($userid,
                 required_param('currentpassword', PARAM_RAW), required_param('newpassword', PARAM_RAW));
 
+        // ── Student registration (pre-login: shared registration token) ──────────
+
+        // The 3-step registration form: fields, steps, dropdown options, password rules.
+        case 'get_registration_form':
+            return \local_academy\local\registration::form();
+
+        // Create the student account (active at once) and sign it in: returns the
+        // NEW user's token. Field errors come back as errorcode invalidregistration
+        // with `errors` {field: message}.
+        case 'register_student':
+            api::require_post();
+            $raw = [];
+            foreach (\local_academy\local\registration::FIELDS as $name) {
+                $raw[$name] = optional_param($name, '', PARAM_RAW);
+            }
+            $agreed = optional_param('agree', 0, PARAM_BOOL);
+            try {
+                $newuser = \local_academy\local\registration::register($raw, (bool) $agreed);
+            } catch (\local_academy\local\invalid_registration $e) {
+                api::emit(['status' => 'fail', 'error' => $e->getMessage(),
+                    'errorcode' => 'invalidregistration', 'errors' => $e->errors]);
+            }
+            // Become the new student and mint their mobile token (as /login/token.php does).
+            \core\session\manager::set_user($newuser);
+            $service = $DB->get_record('external_services', ['shortname' => MOODLE_OFFICIAL_MOBILE_SERVICE, 'enabled' => 1]);
+            if (!$service) {
+                api::fail('servicenotavailable', get_string('servicenotavailable', 'webservice'));
+            }
+            $tokenrec = \core_external\util::generate_token_for_current_user($service);
+            \core_external\util::log_token_request($tokenrec);
+            return [
+                'userid'       => (int) $newuser->id,
+                'token'        => $tokenrec->token,
+                'privatetoken' => is_https() ? ($tokenrec->privatetoken ?? null) : null,
+                'profile'      => \local_academy\profile_manager::get_full_profile($newuser, $tokenrec->token),
+            ];
+
         // ── Courses ───────────────────────────────────────────────────────────────
 
         // Free = no active pricing rule. Returns price/currency too when paid.

@@ -6,7 +6,7 @@ document. Last updated **2026-10-05**. Replaces the older `MOBILE_API.md` / `mob
 existing app).
 
 > Not covered yet (in progress, will be added later): the new Bassthalk home page sections, the new
-> teacher page / course details page, the Bassthalk 3-step registration backend, and the Flex
+> teacher page / course details page, and the Flex
 > packages / live-lessons plugins (`local_nit_flex`, `local_nit_lessons`).
 
 ## Contents
@@ -35,8 +35,8 @@ All paths below are relative to it.
 
 | Token | How to get it | Use it for |
 |---|---|---|
-| **User token** | `POST /login/token.php` (`username`, `password`, `service=moodle_mobile_app`) → `{"token":"…","privatetoken":"…"}`, or Google sign-in (`POST /local/googleauth/token.php`, §2) | Everything the signed-in user does. |
-| **Shared pre-login token** | `getsettings.php` → `data.admin_token` (§2.1) | Only pre-login calls: forgot password, profile-field form, academic structure, anonymous catalogue browsing, parent dashboard. It never gives access to a user's data. |
+| **User token** | `POST /login/token.php` (`username`=email, `password`, `service=moodle_mobile_app`) → `{"token":"…","privatetoken":"…"}`, `register_student` (§3.1), or Google sign-in (`POST /local/googleauth/token.php`, §2) | Everything the signed-in user does. |
+| **Shared pre-login token** | `getsettings.php` → `data.admin_token` (§2.1) | Only pre-login calls: student registration, forgot password, profile-field form, academic structure, anonymous catalogue browsing, parent dashboard. It never gives access to a user's data. |
 
 It is the same Moodle web-service token everywhere: our endpoints accept it as `token=` (or `wstoken=`),
 Moodle's REST server as `wstoken=`. Store it securely; there is no server logout — drop it locally.
@@ -94,7 +94,7 @@ Token API endpoints (style A) — all share one implementation (`local_academy\a
   (server configuration; see `local/payments/cli/ws_diagnose.php`).
 - Files from core functions are `pluginfile.php` URLs: insert `/webservice` and append `?token=<token>`
   (or `&token=`).
-- No-login functions (registration) are called through `POST /lib/ajax/service-nologin.php` (§3.1).
+- No-login core functions (e.g. `tool_mobile_get_public_config`) are called through `POST /lib/ajax/service-nologin.php`.
 
 ### 1.6 Common error codes (style A)
 
@@ -550,34 +550,84 @@ Endpoint (style A): `GET|POST /local/academy/api.php?function=<name>&token=<toke
 
 ### 3.1 Login, registration, logout
 
-**Login** (style C, Moodle core):
+**Login** (style C, Moodle core) — students sign in with their **email** and password:
 ```
 POST /login/token.php
-username=<username or email>&password=<password>&service=moodle_mobile_app
+username=<email>&password=<password>&service=moodle_mobile_app
 → {"token":"<token>","privatetoken":"<privatetoken>"}
 → {"error":"Invalid login, please try again","errorcode":"invalidlogin"}
 ```
-`errorcode` values worth handling: `invalidlogin`, `usernotconfirmed` (confirm the email first),
-`suspended` / `forcepasswordchangenotice` (show the message), `sitemaintenance`.
-Google: see §2.2.
+`errorcode` values worth handling: `invalidlogin`, `suspended` / `forcepasswordchangenotice`
+(show the message), `sitemaintenance`. Google: see §2.2.
 
-**Registration** (Moodle core email sign-up, no token — through the no-login AJAX endpoint):
-```
-POST /lib/ajax/service-nologin.php
-Content-Type: application/json
-[{"index":0,"methodname":"auth_email_get_signup_settings","args":{}}]
-→ [{"error":false,"data":{"namefields":["firstname","lastname"],"passwordpolicy":"…","profilefields":[…],…}}]
+#### Student registration (the 3-step form) — pre-login, **shared token**
 
-[{"index":0,"methodname":"auth_email_signup_user","args":{
-   "username":"…","password":"…","firstname":"…","lastname":"…","email":"…",
-   "customprofilefields":[{"type":"text","name":"profile_field_parentphone","value":"010…"}]}}]
-→ [{"error":false,"data":{"success":true,"warnings":[]}}]
+The same form and rules as the website page `/local/academy/register.php`. The account is **active
+at once** (no approval, no email confirmation) and the call returns the new student's token, so the
+app goes straight into the account. The student later signs in with the email + password.
+
+##### `get_registration_form` (GET)
+Fields in form order with their step (1–3), type and dropdown options, the password rules and the
+terms page:
+```json
+{"status":"success","data":{"enabled":true,
+ "fields":[
+  {"name":"firstname","label":"الاسم الأول","step":1,"type":"text","required":true,"options":[]},
+  {"name":"phone","label":"رقم الهاتف","step":1,"type":"phone","required":true,"options":[]},
+  {"name":"grade","label":"الصف الدراسي","step":1,"type":"menu","required":true,"options":[
+     {"value":"{mlang en}First Year of Middle School{mlang}{mlang ar}الصف الاول الاعدادى{mlang}",
+      "label":"الصف الاول الاعدادى","categoryid":1}, "…"]},
+  {"name":"national","label":"رقم الطالب القومي","step":1,"type":"nationalid","required":true,"options":[]},
+  {"name":"studysystem","label":"النظام الدراسي","step":2,"type":"menu","options":[
+     {"value":"{mlang en}general{mlang}{mlang ar}عام{mlang}","label":"عام"}, "…"]},
+  {"name":"division","label":"الشعبة الدراسية","step":2,"type":"menu","options":[
+     {"value":"{mlang ar}ادبى{mlang}{mlang en}Literary{mlang}","label":"ادبى",
+      "systems":["{mlang en}general{mlang}{mlang ar}عام{mlang}","{mlang ar}أزهر{mlang}{mlang en}Azhar{mlang}"]}, "…"]},
+  {"name":"email","label":"البريد الإلكتروني","step":3,"type":"email","required":true,"options":[]},
+  {"name":"password","label":"كلمة السر","step":3,"type":"password","required":true,"options":[]}],
+ "passwordpolicy":"يجب أن تتضمن كلمة المرور على الأقل 8 من الأحرف, على الأقل 1 من الأرقام, …",
+ "termsurl":"http://…/local/multitopics/legal.php?doc=terms&embedded=1&lang=ar"}}
 ```
-The user then confirms the email and logs in. Show `passwordpolicy` under the password field.
-Only profile fields marked "show on sign-up" are accepted here; the academy fields (year, study
-system, division, school, guardian phones …) are filled after the first login with
-`update_my_profile` (§3.3).
-> The new Bassthalk 3-step registration (with approval) is in progress and will get its own call.
+- The 18 fields: step 1 `firstname`, `secondname`, `thirdname`, `lastname`, `phone`, `grade`,
+  `national`; step 2 `fatherphone`, `motherphone`, `school`, `guardianjob`, `studysystem`,
+  `governorate`, `division`; step 3 `religion`, `gender`, `email`, `password`. **All are required.**
+- `type`: `text`, `phone`, `nationalid` (14 digits), `email`, `password`, `menu`. For `menu` show
+  `label`, send `value`. Divisions: show only those whose `systems` contains the chosen study system.
+- `enabled:false` → registration is closed on this academy: hide the "create account" button.
+- Show `passwordpolicy` under the password field; open `termsurl` in a webview for the terms checkbox.
+- Confirm-password is checked by the app (it is not sent).
+
+##### `register_student` (POST)
+| Param | Type | Req | Description |
+|---|---|---|---|
+| the 18 field names above | string | yes | menu fields: the option `value`; digits may be typed in Arabic (`٠١٠…`) |
+| `agree` | 1 | yes | the student accepted the terms |
+
+Success — the student is created, signed in, and this is **their own token** (store it and replace the
+shared token for every next call):
+```json
+{"status":"success","data":{"userid":23,"token":"<new user token>","privatetoken":null,
+ "profile":{"userid":23,"username":"reg.test1@example.com","fullname":"تجربة تسجيل",
+            "email":"reg.test1@example.com","auth":"email","phone":"01011112222","…":"same as get_full_profile"}}}
+```
+Validation failure — one message per field (show each under its field and go back to the step of the
+first one):
+```json
+{"status":"fail","error":"برجاء تصحيح الحقول المحددة.","errorcode":"invalidregistration",
+ "errors":{"school":"هذا الحقل مطلوب","phone":"يرجى إدخال رقم هاتف صحيح (مثال: 01012345678).",
+           "national":"الرقم القومي 14 رقم.","division":"هذه الشعبة لا تتبع النظام الدراسي المختار.",
+           "email":"يوجد حساب بهذا البريد الإلكتروني بالفعل. سجّل الدخول.",
+           "password":"يجب أن تتكون كلمة المرور على الأقل من 8 من الأحرف. …",
+           "agree":"لازم توافق على الشروط والأحكام"}}
+```
+Other errors: `registrationdisabled` (closed), `toomanyregistrations` (more than 10 accounts from the
+same network in an hour — try later), `postrequired`.
+
+Rules (same on web and app): phones 7–25 chars of digits/`+`/spaces/`-`/`()`; national ID exactly 14
+digits; dropdowns accept only their options; the division must belong to the study system; the email
+must be valid and not used by another account (saved in lower case); the password must meet
+`passwordpolicy`. Every answer is saved in the student's profile fields (see `get_full_profile`); the
+student can edit them later with `update_my_profile` (§3.3).
 
 **Logout:** delete the stored token on the device (optionally unregister the push device, §8).
 
@@ -2204,6 +2254,7 @@ unless an action is listed):
 | Area | errorcodes |
 |---|---|
 | Site / auth | `authrequired`, `invalidtoken` (401 → log out), `siteunavailable` (403 → blocking screen), `nopermissions` (hide the feature) |
+| Registration | `invalidregistration` (+ `errors` per field), `registrationdisabled`, `toomanyregistrations` |
 | Profile | `requiredfield`, `invalidphone`, `invalidnationalid`, `invalidoption`, `divisionmismatch`, `invalidlanguage` |
 | Password | `invalidemail`, `toomanyrequests`, `otpinvalid`, `otpexpired`, `otplocked`, `resetexpired`, `weakpassword`, `wrongpassword`, `authnochange` |
 | Courses / lessons | `coursenotfound`, `notenrolled`, `lessonlocked` (→ resume lesson), `lessonforsale` (→ buy flow), `coursenotfree`, `enrolfailed`, `paymentrequired` (→ buy / subscribe), `categorynotfound` |
@@ -2223,7 +2274,7 @@ P = shared pre-login token is enough; ✱ = new in this version)
 
 | Plugin | Functions |
 |---|---|
-| `academy` | P: `request_password_otp`, `verify_password_otp`, `reset_password`, `get_profile_fields`✱, `get_academic_structure`✱, `browse_teachers`, `get_teacher`, `get_teacher_courses` · S: `change_password`, `get_my_profile`, `get_full_profile`✱, `update_my_profile`✱, `get_course_lessons`✱, `log_lesson_view`✱, `get_my_certificates`✱, `is_course_free`, `enrol_free_course`, `get_quizzes`, `get_quiz`, `start_quiz_attempt`, `save_quiz_answer`, `finish_quiz_attempt`, `submit_quiz_attempt`, `get_quiz_attempt`, `get_my_quiz_attempts` · M: `get_all_teachers`, `get_license_status` |
+| `academy` | P: `get_registration_form`✱, `register_student`✱, `request_password_otp`, `verify_password_otp`, `reset_password`, `get_profile_fields`✱, `get_academic_structure`✱, `browse_teachers`, `get_teacher`, `get_teacher_courses` · S: `change_password`, `get_my_profile`, `get_full_profile`✱, `update_my_profile`✱, `get_course_lessons`✱, `log_lesson_view`✱, `get_my_certificates`✱, `is_course_free`, `enrol_free_course`, `get_quizzes`, `get_quiz`, `start_quiz_attempt`, `save_quiz_answer`, `finish_quiz_attempt`, `submit_quiz_attempt`, `get_quiz_attempt`, `get_my_quiz_attempts` · M: `get_all_teachers`, `get_license_status` |
 | `nit_category` ✱ | P/S: `get_categories`, `get_courses` |
 | `nit_finance` ✱ | S: `get_wallet`, `get_wallet_history`, `get_my_purchases`, `create_topup_checkout`, `get_topup_status`, `redeem_code`, `get_course_lesson_prices`, `get_lesson_access`, `buy_lesson` · T: `get_teacher_wallet`, `get_teacher_wallet_history`, `get_my_earnings`, `request_withdrawal`, `get_my_withdrawals` · M: `get_finance_summary`, `list_withdrawals`, `process_withdrawal`, `list_wallets`, `get_wallet_ledger`, `adjust_wallet`, `list_codes`, `generate_codes`, `disable_code`, `set_lesson_price` |
 | `payments` ✱ | M: `get_revenue_report`, `get_transactions`, `get_providers`, `set_provider` · T/M: `get_course_prices`, `save_course_price`, `delete_course_price` |
@@ -2251,6 +2302,9 @@ P = shared pre-login token is enough; ✱ = new in this version)
 Backwards compatible: every existing function name, parameter and response field is kept. Things to
 know when updating the app:
 
+0. **Student registration is new:** `get_registration_form` + `register_student` (§3.1) create an
+   active account with all the academy fields and return its token. Use them instead of Moodle's
+   `auth_email_signup_user` (which needs email confirmation and does not take the academy fields).
 1. **One envelope everywhere (style A):** every failure now also carries `errorcode`; business errors
    now show their real message (before: a generic "internal error"). HTTP 401 for a missing/dead token
    is now used by **all** token endpoints (VdoCipher used to answer 200), and HTTP 403
