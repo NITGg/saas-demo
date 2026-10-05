@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="local/nit_finance/db" VERSION="2026100400" COMMENT="NIT Finance: wallets, purchases, access codes, earnings + teacher withdrawals. All money is stored as integer minor units (piastres).">
+<XMLDB PATH="local/nit_finance/db" VERSION="2026100600" COMMENT="NIT Finance: wallets, purchases, access codes, earnings + teacher withdrawals. All money is stored as integer minor units (piastres).">
   <TABLES>
     <TABLE NAME="nit_earning" COMMENT="Revenue split recorded when a consumed Flex is distributed (US-FN-1-4). Money in integer minor units.">
       <FIELDS>
@@ -166,6 +166,24 @@
         <INDEX NAME="code_uix" UNIQUE="true" FIELDS="code"/>
         <INDEX NAME="status_idx" UNIQUE="false" FIELDS="status"/>
         <INDEX NAME="item_idx" UNIQUE="false" FIELDS="itemtype, itemid"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="nit_cm_preview" COMMENT="Free preview of a paid video lesson: its first seconds play for anyone logged in.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="cmid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="seconds" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="length of the free part"/>
+        <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="cmid_uix" UNIQUE="true" FIELDS="cmid"/>
+        <INDEX NAME="course_idx" UNIQUE="false" FIELDS="courseid"/>
       </INDEXES>
     </TABLE>
   </TABLES>

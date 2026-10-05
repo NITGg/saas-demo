@@ -71,5 +71,13 @@ function xmldb_local_nit_finance_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026100500, 'local', 'nit_finance');
     }
 
+    if ($oldversion < 2026100600) {
+        // Free preview: the first minutes of a paid video lesson.
+        if (!$dbman->table_exists('nit_cm_preview')) {
+            $dbman->install_one_table_from_xmldb_file(__DIR__ . '/install.xml', 'nit_cm_preview');
+        }
+        upgrade_plugin_savepoint(true, 2026100600, 'local', 'nit_finance');
+    }
+
     return true;
 }

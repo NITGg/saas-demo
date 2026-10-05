@@ -202,6 +202,9 @@ $string['topupdesc'] = 'ادفع بالكارت أو المحافظ الإلكت
 $string['topupamount'] = 'المبلغ (ج.م)';
 $string['topupbutton'] = 'اشحن';
 $string['topupnow'] = 'اشحن محفظتك أونلاين';
+$string['topupoff'] = 'الدفع أونلاين غير متاح حاليًا. جرّب لاحقًا أو استخدم كود.';
+$string['topupoff_settings'] = 'إعدادات كاشير';
+$string['topupoff_enable'] = 'تفعيل بوابة كاشير';
 
 // Teacher "My earnings" page and live-lesson earnings.
 $string['myearnings'] = 'أرباحي';

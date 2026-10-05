@@ -202,6 +202,9 @@ $string['topupdesc'] = 'Pay by card, mobile wallet (Vodafone Cash…) or Fawry; 
 $string['topupamount'] = 'Amount (EGP)';
 $string['topupbutton'] = 'Top up';
 $string['topupnow'] = 'Top up your wallet online';
+$string['topupoff'] = 'Online payment is not available yet. Please try again later or use a code.';
+$string['topupoff_settings'] = 'Kashier settings';
+$string['topupoff_enable'] = 'Enable the Kashier provider';
 
 // Teacher "My earnings" page and live-lesson earnings.
 $string['myearnings'] = 'My earnings';

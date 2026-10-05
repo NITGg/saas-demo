@@ -28,13 +28,15 @@ defined('MOODLE_INTERNAL') || die();
 use local_nit_finance\local\access;
 use local_nit_finance\local\catalog;
 use local_nit_finance\local\money;
+use local_nit_finance\local\preview;
 
 /**
  * Close activities the student has not bought.
  *
  * Runs at the end of every require_login() — before the activity logs a view
  * or sets completion — so it covers activity pages, the lesson player and web
- * service calls alike. Pages are sent to the buy page; web services get an error.
+ * service calls alike. Pages are sent to the buy page (or to the free preview of
+ * a video lesson that has one); web services get an error.
  *
  * @param stdClass|int|null $courseorid
  * @param bool $autologinguest
@@ -60,6 +62,7 @@ function local_nit_finance_after_require_login($courseorid = null, $autologingue
     if ($preventredirect) {
         throw new \moodle_exception('err_lessonlocked', 'local_nit_finance');
     }
+    preview::redirect_if_preview($cm);
     redirect(new moodle_url('/local/nit_finance/buy.php', ['cmid' => $cm->id]));
 }
 
@@ -85,6 +88,34 @@ function local_nit_finance_coursemodule_standard_elements($formwrapper, $mform) 
     if ($price > 0) {
         $mform->setExpanded('local_nit_finance_hdr');
     }
+
+    // Free preview: the first minutes of a video lesson play for anyone logged in.
+    if (!preview::is_video(local_nit_finance_form_modname($formwrapper))) {
+        return;
+    }
+    $mform->addElement('text', 'local_nit_finance_preview', get_string('previewminutes', 'local_nit_finance'), ['size' => 8]);
+    $mform->setType('local_nit_finance_preview', PARAM_RAW_TRIMMED);
+    $mform->addHelpButton('local_nit_finance_preview', 'previewminutes', 'local_nit_finance');
+    $seconds = $cm ? preview::seconds((int) $cm->id) : 0;
+    $mform->setDefault('local_nit_finance_preview', preview::format_minutes($seconds));
+    if ($seconds > 0) {
+        $mform->setExpanded('local_nit_finance_hdr');
+    }
+}
+
+/**
+ * The activity type of a settings form (also when adding a new activity).
+ *
+ * @param moodleform_mod $formwrapper
+ * @return string e.g. "vimeo"
+ */
+function local_nit_finance_form_modname($formwrapper): string {
+    $current = $formwrapper->get_current();
+    if (!empty($current->modulename)) {
+        return (string) $current->modulename;
+    }
+    $cm = $formwrapper->get_coursemodule();
+    return $cm && !empty($cm->modname) ? (string) $cm->modname : '';
 }
 
 /**
@@ -95,11 +126,16 @@ function local_nit_finance_coursemodule_standard_elements($formwrapper, $mform) 
  * @return array errors
  */
 function local_nit_finance_coursemodule_validation($formwrapper, $data) {
+    $errors = [];
     $value = trim((string) ($data['local_nit_finance_price'] ?? ''));
     if ($value !== '' && money::to_minor($value) === null) {
-        return ['local_nit_finance_price' => get_string('err_badprice', 'local_nit_finance')];
+        $errors['local_nit_finance_price'] = get_string('err_badprice', 'local_nit_finance');
     }
-    return [];
+    if (array_key_exists('local_nit_finance_preview', $data)
+            && preview::parse_minutes((string) $data['local_nit_finance_preview']) === null) {
+        $errors['local_nit_finance_preview'] = get_string('err_badpreview', 'local_nit_finance', preview::MAX_MINUTES);
+    }
+    return $errors;
 }
 
 /**
@@ -116,6 +152,10 @@ function local_nit_finance_coursemodule_edit_post_actions($data, $course) {
     }
     $minor = money::to_minor((string) $data->local_nit_finance_price) ?? 0;
     catalog::set_price((int) $data->coursemodule, (int) $course->id, $minor);
+    if (property_exists($data, 'local_nit_finance_preview')) {
+        $seconds = preview::parse_minutes((string) $data->local_nit_finance_preview) ?? 0;
+        preview::set((int) $data->coursemodule, (int) $course->id, $seconds);
+    }
     return $data;
 }
 
@@ -128,4 +168,5 @@ function local_nit_finance_coursemodule_edit_post_actions($data, $course) {
 function local_nit_finance_pre_course_module_delete($cm) {
     global $DB;
     $DB->delete_records('nit_item_price', ['itemtype' => catalog::CM, 'itemid' => $cm->id]);
+    preview::delete((int) $cm->id);
 }
