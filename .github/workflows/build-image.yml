@@ -17,6 +17,11 @@ on:
   push:
     tags:
       - "v*"                     # v2026.08, v2026.09, ...
+    # Standalone Bassthalk site: every push to this branch publishes
+    # :bassthalk-clone. Branch pushes never run the rollout job (tag-only), so
+    # the SaaS academies are untouched. Deploy on the server with update.sh.
+    branches:
+      - bassthalk-clone
   workflow_dispatch:
     inputs:
       tag:
@@ -58,6 +63,7 @@ jobs:
             type=match,pattern=v(.*),group=1
             type=raw,value=${{ inputs.tag }},enable=${{ inputs.tag != '' }}
             type=raw,value=latest,enable=${{ github.ref_type == 'tag' }}
+            type=raw,value=bassthalk-clone,enable=${{ github.ref == 'refs/heads/bassthalk-clone' }}
             type=sha
 
       - name: Build & push
