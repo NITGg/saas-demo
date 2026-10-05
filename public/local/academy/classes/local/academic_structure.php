@@ -288,6 +288,7 @@ class academic_structure {
         $divisions = self::all_divisions($structure);
 
         $categoryid = course_fields::ensure();
+        course_fields::ensure_subject();
         self::course_select($categoryid, self::COURSE_SYSTEM, user_fields::ml('النظام الدراسي', 'Study system'), $systems);
         self::course_select($categoryid, self::COURSE_DIVISION, user_fields::ml('الشعبة', 'Division'), $divisions);
 

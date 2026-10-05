@@ -9,7 +9,8 @@
 /**
  * JSON for the home page HTML blocks (theme/nit/blocks/templates/bassthalk).
  *
- *   ?section=selected  → {"years": [...], "courses": [...]}            (كورسات مختارة)
+ *   ?section=subjects  → {"years": [...], "subjects": [...]}           (كورسات مختارة — subject cards)
+ *   ?section=selected  → {"years": [...], "courses": [...]}            (the same section's former course cards)
  *   ?section=teachers  → {"years", "systems", "me", "teachers": [...]} (المدرسين عندنا)
  *   ?section=lessons   → {"all", "courses": [...]}                     (المحاضرات المقترحة)
  *
@@ -33,6 +34,9 @@ $data = null;
 switch ($section) {
     case 'selected':
         $data = \local_academy\local\home_data::selected();
+        break;
+    case 'subjects':
+        $data = \local_academy\local\home_data::subjects();
         break;
     case 'teachers':
         $data = \local_academy\local\home_data::teachers();

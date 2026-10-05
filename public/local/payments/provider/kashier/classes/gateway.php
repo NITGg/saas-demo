@@ -98,6 +98,25 @@ class gateway extends base_provider {
      */
     public function initialize_payment(payment_request $request): checkout_response {
         $base_url = $this->get_base_url() ?: 'https://api.kashier.io';
+        $mode = $this->get_mode();
+
+        // Kashier answers an empty key with a bare HTTP 401 — name the missing
+        // setting instead, so the admin knows what to fill in.
+        $missing = [];
+        foreach (['merchant_id', 'api_key', 'secret_key'] as $name) {
+            if ($this->cred($name) === '') {
+                $missing[] = $mode . '_' . $name;
+            }
+        }
+        if ($missing) {
+            $this->log('error', 'Kashier credentials missing', [
+                'mode' => $mode,
+                'missing' => $missing,
+                'transaction_id' => $request->transaction_id,
+            ]);
+            return checkout_response::failure('Kashier ' . strtoupper($mode) . ' credentials are not set ('
+                . implode(', ', $missing) . ') — set them in admin/settings.php?section=paymentprovider_kashier');
+        }
 
         $body = [
             'amount' => (string) $request->amount,
@@ -149,10 +168,14 @@ class gateway extends base_provider {
                 'response' => $result['body'],
                 'transaction_id' => $request->transaction_id,
             ]);
-            return checkout_response::failure(
-                'Kashier session creation failed: HTTP ' . $result['http_code'],
-                $result['body']
-            );
+            $message = 'Kashier session creation failed: HTTP ' . $result['http_code'];
+            if ($result['http_code'] == 401 || $result['http_code'] == 403) {
+                // Wrong keys, or keys of the other mode (TEST keys only work on
+                // test-api.kashier.io, LIVE keys only on api.kashier.io).
+                $message .= ' — the ' . strtoupper($mode) . ' API key / secret key / merchant ID were rejected by '
+                    . $base_url . '; check they are the ' . strtoupper($mode) . ' keys of the same Kashier account';
+            }
+            return checkout_response::failure($message, is_array($result['body']) ? $result['body'] : []);
         }
 
         $session_id = $result['body']['_id'] ?? '';

@@ -121,86 +121,19 @@
 
         <div class="bthtp__grid">
             {{#courses}}
-            {{! data-lp-badged: the card prints its own price, so local_payments' course_cards.js must not add its badge. }}
-            <article class="bthtp__course" data-bthtp-course="{{yearid}}">
-                <a class="bthtp__cimg" href="{{url}}" tabindex="-1" data-lp-badged="1">
-                    {{#image}}<img src="{{image}}" alt="" loading="lazy">{{/image}}
-                    {{^image}}<svg class="bthtp__cnoimg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2M6 4h5v8l-2.5-1.5L6 12z"/></svg>{{/image}}
-                </a>
-                <div class="bthtp__crow">
-                    <a class="bthtp__ctitle" href="{{url}}">{{fullname}}</a>
-                    {{#year}}<span class="bthtp__cyear">{{year}}</span>{{/year}}
-                </div>
-                <div class="bthtp__crow bthtp__crow--meta">
-                    <div class="bthtp__cmain">
-                        <div class="bthtp__cprice">{{price}}</div>
-                        {{#summary}}
-                        <p class="bthtp__cdesc" data-bthtp-desc>{{summary}}</p>
-                        <button type="button" class="bthtp__more" data-bthtp-more hidden
-                            data-less="{{#str}}teacherpage_less, local_academy{{/str}}">{{#str}}teacherpage_more, local_academy{{/str}}</button>
-                        {{/summary}}
-                    </div>
-                    <ul class="bthtp__cdates">
-                        <li title="{{#str}}teacherpage_created, local_academy{{/str}}">
-                            <svg class="bthtp__ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2m0 16H5V9h14zM7 11h5v5H7z"/></svg>
-                            <span>{{createdtext}}</span>
-                        </li>
-                        <li title="{{#str}}teacherpage_modified, local_academy{{/str}}">
-                            <svg class="bthtp__ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2m0 18a8 8 0 1 1 8-8a8 8 0 0 1-8 8m.5-13H11v6l5.2 3.2l.8-1.3l-4.5-2.7z"/></svg>
-                            <span>{{modifiedtext}}</span>
-                        </li>
-                    </ul>
-                </div>
-                <div class="bthtp__cbtns">
-                    {{#enrolled}}
-                    <a class="bthtp__btn bthtp__btn--fill" href="{{url}}">{{#str}}teacherpage_enter, local_academy{{/str}}</a>
-                    {{/enrolled}}
-                    {{^enrolled}}
-                        {{#free}}
-                        <a class="bthtp__btn bthtp__btn--fill" href="{{enrolurl}}">{{#str}}teacherpage_free, local_academy{{/str}}</a>
-                        {{/free}}
-                        {{^free}}
-                        <a class="bthtp__btn" href="{{url}}">{{#str}}teacherpage_enter, local_academy{{/str}}</a>
-                        <a class="bthtp__btn bthtp__btn--fill" href="{{enrolurl}}">{{#str}}teacherpage_subscribe, local_academy{{/str}}</a>
-                        {{/free}}
-                    {{/enrolled}}
-                </div>
-            </article>
+            {{> local_academy/course_card }}
             {{/courses}}
         </div>
         <p class="bthtp__empty" data-bthtp-empty hidden>{{#str}}teacherpage_empty, local_academy{{/str}}</p>
     </section>
 </div>
+{{> local_academy/course_cards_js }}
 {{#js}}
 (function() {
     var root = document.querySelector('[data-bthtp]');
     if (!root) {
         return;
     }
-    // "... عرض باقي التفاصيل": only where the clamped description is cut off.
-    // Measured again once the web fonts are in and on resize — both change the wrap.
-    var toggles = root.querySelectorAll('[data-bthtp-more]');
-    var measure = function() {
-        Array.prototype.forEach.call(toggles, function(btn) {
-            var desc = btn.previousElementSibling;
-            if (!desc.classList.contains('is-open')) {
-                btn.hidden = desc.scrollHeight <= desc.clientHeight + 1;
-            }
-        });
-    };
-    Array.prototype.forEach.call(toggles, function(btn) {
-        var desc = btn.previousElementSibling;
-        var more = btn.textContent;
-        btn.addEventListener('click', function() {
-            var open = desc.classList.toggle('is-open');
-            btn.textContent = open ? btn.getAttribute('data-less') : more;
-        });
-    });
-    measure();
-    if (document.fonts && document.fonts.ready) {
-        document.fonts.ready.then(measure);
-    }
-    window.addEventListener('resize', measure);
     // Year filter.
     var cards = root.querySelectorAll('[data-bthtp-course]');
     var empty = root.querySelector('[data-bthtp-empty]');

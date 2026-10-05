@@ -183,5 +183,62 @@ final class home_data_test extends \advanced_testcase {
 
     public function test_no_course_at_all_is_empty(): void {
         $this->assertSame([], home_data::selected_courses());
+        $this->assertSame([], home_data::subjects()['subjects']);
+    }
+
+    /** Position (1-based) of a subject in the Subject list, by its English name. */
+    private function subject(string $english): int {
+        foreach (course_fields::subject_options() as $i => $option) {
+            if (strpos($option, '{mlang en}' . $english . '{mlang}') !== false) {
+                return $i + 1;
+            }
+        }
+        $this->fail("No subject $english");
+    }
+
+    public function test_subjects_are_one_card_per_year_and_subject(): void {
+        $gen = $this->getDataGenerator();
+        $physics = $this->subject('Physics');
+        $history = $this->subject('History');
+        $a = $gen->create_course(['category' => $this->third->id]);
+        $b = $gen->create_course(['category' => $this->third->id]);
+        $c = $gen->create_course(['category' => $this->first->id]);
+        $d = $gen->create_course(['category' => $this->third->id]);
+        $gen->create_course(['category' => $this->third->id]); // No subject: no card.
+        $hidden = $gen->create_course(['category' => $this->third->id, 'visible' => 0]);
+        foreach ([$a, $b, $c, $hidden] as $course) {
+            $this->set_fields($course->id, [course_fields::SUBJECT => $physics]);
+        }
+        $this->set_fields($d->id, [course_fields::SUBJECT => $history]);
+        $t1 = $gen->create_user();
+        $t2 = $gen->create_user();
+        $gen->enrol_user($t1->id, $a->id, 'editingteacher');
+        $gen->enrol_user($t1->id, $b->id, 'editingteacher');
+        $gen->enrol_user($t2->id, $b->id, 'teacher');
+        $gen->enrol_user($gen->create_user()->id, $a->id, 'student');
+
+        $cards = home_data::subjects()['subjects'];
+
+        $this->assertCount(3, $cards, 'third year: physics + history, first year: physics');
+        $byurl = array_column($cards, null, 'url');
+        $third = $byurl[(new \moodle_url('/local/academy/subject.php',
+            ['year' => $this->third->id, 'subject' => $physics]))->out(false)];
+        $this->assertStringContainsString('Physics', $third['fullname']);
+        $this->assertSame(2, $third['courses'], 'the hidden course is left out');
+        $this->assertSame(2, $third['teachers'], 'teachers counted once, students not at all');
+        $this->assertSame([(int) $this->stage->id, (int) $this->third->id], $third['years']);
+        $this->assertSame('٣ ث', $third['year']);
+    }
+
+    public function test_course_card_says_whether_the_viewer_is_enrolled(): void {
+        $gen = $this->getDataGenerator();
+        $course = $gen->create_course(['category' => $this->third->id]);
+        $student = $gen->create_user();
+
+        $this->assertFalse(home_data::course_card($course, '')['enrolled'], 'a visitor');
+        $this->setUser($student);
+        $this->assertFalse(home_data::course_card($course, '')['enrolled'], 'not enrolled yet');
+        $gen->enrol_user($student->id, $course->id, 'student');
+        $this->assertTrue(home_data::course_card($course, '')['enrolled'], 'enrolled: no "subscribe" button');
     }
 }

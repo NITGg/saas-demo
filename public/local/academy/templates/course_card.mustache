@@ -1,0 +1,79 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_academy/course_card
+
+    One bassthalk course card (inside a .bthtp page: the teacher and subject pages).
+    Styles: theme/nit/scss/components/_bthteacher.scss. An enrolled student gets only
+    "الدخول للكورس" (no "subscribe"); a free course "اشترك ببلاش".
+
+    Context variables required for this template:
+    * id, fullname, url, enrolurl, image, year, price, summary, createdtext, modifiedtext
+    * yearid - the year filter key (teacher page)
+    * enrolled - the viewer is enrolled
+    * free - the course is free
+
+    Example context (json):
+    {"id": 2, "fullname": "First Month", "url": "#", "enrolurl": "#", "image": "", "year": "٣ ث",
+        "price": "420 جنيه", "summary": "", "createdtext": "", "modifiedtext": "", "yearid": 6,
+        "enrolled": false, "free": false}
+}}
+{{! data-lp-badged: the card prints its own price, so local_payments' course_cards.js must not add its badge. }}
+<article class="bthtp__course" data-bthtp-course="{{yearid}}">
+    <a class="bthtp__cimg" href="{{url}}" tabindex="-1" data-lp-badged="1">
+        {{#image}}<img src="{{image}}" alt="" loading="lazy">{{/image}}
+        {{^image}}<svg class="bthtp__cnoimg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2M6 4h5v8l-2.5-1.5L6 12z"/></svg>{{/image}}
+    </a>
+    <div class="bthtp__crow">
+        <a class="bthtp__ctitle" href="{{url}}">{{fullname}}</a>
+        {{#year}}<span class="bthtp__cyear">{{year}}</span>{{/year}}
+    </div>
+    <div class="bthtp__crow bthtp__crow--meta">
+        <div class="bthtp__cmain">
+            <div class="bthtp__cprice">{{price}}</div>
+            {{#summary}}
+            <p class="bthtp__cdesc" data-bthtp-desc>{{summary}}</p>
+            <button type="button" class="bthtp__more" data-bthtp-more hidden
+                data-less="{{#str}}teacherpage_less, local_academy{{/str}}">{{#str}}teacherpage_more, local_academy{{/str}}</button>
+            {{/summary}}
+        </div>
+        <ul class="bthtp__cdates">
+            <li title="{{#str}}teacherpage_created, local_academy{{/str}}">
+                <svg class="bthtp__ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2m0 16H5V9h14zM7 11h5v5H7z"/></svg>
+                <span>{{createdtext}}</span>
+            </li>
+            <li title="{{#str}}teacherpage_modified, local_academy{{/str}}">
+                <svg class="bthtp__ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2m0 18a8 8 0 1 1 8-8a8 8 0 0 1-8 8m.5-13H11v6l5.2 3.2l.8-1.3l-4.5-2.7z"/></svg>
+                <span>{{modifiedtext}}</span>
+            </li>
+        </ul>
+    </div>
+    <div class="bthtp__cbtns">
+        {{#enrolled}}
+        <a class="bthtp__btn bthtp__btn--fill" href="{{url}}">{{#str}}teacherpage_enter, local_academy{{/str}}</a>
+        {{/enrolled}}
+        {{^enrolled}}
+            {{#free}}
+            <a class="bthtp__btn bthtp__btn--fill" href="{{enrolurl}}">{{#str}}teacherpage_free, local_academy{{/str}}</a>
+            {{/free}}
+            {{^free}}
+            <a class="bthtp__btn" href="{{url}}">{{#str}}teacherpage_enter, local_academy{{/str}}</a>
+            <a class="bthtp__btn bthtp__btn--fill" href="{{enrolurl}}">{{#str}}teacherpage_subscribe, local_academy{{/str}}</a>
+            {{/free}}
+        {{/enrolled}}
+    </div>
+</article>

@@ -206,15 +206,10 @@ class video_service {
      * @param string $videoid
      */
     protected static function whitelist_this_domain(api_client $client, string $videoid): void {
-        global $CFG;
-
         if (!get_config('local_vimeo', 'autowhitelist')) {
             return;
         }
-        $domain = trim((string) get_config('local_vimeo', 'whitelistdomain'));
-        if ($domain === '') {
-            $domain = (string) parse_url($CFG->wwwroot, PHP_URL_HOST);
-        }
+        $domain = self::site_domain();
         if ($domain === '') {
             return;
         }
@@ -224,6 +219,40 @@ class video_service {
             debugging('local_vimeo: could not whitelist domain ' . $domain . ' for video '
                 . $videoid . ': ' . $e->getMessage(), DEBUG_DEVELOPER);
         }
+    }
+
+    /**
+     * Whitelist this site's domain for a video that was not uploaded from here
+     * (an id / URL pasted into an activity, or a video uploaded from another
+     * site such as a dev copy). Best-effort: does nothing when no access token
+     * is set or auto-whitelisting is off, and never throws.
+     *
+     * @param string $videoid
+     */
+    public static function whitelist_site_domain(string $videoid): void {
+        if ($videoid === '' || !api_client::is_configured()) {
+            return;
+        }
+        try {
+            self::whitelist_this_domain(new api_client(), $videoid);
+        } catch (\Throwable $e) {
+            debugging('local_vimeo: ' . $e->getMessage(), DEBUG_DEVELOPER);
+        }
+    }
+
+    /**
+     * The domain videos are whitelisted for: the "whitelistdomain" setting, else
+     * the host of this site's wwwroot.
+     *
+     * @return string bare host, e.g. "academy.example.com" ('' if unknown)
+     */
+    public static function site_domain(): string {
+        global $CFG;
+        $domain = trim((string) get_config('local_vimeo', 'whitelistdomain'));
+        if ($domain === '') {
+            $domain = (string) parse_url($CFG->wwwroot, PHP_URL_HOST);
+        }
+        return $domain;
     }
 
     /**

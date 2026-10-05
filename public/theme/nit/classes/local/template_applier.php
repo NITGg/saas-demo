@@ -97,6 +97,46 @@ class template_applier {
         return true;
     }
 
+    /**
+     * Re-write some sections of the active template from its files (an upgrade
+     * step uses it when a section file changed). Only blocks already on the Site
+     * home are updated — nothing is created — and their edited HTML is replaced.
+     *
+     * @param string $id template id; nothing happens unless it is the active one
+     * @param string[] $keys section keys from homepage_templates::sections()
+     * @return int how many blocks were updated
+     */
+    public static function refresh_sections(string $id, array $keys): int {
+        global $DB;
+        if (homepage_templates::current() !== $id) {
+            return 0;
+        }
+        $blocks = $DB->get_records('block_instances', ['blockname' => 'nit_section', 'pagetypepattern' => 'site-index']);
+        $decoded = [];
+        foreach ($blocks as $bi) {
+            $decoded[$bi->id] = self::config_of($bi);
+        }
+        $claimed = [];
+        $updated = 0;
+        foreach (homepage_templates::sections() as $section) {
+            // Match every section (in order) so each block is claimed by its own section.
+            $target = self::match_block($blocks, $decoded, $claimed, $section['signatures']);
+            if (!$target) {
+                continue;
+            }
+            $claimed[$target->id] = true;
+            if (!in_array($section['key'], $keys, true)) {
+                continue;
+            }
+            $html = self::read_html($id, $section['file']);
+            if ($html !== null) {
+                self::write_config($target, $decoded[$target->id], $html);
+                $updated++;
+            }
+        }
+        return $updated;
+    }
+
     // ── In-page editor support (design "PAGE SECTIONS" list) ────────────────────
 
     /**

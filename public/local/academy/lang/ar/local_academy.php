@@ -48,6 +48,15 @@ $string['teacherpage_less'] = 'إخفاء التفاصيل';
 $string['teacherpage_created'] = 'تاريخ الإنشاء';
 $string['teacherpage_modified'] = 'آخر تحديث';
 $string['teacherpage_empty'] = 'لا توجد كورسات لهذا الصف حاليًا.';
+$string['subjectpage_title'] = 'صفحة المادة : {$a}';
+$string['subjectpage_notfound'] = 'صفحة المادة دي مش متاحة.';
+$string['subjectpage_teachers'] = 'المدرسين';
+$string['subjectpage_teachercount'] = 'عدد المدرسين';
+$string['subjectpage_teachersh1'] = 'مدرسين';
+$string['subjectpage_heading2'] = 'المادة';
+$string['subjectpage_noteachers'] = 'لسه مفيش مدرسين ظاهرين هنا';
+$string['subjectpage_noteachers_desc'] = 'أول ما يتضاف مدرسين للمادة دي هتلاقيهم في المكان ده. تقدر تتصفح الكورسات المتاحة.';
+$string['subjectpage_browse'] = 'تصفح الكورسات';
 
 // Mobile API errors.
 $string['err_postrequired']     = 'هذا الإجراء يتطلب POST';

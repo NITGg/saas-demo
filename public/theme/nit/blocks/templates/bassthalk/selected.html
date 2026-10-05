@@ -4,12 +4,13 @@
   Measured 1:1 against bassthalk.com at 1280×832. Colours: Brand Colors → Bassthalk → "Home — selected courses".
   Texts: Arabic + English via {mlang ar}…{mlang}{mlang en}…{mlang} (edit both); the layout follows the page direction.
 
-  The cards are NOT written here: the script below loads them from
-  /local/academy/homedata.php?section=selected — the visible courses whose "is-special" box is ticked
-  on the course settings page (group "custom fields"), with each course's year = its course category. The year list
-  of the filter is the course categories (choosing a category also shows its sub-categories' courses).
-  The look of one card is the <template data-nit-sel-card> below; {{fullname}} {{url}} {{year}}
-  {{teachers}} {{lessons}} are filled in for every course.
+  The cards are SUBJECTS (as on bassthalk.com) and are NOT written here: the script below loads them from
+  /local/academy/homedata.php?section=subjects — one card per year (course category) + "Subject" (course
+  settings → group "custom fields" → المادة) of the visible courses, with the number of their teachers and
+  courses; "اعرف اكثر" opens the subject page (/local/academy/subject.php). Courses without a subject are not
+  counted. The year list of the filter is the course categories (a category also shows its sub-categories').
+  The look of one card is the <template data-nit-sel-card> below; {{fullname}} (the subject) {{url}} {{year}}
+  {{teachers}} {{courses}} are filled in for every subject.
 -->
 <style>
   .nit-bth-sel{ position:relative; overflow:hidden; width:100%; margin-bottom:40px; color:var(--nit-brand-bthseltext); font-family:'Almarai',sans-serif;
@@ -54,7 +55,8 @@
   html[dir="ltr"] .nit-bth-sel-arrow svg{ transform:scaleX(-1); }
   .nit-bth-sel-viewport{ position:relative; overflow:hidden; }
   .nit-bth-sel-track{ display:flex; gap:20px; transition:transform .3s ease; will-change:transform; touch-action:pan-y; }
-  .nit-bth-sel-slide{ flex:none; padding:40px 16px; }
+  /* Every card the same width, whatever its text (bassthalk: 332px slide = 300px card + 2×16px). */
+  .nit-bth-sel-slide{ flex:none; width:332px; max-width:100%; padding:40px 16px; }
   .nit-bth-sel-slide[hidden]{ display:none; }
   .nit-bth-sel-empty{ padding:40px 16px; text-align:center; font:500 18px/28px 'Tajawal',sans-serif; color:var(--nit-brand-bthseltext); }
   .nit-bth-sel-empty[hidden]{ display:none; }
@@ -156,7 +158,7 @@
       </div>
       <div class="nit-bth-sel-viewport">
         <div class="nit-bth-sel-track" data-nit-sel-track></div>
-        <div class="nit-bth-sel-empty" data-nit-sel-empty hidden>{mlang ar}لا توجد كورسات مختارة لهذا الصف حاليًا.{mlang}{mlang en}No picked courses for this year yet.{mlang}</div>
+        <div class="nit-bth-sel-empty" data-nit-sel-empty hidden>{mlang ar}لا توجد مواد لهذا الصف حاليًا.{mlang}{mlang en}No subjects for this year yet.{mlang}</div>
       </div>
     </div>
   </div>
@@ -173,7 +175,7 @@
         </div>
         <div class="nit-bth-sel-stats">
           <div class="nit-bth-sel-stat"><div>{mlang ar}المدرسين{mlang}{mlang en}Teachers{mlang}</div><div>{{teachers}}</div></div>
-          <div class="nit-bth-sel-stat"><div>{mlang ar}الدروس{mlang}{mlang en}Lessons{mlang}</div><div>{{lessons}}</div></div>
+          <div class="nit-bth-sel-stat"><div>{mlang ar}الكورسات{mlang}{mlang en}Courses{mlang}</div><div>{{courses}}</div></div>
         </div>
         <div class="nit-bth-sel-btnwrap"><a class="nit-bth-sel-btn" href="{{url}}">{mlang ar}اعرف اكثر{mlang}{mlang en}Learn more{mlang}</a></div>
       </div>
@@ -239,7 +241,7 @@
       if (li && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); choose(li); }
     });
 
-    fetch('/local/academy/homedata.php?section=selected', {credentials: 'same-origin'})
+    fetch('/local/academy/homedata.php?section=subjects', {credentials: 'same-origin'})
       .then(function(r){ return r.json(); })
       .then(function(data){
         (data.years || []).forEach(function(y){
@@ -249,7 +251,7 @@
           menu.appendChild(li);
         });
         var html = tpl.innerHTML;
-        (data.courses || []).forEach(function(c){
+        (data.subjects || []).forEach(function(c){
           c.yearids = (c.years || []).join(' ');
           var out = html.replace(/\{\{(\w+)\}\}/g, function(m, k){ return esc(c[k] !== undefined ? c[k] : ''); });
           var holder = document.createElement('div'); holder.innerHTML = out.trim();

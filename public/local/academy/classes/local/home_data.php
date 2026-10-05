@@ -87,6 +87,83 @@ class home_data {
     }
 
     /**
+     * The subjects section of the home page (bassthalk.com's subject cards): the
+     * years for the filter and one card per subject of a year — the visible
+     * courses with the same category (year) and the same course field "Subject",
+     * with the number of their teachers and courses. A card opens the subject
+     * page (local/academy/subject.php). Courses without a subject are left out.
+     *
+     * @return array{years:array<int, array{id:int, name:string}>, subjects:array<int, array>}
+     */
+    public static function subjects(): array {
+        global $DB;
+
+        $courses = $DB->get_records_select('course', 'visible = 1 AND id <> :siteid', ['siteid' => SITEID],
+            'sortorder', 'id, category');
+        $subjectof = course_fields::subjects_of(array_keys($courses));
+        $options = course_fields::subject_options();
+        $years = self::years_by_category();
+
+        // Year (in the category tree's order) → subject (in the list's order) → courses.
+        $groups = [];
+        foreach ($courses as $course) {
+            $subject = $subjectof[(int) $course->id] ?? 0;
+            $catid = (int) $course->category;
+            if (!isset($options[$subject - 1], $years[$catid])) {
+                continue;
+            }
+            $groups[$catid][$subject][] = (int) $course->id;
+        }
+        $order = array_flip(array_keys($years));
+        uksort($groups, static fn(int $a, int $b): int => $order[$a] <=> $order[$b]);
+
+        $out = [];
+        foreach ($groups as $catid => $bysubject) {
+            ksort($bysubject);
+            foreach ($bysubject as $subject => $courseids) {
+                $out[] = [
+                    'fullname' => format_string($options[$subject - 1], true, ['escape' => false]),
+                    'url' => subject_page::url($catid, $subject)->out(false),
+                    'year' => self::short_year($years[$catid]['leaf']),
+                    'years' => $years[$catid]['ids'],
+                    'teachers' => count(self::teacher_ids($courseids)),
+                    'courses' => count($courseids),
+                ];
+            }
+        }
+        return ['years' => self::year_options(), 'subjects' => $out];
+    }
+
+    /**
+     * The teachers of these courses (users with a teacher / editing-teacher role,
+     * not site admins), in name order.
+     *
+     * @param int[] $courseids
+     * @return int[] user ids
+     */
+    public static function teacher_ids(array $courseids): array {
+        global $DB;
+        $roleids = self::teacher_roles();
+        if (!$courseids || !$roleids) {
+            return [];
+        }
+        [$rsql, $params] = $DB->get_in_or_equal($roleids, SQL_PARAMS_NAMED, 'r');
+        [$csql, $cparams] = $DB->get_in_or_equal($courseids, SQL_PARAMS_NAMED, 'c');
+        $ids = $DB->get_fieldset_sql(
+            "SELECT DISTINCT u.id, u.firstname, u.lastname
+               FROM {role_assignments} ra
+               JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = :ctxlevel
+               JOIN {user} u ON u.id = ra.userid AND u.deleted = 0 AND u.suspended = 0
+              WHERE ra.roleid $rsql AND ctx.instanceid $csql
+           ORDER BY u.firstname, u.lastname, u.id",
+            $params + $cparams + ['ctxlevel' => CONTEXT_COURSE]
+        );
+        // Site admins are enrolled as teacher in every course they create
+        // (\local_academy\observer::course_created) — they are not teachers.
+        return array_values(array_filter(array_map('intval', $ids), static fn(int $id): bool => !is_siteadmin($id)));
+    }
+
+    /**
      * Ids of the visible courses whose "is-special" field is ticked.
      *
      * @return int[]
@@ -225,7 +302,7 @@ class home_data {
      *
      * @param \stdClass $course a course record
      * @param string $yearleaf the name of the course's own category (its year)
-     * @return array{id:int, fullname:string, url:string, enrolurl:string, image:string, year:string, price:string, summary:string, created:int, modified:int}
+     * @return array{id:int, fullname:string, url:string, enrolurl:string, image:string, year:string, price:string, summary:string, created:int, modified:int, enrolled:bool}
      */
     public static function course_card(\stdClass $course, string $yearleaf): array {
         global $CFG, $OUTPUT;
@@ -248,6 +325,8 @@ class home_data {
             'summary' => \core_text::substr($summary, 0, 400),
             'created' => (int) $course->timecreated,
             'modified' => (int) $course->timemodified,
+            // The viewer already joined / bought it: cards show "enter" but no "subscribe".
+            'enrolled' => isloggedin() && !isguestuser() && is_enrolled($context, null, '', true),
         ];
     }
 
@@ -270,7 +349,8 @@ class home_data {
         $lower = \core_text::strtolower($year);
         foreach ($rules as [$digits, $stages]) {
             foreach ($digits as $word => $digit) {
-                if (\core_text::strpos($lower, $word) === false) {
+                // A whole word: "second" is also the start of "secondary".
+                if (!preg_match('/(?<!\p{L})' . preg_quote($word, '/') . '(?!\p{L})/u', $lower)) {
                     continue;
                 }
                 foreach ($stages as $stage => $letter) {

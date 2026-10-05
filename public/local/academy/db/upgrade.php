@@ -95,5 +95,11 @@ function xmldb_local_academy_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026100503, 'local', 'academy');
     }
 
+    if ($oldversion < 2026100504) {
+        // Course field "Subject" (المادة): the home subject cards and the subject page.
+        \local_academy\local\course_fields::ensure_subject();
+        upgrade_plugin_savepoint(true, 2026100504, 'local', 'academy');
+    }
+
     return true;
 }

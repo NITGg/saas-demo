@@ -478,3 +478,81 @@ $bthtp-body: "body:not(.pagelayout-frontpage):not(.pagelayout-login):not(.pagela
     .bthtp__info { padding-inline-end: 360px; }
     .bthtp__h2 { font-size: 48px; }
 }
+
+// --- Subject page (local/academy/subject.php, bassthalk.com/subject/<id>) ---------
+// The teacher page's hero and cards without the photo: the year over the subject
+// name, the teachers as pill links, the stats card under the hero (no overlap),
+// then the teachers and the subject's courses.
+.bthtp--subject {
+    .bthtp__hero-in { padding-block-end: 72px; }
+    .bthtp__info { padding-inline-end: 0; }
+    .bthtp__body { margin-block-start: 32px; }
+    .bthtp__card {
+        justify-self: end;
+        padding: 8px 16px;
+    }
+    .bthtp__stats { padding: 0; }
+    a.bthtp__pill {
+        display: inline-block;
+        color: var(--nit-brand-bthtpherotext);
+        transition: all .3s ease;
+
+        &:hover {
+            background: var(--nit-brand-bthtpherotext);
+            color: var(--nit-brand-bthtpherobg);
+        }
+    }
+    .bthtp__courses + .bthtp__courses { margin-block-start: 56px; }
+}
+.bthtp__teachers {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 20px;
+}
+.bthtp a.bthtp__tcard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    height: 100%;
+    padding: 16px;
+    border: 1px solid var(--nit-brand-borderprimary);
+    border-radius: 16px;
+    background: var(--nit-brand-surface);
+    color: var(--nit-brand-textprimary);
+    text-align: center;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, .1), 0 2px 4px -2px rgba(0, 0, 0, .1);
+    transition: all .3s ease;
+
+    &:hover { box-shadow: 0 16px 32px -16px rgba(15, 23, 42, .3); }
+}
+.bthtp__tphoto {
+    width: 112px;
+    height: 112px;
+    max-width: none;
+    border-radius: 9999px;
+    object-fit: cover;
+    object-position: top;
+    background: color-mix(in srgb, var(--nit-brand-bthtpherobg) 18%, var(--nit-brand-surface));
+}
+.bthtp__tname { font-weight: 700; font-size: 17px; }
+.bthtp__ttitle { font-size: 14px; color: var(--nit-brand-textsecondary); }
+.bthtp__noteachers {
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 32px 24px;
+    border-radius: 16px;
+    background: var(--nit-brand-surface);
+    text-align: center;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, .1);
+
+    h3 { margin: 0 0 8px; font-size: 18px; font-weight: 700; }
+    p { margin: 0 0 16px; color: var(--nit-brand-textsecondary); font-size: 14px; }
+    .bthtp__btn { display: inline-block; }
+}
+@media (min-width: 768px) {
+    .bthtp--subject .bthtp__hero-in { padding-block-end: 96px; }
+    .bthtp--subject .bthtp__info { padding-inline-end: 0; }
+    .bthtp--subject .bthtp__body { display: block; padding: 0 40px; }
+    .bthtp--subject .bthtp__card { margin-inline-start: auto; }
+}

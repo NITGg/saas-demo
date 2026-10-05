@@ -23,6 +23,7 @@ require_once($GLOBALS['CFG']->libdir . '/filelib.php');
  *   GET    /videos/{id}?fields=…                    get_video()
  *   GET    /me/videos?fields=…                      list_videos()
  *   PUT    /videos/{id}/privacy/domains/{domain}    whitelist_domain()
+ *   GET    /videos/{id}/privacy/domains             list_domains()
  *   DELETE /videos/{id}                             delete_video()
  */
 class api_client {
@@ -139,6 +140,19 @@ class api_client {
         }
         return $this->request('PUT',
             '/videos/' . rawurlencode($videoid) . '/privacy/domains/' . rawurlencode($domain));
+    }
+
+    /**
+     * The domains on a video's embed whitelist (used by diagnostics).
+     *
+     * @param string $videoid
+     * @return string[] bare hosts
+     */
+    public function list_domains(string $videoid): array {
+        $result = $this->request('GET', '/videos/' . rawurlencode($videoid) . '/privacy/domains',
+            ['per_page' => 100]);
+        return array_values(array_filter(array_map(
+            static fn($row) => (string) ($row['domain'] ?? ''), $result['data'] ?? [])));
     }
 
     /**

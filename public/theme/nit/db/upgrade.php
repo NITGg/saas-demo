@@ -66,5 +66,14 @@ function xmldb_theme_nit_upgrade($oldversion) {
         theme_nit_footer_translate_defaults();
         upgrade_plugin_savepoint(true, 2026100501, 'theme', 'nit');
     }
+
+    if ($oldversion < 2026100502) {
+        // The "كورسات مختارة" section shows subject cards (same width, opening the
+        // subject page) and "المحاضرات المقترحة" hides "subscribe" on courses the
+        // student is enrolled in: write the two blocks from the new files.
+        \theme_nit\local\template_applier::refresh_sections('bassthalk', ['selected', 'lessons']);
+        purge_all_caches();
+        upgrade_plugin_savepoint(true, 2026100502, 'theme', 'nit');
+    }
     return true;
 }

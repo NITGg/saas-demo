@@ -900,10 +900,11 @@ system / division to pre-select (`null` for visitors). Tap a teacher → `get_te
 {"status":"success","data":{"courses":[{"id":15,"fullname":"الرياضيات - الصف الأول الاعدادي",
   "image":"http://…/webservice/pluginfile.php/86/course/overviewfiles/cover.svg?token=<token>",
   "year":"١ ع","price":"مجاني","summary":"الأعداد النسبية والجبر والهندسة للصف الأول الإعدادي.",
-  "created":1791124082,"modified":1791181745,"state":{…}}]}}
+  "created":1791124082,"modified":1791181745,"enrolled":false,"state":{…}}]}}
 ```
 The latest courses. `year` is the short year label and `price` the ready-made price text of the web
-card; use `state` for real numbers.
+card; use `state` for real numbers. `enrolled` true = the user is already in the course: show "enter",
+not "subscribe".
 
 #### `get_teacher_page` — `teacherid`
 ```json

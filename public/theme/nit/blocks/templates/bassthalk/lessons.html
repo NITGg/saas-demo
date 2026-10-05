@@ -9,7 +9,8 @@
   The cards are NOT written here: the script loads /local/academy/homedata.php?section=lessons —
   the newest visible courses; for a logged-in student, the courses of their own year (and division).
   Each card: the course picture, name, year, price (fee enrolment / payments plugin, "مجاني" when
-  free), description, created / updated dates, "الدخول للكورس" and "الإشتراك في الكورس !".
+  free), description, created / updated dates, "الدخول للكورس" and "الإشتراك في الكورس !" (left out when
+  the student is already enrolled in the course).
   "الكل" opens the course catalogue. The look of one card is the <template data-nit-les-card> below.
 -->
 <style>
@@ -235,6 +236,8 @@
           holder.innerHTML = html.replace(/\{\{(\w+)\}\}/g, function(m, k){ return esc(c[k] !== undefined ? c[k] : ''); }).trim();
           var slide = holder.firstElementChild;
           if (!c.image) { var im = slide.querySelector('.nit-bth-les-img'); if (im) { im.remove(); } }
+          // Already enrolled (bought / joined): no "subscribe" button, only "enter".
+          if (c.enrolled) { var buy = slide.querySelector('.is-buy'); if (buy) { buy.remove(); } }
           // A long description shows its start and "… عرض باقي التفاصيل" (which shows the rest).
           var desc = slide.querySelector('[data-nit-les-desc]'), more = slide.querySelector('[data-nit-les-more]');
           var text = c.summary || '';

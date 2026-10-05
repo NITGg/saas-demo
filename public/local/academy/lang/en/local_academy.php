@@ -104,6 +104,15 @@ $string['teacherpage_less'] = 'Show less';
 $string['teacherpage_created'] = 'Created';
 $string['teacherpage_modified'] = 'Last updated';
 $string['teacherpage_empty'] = 'No courses for this year yet.';
+$string['subjectpage_title'] = 'Subject page: {$a}';
+$string['subjectpage_notfound'] = 'This subject page is not available.';
+$string['subjectpage_teachers'] = 'Teachers';
+$string['subjectpage_teachercount'] = 'Number of teachers';
+$string['subjectpage_teachersh1'] = 'Teachers';
+$string['subjectpage_heading2'] = 'of the subject';
+$string['subjectpage_noteachers'] = 'No teachers shown here yet';
+$string['subjectpage_noteachers_desc'] = 'As soon as teachers are added to this subject you will find them here. Meanwhile you can browse the available courses.';
+$string['subjectpage_browse'] = 'Browse courses';
 
 // Student registration (register.php + mobile register_student).
 $string['reg_firstname'] = 'First name';

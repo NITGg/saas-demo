@@ -47,8 +47,8 @@ function vimeo_supports($feature) {
 function vimeo_add_instance($data, $mform = null) {
     global $DB;
 
+    $data->videohash    = vimeo_resolve_videohash($data); // before videoid: reads the pasted URL
     $data->videoid      = vimeo_resolve_videoid($data);
-    $data->videohash    = trim($data->videohash ?? '');
     $data->timemodified = time();
     $data->intro        = $data->intro ?? '';
     $data->introformat  = $data->introformat ?? FORMAT_HTML;
@@ -56,6 +56,9 @@ function vimeo_add_instance($data, $mform = null) {
     $id = $DB->insert_record('vimeo', $data);
 
     vimeo_sync_mapping((int) $data->coursemodule, (int) $data->course, $data->videoid, $data->videohash, $data->name);
+    // A pasted id / a video uploaded from another site is not whitelisted for
+    // this domain yet — Vimeo would refuse to play it here.
+    \local_vimeo\video_service::whitelist_site_domain($data->videoid);
     return $id;
 }
 
@@ -70,13 +73,16 @@ function vimeo_update_instance($data, $mform = null) {
     global $DB;
 
     $data->id           = $data->instance;
+    $data->videohash    = vimeo_resolve_videohash($data); // before videoid: reads the pasted URL
     $data->videoid      = vimeo_resolve_videoid($data);
-    $data->videohash    = trim($data->videohash ?? '');
     $data->timemodified = time();
 
     $DB->update_record('vimeo', $data);
 
     vimeo_sync_mapping((int) $data->coursemodule, (int) $data->course, $data->videoid, $data->videohash, $data->name);
+    // A pasted id / a video uploaded from another site is not whitelisted for
+    // this domain yet — Vimeo would refuse to play it here.
+    \local_vimeo\video_service::whitelist_site_domain($data->videoid);
     return true;
 }
 
@@ -130,10 +136,33 @@ function vimeo_resolve_videoid($data): string {
     if ($raw === '') {
         return '';
     }
-    if (preg_match('~vimeo\.com/(?:video/)?(\d+)~', $raw, $m)) {
+    // vimeo.com/123, vimeo.com/123/abc, player.vimeo.com/video/123?h=abc,
+    // vimeo.com/channels/x/123, vimeo.com/manage/videos/123/abc …
+    if (preg_match('~vimeo\.com/(?:[^?#]*?/)?(\d{5,})~', $raw, $m)) {
         return $m[1];
     }
     return preg_replace('/\D+/', '', $raw); // keep digits only
+}
+
+/**
+ * The privacy hash of an unlisted video: the hash field, else the one inside a
+ * pasted URL — "vimeo.com/<id>/<hash>" or "…?h=<hash>". Without it Vimeo
+ * refuses to play an unlisted video ("Sorry, this video does not exist").
+ *
+ * @param stdClass $data form data (videoid = what the teacher typed / pasted)
+ * @return string
+ */
+function vimeo_resolve_videohash($data): string {
+    $hash = trim($data->videohash ?? '');
+    if ($hash !== '') {
+        return $hash;
+    }
+    $raw = trim($data->videoid ?? '');
+    if (preg_match('~[?&](?:amp;)?h=([0-9a-f]+)~i', $raw, $m)
+            || preg_match('~vimeo\.com/(?:[^?#]*?/)?\d{5,}/([0-9a-f]{6,})(?:[/?#]|$)~i', $raw, $m)) {
+        return $m[1];
+    }
+    return '';
 }
 
 /**
