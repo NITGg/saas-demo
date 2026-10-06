@@ -17,42 +17,15 @@
 {{!
     @template local_academy/course_cards_js
 
-    The script of the course cards (local_academy/course_card) in a .bthtp page:
-    "... عرض باقي التفاصيل" shows only where the clamped description is cut off.
-    Include once per page, after the cards.
+    Wires the course cards (local_academy/course_card) of a .bthtp page with the shared
+    local_academy/course_cards module ("... عرض باقي التفاصيل"). Include once per page,
+    after the cards.
 
     Example context (json):
     {}
 }}
 {{#js}}
-(function() {
-    var root = document.querySelector('[data-bthtp]');
-    if (!root) {
-        return;
-    }
-    // "... عرض باقي التفاصيل": only where the clamped description is cut off.
-    // Measured again once the web fonts are in and on resize — both change the wrap.
-    var toggles = root.querySelectorAll('[data-bthtp-more]');
-    var measure = function() {
-        Array.prototype.forEach.call(toggles, function(btn) {
-            var desc = btn.previousElementSibling;
-            if (!desc.classList.contains('is-open')) {
-                btn.hidden = desc.scrollHeight <= desc.clientHeight + 1;
-            }
-        });
-    };
-    Array.prototype.forEach.call(toggles, function(btn) {
-        var desc = btn.previousElementSibling;
-        var more = btn.textContent;
-        btn.addEventListener('click', function() {
-            var open = desc.classList.toggle('is-open');
-            btn.textContent = open ? btn.getAttribute('data-less') : more;
-        });
-    });
-    measure();
-    if (document.fonts && document.fonts.ready) {
-        document.fonts.ready.then(measure);
-    }
-    window.addEventListener('resize', measure);
-})();
+require(['local_academy/course_cards'], function(cards) {
+    cards.init('[data-bthtp]');
+});
 {{/js}}

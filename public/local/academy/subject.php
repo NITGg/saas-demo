@@ -51,14 +51,7 @@ $PAGE->set_title(get_string('subjectpage_title', 'local_academy', $page['name'])
 $PAGE->set_heading('');
 $PAGE->add_body_class('nit-bth-subject-page');
 
-$free = \local_academy\local\home_data::price_label('');
-$dateformat = get_string('strftimedaydate', 'langconfig');
-$page['courses'] = array_map(static function(array $c) use ($free, $dateformat): array {
-    $c['free'] = $c['price'] === $free;
-    $c['createdtext'] = userdate($c['created'], $dateformat);
-    $c['modifiedtext'] = userdate($c['modified'], $dateformat);
-    return $c;
-}, $page['courses']);
+$page['courses'] = array_map([\local_academy\local\home_data::class, 'card_view'], $page['courses']);
 $page['hasteachers'] = !empty($page['teachers']);
 $page['browseurl'] = (new moodle_url('/course/index.php'))->out(false);
 

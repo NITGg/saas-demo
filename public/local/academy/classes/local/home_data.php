@@ -259,10 +259,11 @@ class home_data {
     }
 
     /**
-     * "المحاضرات المقترحة": the "is-special" courses, newest first (while no
-     * course is ticked: the newest visible courses) — for a student whose year
-     * is set, the courses of that year (its category or a sub-category), and of
-     * their division when the course has one.
+     * "المحاضرات المقترحة": every "is-special" course, newest first, for every
+     * visitor (whatever their year, division or enrolments). While no course is
+     * ticked: the newest visible courses — for a student whose year is set, the
+     * courses of that year (its category or a sub-category), and of their
+     * division when the course has one.
      *
      * @return array{all:string, courses:array<int, array>}
      */
@@ -284,7 +285,7 @@ class home_data {
         foreach ($courses as $course) {
             $year = $years[(int) $course->category] ?? null;
             $answer = $answers[(int) $course->id];
-            if ($me && $me['year']) {
+            if (!$special && $me && $me['year']) {
                 if (!$year || !in_array($me['year'], $year['ids'], true)) {
                     continue;
                 }
@@ -333,6 +334,40 @@ class home_data {
             // The viewer already joined / bought it: cards show "enter" but no "subscribe".
             'enrolled' => isloggedin() && !isguestuser() && is_enrolled($context, null, '', true),
         ];
+    }
+
+    /**
+     * The context of the ONE web course card (local_academy/course_card) for a card of
+     * course_card(): every page that draws a course card goes through here (the home
+     * slider via homedata.php, the teacher page, the subject page), so they all show
+     * the same card in the same states.
+     *
+     * @param array $card one course_card() entry (extra keys such as yearid are kept)
+     * @return array the card plus free, createdtext, modifiedtext and yearid
+     */
+    public static function card_view(array $card): array {
+        if (strpos($card['image'], '/course/generated/') !== false) {
+            // Moodle's generated pattern is served behind the log-in, so a visitor gets a
+            // broken picture; the template draws its own placeholder instead.
+            $card['image'] = '';
+        }
+        $dateformat = get_string('strftimedaydate', 'langconfig');
+        $card['free'] = $card['price'] === self::price_label('');
+        $card['createdtext'] = userdate($card['created'], $dateformat);
+        $card['modifiedtext'] = userdate($card['modified'], $dateformat);
+        $card += ['yearid' => 0];
+        return $card;
+    }
+
+    /**
+     * One course card as HTML (local_academy/course_card), for the home slider.
+     *
+     * @param array $card one course_card() entry
+     * @return string
+     */
+    public static function render_card(array $card): string {
+        global $OUTPUT;
+        return $OUTPUT->render_from_template('local_academy/course_card', self::card_view($card));
     }
 
     /**

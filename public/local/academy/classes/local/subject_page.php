@@ -68,13 +68,7 @@ class subject_page {
 
         $cards = [];
         foreach ($courses as $course) {
-            $card = home_data::course_card($course, $years[$yearid]['leaf']);
-            if (strpos($card['image'], '/course/generated/') !== false) {
-                // Moodle's generated pattern is served behind the log-in, so a visitor gets a
-                // broken picture; the template draws its own placeholder instead.
-                $card['image'] = '';
-            }
-            $cards[] = $card;
+            $cards[] = home_data::course_card($course, $years[$yearid]['leaf']);
         }
 
         $teachers = [];

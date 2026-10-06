@@ -17,6 +17,7 @@ page.
 | 4 | "My reviews" + moderation | new `get_my_reviews`, `get_moderation_reviews`, `approve_review`, `reject_review` | New screens (optional) |
 | 5 | Teacher rating everywhere | `browse_teachers` / `get_teacher` (`rating` is real now, plus `ratingcount`), `get_home_teachers` (`rating`, `ratingcount`), `get_teacher_page` (`rating`, `canrate`, `rateurl`, `hasreviews`, `reviews`) | Show them (optional) |
 | 6 | Notifications | new providers `local_nit_reviews/reviewpending`, `local_nit_reviews/reviewmoderated` (popup + push) | Handle the tap (optional) |
+| 7 | Home suggested lessons | `get_home_lessons` lists every "is-special" course for every user (no year/division filter) | No |
 
 ---
 
@@ -294,3 +295,11 @@ comment waits. `local_nit_reviews/reviewmoderated` goes to the student when thei
 - `reviews` are the latest approved comments (up to 6). For the full list use `get_teacher_reviews`.
 - `canrate` true: show "Rate the teacher". Open the rating sheet with `get_rate_targets` (`teacherid`).
 - `rateurl` is the same action on the website.
+
+---
+
+## 4. Home suggested lessons (`get_home_lessons`, `MOBILE_API.md` §3)
+
+No field changed, only which courses come back. Every course ticked "is-special" is now listed for **every**
+user, whatever their year, division or enrolments (an enrolled course comes with `enrolled: true`: show "enter").
+The year/division filter is used only while no course is ticked (the list is then the newest courses).

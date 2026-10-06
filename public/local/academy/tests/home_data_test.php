@@ -149,6 +149,53 @@ final class home_data_test extends \advanced_testcase {
         $this->assertNotContains((int) $first->id, array_column($courses, 'id'));
     }
 
+    public function test_special_lessons_show_to_every_student_whatever_their_year_or_enrolment(): void {
+        $gen = $this->getDataGenerator();
+        $third = $gen->create_course(['fullname' => 'تالتة', 'category' => $this->third->id, 'timecreated' => time()]);
+        $first = $gen->create_course(['fullname' => 'أولى', 'category' => $this->first->id, 'timecreated' => time() - DAYSECS]);
+        $gen->create_course(['fullname' => 'عادي', 'category' => $this->third->id]);
+        $this->set_fields($third->id, [course_fields::SPECIAL => 1]);
+        $this->set_fields($first->id, [course_fields::SPECIAL => 1, academic_structure::COURSE_SYSTEM => 1,
+            academic_structure::COURSE_DIVISION => 1]);
+
+        $student = $gen->create_user();
+        profile_save_custom_fields($student->id, ['year' => $this->year_key((int) $this->third->id),
+            'studysystem' => 'عام', 'division' => 'علمى']);
+        $gen->enrol_user($student->id, $third->id, 'student');
+        $this->setUser($student);
+
+        $courses = home_data::lessons()['courses'];
+        $this->assertSame([(int) $third->id, (int) $first->id], array_column($courses, 'id'),
+            'another year, another division and an enrolled course are all listed');
+        $this->assertTrue($courses[0]['enrolled']);
+        $this->assertFalse($courses[1]['enrolled']);
+    }
+
+    public function test_every_page_draws_the_same_course_card(): void {
+        $gen = $this->getDataGenerator();
+        $course = $gen->create_course(['fullname' => 'مجاني', 'category' => $this->third->id]);
+        $student = $gen->create_user();
+        $this->setUser($student);
+
+        $card = home_data::card_view(home_data::course_card(get_course($course->id), 'الصف الثالث الثانوي'));
+        $this->assertTrue($card['free'], 'no fee → the "join for free" state');
+        $this->assertSame('', $card['image'], 'the generated pattern is replaced by the placeholder');
+        $this->assertNotSame('', $card['createdtext']);
+        $this->assertSame(0, $card['yearid']);
+
+        // The home slider gets the card's markup; a free course not joined yet: "Join for free" only.
+        $html = home_data::render_card(home_data::course_card(get_course($course->id), ''));
+        $this->assertStringContainsString('class="bthtp__course"', $html);
+        $this->assertStringContainsString('Join for free', $html);
+        $this->assertStringNotContainsString('Subscribe to the course!', $html);
+
+        // Once enrolled: "Go to the course" only.
+        $gen->enrol_user($student->id, $course->id, 'student');
+        $html = home_data::render_card(home_data::course_card(get_course($course->id), ''));
+        $this->assertStringContainsString('Go to the course', $html);
+        $this->assertStringNotContainsString('Join for free', $html);
+    }
+
     public function test_short_year_in_both_languages(): void {
         $this->assertSame('٢ ث', home_data::short_year('الصف الثاني الثانوي'));
         $this->assertSame('١ ع', home_data::short_year('الصف الاول الاعدادى'));

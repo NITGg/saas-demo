@@ -49,14 +49,7 @@ $PAGE->set_title(get_string('teacherpage_title', 'local_academy', $teacher['name
 $PAGE->set_heading('');
 $PAGE->add_body_class('nit-bth-teacher-page');
 
-$free = \local_academy\local\home_data::price_label('');
-$dateformat = get_string('strftimedaydate', 'langconfig');
-$courses = array_map(static function(array $c) use ($free, $dateformat): array {
-    $c['free'] = $c['price'] === $free;
-    $c['createdtext'] = userdate($c['created'], $dateformat);
-    $c['modifiedtext'] = userdate($c['modified'], $dateformat);
-    return $c;
-}, $teacher['courses']);
+$courses = array_map([\local_academy\local\home_data::class, 'card_view'], $teacher['courses']);
 
 $context = $teacher + [
     'hasyears' => !empty($teacher['years']),

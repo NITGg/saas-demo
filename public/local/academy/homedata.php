@@ -12,7 +12,8 @@
  *   ?section=subjects  → {"years": [...], "subjects": [...]}           (كورسات مختارة — subject cards)
  *   ?section=selected  → {"years": [...], "courses": [...]}            (the same section's former course cards)
  *   ?section=teachers  → {"years", "systems", "me", "teachers": [...]} (المدرسين عندنا)
- *   ?section=lessons   → {"all", "courses": [...]}                     (المحاضرات المقترحة)
+ *   ?section=lessons   → {"all", "courses": [...]}                     (المحاضرات المقترحة; each course
+ *                        also has "html": the local_academy/course_card markup)
  *
  * Public like the home page itself (visible courses and their teachers' card data only);
  * behind the log-in when the site forces log-in.
@@ -43,6 +44,12 @@ switch ($section) {
         break;
     case 'lessons':
         $data = \local_academy\local\home_data::lessons();
+        // The slider shows each course as the ONE course card (local_academy/course_card),
+        // rendered here, so it always matches the teacher and subject pages.
+        foreach ($data['courses'] as &$course) {
+            $course['html'] = \local_academy\local\home_data::render_card($course);
+        }
+        unset($course);
         break;
 }
 

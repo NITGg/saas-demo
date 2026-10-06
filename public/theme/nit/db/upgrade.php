@@ -83,5 +83,13 @@ function xmldb_theme_nit_upgrade($oldversion) {
         purge_all_caches();
         upgrade_plugin_savepoint(true, 2026100700, 'theme', 'nit');
     }
+
+    if ($oldversion < 2026100701) {
+        // "المحاضرات المقترحة" draws the one shared course card (local_academy/course_card),
+        // and the "المدرسين عندنا" filters start on "كل الصفوف" / "كل الشعب": write both blocks.
+        \theme_nit\local\template_applier::refresh_sections('bassthalk', ['teachers', 'lessons']);
+        purge_all_caches();
+        upgrade_plugin_savepoint(true, 2026100701, 'theme', 'nit');
+    }
     return true;
 }

@@ -17,8 +17,10 @@
 {{!
     @template local_academy/course_card
 
-    One bassthalk course card (inside a .bthtp page: the teacher and subject pages).
-    Styles: theme/nit/scss/components/_bthteacher.scss. An enrolled student gets only
+    THE bassthalk course card — every page draws this one template: the home page's
+    "المحاضرات المقترحة" slider (rendered by homedata.php), the teacher and subject pages.
+    Context: home_data::card_view() (local_academy). Script: local_academy/course_cards.
+    Styles: theme/nit/scss/components/_bthcoursecard.scss. An enrolled student gets only
     "الدخول للكورس" (no "subscribe"); a free course "اشترك ببلاش".
 
     Context variables required for this template:

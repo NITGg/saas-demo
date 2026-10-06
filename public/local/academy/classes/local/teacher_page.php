@@ -82,11 +82,6 @@ class teacher_page {
             $division = format_string($answers[(int) $course->id]['division'], true, ['escape' => false]);
             $coursecontext = \context_course::instance($course->id);
             $card = home_data::course_card($course, $year ? $year['leaf'] : '');
-            if (strpos($card['image'], '/course/generated/') !== false) {
-                // Moodle's generated pattern is served behind the log-in, so a visitor gets a
-                // broken picture; the template draws its own placeholder instead.
-                $card['image'] = '';
-            }
             $card['yearid'] = $year ? $catid : 0;
             $card['division'] = $division;
             $card['enrolled'] = $viewer && is_enrolled($coursecontext, $viewer, '', true);

@@ -1,0 +1,179 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// The ONE Bassthalk course card — local_academy/templates/course_card.mustache.
+// Every page that shows a course card draws this template with these styles: the
+// home page's "المحاضرات المقترحة" slider (theme/nit/blocks/templates/bassthalk/
+// lessons.html), the teacher page and the subject page. Change the card here (and
+// in the template) and every page follows. Its script ("… عرض باقي التفاصيل") is
+// local_academy/amd/src/course_cards.js.
+//
+// Colours: the `bthlessons*` roles of Brand Colors → Bassthalk (the card always sits
+// inside a `.nit-brand-18` wrapper). Logical properties only, so RTL and LTR both work.
+
+.bthtp__course {
+    font-family: 'Tajawal', 'Almarai', system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--nit-brand-bthlessonstext);
+    text-align: start;
+
+    *, *::before, *::after { box-sizing: border-box; }
+    :where(a) { text-decoration: none; }
+    :where(p, ul) { margin: 0; }
+    :where(ul) { list-style: none; padding: 0; }
+    :is(a, button):focus-visible {
+        outline: 2px solid var(--nit-brand-bthtpaccent);
+        outline-offset: 2px;
+    }
+    [hidden] { display: none !important; }
+}
+
+// One course.
+.bthtp__course {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 16px;
+    border: 2px solid var(--nit-brand-bthlessonscard);
+    border-radius: 12px;
+    background: var(--nit-brand-bthlessonscard);
+    transition: all .4s ease;
+
+    &:hover { box-shadow: 0 16px 32px -16px rgba(15, 23, 42, .3); }
+}
+.bthtp__cimg {
+    display: block;
+    overflow: hidden;
+    aspect-ratio: 16 / 10;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--nit-brand-bthtpherobg) 25%, var(--nit-brand-bthlessonscard));
+
+    img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        max-width: none;
+        object-fit: cover;
+        transition: transform .4s ease;
+    }
+    &:hover img { transform: scale(1.04); }
+}
+// A course without a picture: a book on the tinted box.
+.bthtp__cimg:has(.bthtp__cnoimg) {
+    display: grid;
+    place-items: center;
+}
+.bthtp__cnoimg {
+    width: 56px;
+    height: 56px;
+    color: var(--nit-brand-bthtpherobg);
+}
+.bthtp__crow {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    min-width: 0;
+}
+.bthtp__course a.bthtp__ctitle {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    font-family: 'Almarai', sans-serif;
+    font-size: 18px;
+    line-height: 28px;
+    font-weight: 500;
+    color: var(--nit-brand-bthlessonsaccent);
+
+    &:hover { text-decoration: underline; }
+}
+.bthtp__cyear {
+    flex-shrink: 0;
+    white-space: nowrap;
+    font-size: 18px;
+    line-height: 28px;
+}
+.bthtp__crow--meta { align-items: flex-end; }
+.bthtp__cmain {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    min-width: 0;
+}
+.bthtp__cprice {
+    font-family: 'Almarai', sans-serif;
+    font-weight: 700;
+    color: var(--nit-brand-bthlessonsprice);
+}
+.bthtp__cdesc {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--nit-brand-bthlessonsmuted);
+
+    &.is-open { display: block; }
+}
+.bthtp__more {
+    padding: 0;
+    border: 0;
+    background: none;
+    font: 700 14px/20px 'Tajawal', sans-serif;
+    color: var(--nit-brand-bthlessonstext);
+    text-decoration: underline;
+    cursor: pointer;
+}
+.bthtp__cdates {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex-shrink: 0;
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--nit-brand-bthlessonsmuted);
+
+    li {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+}
+.bthtp__cbtns {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: auto;
+}
+// Also the other buttons of the teacher / subject pages.
+:is(.bthtp, .bthtp__course) a.bthtp__btn {
+    display: block;
+    padding: 8px 16px;
+    border: 2px solid var(--nit-brand-bthlessonsaccent);
+    border-radius: 12px;
+    background: transparent;
+    color: var(--nit-brand-bthlessonsaccent);
+    text-align: center;
+    font-family: 'Almarai', sans-serif;
+    transition: all .4s ease;
+
+    &:hover {
+        background: var(--nit-brand-bthlessonsaccent);
+        color: var(--nit-brand-bthlessonsaccenttext);
+    }
+}
+:is(.bthtp, .bthtp__course) a.bthtp__btn--fill {
+    background: var(--nit-brand-bthlessonsaccent);
+    color: var(--nit-brand-bthlessonsaccenttext);
+
+    &:hover {
+        background: transparent;
+        color: var(--nit-brand-bthlessonsaccent);
+    }
+}
+

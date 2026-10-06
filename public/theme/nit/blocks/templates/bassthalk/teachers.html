@@ -7,7 +7,7 @@
   The cards are NOT written here: the script loads /local/academy/homedata.php?section=teachers —
   every teacher of a visible course, with the year (the course category) and the Study system /
   Division of each of their courses. The filters (year, and division grouped by study system) work in
-  the page without reloading; a logged-in student starts on their own year / division. The line under
+  the page without reloading; everyone starts on "كل الصفوف" / "كل الشعب" (all teachers). The line under
   a name is the teacher's "لقب المدرس" profile field. The look of one card is the <template> below.
 
   Carousel (as on bassthalk): the cards that fit inside the green panel are centred in it; the card
@@ -125,7 +125,7 @@
           <p>{mlang ar}مرحلتك و دراستك:{mlang}{mlang en}Your year and study:{mlang}</p>
           <div class="nit-bth-teach-select" data-nit-teach-select="year">
             <button type="button" class="nit-bth-teach-selectbtn" aria-haspopup="listbox" aria-expanded="false">
-              <span data-label data-placeholder="{mlang ar}اختر الصف الدراسي{mlang}{mlang en}Choose your year{mlang}">{mlang ar}اختر الصف الدراسي{mlang}{mlang en}Choose your year{mlang}</span>
+              <span data-label>{mlang ar}كل الصفوف{mlang}{mlang en}All years{mlang}</span>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7.41 8.58L12 13.17l4.59-4.59L18 10l-6 6l-6-6z"/></svg>
             </button>
             <ul class="nit-bth-teach-menu" role="listbox" aria-label="{mlang ar}الصف الدراسي{mlang}{mlang en}Year{mlang}" hidden>
@@ -134,7 +134,7 @@
           </div>
           <div class="nit-bth-teach-select" data-nit-teach-select="division">
             <button type="button" class="nit-bth-teach-selectbtn" aria-haspopup="listbox" aria-expanded="false">
-              <span data-label data-placeholder="{mlang ar}اختر الشعبة العلمية{mlang}{mlang en}Choose your division{mlang}">{mlang ar}اختر الشعبة العلمية{mlang}{mlang en}Choose your division{mlang}</span>
+              <span data-label>{mlang ar}كل الشعب{mlang}{mlang en}All divisions{mlang}</span>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7.41 8.58L12 13.17l4.59-4.59L18 10l-6 6l-6-6z"/></svg>
             </button>
             <ul class="nit-bth-teach-menu" role="listbox" aria-label="{mlang ar}الشعبة{mlang}{mlang en}Division{mlang}" hidden>
@@ -287,7 +287,7 @@
       function choose(li, silent){
         if (!li || li.classList.contains('is-group')) { return; }
         var value = li.getAttribute('data-value');
-        label.textContent = value === '' ? label.getAttribute('data-placeholder') : li.textContent;
+        label.textContent = li.textContent;
         if (key === 'year') { filter.year = value; }
         else { filter.division = value; filter.system = value === '' ? '' : li.getAttribute('data-system'); }
         open(false);
@@ -331,17 +331,7 @@
           track.appendChild(slide);
           slides.push(slide);
         });
-        // A logged-in student starts on their own year and division.
-        var me = data.me;
-        if (me) {
-          var find = function(menu, value, system){
-            return Array.prototype.find.call(menu.querySelectorAll('li'), function(li){
-              return li.getAttribute('data-value') === value && (!system || li.getAttribute('data-system') === system);
-            });
-          };
-          if (me.year) { selects.year.choose(find(selects.year.menu, String(me.year)), true); }
-          if (me.division) { selects.division.choose(find(selects.division.menu, me.division, me.system), true); }
-        }
+        // Everyone (a logged-in student too) starts on "كل الصفوف" / "كل الشعب".
         apply();
       })
       .catch(function(){ render(); });
