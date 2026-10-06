@@ -25,23 +25,22 @@
 defined('MOODLE_INTERNAL') || die();
 
 $capabilities = [
-    // Post / edit your own rating for a course you're enrolled in.
+    // Post / edit your own rating of a course you're enrolled in, and of its teachers.
     'local/nit_reviews:rate' => [
         'captype'      => 'write',
         'contextlevel' => CONTEXT_COURSE,
         'archetypes'   => [
             'student' => CAP_ALLOW,
-            'teacher' => CAP_ALLOW,
-            'editingteacher' => CAP_ALLOW,
         ],
     ],
-    // Moderate: delete anyone's review.
-    'local/nit_reviews:manage' => [
+    // Moderate: approve, reject and delete reviews. Managers only — a teacher must
+    // not approve the reviews written about them. A manager assigned on a category
+    // (or a course) moderates the courses below it; a site manager moderates all.
+    'local/nit_reviews:moderate' => [
         'captype'      => 'write',
         'contextlevel' => CONTEXT_COURSE,
         'riskbitmask'  => RISK_SPAM,
         'archetypes'   => [
-            'editingteacher' => CAP_ALLOW,
             'manager' => CAP_ALLOW,
         ],
     ],

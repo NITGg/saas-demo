@@ -1,24 +1,30 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="local/nit_reviews/db" VERSION="20260920" COMMENT="NIT course reviews"
+<XMLDB PATH="local/nit_reviews/db" VERSION="20261007" COMMENT="NIT course and teacher reviews"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd">
   <TABLES>
-    <TABLE NAME="local_nit_reviews" COMMENT="One star rating (+ optional review) per user per course">
+    <TABLE NAME="local_nit_reviews" COMMENT="One star rating (+ optional comment) per user per course, and per user per teacher per course">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
-        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The course; 0 = a teacher review for private (Flex) lessons"/>
+        <FIELD NAME="teacherid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="0 = a review of the course; else the teacher being reviewed"/>
         <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="rating" TYPE="int" LENGTH="2" NOTNULL="true" SEQUENCE="false" COMMENT="1..5 stars"/>
         <FIELD NAME="review" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="status" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="0 pending, 1 approved, 2 rejected"/>
+        <FIELD NAME="rejectreason" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Why a moderator rejected it (shown to the author)"/>
+        <FIELD NAME="reviewedby" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The moderator who approved or rejected it"/>
+        <FIELD NAME="timereviewed" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
-        <KEY NAME="courseuser" TYPE="unique" FIELDS="courseid, userid" COMMENT="one review per user per course"/>
+        <KEY NAME="courseteacheruser" TYPE="unique" FIELDS="courseid, teacherid, userid" COMMENT="one review per user per course, and per teacher in that course"/>
       </KEYS>
       <INDEXES>
-        <INDEX NAME="courseid" UNIQUE="false" FIELDS="courseid"/>
+        <INDEX NAME="teacherstatus" UNIQUE="false" FIELDS="teacherid, status"/>
+        <INDEX NAME="status" UNIQUE="false" FIELDS="status"/>
       </INDEXES>
     </TABLE>
   </TABLES>

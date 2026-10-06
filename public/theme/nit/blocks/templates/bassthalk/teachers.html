@@ -67,8 +67,13 @@
   .nit-bth-teach a.nit-bth-teach-link{ display:block; height:100%; color:inherit; text-decoration:none!important; }
   .nit-bth-teach-card{ display:flex; flex-direction:column; width:100%; min-height:280px; overflow:hidden; padding:16px; border-radius:16px;
     background:var(--nit-brand-bthteachcardbg); transition:all .4s ease; }
-  .nit-bth-teach-thumb{ flex-shrink:0; width:90%; aspect-ratio:1/1; margin:0 auto 16px; overflow:hidden; border-radius:12px; }
+  .nit-bth-teach-thumb{ position:relative; flex-shrink:0; width:90%; aspect-ratio:1/1; margin:0 auto 16px; overflow:hidden; border-radius:12px; }
   .nit-bth-teach-thumb img{ display:block; width:100%; height:100%; max-width:none; margin:0; object-fit:cover; object-position:top; border-radius:12px; }
+  .nit-bth-teach-rate{ position:absolute; top:8px; inset-inline-start:8px; display:inline-flex; align-items:center; gap:4px; padding:2px 10px;
+    border-radius:9999px; background:var(--nit-brand-bthteachcardbg); color:var(--nit-brand-bthteachname); font-family:'Tajawal',sans-serif;
+    font-size:14px; line-height:24px; font-weight:700; box-shadow:0 2px 8px rgba(0,0,0,.15); }
+  .nit-bth-teach-rate b{ color:var(--nit-brand-warning); font-weight:400; }
+  .nit-bth-teach-rate[data-count="0"]{ display:none; }
   .nit-bth-teach-text{ min-width:0; margin-top:auto; font-family:'Tajawal',sans-serif; }
   .nit-bth-teach-text h3{ margin:0 0 4px; font-family:'Tajawal',sans-serif; font-size:24px; line-height:32px; font-weight:700; color:var(--nit-brand-bthteachname); }
   .nit-bth-teach-text .nit-bth-teach-gap{ height:0; margin-bottom:12px; }
@@ -159,7 +164,7 @@
     <div class="nit-bth-teach-slide">
       <a class="nit-bth-teach-link" href="{{url}}">
         <div class="nit-bth-teach-card">
-          <div class="nit-bth-teach-thumb"><img src="{{photo}}" alt="{{name}}" loading="lazy"></div>
+          <div class="nit-bth-teach-thumb"><img src="{{photo}}" alt="{{name}}" loading="lazy"><span class="nit-bth-teach-rate" data-count="{{ratingcount}}" title="{{ratingcount}}"><b aria-hidden="true">★</b>{{rating}}</span></div>
           <div class="nit-bth-teach-text">
             <h3>{{name}}</h3>
             <div class="nit-bth-teach-gap"></div>

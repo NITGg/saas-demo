@@ -26,6 +26,9 @@
     * years - [{id, name, short, label, courses}] the years taught
     * hasyears, filter - whether to draw the year pills / the year filter
     * counts - {courses, years, students}
+    * rating - {has, avg, count} the approved learner rating (local_nit_reviews)
+    * canrate, rateurl - the "rate the teacher" button for a learner who may rate them
+    * hasreviews, reviews - the latest approved comments: name, picture, starson, starsoff, rating, date, text, course
     * courses - course cards: id, fullname, url, enrolurl, image, year, price, summary,
       createdtext, modifiedtext, yearid, enrolled, free
 
@@ -93,7 +96,19 @@
                     </dt>
                     <dd>{{counts.students}}</dd>
                 </div>
+                {{#rating.has}}
+                <div class="bthtp__stat">
+                    <dt>
+                        <svg class="bthtp__ico bthtp__ico--star" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9L12 3.5z"/></svg>
+                        {{#str}}teacherpage_rating, local_academy{{/str}}
+                    </dt>
+                    <dd>{{rating.avg}} <span class="bthtp__stat-sub">({{#str}}teacherpage_nreviews, local_academy, {{rating.count}}{{/str}})</span></dd>
+                </div>
+                {{/rating.has}}
             </dl>
+            {{#canrate}}
+            <a class="bthtp__ratebtn" href="{{rateurl}}">{{#str}}teacherpage_ratebtn, local_academy{{/str}}</a>
+            {{/canrate}}
         </aside>
         {{#bio}}
         <section class="bthtp__about">
@@ -126,6 +141,34 @@
         </div>
         <p class="bthtp__empty" data-bthtp-empty hidden>{{#str}}teacherpage_empty, local_academy{{/str}}</p>
     </section>
+
+    {{#hasreviews}}
+    <section class="bthtp__courses bthtp__reviews" aria-labelledby="bthtp-reviews-h">
+        <div class="bthtp__head">
+            <span class="bthtp__rule" aria-hidden="true"></span>
+            <h2 class="bthtp__h2" id="bthtp-reviews-h">{{#str}}teacherpage_reviews1, local_academy{{/str}} <span>{{#str}}teacherpage_reviews2, local_academy{{/str}}</span></h2>
+            <span class="bthtp__rule bthtp__rule--end" aria-hidden="true"></span>
+        </div>
+        <ul class="bthtp__rvlist">
+            {{#reviews}}
+            <li class="bthtp__rv">
+                <div class="bthtp__rv-head">
+                    <img class="bthtp__rv-pic" src="{{picture}}" alt="" loading="lazy">
+                    <div>
+                        <div class="bthtp__rv-name">{{name}}</div>
+                        <div class="bthtp__rv-meta">
+                            <span class="bthtp__rv-stars" aria-label="{{rating}}/5"><span class="bthtp__rv-on">{{starson}}</span><span class="bthtp__rv-off">{{starsoff}}</span></span>
+                            <span>{{date}}</span>
+                        </div>
+                    </div>
+                </div>
+                <p class="bthtp__rv-text">{{text}}</p>
+                {{#course}}<div class="bthtp__rv-course">{{course}}</div>{{/course}}
+            </li>
+            {{/reviews}}
+        </ul>
+    </section>
+    {{/hasreviews}}
 </div>
 {{> local_academy/course_cards_js }}
 {{#js}}

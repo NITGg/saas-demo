@@ -506,6 +506,10 @@ class format_topics_renderer extends \format_topics\output\renderer {
         if ($forums !== '') {
             $tabs .= $this->acad_tab('bthc-forum', get_string('acad_tabforum', 'theme_nit'), false);
         }
+        $reviews = $this->acad_reviews($course, $data);
+        if ($reviews !== '') {
+            $tabs .= $this->acad_tab('bthc-reviews', get_string('acad_tabreviews', 'theme_nit'), false);
+        }
         $o = html_writer::div($tabs, 'bthc__tabs', ['role' => 'tablist']);
 
         // About panel.
@@ -526,7 +530,130 @@ class format_topics_renderer extends \format_topics\output\renderer {
             ]);
         }
 
+        // Reviews panel.
+        if ($reviews !== '') {
+            $o .= html_writer::div($reviews, 'bthc__panel', [
+                'id' => 'bthc-reviews', 'role' => 'tabpanel', 'aria-labelledby' => 'bthc-reviews-tab', 'hidden' => 'hidden',
+            ]);
+        }
+
         return html_writer::div($o, 'bthc__card bthc__about');
+    }
+
+    /**
+     * Whether learner reviews are available (local_nit_reviews installed).
+     *
+     * @return bool
+     */
+    protected function acad_has_reviews(): bool {
+        return class_exists('\local_nit_reviews\api');
+    }
+
+    /**
+     * "★ 4.6 (23 reviews)" — '' when nothing approved yet, so no made-up figure shows.
+     *
+     * @param object $agg {avg, count}
+     * @param string $class extra class
+     * @return string
+     */
+    protected function acad_rating($agg, string $class = ''): string {
+        if (empty($agg->count)) {
+            return '';
+        }
+        return html_writer::span(
+            $this->acad_icon('star') .
+            html_writer::span(format_float($agg->avg, 1), 'bthc__rating-avg') .
+            html_writer::span('(' . get_string('acad_nreviews', 'theme_nit', $agg->count) . ')', 'bthc__rating-count'),
+            trim('bthc__rating ' . $class),
+            ['title' => get_string('acad_ratingof', 'theme_nit', format_float($agg->avg, 1))]);
+    }
+
+    /**
+     * The "التقييمات" tab: the course's average and star spread, a button to rate
+     * the course and its teachers (for whoever may), and the latest approved
+     * comments. '' when reviews are unavailable.
+     *
+     * @param stdClass $course
+     * @param stdClass $data
+     * @return string
+     */
+    protected function acad_reviews($course, $data): string {
+        if (!$this->acad_has_reviews()) {
+            return '';
+        }
+        $api = '\local_nit_reviews\api';
+        $agg = $api::get_aggregate((int) $course->id);
+
+        // Summary: the big average with stars, then one bar per star value.
+        $summary = '';
+        if ($agg->count > 0) {
+            $stars = $api::get_distribution((int) $course->id);
+            $bars = '';
+            for ($n = 5; $n >= 1; $n--) {
+                $pct = (int) round(100 * $stars[$n] / $agg->count);
+                $bars .= html_writer::div(
+                    html_writer::span($n, 'bthc__rv-n') . $this->acad_icon('star') .
+                    html_writer::div(html_writer::div('', 'bthc__rv-fill', ['style' => "width:{$pct}%"]), 'bthc__rv-track') .
+                    html_writer::span($stars[$n], 'bthc__rv-c'),
+                    'bthc__rv-bar');
+            }
+            $summary = html_writer::div(
+                html_writer::div(
+                    html_writer::div(format_float($agg->avg, 1), 'bthc__rv-avg') .
+                    html_writer::div($this->acad_stars((int) round($agg->avg)), 'bthc__rv-stars') .
+                    html_writer::div(get_string('acad_nreviews', 'theme_nit', $agg->count), 'bthc__rv-total'),
+                    'bthc__rv-score') .
+                html_writer::div($bars, 'bthc__rv-bars'),
+                'bthc__rv-summary');
+        }
+
+        // Rate button: the course, or any of its teachers.
+        $canrate = $api::can_rate((int) $course->id);
+        foreach ($data->teachers as $t) {
+            $canrate = $canrate || $api::can_rate_teacher((int) $course->id, (int) $t->id);
+        }
+        $button = '';
+        if ($canrate) {
+            $button = html_writer::link(new moodle_url('/local/nit_reviews/rate.php', ['courseid' => $course->id]),
+                $this->acad_icon('star') . html_writer::span(get_string('acad_ratebtn', 'theme_nit')),
+                ['class' => 'bthc__rv-btn']);
+        }
+
+        // Latest approved comments.
+        $items = '';
+        foreach ($api::get_reviews((int) $course->id, 0, 10)['reviews'] as $r) {
+            $items .= html_writer::div(
+                html_writer::div(
+                    html_writer::img($r['pictureurl'], '', ['class' => 'bthc__rv-pic', 'loading' => 'lazy']) .
+                    html_writer::div(
+                        html_writer::div(s($r['fullname']), 'bthc__rv-name') .
+                        html_writer::div($this->acad_stars($r['rating']) .
+                            html_writer::span(userdate($r['timemodified'], get_string('strftimedatefullshort')),
+                                'bthc__rv-date'), 'bthc__rv-meta'),
+                        'bthc__rv-who'),
+                    'bthc__rv-head') .
+                ($r['review'] !== '' ? html_writer::div(nl2br(s($r['review'])), 'bthc__rv-text') : ''),
+                'bthc__rv-item');
+        }
+
+        if ($summary === '' && $items === '') {
+            $summary = html_writer::div(get_string('acad_noreviews', 'theme_nit'), 'bthc__rv-empty');
+        }
+        $head = html_writer::div($summary . $button, 'bthc__rv-top');
+        return html_writer::div($head . ($items !== '' ? html_writer::div($items, 'bthc__rv-list') : ''), 'bthc__rv');
+    }
+
+    /**
+     * Five stars, the first $n filled.
+     *
+     * @param int $n 0..5
+     * @return string
+     */
+    protected function acad_stars(int $n): string {
+        $n = max(0, min(5, $n));
+        return html_writer::span(
+            html_writer::span(str_repeat('★', $n), 'bthc__stars-on') . html_writer::span(str_repeat('★', 5 - $n), 'bthc__stars-off'),
+            'bthc__stars', ['aria-label' => get_string('acad_ratingof', 'theme_nit', $n)]);
     }
 
     /**
@@ -600,6 +727,9 @@ class format_topics_renderer extends \format_topics\output\renderer {
         if ($this->acad_cf_bool('certificate', $data)) {
             $meta .= html_writer::tag('span', get_string('acad_certificate', 'theme_nit'), ['class' => 'bthc__chip']);
         }
+        if ($this->acad_has_reviews()) {
+            $meta .= $this->acad_rating(\local_nit_reviews\api::get_aggregate((int) $course->id), 'bthc__fact');
+        }
         if ($data->enrolled > 0) {
             $meta .= html_writer::span(
                 $this->acad_icon('people') .
@@ -655,6 +785,8 @@ class format_topics_renderer extends \format_topics\output\renderer {
             return '';
         }
 
+        $ratings = $this->acad_has_reviews()
+            ? \local_nit_reviews\api::get_teacher_aggregates(array_map(fn($t) => (int) $t->id, $data->teachers)) : [];
         $tutors = '';
         foreach ($data->teachers as $t) {
             $userpic = new user_picture($t);
@@ -675,7 +807,8 @@ class format_topics_renderer extends \format_topics\output\renderer {
                 html_writer::link($profileurl, $photo, ['class' => 'bthc__teacher-photo', 'tabindex' => '-1']) .
                 html_writer::div(
                     html_writer::link($profileurl, s(fullname($t)), ['class' => 'bthc__teacher-name']) .
-                    html_writer::div($title, 'bthc__teacher-title'),
+                    html_writer::div($title, 'bthc__teacher-title') .
+                    (isset($ratings[$t->id]) ? $this->acad_rating($ratings[$t->id], 'bthc__rating--teacher') : ''),
                     'bthc__teacher-txt'
                 ),
                 'bthc__teacher'
@@ -1573,6 +1706,7 @@ JS
             'cert'    => '<circle cx="12" cy="9" r="6" stroke="currentColor" stroke-width="1.7"/><path d="M8 14l-1 7 5-3 5 3-1-7" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>',
             'people'  => '<circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M16 5.5a3.2 3.2 0 0 1 0 5M17.5 20a5.5 5.5 0 0 0-2.5-4.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>',
             'play'    => '<path d="M9 7.5v9l7-4.5-7-4.5z" fill="currentColor"/>',
+            'star'    => '<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9L12 3.5z" fill="currentColor"/>',
             'lock'    => '<rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.7"/>',
             'book'    => '<path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H12v16H5.5A1.5 1.5 0 0 1 4 18.5v-13z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H12v16h6.5a1.5 1.5 0 0 0 1.5-1.5v-13z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>',
             'infinity' => '<path d="M7 12c0-2 1.5-3.2 3-3.2 2 0 2.8 2 4 3.2 1.2 1.2 2 3.2 4 3.2 1.5 0 3-1.2 3-3.2s-1.5-3.2-3-3.2c-2 0-2.8 2-4 3.2-1.2 1.2-2 3.2-4 3.2-1.5 0-3-1.2-3-3.2z" stroke="currentColor" stroke-width="1.7"/>',

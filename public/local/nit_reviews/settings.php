@@ -15,7 +15,9 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * NIT reviews — learner ratings of courses and teachers, with moderation.
+ * Admin tree: the review moderation page, under Site administration → Courses.
+ * A manager scoped to a category or course opens it from the course's menu instead
+ * (local_nit_reviews_extend_navigation_course).
  *
  * @package    local_nit_reviews
  * @copyright  2026 NIT
@@ -24,9 +26,11 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_nit_reviews';
-$plugin->version   = 2026100701;
-$plugin->requires  = 2024100700;
-$plugin->supported = [405, 502];
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.2.0';
+if ($hassiteconfig || has_capability('local/nit_reviews:moderate', context_system::instance())) {
+    $ADMIN->add('courses', new admin_externalpage(
+        'local_nit_reviews_moderate',
+        get_string('moderatereviews', 'local_nit_reviews'),
+        new moodle_url('/local/nit_reviews/moderate.php'),
+        'local/nit_reviews:moderate'
+    ));
+}

@@ -75,5 +75,13 @@ function xmldb_theme_nit_upgrade($oldversion) {
         purge_all_caches();
         upgrade_plugin_savepoint(true, 2026100502, 'theme', 'nit');
     }
+
+    if ($oldversion < 2026100700) {
+        // The "المدرسين عندنا" cards show the teacher's approved learner rating
+        // (local_nit_reviews): write the teachers block from the new file.
+        \theme_nit\local\template_applier::refresh_sections('bassthalk', ['teachers']);
+        purge_all_caches();
+        upgrade_plugin_savepoint(true, 2026100700, 'theme', 'nit');
+    }
     return true;
 }

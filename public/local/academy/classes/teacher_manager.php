@@ -14,7 +14,8 @@ defined('MOODLE_INTERNAL') || die();
  * not the Flex tutoring engine), so it has no teacher-profile/subjects/hours
  * tables. Those fields are still present in every response for contract parity,
  * but with empty/default values (subjects=[], hours=[], years=[], busy_times=[],
- * rating=0, approved=1, available=1, headline/experience=''). The Moodle-native
+ * approved=1, available=1, headline/experience=''). rating is the real approved
+ * learner average (local_nit_reviews). The Moodle-native
  * fields (userid, fullname, email, phone, bio, photourl) carry real data, plus a
  * `courses` list — a superset that never breaks the old shape.
  *
@@ -229,7 +230,11 @@ class teacher_manager {
             'bio'        => $bio,
             'experience' => '',
             'photourl'   => self::picture_url($u),
-            'rating'     => 0,
+            // Approved learner rating over every course (local_nit_reviews), 0.0 when none.
+            'rating'     => class_exists('\local_nit_reviews\api')
+                ? (float) \local_nit_reviews\api::get_teacher_aggregate((int) $u->id)->avg : 0.0,
+            'ratingcount' => class_exists('\local_nit_reviews\api')
+                ? (int) \local_nit_reviews\api::get_teacher_aggregate((int) $u->id)->count : 0,
             'approved'   => 1,
             'available'  => 1,
             'subjects'   => [],

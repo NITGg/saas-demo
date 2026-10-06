@@ -228,6 +228,9 @@ class home_data {
                 [$usql, $uparams] = $DB->get_in_or_equal(array_keys($courses), SQL_PARAMS_NAMED);
                 $fields = \core_user\fields::for_userpic()->get_sql('u', false, '', '', false)->selects;
                 $users = $DB->get_records_sql("SELECT $fields FROM {user} u WHERE u.id $usql", $uparams);
+                // Approved learner rating (local_nit_reviews); the card hides it at 0 reviews.
+                $ratings = class_exists('\local_nit_reviews\api')
+                    ? \local_nit_reviews\api::get_teacher_aggregates(array_keys($users)) : [];
                 foreach ($users as $user) {
                     $picture = new \user_picture($user);
                     $picture->size = 512;
@@ -238,6 +241,8 @@ class home_data {
                         'photo' => $picture->get_url($PAGE)->out(false),
                         'title' => format_string($values['teachertitle'] ?? '', true, ['escape' => false]), // May carry {mlang}.
                         'url' => (new \moodle_url('/local/academy/teacher.php', ['id' => $user->id]))->out(false),
+                        'rating' => isset($ratings[$user->id]) ? format_float($ratings[$user->id]->avg, 1) : '',
+                        'ratingcount' => isset($ratings[$user->id]) ? (int) $ratings[$user->id]->count : 0,
                         'courses' => array_map(static fn(int $cid): array => [
                             'years' => $years[$categories[$cid]]['ids'] ?? [],
                             'system' => $answers[$cid]['system'],

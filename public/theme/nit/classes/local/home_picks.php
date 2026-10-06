@@ -156,10 +156,13 @@ class home_picks {
         if (!$DB->get_manager()->table_exists('local_nit_reviews')) {
             return [];
         }
-        $where = "r.review IS NOT NULL AND " . $DB->sql_isnotempty('local_nit_reviews', 'r.review', false, true);
-        $params = [];
+        // Approved course reviews only (local_nit_reviews moderation).
+        $where = "r.review IS NOT NULL AND " . $DB->sql_isnotempty('local_nit_reviews', 'r.review', false, true)
+            . ' AND r.teacherid = 0 AND r.status = :approved';
+        $params = ['approved' => \local_nit_reviews\api::STATUS_APPROVED];
         if ($onlyids) {
-            [$in, $params] = $DB->get_in_or_equal(array_map('intval', $onlyids), SQL_PARAMS_NAMED);
+            [$in, $inparams] = $DB->get_in_or_equal(array_map('intval', $onlyids), SQL_PARAMS_NAMED);
+            $params += $inparams;
             $where .= " AND r.id $in";
         }
         // The homepage must never fail on the testimonials feed.

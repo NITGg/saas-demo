@@ -727,3 +727,166 @@ a.bthc__item-link::after {
 @media (prefers-reduced-motion: reduce) {
     .bthc * { transition: none !important; }
 }
+
+// Learner ratings (local_nit_reviews): the "★ 4.6 (23)" fact, the teacher's line,
+// and the "التقييمات" tab. Stars use the brand's warning colour; logical
+// properties only, so RTLCSS leaves the layout alone.
+.bthc__rating {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--nit-brand-textsecondary);
+    .bthc__ico--star { width: 17px; height: 17px; color: var(--nit-brand-warning); }
+}
+.bthc__rating-avg {
+    font-weight: 700;
+    color: var(--nit-brand-textprimary);
+}
+.bthc__rating--teacher {
+    margin-top: 4px;
+    font-size: 12px;
+    .bthc__ico--star { width: 14px; height: 14px; }
+}
+.bthc__stars {
+    display: inline-flex;
+    letter-spacing: 1px;
+    font-size: 15px;
+    line-height: 1;
+}
+.bthc__stars-on { color: var(--nit-brand-warning); }
+.bthc__stars-off { color: var(--nit-brand-borderprimary); }
+
+.bthc__rv {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+}
+.bthc__rv-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+}
+.bthc__rv-summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 32px;
+}
+.bthc__rv-score {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+.bthc__rv-avg {
+    font-size: 44px;
+    line-height: 1;
+    font-weight: 700;
+    color: var(--nit-brand-textprimary);
+}
+.bthc__rv-stars .bthc__stars { font-size: 20px; }
+.bthc__rv-total,
+.bthc__rv-empty {
+    font-size: 14px;
+    color: var(--nit-brand-textsecondary);
+}
+.bthc__rv-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 220px;
+}
+.bthc__rv-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--nit-brand-textsecondary);
+    .bthc__ico--star { width: 14px; height: 14px; color: var(--nit-brand-warning); }
+}
+.bthc__rv-n,
+.bthc__rv-c {
+    min-width: 14px;
+    text-align: center;
+}
+.bthc__rv-track {
+    flex: 1;
+    height: 8px;
+    border-radius: 9999px;
+    overflow: hidden;
+    background: var(--nit-brand-bthcourserow);
+}
+.bthc__rv-fill {
+    height: 100%;
+    border-radius: 9999px;
+    background: var(--nit-brand-warning);
+}
+a.bthc__rv-btn,
+a.bthc__rv-btn:focus {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding-block: 8px;
+    padding-inline: 18px;
+    border: 2px solid var(--nit-brand-bthcoursecta) !important;
+    border-radius: 6px;
+    background: var(--nit-brand-surface) !important;
+    color: var(--nit-brand-bthcoursecta) !important;
+    font-size: 15px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: background-color .2s ease, color .2s ease;
+    .bthc__ico { width: 18px; height: 18px; }
+}
+a.bthc__rv-btn:hover {
+    background: var(--nit-brand-bthcoursecta) !important;
+    color: var(--nit-brand-bthcoursectatext) !important;
+    text-decoration: none;
+}
+.bthc__rv-list {
+    display: flex;
+    flex-direction: column;
+}
+.bthc__rv-item {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-block: 16px;
+    border-top: 1px solid var(--nit-brand-bordersecondary);
+}
+.bthc__rv-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.bthc__rv-pic {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--nit-brand-borderprimary);
+}
+.bthc__rv-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--nit-brand-textprimary);
+}
+.bthc__rv-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.bthc__rv-date {
+    font-size: 12px;
+    color: var(--nit-brand-bthcoursefaint);
+}
+.bthc__rv-text {
+    font-size: 15px;
+    line-height: 24px;
+    color: var(--nit-brand-textsecondary);
+}

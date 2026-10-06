@@ -115,6 +115,8 @@ class pages {
         }
         $page['photo'] = endpoint::file_url($page['photo']);
         $page['courses'] = array_map(static fn(array $c): array => self::course_card($c, $userid), $page['courses']);
+        $page['reviews'] = array_map(static fn(array $r): array => ['picture' => endpoint::file_url($r['picture'])] + $r,
+            $page['reviews'] ?? []);
         return $page;
     }
 

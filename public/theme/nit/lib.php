@@ -2139,14 +2139,15 @@ function theme_nit_get_site_stats(): array {
         'subcategories' => max(0, $categories - $topcategories),
         // Distinct users with at least one enrolment.
         'students' => (int) $DB->count_records_sql('SELECT COUNT(DISTINCT userid) FROM {user_enrolments}'),
-        // Real learner rating across every course review (local_nit_reviews);
+        // Real learner rating across every approved course review (local_nit_reviews);
         // 0 / 0 when the plugin is absent or nobody has rated yet — the templates
         // hide their rating badge in that case rather than show a made-up figure.
         'rating' => 0,
         'ratingcount' => 0,
     ];
     if ($DB->get_manager()->table_exists('local_nit_reviews')) {
-        $agg = $DB->get_record_sql('SELECT AVG(rating) AS avg, COUNT(id) AS cnt FROM {local_nit_reviews}');
+        $agg = $DB->get_record_sql('SELECT AVG(rating) AS avg, COUNT(id) AS cnt FROM {local_nit_reviews}
+                                     WHERE teacherid = 0 AND status = ?', [\local_nit_reviews\api::STATUS_APPROVED]);
         if ($agg && (int) $agg->cnt > 0) {
             $stats['rating'] = round((float) $agg->avg, 1);
             $stats['ratingcount'] = (int) $agg->cnt;

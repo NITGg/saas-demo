@@ -1,0 +1,120 @@
+/* Rate page (local/nit_reviews/rate.php). Colours come from the brand group the
+   page is wrapped in (.nit-brand-18), never hard-coded. Logical properties, so
+   the page is right in Arabic (RTL) and English (LTR). */
+.nitrv {
+    max-width: 640px;
+    margin: 0 auto;
+    font-family: 'Tajawal', 'Almarai', system-ui, sans-serif;
+    color: var(--nit-brand-textprimary);
+}
+.nitrv__title {
+    font-size: clamp(22px, 3vw, 30px);
+    font-weight: 700;
+    margin-block: 8px 20px;
+}
+.nitrv__card {
+    background: var(--nit-brand-surface);
+    border: 1px solid var(--nit-brand-borderprimary);
+    border-radius: 16px;
+    padding: 20px;
+    margin-block-end: 16px;
+}
+.nitrv__head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-block-end: 12px;
+}
+.nitrv__head .nitrv__pic,
+.nitrv__head img {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin: 0;
+}
+.nitrv__name {
+    font-weight: 700;
+    font-size: 17px;
+}
+.nitrv__sub,
+.nitrv__hint {
+    font-size: 13px;
+    color: var(--nit-brand-textsecondary);
+}
+.nitrv__state {
+    font-size: 14px;
+    border-radius: 10px;
+    padding: 8px 12px;
+    margin-block-end: 12px;
+    border-inline-start: 4px solid currentColor;
+    background: color-mix(in srgb, currentColor 8%, transparent);
+}
+.nitrv__state--pending { color: var(--nit-brand-warning); }
+.nitrv__state--approved { color: var(--nit-brand-success); }
+.nitrv__state--rejected { color: var(--nit-brand-error); }
+.nitrv__lbl {
+    display: block;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--nit-brand-textsecondary);
+    margin-block: 8px 6px;
+}
+.nitrv__stars {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+    gap: 6px;
+    margin-block-end: 8px;
+}
+.nitrv__stars input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+.nitrv__stars label {
+    font-size: 34px;
+    line-height: 1;
+    cursor: pointer;
+    color: var(--nit-brand-borderprimary);
+    transition: color .1s;
+}
+.nitrv__stars label:hover,
+.nitrv__stars label:hover ~ label,
+.nitrv__stars input:checked ~ label {
+    color: var(--nit-brand-warning);
+}
+.nitrv__stars input:focus-visible + label {
+    outline: 2px solid var(--nit-brand-primary);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+.nitrv__text {
+    width: 100%;
+    min-height: 100px;
+    border: 1px solid var(--nit-brand-borderprimary);
+    border-radius: 12px;
+    padding: 12px 14px;
+    font: inherit;
+    background: var(--nit-brand-background);
+    color: var(--nit-brand-textprimary);
+}
+.nitrv__hint {
+    margin-block: 6px 14px;
+}
+.nitrv__btn {
+    background: var(--nit-brand-primary);
+    color: var(--nit-brand-onprimary);
+    border: 0;
+    border-radius: 10px;
+    padding: 12px 22px;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+.nitrv__btn:hover {
+    filter: brightness(.95);
+}
+.nitrv__back {
+    margin-block: 8px 24px;
+}

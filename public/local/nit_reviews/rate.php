@@ -15,7 +15,12 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Rate a course — a simple server-side form for enrolled learners.
+ * Rate a course and its teachers, or one teacher — stars and an optional comment
+ * per target. The comment is shown once a moderator approves it.
+ *
+ *   rate.php?courseid=N              the course, then each of its teachers
+ *   rate.php?teacherid=T[&courseid=N] that teacher in every course (and private
+ *                                     lessons) the learner may rate them in
  *
  * @package    local_nit_reviews
  * @copyright  2026 NIT
@@ -24,77 +29,152 @@
 
 require(__DIR__ . '/../../config.php');
 
-$courseid = required_param('courseid', PARAM_INT);
-$course   = get_course($courseid);
+use local_nit_reviews\api;
 
-require_login($course);
-$context = context_course::instance($courseid);
+$courseid  = optional_param('courseid', 0, PARAM_INT);
+$teacherid = optional_param('teacherid', 0, PARAM_INT);
+if (!$courseid && !$teacherid) {
+    throw new moodle_exception('missingparam', 'error', '', 'courseid');
+}
 
-$courseurl = new moodle_url('/course/view.php', ['id' => $courseid]);
-$PAGE->set_url(new moodle_url('/local/nit_reviews/rate.php', ['courseid' => $courseid]));
-$PAGE->set_context($context);
-$PAGE->set_title(get_string('ratecourse', 'local_nit_reviews'));
-$PAGE->set_heading(format_string($course->fullname));
-$PAGE->set_pagelayout('incourse');
+$s = fn(string $key, $a = null) => get_string($key, 'local_nit_reviews', $a);
+$pageurl = new moodle_url('/local/nit_reviews/rate.php', array_filter(['courseid' => $courseid, 'teacherid' => $teacherid]));
 
-if (!\local_nit_reviews\api::can_rate($courseid)) {
+if ($courseid > 1) {
+    $course = get_course($courseid);
+    require_login($course);
+    $PAGE->set_context(context_course::instance($courseid));
+    $backurl = new moodle_url('/course/view.php', ['id' => $courseid]);
+} else {
+    require_login();
+    $PAGE->set_context(context_system::instance());
+    $backurl = new moodle_url('/local/academy/teacher.php', ['id' => $teacherid]);
+}
+$teacher = $teacherid ? core_user::get_user($teacherid, '*', MUST_EXIST) : null;
+
+$PAGE->set_url($pageurl);
+$PAGE->set_pagelayout($courseid > 1 ? 'incourse' : 'standard');
+$PAGE->set_title($teacher ? $s('rateteacher') : $s('ratecourseandteachers'));
+$PAGE->set_heading($teacher ? fullname($teacher) : format_string($course->fullname));
+
+// What may be rated here: [courseid, teacherid] pairs, teacherid 0 = the course.
+$targets = [];
+if ($teacher) {
+    foreach (api::rateable_courses_for_teacher($teacherid) as $cid) {
+        if (!$courseid || $cid === $courseid) {
+            $targets[] = [$cid, $teacherid];
+        }
+    }
+} else {
+    if (api::can_rate($courseid)) {
+        $targets[] = [$courseid, 0];
+    }
+    foreach (api::get_course_teachers($courseid) as $tid => $unused) {
+        if (api::can_rate_teacher($courseid, $tid)) {
+            $targets[] = [$courseid, $tid];
+        }
+    }
+}
+
+if (!$targets) {
     echo $OUTPUT->header();
-    echo $OUTPUT->notification(get_string('mustenrol', 'local_nit_reviews'), \core\output\notification::NOTIFY_WARNING);
-    echo $OUTPUT->continue_button($courseurl);
+    echo $OUTPUT->notification($teacher ? $s('cannotrateteacher') : $s('mustenrol'),
+        \core\output\notification::NOTIFY_WARNING);
+    echo $OUTPUT->continue_button($backurl);
     echo $OUTPUT->footer();
     exit;
 }
 
-$existing = \local_nit_reviews\api::get_user_review($courseid);
-
-// Handle submit.
+// Save one target's form.
 if (data_submitted() && confirm_sesskey()) {
+    $pcourse = required_param('target_course', PARAM_INT);
+    $pteacher = required_param('target_teacher', PARAM_INT);
     $rating = optional_param('rating', 0, PARAM_INT);
     $review = trim(optional_param('review', '', PARAM_TEXT));
-    if ($rating >= 1 && $rating <= 5) {
-        \local_nit_reviews\api::save($courseid, $rating, $review);
-        redirect($courseurl, get_string('reviewsaved', 'local_nit_reviews'), null,
-            \core\output\notification::NOTIFY_SUCCESS);
+    if (in_array([$pcourse, $pteacher], $targets, true) && $rating >= 1 && $rating <= 5) {
+        try {
+            $saved = api::save_validated($pcourse, $rating, $review, 0, $pteacher);
+            $pending = (int) $saved->status === api::STATUS_PENDING;
+            redirect($pageurl, $s($pending ? 'reviewsaved_pending' : 'reviewsaved'), null,
+                \core\output\notification::NOTIFY_SUCCESS);
+        } catch (moodle_exception $e) {
+            redirect($pageurl, $e->getMessage(), null, \core\output\notification::NOTIFY_ERROR);
+        }
     }
+    redirect($pageurl, $s('err_invalidrating'), null, \core\output\notification::NOTIFY_ERROR);
 }
 
-$curr = $existing ? (int) $existing->rating : 0;
-$currtext = $existing ? (string) $existing->review : '';
-$e = fn($s) => s($s);
+$coursenames = [];
+$coursename = function(int $cid) use (&$coursenames, $s): string {
+    if (!isset($coursenames[$cid])) {
+        $coursenames[$cid] = $cid > 1
+            ? format_string(get_course($cid)->fullname, true, ['context' => context_course::instance($cid)])
+            : $s('privatelessons');
+    }
+    return $coursenames[$cid];
+};
 
 echo $OUTPUT->header();
-?>
-<style>
-  .nit-rate{ max-width:520px; margin:0 auto; font-family:'Manrope','IBM Plex Sans Arabic',system-ui,sans-serif; }
-  .nit-rate h2{ font-weight:250; letter-spacing:-0.02em; font-size:clamp(24px,3vw,32px); color:var(--t-ink,#16191D); }
-  .nit-rate .stars{ display:flex; flex-direction:row-reverse; justify-content:flex-end; gap:6px; margin:14px 0 18px; }
-  .nit-rate .stars input{ display:none; }
-  .nit-rate .stars label{ font-size:34px; line-height:1; color:var(--t-border,#DCDCD7); cursor:pointer; transition:color .1s; }
-  .nit-rate .stars label:hover, .nit-rate .stars label:hover ~ label,
-  .nit-rate .stars input:checked ~ label{ color:var(--nit-brand-primary,#0E7C66); }
-  .nit-rate textarea{ width:100%; min-height:110px; border:1px solid var(--t-border2,#DCDCD7); border-radius:12px; padding:12px 14px; font:inherit; background:var(--t-bg,#fff); color:var(--t-ink,#16191D); }
-  .nit-rate .lbl{ font-size:13px; color:var(--t-muted,#6E7781); font-weight:600; margin-bottom:6px; }
-  .nit-rate .btn-solid{ margin-top:16px; background:var(--nit-brand-primary,#0E7C66); color:var(--nit-brand-on-primary,#fff); border:0; padding:13px 22px; border-radius:10px; font-weight:600; cursor:pointer; font-size:15px; }
-</style>
-<div class="nit-rate">
-  <h2><?php echo $e(get_string('ratecourse', 'local_nit_reviews')); ?></h2>
-  <form method="post" action="<?php echo $PAGE->url->out(false); ?>">
-    <input type="hidden" name="sesskey" value="<?php echo sesskey(); ?>">
-    <div class="lbl"><?php echo $e(get_string('yourrating', 'local_nit_reviews')); ?></div>
-    <div class="stars">
-      <?php for ($i = 5; $i >= 1; $i--): ?>
-        <input type="radio" id="nit-star-<?php echo $i; ?>" name="rating" value="<?php echo $i; ?>" <?php echo $curr === $i ? 'checked' : ''; ?>>
-        <label for="nit-star-<?php echo $i; ?>" aria-label="<?php echo $i; ?>">&#9733;</label>
-      <?php endfor; ?>
-    </div>
-    <div class="lbl"><?php echo $e(get_string('yourreview', 'local_nit_reviews')); ?></div>
-    <textarea name="review" maxlength="2000"><?php echo $e($currtext); ?></textarea>
-    <div>
-      <button type="submit" class="btn-solid">
-        <?php echo $e($existing ? get_string('updatereview', 'local_nit_reviews') : get_string('submitreview', 'local_nit_reviews')); ?>
-      </button>
-    </div>
-  </form>
-</div>
-<?php
+echo html_writer::start_div('nit-brand-18 nitrv');
+echo html_writer::tag('h2', s($teacher ? $s('rateteacher') : $s('ratecourseandteachers')), ['class' => 'nitrv__title']);
+
+foreach ($targets as $i => [$cid, $tid]) {
+    $existing = api::get_user_review($cid, 0, $tid);
+    $curr = $existing ? (int) $existing->rating : 0;
+    $uid = 'nitrv-' . $i;
+
+    // Who or what this card rates.
+    if ($tid) {
+        $tuser = $teacher ?: core_user::get_user($tid);
+        $pic = $OUTPUT->user_picture($tuser, ['size' => 56, 'link' => false, 'class' => 'nitrv__pic']);
+        $head = $pic . html_writer::div(
+            html_writer::div(s(fullname($tuser)), 'nitrv__name')
+            . html_writer::div(s($s('type_teacher') . ' · ' . $coursename($cid)), 'nitrv__sub'), 'nitrv__who');
+    } else {
+        $head = html_writer::div(
+            html_writer::div(s($coursename($cid)), 'nitrv__name')
+            . html_writer::div(s($s('type_course')), 'nitrv__sub'), 'nitrv__who');
+    }
+
+    // The learner's current review status.
+    $state = '';
+    if ($existing) {
+        $st = (int) $existing->status;
+        if ($st === api::STATUS_PENDING) {
+            $state = html_writer::div($s('mine_pending'), 'nitrv__state nitrv__state--pending');
+        } else if ($st === api::STATUS_REJECTED) {
+            $reason = trim((string) $existing->rejectreason);
+            $state = html_writer::div($reason !== '' ? $s('mine_rejected_reason', $reason) : $s('mine_rejected'),
+                'nitrv__state nitrv__state--rejected');
+        } else {
+            $state = html_writer::div($s('mine_approved'), 'nitrv__state nitrv__state--approved');
+        }
+    }
+
+    $stars = '';
+    for ($n = 5; $n >= 1; $n--) {
+        $stars .= html_writer::empty_tag('input', ['type' => 'radio', 'id' => "$uid-star-$n", 'name' => 'rating',
+            'value' => $n, 'required' => 'required'] + ($curr === $n ? ['checked' => 'checked'] : []));
+        $stars .= html_writer::tag('label', '&#9733;', ['for' => "$uid-star-$n", 'title' => $n . '/5']);
+    }
+
+    echo html_writer::start_tag('form', ['method' => 'post', 'action' => $pageurl->out(false), 'class' => 'nitrv__card']);
+    echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
+    echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'target_course', 'value' => $cid]);
+    echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'target_teacher', 'value' => $tid]);
+    echo html_writer::div($head, 'nitrv__head');
+    echo $state;
+    echo html_writer::div(s($s('yourrating')), 'nitrv__lbl');
+    echo html_writer::div($stars, 'nitrv__stars', ['role' => 'radiogroup', 'aria-label' => $s('yourrating')]);
+    echo html_writer::label($s('yourreview'), "$uid-text", true, ['class' => 'nitrv__lbl']);
+    echo html_writer::tag('textarea', s($existing ? (string) $existing->review : ''), ['name' => 'review',
+        'id' => "$uid-text", 'maxlength' => api::MAX_REVIEW_LENGTH, 'class' => 'nitrv__text']);
+    echo html_writer::div(s($s('commentneedsapproval')), 'nitrv__hint');
+    echo html_writer::tag('button', s($existing ? $s('updatereview') : $s('submitreview')),
+        ['type' => 'submit', 'class' => 'nitrv__btn']);
+    echo html_writer::end_tag('form');
+}
+
+echo html_writer::div(html_writer::link($backurl, s($s('back'))), 'nitrv__back');
+echo html_writer::end_div();
 echo $OUTPUT->footer();

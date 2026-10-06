@@ -129,7 +129,50 @@ class teacher_page {
                 'years' => count($yearlist),
                 'students' => self::count_students(array_keys($courses)),
             ],
-        ];
+        ] + self::reviews((int) $user->id, $viewer);
+    }
+
+    /**
+     * The teacher's learner rating (local_nit_reviews): the approved average, the
+     * latest approved comments, and the "rate" link when the viewer may rate them.
+     * Empty values when the reviews plugin is absent.
+     *
+     * @param int $teacherid
+     * @param int $viewer 0 = visitor
+     * @return array {rating:{has, avg, count}, canrate, rateurl, hasreviews, reviews:[{name, picture,
+     *     starson, starsoff, date, text, course}]}
+     */
+    private static function reviews(int $teacherid, int $viewer): array {
+        $out = ['rating' => ['has' => false, 'avg' => '', 'count' => 0], 'canrate' => false, 'rateurl' => '',
+            'hasreviews' => false, 'reviews' => []];
+        if (!class_exists('\local_nit_reviews\api')) {
+            return $out;
+        }
+        $api = '\local_nit_reviews\api';
+        $agg = $api::get_teacher_aggregate($teacherid);
+        $out['rating'] = ['has' => $agg->count > 0, 'avg' => format_float($agg->avg, 1), 'count' => (int) $agg->count];
+        if ($viewer && $api::rateable_courses_for_teacher($teacherid, $viewer)) {
+            $out['canrate'] = true;
+            $out['rateurl'] = (new \moodle_url('/local/nit_reviews/rate.php', ['teacherid' => $teacherid]))->out(false);
+        }
+        $dateformat = get_string('strftimedatefullshort', 'langconfig');
+        foreach ($api::get_teacher_reviews($teacherid, 0, 6)['reviews'] as $r) {
+            if ($r['review'] === '') {
+                continue;
+            }
+            $out['reviews'][] = [
+                'name' => $r['fullname'],
+                'picture' => $r['pictureurl'],
+                'starson' => str_repeat('★', $r['rating']),
+                'starsoff' => str_repeat('★', 5 - $r['rating']),
+                'rating' => $r['rating'],
+                'date' => userdate($r['timemodified'], $dateformat),
+                'text' => $r['review'],
+                'course' => $r['coursename'],
+            ];
+        }
+        $out['hasreviews'] = !empty($out['reviews']);
+        return $out;
     }
 
     /**

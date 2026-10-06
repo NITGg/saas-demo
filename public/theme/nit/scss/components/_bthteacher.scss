@@ -556,3 +556,92 @@ $bthtp-body: "body:not(.pagelayout-frontpage):not(.pagelayout-login):not(.pagela
     .bthtp--subject .bthtp__body { display: block; padding: 0 40px; }
     .bthtp--subject .bthtp__card { margin-inline-start: auto; }
 }
+
+// --- Learner rating (local_nit_reviews) -----------------------------------------
+// The rating row in the photo card, the "rate the teacher" button under it, and
+// the "آراء الطلاب" list after the courses. Stars use the brand's warning colour.
+.bthtp__ico--star { color: var(--nit-brand-warning) !important; }
+.bthtp__stat-sub {
+    font-weight: 500;
+    font-size: 12px;
+}
+a.bthtp__ratebtn,
+a.bthtp__ratebtn:focus {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    margin: 8px 8px 4px;
+    border: 2px solid var(--nit-brand-bthtpaccent) !important;
+    border-radius: 8px;
+    background: var(--nit-brand-surface) !important;
+    color: var(--nit-brand-bthtpaccent) !important;
+    font-weight: 700;
+    text-decoration: none;
+    transition: background-color .3s ease, color .3s ease;
+}
+a.bthtp__ratebtn:hover {
+    background: var(--nit-brand-bthtpaccent) !important;
+    color: var(--nit-brand-surface) !important;
+    text-decoration: none;
+}
+.bthtp__rvlist {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.bthtp__rv {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 20px;
+    border: 1px solid var(--nit-brand-borderprimary);
+    border-radius: 12px;
+    background: var(--nit-brand-surface);
+}
+.bthtp__rv-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.bthtp__rv-pic {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--nit-brand-borderprimary);
+}
+.bthtp__rv-name {
+    font-weight: 700;
+    color: var(--nit-brand-textprimary);
+}
+.bthtp__rv-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--nit-brand-textsecondary);
+}
+.bthtp__rv-stars { font-size: 15px; letter-spacing: 1px; }
+.bthtp__rv-on { color: var(--nit-brand-warning); }
+.bthtp__rv-off { color: var(--nit-brand-borderprimary); }
+.bthtp__rv-text {
+    margin: 0;
+    line-height: 1.8;
+    color: var(--nit-brand-textsecondary);
+    white-space: pre-line;
+}
+.bthtp__rv-course {
+    font-size: 12px;
+    color: var(--nit-brand-bthtpaccent);
+    font-weight: 700;
+}
+@media (min-width: 768px) {
+    .bthtp__rvlist { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1024px) {
+    .bthtp__rvlist { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

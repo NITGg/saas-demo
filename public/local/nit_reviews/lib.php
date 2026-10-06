@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * NIT reviews — learner ratings of courses and teachers, with moderation.
+ * Navigation callbacks for local_nit_reviews.
  *
  * @package    local_nit_reviews
  * @copyright  2026 NIT
@@ -24,9 +24,24 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_nit_reviews';
-$plugin->version   = 2026100701;
-$plugin->requires  = 2024100700;
-$plugin->supported = [405, 502];
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.2.0';
+/**
+ * Course "More" menu: "Review moderation" (this course's reviews) for whoever
+ * moderates the course — the way in for a manager scoped to a category or course.
+ *
+ * @param navigation_node $navigation
+ * @param stdClass $course
+ * @param context_course $context
+ */
+function local_nit_reviews_extend_navigation_course(navigation_node $navigation, stdClass $course, context_course $context) {
+    if ((int) $course->id <= 1 || !has_capability('local/nit_reviews:moderate', $context)) {
+        return;
+    }
+    $navigation->add(
+        get_string('moderatereviews', 'local_nit_reviews'),
+        new moodle_url('/local/nit_reviews/moderate.php', ['courseid' => $course->id]),
+        navigation_node::TYPE_SETTING,
+        null,
+        'local_nit_reviews_moderate',
+        new pix_icon('i/star', '')
+    );
+}

@@ -15,7 +15,11 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * NIT reviews — learner ratings of courses and teachers, with moderation.
+ * Message providers for local_nit_reviews.
+ *
+ * - reviewpending: to the moderators of a course when a review with a comment
+ *   waits for approval.
+ * - reviewmoderated: to the author when their review is approved or rejected.
  *
  * @package    local_nit_reviews
  * @copyright  2026 NIT
@@ -24,9 +28,19 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_nit_reviews';
-$plugin->version   = 2026100701;
-$plugin->requires  = 2024100700;
-$plugin->supported = [405, 502];
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.2.0';
+$messageproviders = [
+    'reviewpending' => [
+        'defaults' => [
+            'popup' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
+            'email' => MESSAGE_PERMITTED,
+            'airnotifier' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
+        ],
+    ],
+    'reviewmoderated' => [
+        'defaults' => [
+            'popup' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
+            'email' => MESSAGE_PERMITTED,
+            'airnotifier' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
+        ],
+    ],
+];
