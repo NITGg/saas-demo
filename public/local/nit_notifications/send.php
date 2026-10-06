@@ -108,11 +108,11 @@ if ($data = $form->get_data()) {
     $iscourse = audience::is_course_audience($data->audience);
     $count = audience::count($data->audience, $iscourse ? (int) $data->courseid : 0, (int) $USER->id);
     $target = $audiences[$data->audience] . ($iscourse ? ' — ' . ($courses[(int) $data->courseid] ?? '') : '');
+    $text = \local_nit_notifications\form\compose_form::compose((array) $data);
 
     echo html_writer::start_div('card mb-3', ['style' => 'max-width:720px']);
     echo html_writer::start_div('card-body');
-    echo html_writer::tag('h5', s($data->title), ['class' => 'card-title']);
-    echo html_writer::div(nl2br(s($data->body)), 'card-text mb-3');
+    echo \local_nit_notifications\output::versions($text['title'], $text['body']);
     if ($data->url !== '') {
         echo html_writer::div(html_writer::link($data->url, s($data->url), ['target' => '_blank']), 'mb-3');
     }
@@ -134,8 +134,8 @@ if ($data = $form->get_data()) {
         echo $OUTPUT->notification($s('confirmcount', $count) . ($count > sender::SYNC_LIMIT ? ' ' . $s('bigsendnote') : ''),
             \core\output\notification::NOTIFY_INFO, false);
         $hidden = ['sesskey' => sesskey(), 'confirm' => 1, 'audience' => $data->audience,
-            'courseid' => $iscourse ? (int) $data->courseid : 0, 'type' => $data->type, 'title' => $data->title,
-            'body' => $data->body, 'url' => $data->url, 'email' => (int) $data->email];
+            'courseid' => $iscourse ? (int) $data->courseid : 0, 'type' => $data->type, 'title' => $text['title'],
+            'body' => $text['body'], 'url' => $data->url, 'email' => (int) $data->email];
         echo html_writer::start_tag('form', ['method' => 'post', 'action' => $pageurl->out(false), 'class' => 'd-flex gap-2']);
         foreach ($hidden as $name => $value) {
             echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => $name, 'value' => $value]);

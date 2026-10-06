@@ -15,8 +15,9 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Admin tree: a "Notifications" tab in Site administration with "Send a
- * notification" and "Notification log". A manager scoped to a category or a
+ * Admin tree: Site administration → Plugins → Local plugins → Notifications, with
+ * "Send a notification" and "Notification log" — beside the other academy pages,
+ * apart from Moodle's own messaging settings. A manager scoped to a category or a
  * course opens the same pages from the course's menu (lib.php).
  *
  * @package    local_nit_notifications
@@ -27,7 +28,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 if ($hassiteconfig || has_capability('local/nit_notifications:send', context_system::instance())) {
-    $ADMIN->add('root', new admin_category('local_nit_notifications_cat',
+    $ADMIN->add('localplugins', new admin_category('local_nit_notifications_cat',
         get_string('notifications', 'local_nit_notifications')));
     $ADMIN->add('local_nit_notifications_cat', new admin_externalpage(
         'local_nit_notifications_send',

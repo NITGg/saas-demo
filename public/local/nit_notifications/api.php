@@ -35,6 +35,7 @@ require(__DIR__ . '/../../config.php');
 
 use local_academy\api\endpoint as api;
 use local_nit_notifications\audience;
+use local_nit_notifications\mlang;
 use local_nit_notifications\sender;
 
 api::boot();
@@ -60,8 +61,11 @@ function local_nit_notifications_api_notif(stdClass $n): array {
     $coursename = $n->coursename ?? ((int) $n->courseid > 1 ? (string) $DB->get_field('course', 'fullname', ['id' => $n->courseid]) : '');
     return [
         'id' => (int) $n->id,
-        'title' => $n->title,
-        'body' => $n->body,
+        // In the caller's language (lang param, else their own), plus every version written.
+        'title' => mlang::resolve((string) $n->title),
+        'body' => mlang::resolve((string) $n->body),
+        'titles' => local_nit_notifications_api_versions((string) $n->title),
+        'bodies' => local_nit_notifications_api_versions((string) $n->body),
         'url' => (string) $n->url,
         'type' => $n->type,
         'source' => $n->source,
@@ -78,6 +82,37 @@ function local_nit_notifications_api_notif(stdClass $n): array {
         'read' => (int) ($n->readcount ?? (sender::read_counts([(int) $n->id])[(int) $n->id] ?? 0)),
         'timecreated' => (int) $n->timecreated,
     ];
+}
+
+/**
+ * A stored title or text as {lang: text} (plain text comes back under the site language).
+ *
+ * @param string $text
+ * @return array<string,string>
+ */
+function local_nit_notifications_api_versions(string $text): array {
+    global $CFG;
+    $out = [];
+    foreach (mlang::split($text) as $code => $value) {
+        $out[$code !== '' ? $code : (string) $CFG->lang] = $value;
+    }
+    return $out;
+}
+
+/**
+ * The title or text sent by the app: one per language (title_ar, title_en, …),
+ * or a single `title` / `body` in any language.
+ *
+ * @param string $name title | body
+ * @return string the stored value (multilang markup when several languages were sent)
+ */
+function local_nit_notifications_api_text(string $name): string {
+    $bylang = [];
+    foreach (array_keys(mlang::languages()) as $code) {
+        $bylang[$code] = optional_param($name . '_' . $code, '', PARAM_TEXT);
+    }
+    $composed = mlang::compose($bylang);
+    return $composed !== '' ? $composed : optional_param($name, '', PARAM_TEXT);
 }
 
 /**
@@ -113,6 +148,9 @@ api::run(function (string $function) use ($userid) {
                 'courses' => $courses,
                 'types' => array_map(fn($t) => ['key' => $t, 'label' => get_string('type_' . $t, 'local_nit_notifications')],
                     sender::TYPES),
+                'languages' => array_map(fn($code, $name) => ['code' => $code, 'name' => $name,
+                    'dir' => get_string_manager()->get_string('thisdirection', 'langconfig', null, $code)],
+                    array_keys(mlang::languages()), mlang::languages()),
                 'maxtitle' => sender::MAX_TITLE,
                 'maxbody' => sender::MAX_BODY,
             ];
@@ -133,8 +171,8 @@ api::run(function (string $function) use ($userid) {
                 'audience' => required_param('audience', PARAM_ALPHANUMEXT),
                 'courseid' => optional_param('courseid', 0, PARAM_INT),
                 'type' => optional_param('type', 'general', PARAM_ALPHA),
-                'title' => required_param('title', PARAM_TEXT),
-                'body' => required_param('body', PARAM_TEXT),
+                'title' => local_nit_notifications_api_text('title'),
+                'body' => local_nit_notifications_api_text('body'),
                 'url' => optional_param('url', '', PARAM_RAW_TRIMMED),
                 'email' => optional_param('email', 0, PARAM_BOOL),
             ]);
@@ -157,7 +195,7 @@ api::run(function (string $function) use ($userid) {
             ];
 
         // One notification with a page of its recipients.
-        // state = sent|failed|queued|read|unread (empty = all).
+        // state = sent|failed|queued|read|unread|emailsent|emailfailed (empty = all).
         case 'get_notification':
             $notif = $GLOBALS['DB']->get_record('local_nit_notif', ['id' => required_param('id', PARAM_INT)]);
             if (!$notif || $notif->status === 'draft') {
@@ -180,6 +218,8 @@ api::run(function (string $function) use ($userid) {
                     'status' => $states[(int) $r->status] ?? 'queued',
                     'timesent' => (int) $r->timesent,
                     'timeread' => (int) $r->timeread,
+                    'email' => [sender::EMAIL_NONE => 'none', sender::EMAIL_SENT => 'sent', sender::EMAIL_FAILED => 'failed',
+                        sender::EMAIL_BY_MOODLE => 'sent'][(int) $r->emailstatus] ?? 'none',
                 ], $list['items']),
             ];
     }

@@ -21,6 +21,7 @@ defined('MOODLE_INTERNAL') || die();
 require_once($CFG->libdir . '/formslib.php');
 
 use local_nit_notifications\audience;
+use local_nit_notifications\mlang;
 use local_nit_notifications\sender;
 
 /**
@@ -59,15 +60,32 @@ class compose_form extends \moodleform {
         }
         $mform->addElement('select', 'type', $s('type'), $types);
 
-        // data-nitml: written once in any language, so local_nit_mlang leaves it a single box.
-        $mform->addElement('text', 'title', $s('title'), ['size' => 60, 'maxlength' => sender::MAX_TITLE, 'data-nitml' => 'off']);
-        $mform->setType('title', PARAM_TEXT);
-        $mform->addRule('title', null, 'required', null, 'client');
+        // A title and a text per installed language, the site language first and
+        // required; each recipient gets their own language (see \local_nit_notifications\mlang).
+        // data-nitml: these boxes are already per language, so local_nit_mlang leaves them alone.
+        $languages = mlang::languages();
+        $many = count($languages) > 1;
+        $first = true;
+        foreach ($languages as $code => $name) {
+            $dir = get_string_manager()->get_string('thisdirection', 'langconfig', null, $code);
+            $suffix = $many ? ' — ' . $name : '';
+            $attrs = ['dir' => $dir, 'lang' => $code, 'data-nitml' => 'off'];
 
-        $mform->addElement('textarea', 'body', $s('body'), ['rows' => 6, 'cols' => 60, 'maxlength' => sender::MAX_BODY,
-            'data-nitml' => 'off']);
-        $mform->setType('body', PARAM_TEXT);
-        $mform->addRule('body', null, 'required', null, 'client');
+            $mform->addElement('text', 'title_' . $code, $s('title') . $suffix,
+                $attrs + ['size' => 60, 'maxlength' => sender::MAX_TITLE]);
+            $mform->setType('title_' . $code, PARAM_TEXT);
+            $mform->addElement('textarea', 'body_' . $code, $s('body') . $suffix,
+                $attrs + ['rows' => 5, 'cols' => 60, 'maxlength' => sender::MAX_BODY]);
+            $mform->setType('body_' . $code, PARAM_TEXT);
+            if ($first) {
+                $mform->addRule('title_' . $code, null, 'required', null, 'client');
+                $mform->addRule('body_' . $code, null, 'required', null, 'client');
+                if ($many) {
+                    $mform->addElement('static', 'langnote', '', $s('langnote'));
+                }
+                $first = false;
+            }
+        }
 
         $mform->addElement('text', 'url', $s('link'), ['size' => 60, 'placeholder' => 'https://…']);
         $mform->setType('url', PARAM_RAW_TRIMMED);
@@ -87,10 +105,29 @@ class compose_form extends \moodleform {
      */
     public function validation($data, $files) {
         $errors = parent::validation($data, $files);
-        foreach (sender::validate($data) as $field => $key) {
+        $first = array_key_first(mlang::languages());
+        foreach (sender::validate(self::compose((array) $data) + $data) as $field => $key) {
             $a = ['err_titletoolong' => sender::MAX_TITLE, 'err_bodytoolong' => sender::MAX_BODY][$key] ?? null;
-            $errors[$field] = get_string($key, 'local_nit_notifications', $a);
+            // Title / text errors show under the site language's box.
+            $errors[in_array($field, ['title', 'body'], true) ? $field . '_' . $first : $field] =
+                get_string($key, 'local_nit_notifications', $a);
         }
         return $errors;
+    }
+
+    /**
+     * The stored title and text from the per-language boxes (multilang markup, or
+     * plain text when only one language was written).
+     *
+     * @param array $data submitted form data
+     * @return array{title:string, body:string}
+     */
+    public static function compose(array $data): array {
+        $out = ['title' => [], 'body' => []];
+        foreach (array_keys(mlang::languages()) as $code) {
+            $out['title'][$code] = (string) ($data['title_' . $code] ?? '');
+            $out['body'][$code] = (string) ($data['body_' . $code] ?? '');
+        }
+        return ['title' => mlang::compose($out['title']), 'body' => mlang::compose($out['body'])];
     }
 }

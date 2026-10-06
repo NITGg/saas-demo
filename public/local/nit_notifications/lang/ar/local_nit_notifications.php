@@ -60,6 +60,7 @@ $string['sendnow'] = 'ابعت دلوقتي لـ {$a} مستخدم';
 $string['sentdone'] = 'تم إرسال الإشعار: وصل لـ {$a->sent}، وفشل {$a->failed}.';
 $string['sentqueued'] = 'تم حفظ الإشعار، وجاري إرساله لـ {$a} مستخدم في الخلفية.';
 $string['scopednote'] = 'تقدر تبعت لطلاب ومدرسين الكورسات اللي بتديرها.';
+$string['langnote'] = 'اكتب باقي اللغات لو تقدر: المستخدم اللي لغته فاضية هيوصله النص بلغة الموقع الأساسية.';
 
 // Log.
 $string['sender'] = 'المرسل';
@@ -80,6 +81,10 @@ $string['state_read'] = 'اتقرا';
 $string['state_unread'] = 'ماتقراش';
 $string['timesent'] = 'وقت الإرسال';
 $string['timeread'] = 'وقت القراءة';
+$string['emailcopy'] = 'نسخة الإيميل';
+$string['email_sent'] = 'الإيميل اتبعت';
+$string['email_failed'] = 'الإيميل فشل';
+$string['email_bymoodle'] = 'اتبعت إيميل (من تفضيلات المستخدم)';
 $string['status_draft'] = 'مسودة';
 $string['status_queued'] = 'في الانتظار';
 $string['status_sending'] = 'جاري الإرسال';

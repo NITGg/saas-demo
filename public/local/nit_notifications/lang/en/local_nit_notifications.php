@@ -60,6 +60,7 @@ $string['sendnow'] = 'Send now to {$a} user(s)';
 $string['sentdone'] = 'Notification sent: {$a->sent} delivered, {$a->failed} failed.';
 $string['sentqueued'] = 'Notification saved; it is being delivered to {$a} user(s) in the background.';
 $string['scopednote'] = 'You can notify the students and teachers of the courses you manage.';
+$string['langnote'] = 'Write the other languages too if you can: a user whose language is left empty gets the site language.';
 
 // Log.
 $string['sender'] = 'Sender';
@@ -80,6 +81,10 @@ $string['state_read'] = 'Read';
 $string['state_unread'] = 'Not read';
 $string['timesent'] = 'Sent at';
 $string['timeread'] = 'Read at';
+$string['emailcopy'] = 'Email copy';
+$string['email_sent'] = 'Email sent';
+$string['email_failed'] = 'Email failed';
+$string['email_bymoodle'] = 'Emailed (user preferences)';
 $string['status_draft'] = 'Draft';
 $string['status_queued'] = 'Waiting';
 $string['status_sending'] = 'Sending';

@@ -11,8 +11,8 @@
         <FIELD NAME="type" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="general" SEQUENCE="false" COMMENT="general | courses | subscriptions | offers"/>
         <FIELD NAME="audience" TYPE="char" LENGTH="30" NOTNULL="true" SEQUENCE="false" COMMENT="course_students | course_teachers | all_students | all_teachers | managers | admins | users"/>
         <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The course for the course audiences; 0 = every course the sender manages, or none"/>
-        <FIELD NAME="title" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
-        <FIELD NAME="body" TYPE="text" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="title" TYPE="char" LENGTH="1333" NOTNULL="true" SEQUENCE="false" COMMENT="Plain text, or multilang markup with one title per language"/>
+        <FIELD NAME="body" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="Plain text, or multilang markup with one text per language"/>
         <FIELD NAME="url" TYPE="char" LENGTH="1333" NOTNULL="false" SEQUENCE="false" COMMENT="Optional link opened from the notification"/>
         <FIELD NAME="email" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1 = also sent by email"/>
         <FIELD NAME="status" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="draft" SEQUENCE="false" COMMENT="draft | queued | sending | done"/>
@@ -38,6 +38,7 @@
         <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="status" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="0 queued, 1 sent, 2 failed"/>
         <FIELD NAME="messageid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The core notification (notifications.id): read when its timeread is set"/>
+        <FIELD NAME="emailstatus" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="0 no email asked, 1 emailed, 2 email failed, 3 emailed by the recipient's Moodle preferences"/>
         <FIELD NAME="timesent" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
       </FIELDS>
       <KEYS>

@@ -53,8 +53,20 @@ class sender {
     /** Recipients per adhoc-task batch. */
     public const BATCH = 500;
 
-    /** Longest title. */
+    /** Longest title (per language). */
     public const MAX_TITLE = 200;
+
+    /** Room for the stored title (every language with its markup). */
+    private const MAX_STORED_TITLE = 1333;
+
+    /** No email copy asked. */
+    public const EMAIL_NONE = 0;
+    /** Email copy sent by this plugin. */
+    public const EMAIL_SENT = 1;
+    /** Email copy failed. */
+    public const EMAIL_FAILED = 2;
+    /** Moodle emailed it already (the recipient's notification preferences). */
+    public const EMAIL_BY_MOODLE = 3;
 
     /** Longest body. */
     public const MAX_BODY = 4000;
@@ -75,17 +87,17 @@ class sender {
         if (!in_array((string) ($data['type'] ?? ''), self::TYPES, true)) {
             $errors['type'] = 'err_type';
         }
-        $title = trim((string) ($data['title'] ?? ''));
-        if ($title === '') {
-            $errors['title'] = 'err_required';
-        } else if (\core_text::strlen($title) > self::MAX_TITLE) {
-            $errors['title'] = 'err_titletoolong';
-        }
-        $body = trim((string) ($data['body'] ?? ''));
-        if ($body === '') {
-            $errors['body'] = 'err_required';
-        } else if (\core_text::strlen($body) > self::MAX_BODY) {
-            $errors['body'] = 'err_bodytoolong';
+        // Title and text: plain, or one version per language (each version is checked).
+        foreach (['title' => [self::MAX_TITLE, 'err_titletoolong'], 'body' => [self::MAX_BODY, 'err_bodytoolong']]
+                as $field => [$max, $toolong]) {
+            $value = trim((string) ($data[$field] ?? ''));
+            $parts = array_filter(mlang::split($value), fn($t) => $t !== '');
+            if (!$parts) {
+                $errors[$field] = 'err_required';
+            } else if (max(array_map(fn($t) => \core_text::strlen($t), $parts)) > $max
+                    || ($field === 'title' && \core_text::strlen($value) > self::MAX_STORED_TITLE)) {
+                $errors[$field] = $toolong;
+            }
         }
         $url = trim((string) ($data['url'] ?? ''));
         if ($url !== '' && clean_param($url, PARAM_URL) === '') {
@@ -138,8 +150,8 @@ class sender {
      * @param string $source what sent it, e.g. 'subscription_expiry'
      * @param string $type one of TYPES
      * @param int[] $userids
-     * @param string $title
-     * @param string $body plain text
+     * @param string $title plain text, or multilang markup (resolved per recipient)
+     * @param string $body plain text, or multilang markup
      * @param int $courseid the course it is about (scopes it in managers' logs), 0 = none
      * @param string $url optional link
      * @return \stdClass|null the notification, null when nobody is left to send to
@@ -156,7 +168,7 @@ class sender {
             'type' => in_array($type, self::TYPES, true) ? $type : 'general',
             'audience' => audience::USERS,
             'courseid' => $courseid,
-            'title' => \core_text::substr(trim($title), 0, 255),
+            'title' => \core_text::substr(trim($title), 0, self::MAX_STORED_TITLE),
             'body' => trim($body),
             'url' => $url,
             'email' => 0,
@@ -234,14 +246,15 @@ class sender {
             'id', 'id, userid', 0, $limit);
         foreach ($rows as $row) {
             $user = \core_user::get_user((int) $row->userid);
-            $messageid = 0;
+            [$messageid, $emailstatus] = [0, self::EMAIL_NONE];
             if ($user && !$user->deleted && !$user->suspended) {
-                $messageid = self::message($notif, $from, $user);
+                [$messageid, $emailstatus] = self::message($notif, $from, $user);
             }
             $DB->update_record('local_nit_notif_rcpt', (object) [
                 'id' => $row->id,
                 'status' => $messageid ? self::RCPT_SENT : self::RCPT_FAILED,
                 'messageid' => $messageid,
+                'emailstatus' => $emailstatus,
                 'timesent' => time(),
             ]);
         }
@@ -260,29 +273,34 @@ class sender {
     }
 
     /**
-     * One Moodle notification (bell + push), and the email copy when asked.
+     * One Moodle notification (bell + push), and the email copy when asked — in
+     * the recipient's language.
      *
      * @param \stdClass $notif
      * @param \stdClass $from
      * @param \stdClass $to
-     * @return int the core notification id, 0 on failure
+     * @return array{0:int, 1:int} the core notification id (0 on failure) and the EMAIL_* status
      */
-    private static function message(\stdClass $notif, \stdClass $from, \stdClass $to): int {
-        $html = '<p>' . nl2br(s($notif->body)) . '</p>';
+    private static function message(\stdClass $notif, \stdClass $from, \stdClass $to): array {
+        $lang = mlang::user_language($to);
+        $title = mlang::resolve((string) $notif->title, $lang);
+        $body = mlang::resolve((string) $notif->body, $lang);
+        $html = '<p>' . nl2br(s($body)) . '</p>';
+
         $message = new \core\message\message();
         $message->component = 'local_nit_notifications';
         $message->name = 'announcement';
         $message->userfrom = $from;
         $message->userto = $to;
-        $message->subject = $notif->title;
-        $message->fullmessage = $notif->body;
+        $message->subject = $title;
+        $message->fullmessage = $body;
         $message->fullmessageformat = FORMAT_PLAIN;
         $message->fullmessagehtml = $html;
-        $message->smallmessage = $notif->title;
+        $message->smallmessage = $title;
         $message->notification = 1;
         if (!empty($notif->url)) {
             $message->contexturl = $notif->url;
-            $message->contexturlname = $notif->title;
+            $message->contexturlname = $title;
         }
         $message->courseid = (int) $notif->courseid > 1 ? (int) $notif->courseid : SITEID;
         $message->customdata = ['nitnotifid' => (int) $notif->id, 'type' => $notif->type];
@@ -290,18 +308,56 @@ class sender {
             $id = (int) message_send($message);
         } catch (\Throwable $e) {
             debugging('local_nit_notifications: delivery failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
-            return 0;
+            return [0, self::EMAIL_NONE];
         }
-        if ($id && !empty($notif->email)) {
-            try {
-                $text = $notif->body . (!empty($notif->url) ? "\n\n" . $notif->url : '');
-                email_to_user($to, $from, $notif->title, $text,
-                    $html . (!empty($notif->url) ? '<p><a href="' . s($notif->url) . '">' . s($notif->url) . '</a></p>' : ''));
-            } catch (\Throwable $e) {
-                debugging('local_nit_notifications: email failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
-            }
+        if (!$id || empty($notif->email)) {
+            return [$id, self::EMAIL_NONE];
         }
-        return $id;
+        // The email copy: only when Moodle did not already email it (the recipient turned
+        // email on for these notifications), so nobody gets it twice.
+        if (self::emailed_by_moodle($to)) {
+            return [$id, self::EMAIL_BY_MOODLE];
+        }
+        try {
+            $text = $body . (!empty($notif->url) ? "\n\n" . $notif->url : '');
+            $ok = email_to_user($to, $from, $title, $text,
+                $html . (!empty($notif->url) ? '<p><a href="' . s($notif->url) . '">' . s($notif->url) . '</a></p>' : ''));
+        } catch (\Throwable $e) {
+            debugging('local_nit_notifications: email failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
+            $ok = false;
+        }
+        return [$id, $ok ? self::EMAIL_SENT : self::EMAIL_FAILED];
+    }
+
+    /**
+     * How many email copies went out and failed.
+     *
+     * @param int $notifid
+     * @return array{sent:int, failed:int}
+     */
+    public static function email_counts(int $notifid): array {
+        global $DB;
+        return [
+            'sent' => $DB->count_records_select('local_nit_notif_rcpt', 'notifid = ? AND emailstatus IN (?, ?)',
+                [$notifid, self::EMAIL_SENT, self::EMAIL_BY_MOODLE]),
+            'failed' => $DB->count_records('local_nit_notif_rcpt', ['notifid' => $notifid, 'emailstatus' => self::EMAIL_FAILED]),
+        ];
+    }
+
+    /**
+     * Whether Moodle's email output already sends these notifications to the user
+     * (their notification preference, or the site default when they set none).
+     *
+     * @param \stdClass $user
+     * @return bool
+     */
+    private static function emailed_by_moodle(\stdClass $user): bool {
+        $name = 'message_provider_local_nit_notifications_announcement_enabled';
+        $pref = get_user_preferences($name, null, $user);
+        if ($pref === null) {
+            $pref = get_config('message', $name);
+        }
+        return empty($user->emailstop) && in_array('email', explode(',', (string) $pref), true);
     }
 
     // =========================================================================
@@ -426,10 +482,10 @@ class sender {
      * One page of a notification's recipients with delivery and read state.
      *
      * @param int $notifid
-     * @param string $state '' | sent | failed | queued | read | unread
+     * @param string $state '' | sent | failed | queued | read | unread | emailfailed
      * @param int $page
      * @param int $perpage
-     * @return array{total:int, items:\stdClass[]} items: userid, fullname, email, status, timesent, timeread
+     * @return array{total:int, items:\stdClass[]} items: userid, fullname, email, status, emailstatus, timesent, timeread
      */
     public static function recipients(int $notifid, string $state = '', int $page = 0, int $perpage = 50): array {
         global $DB;
@@ -444,6 +500,13 @@ class sender {
         } else if ($state === 'unread') {
             $where .= ' AND r.status = :sentstatus AND m.timeread IS NULL';
             $params['sentstatus'] = self::RCPT_SENT;
+        } else if ($state === 'emailsent') {
+            $where .= ' AND r.emailstatus IN (:emailsent, :emailbymoodle)';
+            $params['emailsent'] = self::EMAIL_SENT;
+            $params['emailbymoodle'] = self::EMAIL_BY_MOODLE;
+        } else if ($state === 'emailfailed') {
+            $where .= ' AND r.emailstatus = :emailfailed';
+            $params['emailfailed'] = self::EMAIL_FAILED;
         }
         $from = "FROM {local_nit_notif_rcpt} r
                  JOIN {user} u ON u.id = r.userid
@@ -451,7 +514,7 @@ class sender {
                 WHERE $where";
         $total = (int) $DB->count_records_sql("SELECT COUNT(1) $from", $params);
         $namefields = \core_user\fields::for_name()->get_sql('u', false, '', '', false)->selects;
-        $rows = $DB->get_records_sql("SELECT r.id, r.userid, r.status, r.timesent, m.timeread, u.email, $namefields
+        $rows = $DB->get_records_sql("SELECT r.id, r.userid, r.status, r.emailstatus, r.timesent, m.timeread, u.email, $namefields
                                       $from
                                    ORDER BY u.firstname, u.lastname, r.id",
             $params, max(0, $page) * $perpage, $perpage);

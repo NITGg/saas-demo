@@ -91,8 +91,9 @@ if ($id) {
 
     echo $OUTPUT->header();
     echo html_writer::div(html_writer::link($listurl, '« ' . $s('notificationlog')), 'mb-3');
-    echo $OUTPUT->heading(s($notif->title));
-    echo html_writer::div(nl2br(s($notif->body)), 'mb-3', ['style' => 'max-width:720px']);
+    echo $OUTPUT->heading(s(\local_nit_notifications\mlang::resolve($notif->title)));
+    echo html_writer::div(\local_nit_notifications\output::versions($notif->title, $notif->body), 'mb-3',
+        ['style' => 'max-width:720px']);
     if (!empty($notif->url)) {
         echo html_writer::div(html_writer::link($notif->url, s($notif->url), ['target' => '_blank']), 'mb-3');
     }
@@ -116,6 +117,11 @@ if ($id) {
         'read' => [$s('state_read'), $reads, 'bg-info text-dark'],
         'unread' => [$s('state_unread'), max(0, (int) $notif->sent - $reads), 'bg-light text-dark'],
     ];
+    if ($notif->email) {
+        $emails = sender::email_counts($id);
+        $counts['emailsent'] = [$s('email_sent'), $emails['sent'], 'bg-success'];
+        $counts['emailfailed'] = [$s('email_failed'), $emails['failed'], 'bg-danger'];
+    }
     if ($notif->status !== 'done') {
         $counts['queued'] = [$s('state_queued'), max(0, (int) $notif->total - $notif->sent - $notif->failed),
             'bg-warning text-dark'];
@@ -133,7 +139,12 @@ if ($id) {
         sender::RCPT_FAILED => $s('state_failed')];
     $table = new html_table();
     $table->attributes['class'] = 'generaltable table-sm';
+    $emaillabels = [sender::EMAIL_NONE => '—', sender::EMAIL_SENT => $s('email_sent'),
+        sender::EMAIL_FAILED => $s('email_failed'), sender::EMAIL_BY_MOODLE => $s('email_bymoodle')];
     $table->head = [get_string('fullname'), get_string('email'), get_string('status'), $s('timesent'), $s('timeread')];
+    if ($notif->email) {
+        $table->head[] = $s('emailcopy');
+    }
     foreach ($list['items'] as $r) {
         $table->data[] = [
             html_writer::link(new moodle_url('/user/profile.php', ['id' => $r->userid]), s($r->fullname)),
@@ -142,6 +153,11 @@ if ($id) {
             $r->timesent ? userdate($r->timesent, $datetime) : '—',
             $r->timeread ? userdate($r->timeread, $datetime) : '—',
         ];
+        if ($notif->email) {
+            $status = (int) $r->emailstatus;
+            $table->data[array_key_last($table->data)][] = $status === sender::EMAIL_FAILED
+                ? html_writer::span($emaillabels[$status], 'text-danger fw-bold') : ($emaillabels[$status] ?? '');
+        }
     }
     echo $list['items'] ? html_writer::table($table)
         : $OUTPUT->notification($s('norecipients'), \core\output\notification::NOTIFY_INFO, false);
@@ -200,7 +216,7 @@ $table->head = [get_string('date'), $s('title'), $s('type'), $s('audience'), $s(
 foreach ($list['items'] as $n) {
     $table->data[] = [
         html_writer::span(userdate($n->timecreated, $datetime), 'text-nowrap'),
-        html_writer::link(new moodle_url($listurl, ['id' => $n->id]), s($n->title)),
+        html_writer::link(new moodle_url($listurl, ['id' => $n->id]), s(\local_nit_notifications\mlang::resolve($n->title))),
         $s('type_' . $n->type),
         s($audiencetext($n)),
         $n->sendername !== '' ? s($n->sendername) : html_writer::span($s('system'), 'text-muted'),

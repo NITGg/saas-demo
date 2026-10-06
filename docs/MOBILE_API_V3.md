@@ -319,6 +319,12 @@ who got it, who failed, and who read it. Notifications the platform sends by its
 from `core_message_mark_notification_read`. `customdata` carries `nitnotifid` and `type`, and `contexturl` is the
 optional link (open it on tap).
 
+**Languages: the app never sees `{mlang}`.** A notification can be written once per installed language. The
+server picks each recipient's language (their profile language, else the site language) before it sends, so the
+bell, the push and the email all arrive as plain text in that language. On the admin screens below, `title` and
+`body` come in the caller's language (the `lang` parameter, else their own), and `titles` / `bodies` give every
+version that was written as `{"ar": "…", "en": "…"}`.
+
 **Who may send what** (`local/nit_notifications:send`; any other caller gets `nopermissions`, and so does the
 shared visitor token):
 
@@ -334,8 +340,8 @@ Definitions:
 - **All students:** every active account that is not a teacher, a manager or an admin, even with no enrolment.
 - Suspended accounts and the sender never receive.
 
-Types: `general`, `courses`, `subscriptions`, `offers`. Title up to 200 characters; text up to 4000 (plain
-text). The link is optional and must be a full `http(s)://` URL. Up to 300 recipients are delivered during the
+Types: `general`, `courses`, `subscriptions`, `offers`. Title up to 200 characters and text up to 4000 (plain
+text), in each language. The link is optional and must be a full `http(s)://` URL. Up to 300 recipients are delivered during the
 call (`status: "done"`); a bigger group comes back `status: "queued"` and is delivered in the background in
 batches. Refresh `get_notification` to follow it.
 
@@ -348,8 +354,11 @@ What to show on the compose screen.
   "courses":[{"id":0,"name":"كل الكورسات اللي بديرها"},{"id":4,"name":"الفيزياء - الصف الثالث الثانوي"}],
   "types":[{"key":"general","label":"عام"},{"key":"courses","label":"كورسات"},
            {"key":"subscriptions","label":"اشتراكات"},{"key":"offers","label":"عروض وكوبونات"}],
+  "languages":[{"code":"ar","name":"العربية ‎(ar)‎","dir":"rtl"},{"code":"en","name":"English ‎(en)‎","dir":"ltr"}],
   "maxtitle":200,"maxbody":4000}}
 ```
+`languages` are the installed languages, the site language first. Show one title box and one text box per
+language, and make the first language required.
 Show the course picker only when the chosen audience has `needscourse`. A site-wide caller gets every course
 and no `0` entry.
 
@@ -367,8 +376,9 @@ and no `0` entry.
 | audience | string | yes | an audience key |
 | courseid | int | for course audiences | |
 | type | string | no | default `general` |
-| title | string | yes | ≤ 200 |
-| body | string | yes | ≤ 4000, plain text (new lines kept) |
+| title_<code> | string | yes for the first language | one per `languages` entry, e.g. `title_ar`, `title_en`; ≤ 200 each |
+| body_<code> | string | yes for the first language | e.g. `body_ar`, `body_en`; ≤ 4000 each, plain text (new lines kept) |
+| title / body | string | instead of the above | a single version in any language |
 | url | string | no | full link opened from the notification |
 | email | 0/1 | no | also send by email |
 
@@ -376,6 +386,8 @@ and no `0` entry.
 {"status":"success","data":{"notification":{"id":4,"title":"امتحان الفيزياء يوم الخميس","body":"راجعوا الباب الأول",
   "url":"https://…/local/academy/course.php?id=4","type":"courses","source":"manual","audience":"course_students",
   "courseid":4,"coursename":"الفيزياء - الصف الثالث الثانوي","senderid":13,"sendername":"مدير تجريبي",
+  "titles":{"ar":"امتحان الفيزياء يوم الخميس","en":"Physics exam on Thursday"},
+  "bodies":{"ar":"راجعوا الباب الأول","en":"Revise unit 1"},
   "email":false,"status":"done","total":2,"sent":2,"failed":0,"read":0,"timecreated":1791285548}}}
 ```
 Errors (show the message): `audience`, `course`, `choosecourse`, `type`, `required`, `titletoolong`,
@@ -398,11 +410,12 @@ managers see everything; a scoped manager sees what they sent plus what went to 
 | param | type | req | description |
 |---|---|---|---|
 | id | int | yes | notification id |
-| state | string | no | `sent`, `failed`, `queued`, `read`, `unread`; empty = all |
+| state | string | no | `sent`, `failed`, `queued`, `read`, `unread`, `emailsent`, `emailfailed`; empty = all |
 | page / perpage | int | no | default 50, max 200 |
 
 ```json
 {"status":"success","data":{"notification":{…},"page":0,"perpage":50,"total":2,
-  "recipients":[{"userid":12,"fullname":"طالب تجريبي","status":"sent","timesent":1791285548,"timeread":0}]}}
+  "recipients":[{"userid":12,"fullname":"طالب تجريبي","status":"sent","timesent":1791285548,"timeread":0,
+    "email":"failed"}]}}
 ```
-`timeread` `0` = not read yet. Errors: `notificationnotfound`, `nopermissions` (not in the caller's scope).
+`timeread` `0` = not read yet. `email` is the email copy: `none` (not asked), `sent` or `failed`. Errors: `notificationnotfound`, `nopermissions` (not in the caller's scope).
