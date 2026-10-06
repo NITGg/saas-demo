@@ -537,6 +537,58 @@ class api {
     }
 
     /**
+     * One page of reviews for a course (course reviews and/or teacher reviews in that course).
+     *
+     * @param int $courseid
+     * @param array $filters [rating => 1..5, teacherid => int, status => int|string, type => string, q => string]
+     * @param int $page 0-based
+     * @param int $perpage
+     * @return array{total:int, reviews:array}
+     */
+    public static function get_course_all_reviews(int $courseid, array $filters = [], int $page = 0, int $perpage = 20): array {
+        global $DB;
+        $where = ['r.courseid = :courseid'];
+        $params = ['courseid' => $courseid];
+
+        // Status filter: defaults to APPROVED if not specified.
+        if (isset($filters['status']) && $filters['status'] !== '' && $filters['status'] !== 'all') {
+            $where[] = 'r.status = :status';
+            $params['status'] = (int) $filters['status'];
+        } else if (!isset($filters['status'])) {
+            $where[] = 'r.status = :status';
+            $params['status'] = self::STATUS_APPROVED;
+        }
+
+        if (!empty($filters['rating']) && (int) $filters['rating'] >= 1 && (int) $filters['rating'] <= 5) {
+            $where[] = 'r.rating = :rating';
+            $params['rating'] = (int) $filters['rating'];
+        }
+
+        $type = $filters['type'] ?? '';
+        if ($type === 'course') {
+            $where[] = 'r.teacherid = 0';
+        } else if ($type === 'teacher') {
+            $where[] = 'r.teacherid > 0';
+        }
+
+        if (!empty($filters['teacherid'])) {
+            $where[] = 'r.teacherid = :teacherid';
+            $params['teacherid'] = (int) $filters['teacherid'];
+        }
+
+        if (!empty($filters['q'])) {
+            $q = trim((string) $filters['q']);
+            $like = '%' . $DB->sql_like_escape($q) . '%';
+            $where[] = '(' . $DB->sql_like($DB->sql_fullname('u.firstname', 'u.lastname'), ':q1', false) . ' OR '
+                . $DB->sql_like('r.review', ':q2', false) . ')';
+            $params['q1'] = $like;
+            $params['q2'] = $like;
+        }
+
+        return self::list_reviews(implode(' AND ', $where), $params, $page, $perpage);
+    }
+
+    /**
      * Shared body of the review lists: a page of reviews matching $where, with
      * the author's name and picture and the course name.
      *

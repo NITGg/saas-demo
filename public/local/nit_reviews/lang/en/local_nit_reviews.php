@@ -48,6 +48,24 @@ $string['type_course'] = 'Course';
 $string['type_teacher'] = 'Teacher';
 $string['privatelessons'] = 'Private lessons';
 
+// Course reviews page (for teachers).
+$string['coursereviews'] = 'Reviews';
+$string['coursereviews_desc'] = 'Student reviews and feedback for this course and its teachers.';
+$string['averagerating'] = 'Average rating';
+$string['totalreviews'] = 'Total reviews';
+$string['stardistribution'] = 'Star distribution';
+$string['allratings'] = 'All ratings';
+$string['stars_count'] = '{$a} stars';
+$string['one_star'] = '1 star';
+$string['filterbystars'] = 'Filter by stars';
+$string['filterbytarget'] = 'Review type';
+$string['target_course'] = 'Course review';
+$string['target_teacher'] = 'Teacher review';
+$string['target_teacher_name'] = 'Teacher review: {$a}';
+$string['gotomoderation'] = 'Review moderation (Approve / Reject)';
+$string['viewpubliccourse'] = 'Preview student course page';
+$string['teacherreviews'] = 'Teacher reviews';
+
 // Display.
 $string['rating'] = 'Rating';
 $string['nreviews'] = '{$a} reviews';

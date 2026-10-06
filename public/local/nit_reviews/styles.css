@@ -118,3 +118,20 @@
 .nitrv__back {
     margin-block: 8px 24px;
 }
+
+/* Course reviews page (local/nit_reviews/reviews.php) */
+.nit-crv-wrap {
+    font-family: inherit;
+}
+.nit-crv-statscard {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+.nit-crv-item {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    border: 1px solid rgba(0, 0, 0, 0.06) !important;
+}
+.nit-crv-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08) !important;
+}

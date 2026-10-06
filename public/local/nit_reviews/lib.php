@@ -25,23 +25,40 @@
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Course "More" menu: "Review moderation" (this course's reviews) for whoever
- * moderates the course — the way in for a manager scoped to a category or course.
+ * Course "More" menu:
+ * - "Reviews" (this course's reviews & statistics) for teachers and managers.
+ * - "Review moderation" (approve/reject) for managers scoped to a category or course.
  *
  * @param navigation_node $navigation
  * @param stdClass $course
  * @param context_course $context
  */
 function local_nit_reviews_extend_navigation_course(navigation_node $navigation, stdClass $course, context_course $context) {
-    if ((int) $course->id <= 1 || !has_capability('local/nit_reviews:moderate', $context)) {
+    if ((int) $course->id <= 1) {
         return;
     }
-    $navigation->add(
-        get_string('moderatereviews', 'local_nit_reviews'),
-        new moodle_url('/local/nit_reviews/moderate.php', ['courseid' => $course->id]),
-        navigation_node::TYPE_SETTING,
-        null,
-        'local_nit_reviews_moderate',
-        new pix_icon('i/star', '')
-    );
+
+    // Course reviews page (view ratings and student comments) for teachers and managers.
+    if (has_any_capability(['moodle/course:update', 'moodle/course:viewhiddensections', 'local/nit_reviews:moderate'], $context)) {
+        $navigation->add(
+            get_string('coursereviews', 'local_nit_reviews'),
+            new moodle_url('/local/nit_reviews/reviews.php', ['id' => $course->id]),
+            navigation_node::TYPE_SETTING,
+            null,
+            'local_nit_reviews_course',
+            new pix_icon('i/star', '')
+        );
+    }
+
+    // Moderation page (approve/reject/delete) for managers/admins only.
+    if (has_capability('local/nit_reviews:moderate', $context)) {
+        $navigation->add(
+            get_string('moderatereviews', 'local_nit_reviews'),
+            new moodle_url('/local/nit_reviews/moderate.php', ['courseid' => $course->id]),
+            navigation_node::TYPE_SETTING,
+            null,
+            'local_nit_reviews_moderate',
+            new pix_icon('i/star', '')
+        );
+    }
 }

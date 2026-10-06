@@ -48,6 +48,24 @@ $string['type_course'] = 'الكورس';
 $string['type_teacher'] = 'المدرس';
 $string['privatelessons'] = 'الحصص الخاصة';
 
+// Course reviews page (for teachers).
+$string['coursereviews'] = 'التقييمات';
+$string['coursereviews_desc'] = 'تقييمات وآراء الطلاب في هذا المقرر ومدرسيه.';
+$string['averagerating'] = 'متوسط التقييم';
+$string['totalreviews'] = 'إجمالي التقييمات';
+$string['stardistribution'] = 'توزيع النجوم';
+$string['allratings'] = 'جميع التقييمات';
+$string['stars_count'] = '{$a} نجوم';
+$string['one_star'] = 'نجمة واحدة';
+$string['filterbystars'] = 'تصفية بالنجوم';
+$string['filterbytarget'] = 'نوع التقييم';
+$string['target_course'] = 'تقييم المقرر';
+$string['target_teacher'] = 'تقييم المدرس';
+$string['target_teacher_name'] = 'تقييم المدرس: {$a}';
+$string['gotomoderation'] = 'مراجعة التقييمات (الموافقة والرفض)';
+$string['viewpubliccourse'] = 'معاينة صفحة الكورس كطالب';
+$string['teacherreviews'] = 'تقييمات المدرسين';
+
 // Display.
 $string['rating'] = 'التقييم';
 $string['nreviews'] = '{$a} تقييم';
