@@ -48,16 +48,14 @@ if (!has_any_capability(['moodle/course:update', 'moodle/course:viewhiddensectio
 
 $rating    = optional_param('rating', 0, PARAM_INT);
 $type      = optional_param('type', '', PARAM_ALPHA);
-$teacherid = optional_param('teacherid', 0, PARAM_INT);
 $q         = trim(optional_param('q', '', PARAM_TEXT));
 $page      = optional_param('page', 0, PARAM_INT);
 $perpage   = 20;
 
 $filters = [
-    'rating'    => $rating,
-    'type'      => $type,
-    'teacherid' => $teacherid,
-    'q'         => $q,
+    'rating' => $rating,
+    'type'   => $type,
+    'q'      => $q,
 ];
 
 $pageparams = ['id' => $courseid] + array_filter($filters, fn($v) => $v !== '' && $v !== 0);
@@ -85,7 +83,6 @@ $total = $results['total'];
 $reviews = $results['reviews'];
 
 $canmoderate = has_capability('local/nit_reviews:moderate', $context);
-$publiccourseurl = new moodle_url('/local/academy/course.php', ['id' => $courseid]);
 $moderateurl = new moodle_url('/local/nit_reviews/moderate.php', ['courseid' => $courseid]);
 
 echo $OUTPUT->header();
@@ -99,16 +96,13 @@ echo html_writer::tag('h2', $s('coursereviews'), ['class' => 'h3 fw-bold mb-1'])
 echo html_writer::tag('p', $s('coursereviews_desc'), ['class' => 'text-muted mb-0']);
 echo html_writer::end_div();
 
-echo html_writer::start_div('d-flex flex-wrap gap-2');
 if ($canmoderate) {
+    echo html_writer::start_div('d-flex flex-wrap gap-2');
     echo html_writer::link($moderateurl,
         '<i class="fa fa-sliders me-1 ms-1"></i> ' . $s('gotomoderation'),
         ['class' => 'btn btn-outline-warning btn-sm d-inline-flex align-items-center']);
+    echo html_writer::end_div();
 }
-echo html_writer::link($publiccourseurl,
-    '<i class="fa fa-external-link me-1 ms-1"></i> ' . $s('viewpubliccourse'),
-    ['class' => 'btn btn-outline-primary btn-sm d-inline-flex align-items-center', 'target' => '_blank']);
-echo html_writer::end_div();
 echo html_writer::end_div(); // End header actions.
 
 // Statistics summary card.
@@ -195,21 +189,8 @@ echo html_writer::label($s('filterbytarget'), 'nit-flt-type', true, ['class' => 
 echo html_writer::select($typeoptions, 'type', $type, false, ['id' => 'nit-flt-type', 'class' => 'form-select']);
 echo html_writer::end_div();
 
-// Specific teacher filter if multiple teachers exist.
-if (!empty($teachers)) {
-    $teacheroptions = [0 => $s('allcourses') . ' / ' . $s('type_teacher')];
-    foreach ($teachers as $tid => $tu) {
-        $teacheroptions[$tid] = fullname($tu);
-    }
-    echo html_writer::start_div('col-12 col-sm-6 col-md-3');
-    echo html_writer::label($s('type_teacher'), 'nit-flt-teacher', true, ['class' => 'form-label small fw-semibold text-muted mb-1']);
-    echo html_writer::select($teacheroptions, 'teacherid', $teacherid, false, ['id' => 'nit-flt-teacher', 'class' => 'form-select']);
-    echo html_writer::end_div();
-}
-
 // Search input.
-$searchcols = !empty($teachers) ? 'col-12 col-sm-6 col-md-3' : 'col-12 col-sm-12 col-md-6';
-echo html_writer::start_div($searchcols);
+echo html_writer::start_div('col-12 col-md-6');
 echo html_writer::label(get_string('search'), 'nit-flt-q', true, ['class' => 'form-label small fw-semibold text-muted mb-1']);
 echo html_writer::start_div('input-group');
 echo html_writer::empty_tag('input', [
@@ -221,7 +202,7 @@ echo html_writer::empty_tag('input', [
     'placeholder' => $s('searchplaceholder'),
 ]);
 echo html_writer::tag('button', '<i class="fa fa-search"></i> ' . get_string('search'), ['type' => 'submit', 'class' => 'btn btn-primary']);
-if ($rating || $type || $teacherid || $q !== '') {
+if ($rating || $type || $q !== '') {
     $reseturl = new moodle_url('/local/nit_reviews/reviews.php', ['id' => $courseid]);
     echo html_writer::link($reseturl, '<i class="fa fa-times"></i>', ['class' => 'btn btn-outline-secondary', 'title' => get_string('reset')]);
 }
