@@ -33,13 +33,14 @@ require_once($CFG->libdir . '/adminlib.php');
 use local_nit_reviews\api;
 
 $status   = optional_param('status', (string) api::STATUS_PENDING, PARAM_ALPHANUM); // A status number, or 'all'.
+$rating   = optional_param('rating', 0, PARAM_INT);
 $type     = optional_param('type', '', PARAM_ALPHA);
 $courseid = optional_param('courseid', 0, PARAM_INT);
 $q        = trim(optional_param('q', '', PARAM_TEXT));
 $page     = optional_param('page', 0, PARAM_INT);
 $perpage  = 30;
 
-$filters = ['status' => $status, 'type' => $type, 'courseid' => $courseid, 'q' => $q];
+$filters = ['status' => $status, 'rating' => $rating, 'type' => $type, 'courseid' => $courseid, 'q' => $q];
 $pageurl = new moodle_url('/local/nit_reviews/moderate.php', array_filter($filters, fn($v) => $v !== '' && $v !== 0));
 
 $syscontext = context_system::instance();
@@ -128,7 +129,20 @@ foreach ([(string) api::STATUS_PENDING => $s('status_pending') . " ($pendingcoun
           (string) api::STATUS_APPROVED => $s('status_approved'),
           (string) api::STATUS_REJECTED => $s('status_rejected'),
           'all' => $s('allstatuses')] as $key => $label) {
-    $tabs[] = new tabobject($key, new moodle_url($pageurl, ['status' => $key, 'page' => 0]), $label);
+    $tabparams = ['status' => $key, 'page' => 0];
+    if ($rating) {
+        $tabparams['rating'] = $rating;
+    }
+    if ($type !== '') {
+        $tabparams['type'] = $type;
+    }
+    if ($courseid) {
+        $tabparams['courseid'] = $courseid;
+    }
+    if ($q !== '') {
+        $tabparams['q'] = $q;
+    }
+    $tabs[] = new tabobject($key, new moodle_url('/local/nit_reviews/moderate.php', $tabparams), $label);
 }
 echo $OUTPUT->tabtree($tabs, $status);
 
@@ -136,6 +150,18 @@ echo $OUTPUT->tabtree($tabs, $status);
 echo html_writer::start_tag('form', ['method' => 'get', 'action' => $pageurl->out_omit_querystring(),
     'class' => 'd-flex flex-wrap align-items-end gap-2 mb-3']);
 echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'status', 'value' => $status]);
+
+$ratingoptions = [
+    0 => $s('allratings'),
+    5 => '★★★★★ (5)',
+    4 => '★★★★☆ (4)',
+    3 => '★★★☆☆ (3)',
+    2 => '★★☆☆☆ (2)',
+    1 => '★☆☆☆☆ (1)',
+];
+echo html_writer::div(html_writer::label($s('filterbystars'), 'nit-rv-rating', true, ['class' => 'form-label small mb-1 d-block'])
+    . html_writer::select($ratingoptions, 'rating', $rating, false, ['id' => 'nit-rv-rating', 'class' => 'form-select']));
+
 echo html_writer::div(html_writer::label($s('reviewtype'), 'nit-rv-type', true, ['class' => 'form-label small mb-1 d-block'])
     . html_writer::select(['' => $s('alltypes'), 'course' => $s('type_course'), 'teacher' => $s('type_teacher')],
         'type', $type, false, ['id' => 'nit-rv-type', 'class' => 'form-select']));
@@ -145,6 +171,11 @@ echo html_writer::div(html_writer::label(get_string('search'), 'nit-rv-q', true,
     . html_writer::empty_tag('input', ['type' => 'search', 'name' => 'q', 'value' => $q, 'id' => 'nit-rv-q',
         'class' => 'form-control', 'placeholder' => $s('searchplaceholder')]));
 echo html_writer::tag('button', get_string('filter'), ['type' => 'submit', 'class' => 'btn btn-primary']);
+
+if ($rating || $type !== '' || $courseid || $q !== '') {
+    $reseturl = new moodle_url('/local/nit_reviews/moderate.php', ['status' => $status]);
+    echo html_writer::link($reseturl, get_string('reset'), ['class' => 'btn btn-outline-secondary']);
+}
 echo html_writer::end_tag('form');
 
 if (!$list['reviews']) {

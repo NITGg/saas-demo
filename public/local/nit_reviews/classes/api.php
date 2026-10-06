@@ -742,6 +742,10 @@ class api {
             $where[] = 'r.status = :status';
             $params['status'] = (int) $filters['status'];
         }
+        if (!empty($filters['rating']) && (int) $filters['rating'] >= 1 && (int) $filters['rating'] <= 5) {
+            $where[] = 'r.rating = :rating';
+            $params['rating'] = (int) $filters['rating'];
+        }
         if (($filters['type'] ?? '') === 'course') {
             $where[] = 'r.teacherid = 0';
         } else if (($filters['type'] ?? '') === 'teacher') {
