@@ -325,6 +325,12 @@ bell, the push and the email all arrive as plain text in that language. On the a
 `body` come in the caller's language (the `lang` parameter, else their own), and `titles` / `bodies` give every
 version that was written as `{"ar": "…", "en": "…"}`.
 
+**Email rule.** A user gets an email only when **both** are true: the sender ticked `email`, **and** the user
+turned on "Notifications from the platform administration, by email" in their notification preferences (provider
+`local_nit_notifications/announcement_email`; it is off until the user turns it on). The plain notification
+(`announcement`) never emails by itself. To let users choose in the app, show that preference with the standard
+`core_message_get_user_notification_preferences` / `core_user_update_user_preferences`.
+
 **Who may send what** (`local/nit_notifications:send`; any other caller gets `nopermissions`, and so does the
 shared visitor token):
 
@@ -380,7 +386,7 @@ and no `0` entry.
 | body_<code> | string | yes for the first language | e.g. `body_ar`, `body_en`; ≤ 4000 each, plain text (new lines kept) |
 | title / body | string | instead of the above | a single version in any language |
 | url | string | no | full link opened from the notification |
-| email | 0/1 | no | also send by email |
+| email | 0/1 | no | also send by email (see the email rule below) |
 
 ```json
 {"status":"success","data":{"notification":{"id":4,"title":"امتحان الفيزياء يوم الخميس","body":"راجعوا الباب الأول",
@@ -410,7 +416,7 @@ managers see everything; a scoped manager sees what they sent plus what went to 
 | param | type | req | description |
 |---|---|---|---|
 | id | int | yes | notification id |
-| state | string | no | `sent`, `failed`, `queued`, `read`, `unread`, `emailsent`, `emailfailed`; empty = all |
+| state | string | no | `sent`, `failed`, `queued`, `read`, `unread`, `emailsent`, `emailfailed`, `emailoff`; empty = all |
 | page / perpage | int | no | default 50, max 200 |
 
 ```json
@@ -418,4 +424,4 @@ managers see everything; a scoped manager sees what they sent plus what went to 
   "recipients":[{"userid":12,"fullname":"طالب تجريبي","status":"sent","timesent":1791285548,"timeread":0,
     "email":"failed"}]}}
 ```
-`timeread` `0` = not read yet. `email` is the email copy: `none` (not asked), `sent` or `failed`. Errors: `notificationnotfound`, `nopermissions` (not in the caller's scope).
+`timeread` `0` = not read yet. `email` is the email copy: `none` (not asked), `sent`, `failed`, or `off` (the user has email off, so none was sent). Errors: `notificationnotfound`, `nopermissions` (not in the caller's scope).

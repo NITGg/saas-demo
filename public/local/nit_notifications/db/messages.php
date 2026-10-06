@@ -17,9 +17,13 @@
 /**
  * Message providers for local_nit_notifications.
  *
- * announcement: a notification an admin or a manager sent by hand. On in the
- * notification bell and as an app push by default; the email copy is sent only
- * when the sender ticks "also send by email" (see \local_nit_notifications\sender).
+ * - announcement: the notification itself — the bell and the app push. Moodle never
+ *   emails it on its own (email is disallowed here), so a user who turned email on
+ *   does not get an email for every notification.
+ * - announcement_email: only a preference row ("notifications from the administration
+ *   by email"). The user turns email on here; they are emailed when BOTH this is on
+ *   AND the sender ticked "also send by email" (\local_nit_notifications\sender). It is
+ *   never passed to message_send() itself.
  *
  * @package    local_nit_notifications
  * @copyright  2026 NIT
@@ -32,8 +36,15 @@ $messageproviders = [
     'announcement' => [
         'defaults' => [
             'popup' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
-            'email' => MESSAGE_PERMITTED,
+            'email' => MESSAGE_DISALLOWED,
             'airnotifier' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
+        ],
+    ],
+    'announcement_email' => [
+        'defaults' => [
+            'popup' => MESSAGE_DISALLOWED,
+            'email' => MESSAGE_PERMITTED,
+            'airnotifier' => MESSAGE_DISALLOWED,
         ],
     ],
 ];

@@ -92,6 +92,7 @@ class compose_form extends \moodleform {
         $mform->addHelpButton('url', 'link', 'local_nit_notifications');
 
         $mform->addElement('advcheckbox', 'email', $s('alsoemail'));
+        $mform->addHelpButton('email', 'alsoemail', 'local_nit_notifications');
 
         $this->add_action_buttons(false, $s('next'));
     }

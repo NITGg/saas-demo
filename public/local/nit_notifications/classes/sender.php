@@ -65,8 +65,10 @@ class sender {
     public const EMAIL_SENT = 1;
     /** Email copy failed. */
     public const EMAIL_FAILED = 2;
-    /** Moodle emailed it already (the recipient's notification preferences). */
+    /** Emailed by Moodle from the recipient's preferences (older notifications only). */
     public const EMAIL_BY_MOODLE = 3;
+    /** Not emailed: the recipient has email off for administration notifications. */
+    public const EMAIL_OFF = 4;
 
     /** Longest body. */
     public const MAX_BODY = 4000;
@@ -313,10 +315,10 @@ class sender {
         if (!$id || empty($notif->email)) {
             return [$id, self::EMAIL_NONE];
         }
-        // The email copy: only when Moodle did not already email it (the recipient turned
-        // email on for these notifications), so nobody gets it twice.
-        if (self::emailed_by_moodle($to)) {
-            return [$id, self::EMAIL_BY_MOODLE];
+        // The email goes out only when the sender asked for it (above) AND the recipient
+        // turned email on for administration notifications in their preferences.
+        if (!self::wants_email($to)) {
+            return [$id, self::EMAIL_OFF];
         }
         try {
             $text = $body . (!empty($notif->url) ? "\n\n" . $notif->url : '');
@@ -333,7 +335,7 @@ class sender {
      * How many email copies went out and failed.
      *
      * @param int $notifid
-     * @return array{sent:int, failed:int}
+     * @return array{sent:int, failed:int, off:int}
      */
     public static function email_counts(int $notifid): array {
         global $DB;
@@ -341,23 +343,25 @@ class sender {
             'sent' => $DB->count_records_select('local_nit_notif_rcpt', 'notifid = ? AND emailstatus IN (?, ?)',
                 [$notifid, self::EMAIL_SENT, self::EMAIL_BY_MOODLE]),
             'failed' => $DB->count_records('local_nit_notif_rcpt', ['notifid' => $notifid, 'emailstatus' => self::EMAIL_FAILED]),
+            'off' => $DB->count_records('local_nit_notif_rcpt', ['notifid' => $notifid, 'emailstatus' => self::EMAIL_OFF]),
         ];
     }
 
     /**
-     * Whether Moodle's email output already sends these notifications to the user
-     * (their notification preference, or the site default when they set none).
+     * Whether the user turned email on for administration notifications: the email
+     * switch of the "announcement_email" row in their notification preferences (the
+     * site default when they never changed it), and they did not stop all email.
      *
      * @param \stdClass $user
      * @return bool
      */
-    private static function emailed_by_moodle(\stdClass $user): bool {
-        $name = 'message_provider_local_nit_notifications_announcement_enabled';
-        $pref = get_user_preferences($name, null, $user);
-        if ($pref === null) {
-            $pref = get_config('message', $name);
+    public static function wants_email(\stdClass $user): bool {
+        if (!empty($user->emailstop)) {
+            return false;
         }
-        return empty($user->emailstop) && in_array('email', explode(',', (string) $pref), true);
+        $name = 'message_provider_local_nit_notifications_announcement_email_enabled';
+        $pref = get_user_preferences($name, null, $user) ?? get_config('message', $name);
+        return in_array('email', explode(',', (string) $pref), true);
     }
 
     // =========================================================================
@@ -482,7 +486,7 @@ class sender {
      * One page of a notification's recipients with delivery and read state.
      *
      * @param int $notifid
-     * @param string $state '' | sent | failed | queued | read | unread | emailfailed
+     * @param string $state '' | sent | failed | queued | read | unread | emailsent | emailfailed | emailoff
      * @param int $page
      * @param int $perpage
      * @return array{total:int, items:\stdClass[]} items: userid, fullname, email, status, emailstatus, timesent, timeread
@@ -504,6 +508,9 @@ class sender {
             $where .= ' AND r.emailstatus IN (:emailsent, :emailbymoodle)';
             $params['emailsent'] = self::EMAIL_SENT;
             $params['emailbymoodle'] = self::EMAIL_BY_MOODLE;
+        } else if ($state === 'emailoff') {
+            $where .= ' AND r.emailstatus = :emailoff';
+            $params['emailoff'] = self::EMAIL_OFF;
         } else if ($state === 'emailfailed') {
             $where .= ' AND r.emailstatus = :emailfailed';
             $params['emailfailed'] = self::EMAIL_FAILED;

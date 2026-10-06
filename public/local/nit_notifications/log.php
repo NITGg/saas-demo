@@ -121,6 +121,7 @@ if ($id) {
         $emails = sender::email_counts($id);
         $counts['emailsent'] = [$s('email_sent'), $emails['sent'], 'bg-success'];
         $counts['emailfailed'] = [$s('email_failed'), $emails['failed'], 'bg-danger'];
+        $counts['emailoff'] = [$s('email_off'), $emails['off'], 'bg-light text-dark'];
     }
     if ($notif->status !== 'done') {
         $counts['queued'] = [$s('state_queued'), max(0, (int) $notif->total - $notif->sent - $notif->failed),
@@ -140,7 +141,8 @@ if ($id) {
     $table = new html_table();
     $table->attributes['class'] = 'generaltable table-sm';
     $emaillabels = [sender::EMAIL_NONE => '—', sender::EMAIL_SENT => $s('email_sent'),
-        sender::EMAIL_FAILED => $s('email_failed'), sender::EMAIL_BY_MOODLE => $s('email_bymoodle')];
+        sender::EMAIL_FAILED => $s('email_failed'), sender::EMAIL_BY_MOODLE => $s('email_bymoodle'),
+        sender::EMAIL_OFF => $s('email_off')];
     $table->head = [get_string('fullname'), get_string('email'), get_string('status'), $s('timesent'), $s('timeread')];
     if ($notif->email) {
         $table->head[] = $s('emailcopy');

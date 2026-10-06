@@ -155,6 +155,31 @@ final class sender_test extends \advanced_testcase {
         $this->assertFalse(sender::can_view($auto, $d->mgrb->id));
     }
 
+    public function test_email_needs_the_box_and_the_users_choice(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->preventResetByRollback();
+        $d = $this->setup_site();
+        $this->redirectMessages();
+        // s1 turned email on for administration notifications (and, from before, for the
+        // plain notification too — which must not email by itself any more); s3 never chose.
+        set_user_preference('message_provider_local_nit_notifications_announcement_email_enabled', 'email', $d->s1);
+        set_user_preference('message_provider_local_nit_notifications_announcement_enabled', 'popup,email', $d->s1);
+        $this->setUser($d->mgra);
+        $base = ['audience' => 'course_students', 'courseid' => 0, 'type' => 'general', 'title' => 'T', 'body' => 'B'];
+
+        $emails = $this->redirectEmails();
+        sender::send($base + ['email' => 0]);
+        $this->assertSame(0, $emails->count(), 'box not ticked: no email, even for s1');
+
+        $emails->clear();
+        $notif = sender::send($base + ['email' => 1]);
+        $this->assertSame(1, $emails->count(), 'box ticked: only the user who turned email on');
+        $this->assertSame($d->s1->email, $emails->get_messages()[0]->to);
+        $this->assertEquals(sender::EMAIL_OFF, $DB->get_field('local_nit_notif_rcpt', 'emailstatus',
+            ['notifid' => $notif->id, 'userid' => $d->s3->id]));
+    }
+
     public function test_deliver_works_in_batches(): void {
         global $DB;
         $this->resetAfterTest();

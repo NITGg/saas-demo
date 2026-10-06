@@ -48,5 +48,17 @@ function xmldb_local_nit_notifications_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026100801, 'local', 'nit_notifications');
     }
 
+    if ($oldversion < 2026100802) {
+        // Email only when the sender asks AND the user turned email on (the new
+        // announcement_email row): Moodle must no longer email "announcement" on its own.
+        // Provider defaults are written once, at install, so lock email off here.
+        set_config('email_provider_local_nit_notifications_announcement_locked', 1, 'message');
+        $name = 'message_provider_local_nit_notifications_announcement_enabled';
+        $enabled = array_diff(explode(',', (string) get_config('message', $name)), ['email', '']);
+        set_config($name, $enabled ? implode(',', $enabled) : 'none', 'message');
+
+        upgrade_plugin_savepoint(true, 2026100802, 'local', 'nit_notifications');
+    }
+
     return true;
 }

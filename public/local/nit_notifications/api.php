@@ -195,7 +195,7 @@ api::run(function (string $function) use ($userid) {
             ];
 
         // One notification with a page of its recipients.
-        // state = sent|failed|queued|read|unread|emailsent|emailfailed (empty = all).
+        // state = sent|failed|queued|read|unread|emailsent|emailfailed|emailoff (empty = all).
         case 'get_notification':
             $notif = $GLOBALS['DB']->get_record('local_nit_notif', ['id' => required_param('id', PARAM_INT)]);
             if (!$notif || $notif->status === 'draft') {
@@ -219,7 +219,7 @@ api::run(function (string $function) use ($userid) {
                     'timesent' => (int) $r->timesent,
                     'timeread' => (int) $r->timeread,
                     'email' => [sender::EMAIL_NONE => 'none', sender::EMAIL_SENT => 'sent', sender::EMAIL_FAILED => 'failed',
-                        sender::EMAIL_BY_MOODLE => 'sent'][(int) $r->emailstatus] ?? 'none',
+                        sender::EMAIL_BY_MOODLE => 'sent', sender::EMAIL_OFF => 'off'][(int) $r->emailstatus] ?? 'none',
                 ], $list['items']),
             ];
     }
