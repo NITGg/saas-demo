@@ -15,22 +15,25 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Plugin version and metadata for the NIT theme.
+ * Message providers for local_nit_notifications.
  *
- * @package    theme_nit
+ * announcement: a notification an admin or a manager sent by hand. On in the
+ * notification bell and as an app push by default; the email copy is sent only
+ * when the sender ticks "also send by email" (see \local_nit_notifications\sender).
+ *
+ * @package    local_nit_notifications
  * @copyright  2026 NIT
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'theme_nit';
-$plugin->version   = 2026100702;        // YYYYMMDDXX — long subject names / year labels stay inside the home cards.
-$plugin->requires  = 2024100700;        // Moodle 4.5 LTS baseline (pinned per CI matrix).
-$plugin->supported = [405, 502];        // Supported branch range: 4.5 LTS .. 5.2.
-$plugin->maturity  = MATURITY_ALPHA;    // Foundation + rendering + branding (M2–M5); pre-1.0.
-$plugin->release   = '0.3.27';
-$plugin->dependencies = [
-    'theme_boost'    => ANY_VERSION,    // NIT is a Boost child theme.
-    'local_nit_core' => 2026080402,     // Renders SDK view-models &amp; consumes the branding resolver.
+$messageproviders = [
+    'announcement' => [
+        'defaults' => [
+            'popup' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
+            'email' => MESSAGE_PERMITTED,
+            'airnotifier' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
+        ],
+    ],
 ];

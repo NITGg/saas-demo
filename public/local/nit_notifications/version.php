@@ -15,22 +15,19 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Plugin version and metadata for the NIT theme.
+ * NIT notifications — admins and managers send notifications to groups of users,
+ * and every notification (sent by hand or by the system) is kept with its recipients.
  *
- * @package    theme_nit
+ * @package    local_nit_notifications
  * @copyright  2026 NIT
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'theme_nit';
-$plugin->version   = 2026100702;        // YYYYMMDDXX — long subject names / year labels stay inside the home cards.
-$plugin->requires  = 2024100700;        // Moodle 4.5 LTS baseline (pinned per CI matrix).
-$plugin->supported = [405, 502];        // Supported branch range: 4.5 LTS .. 5.2.
-$plugin->maturity  = MATURITY_ALPHA;    // Foundation + rendering + branding (M2–M5); pre-1.0.
-$plugin->release   = '0.3.27';
-$plugin->dependencies = [
-    'theme_boost'    => ANY_VERSION,    // NIT is a Boost child theme.
-    'local_nit_core' => 2026080402,     // Renders SDK view-models &amp; consumes the branding resolver.
-];
+$plugin->component = 'local_nit_notifications';
+$plugin->version   = 2026100800;
+$plugin->requires  = 2024100700;
+$plugin->supported = [405, 502];
+$plugin->maturity  = MATURITY_ALPHA;
+$plugin->release   = '0.1.0';

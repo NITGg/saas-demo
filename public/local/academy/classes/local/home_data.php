@@ -384,7 +384,7 @@ class home_data {
             [['الأول' => '١', 'الاول' => '١', 'الثاني' => '٢', 'الثانى' => '٢', 'الثالث' => '٣'],
                 ['ثانو' => 'ث', 'اعداد' => 'ع', 'إعداد' => 'ع']],
             [['first' => '1', 'second' => '2', 'third' => '3'],
-                ['secondary' => 'Sec', 'middle' => 'Prep', 'preparatory' => 'Prep']],
+                ['secondary' => 'Sec', 'high' => 'Sec', 'middle' => 'Prep', 'preparatory' => 'Prep', 'intermediate' => 'Prep']],
         ];
         $lower = \core_text::strtolower($year);
         foreach ($rules as [$digits, $stages]) {

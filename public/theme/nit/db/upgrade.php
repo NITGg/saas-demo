@@ -91,5 +91,13 @@ function xmldb_theme_nit_upgrade($oldversion) {
         purge_all_caches();
         upgrade_plugin_savepoint(true, 2026100701, 'theme', 'nit');
     }
+
+    if ($oldversion < 2026100702) {
+        // "كورسات مختارة": a long subject name or year label no longer pushes out of
+        // its card: write the selected block from the new file.
+        \theme_nit\local\template_applier::refresh_sections('bassthalk', ['selected']);
+        purge_all_caches();
+        upgrade_plugin_savepoint(true, 2026100702, 'theme', 'nit');
+    }
     return true;
 }

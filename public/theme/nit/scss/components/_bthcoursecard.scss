@@ -78,6 +78,7 @@
 .bthtp__course a.bthtp__ctitle {
     flex: 1;
     min-width: 0;
+    overflow-wrap: break-word;
     overflow: hidden;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -90,9 +91,16 @@
 
     &:hover { text-decoration: underline; }
 }
+// A year label that was not shortened ("٣ ث") is cut with "…" instead of pushing
+// the title out of the card; the full text is its tooltip.
 .bthtp__cyear {
-    flex-shrink: 0;
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 50%;
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
+    unicode-bidi: plaintext; // An English label in an Arabic page is cut at its end, not its start.
     font-size: 18px;
     line-height: 28px;
 }

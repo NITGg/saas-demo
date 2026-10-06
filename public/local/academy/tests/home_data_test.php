@@ -200,6 +200,8 @@ final class home_data_test extends \advanced_testcase {
         $this->assertSame('٢ ث', home_data::short_year('الصف الثاني الثانوي'));
         $this->assertSame('١ ع', home_data::short_year('الصف الاول الاعدادى'));
         $this->assertSame('3 Sec', home_data::short_year('Third Year of Secondary School'));
+        $this->assertSame('2 Prep', home_data::short_year('Second Year of Intermediate School'), 'the long label of the screenshot');
+        $this->assertSame('1 Sec', home_data::short_year('First Year of High School'));
         $this->assertSame('1 Prep', home_data::short_year('First Year of Middle School'));
         $this->assertSame('First Year', home_data::short_year('First Year'), 'anything else is kept');
         $this->assertSame('', home_data::short_year(''));

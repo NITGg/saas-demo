@@ -18,6 +18,7 @@ page.
 | 5 | Teacher rating everywhere | `browse_teachers` / `get_teacher` (`rating` is real now, plus `ratingcount`), `get_home_teachers` (`rating`, `ratingcount`), `get_teacher_page` (`rating`, `canrate`, `rateurl`, `hasreviews`, `reviews`) | Show them (optional) |
 | 6 | Notifications | new providers `local_nit_reviews/reviewpending`, `local_nit_reviews/reviewmoderated` (popup + push) | Handle the tap (optional) |
 | 7 | Home suggested lessons | `get_home_lessons` lists every "is-special" course for every user (no year/division filter) | No |
+| 8 | Notification center (admins / managers) | new endpoint `/local/nit_notifications/api.php`: `get_send_options`, `count_recipients`, `send_notification`, `get_notification_log`, `get_notification`; new provider `local_nit_notifications/announcement` | New admin screens (optional); students need nothing new |
 
 ---
 
@@ -303,3 +304,105 @@ comment waits. `local_nit_reviews/reviewmoderated` goes to the student when thei
 No field changed, only which courses come back. Every course ticked "is-special" is now listed for **every**
 user, whatever their year, division or enrolments (an enrolled course comes with `enrolled: true`: show "enter").
 The year/division filter is used only while no course is ticked (the list is then the newest courses).
+
+---
+
+## 5. Notification center — `/local/nit_notifications/api.php` (new)
+
+Admins and managers send notifications to groups of users, and every notification is kept with its recipients:
+who got it, who failed, and who read it. Notifications the platform sends by itself land in the same log
+(`source` ≠ `manual`).
+
+**Receiving needs nothing new.** Each notification is a normal Moodle notification (provider
+`local_nit_notifications/announcement`), so it already comes through `message_popup_get_popup_notifications`
+(`MOBILE_API.md` §9), and through push for devices registered with `core_user_add_user_device`. Read state comes
+from `core_message_mark_notification_read`. `customdata` carries `nitnotifid` and `type`, and `contexturl` is the
+optional link (open it on tap).
+
+**Who may send what** (`local/nit_notifications:send`; any other caller gets `nopermissions`, and so does the
+shared visitor token):
+
+| Caller | Audiences | Course |
+|---|---|---|
+| Admin, site manager | `course_students`, `course_teachers`, `all_students`, `all_teachers`, `managers`, `admins` | required for the two course audiences |
+| Manager of a category or a course | `course_students`, `course_teachers` | one of their courses, or `0` = all the courses they manage |
+
+Definitions:
+- **Course students:** active enrolments with a student role.
+- **Teachers:** anyone with a teacher or editing-teacher role (site admins are left out).
+- **Managers:** anyone with a manager role at any level.
+- **All students:** every active account that is not a teacher, a manager or an admin, even with no enrolment.
+- Suspended accounts and the sender never receive.
+
+Types: `general`, `courses`, `subscriptions`, `offers`. Title up to 200 characters; text up to 4000 (plain
+text). The link is optional and must be a full `http(s)://` URL. Up to 300 recipients are delivered during the
+call (`status: "done"`); a bigger group comes back `status: "queued"` and is delivered in the background in
+batches. Refresh `get_notification` to follow it.
+
+### get_send_options — GET
+What to show on the compose screen.
+```json
+{"status":"success","data":{"sitewide":false,
+  "audiences":[{"key":"course_students","label":"طلاب كورس","needscourse":true},
+               {"key":"course_teachers","label":"مدرسين كورس","needscourse":true}],
+  "courses":[{"id":0,"name":"كل الكورسات اللي بديرها"},{"id":4,"name":"الفيزياء - الصف الثالث الثانوي"}],
+  "types":[{"key":"general","label":"عام"},{"key":"courses","label":"كورسات"},
+           {"key":"subscriptions","label":"اشتراكات"},{"key":"offers","label":"عروض وكوبونات"}],
+  "maxtitle":200,"maxbody":4000}}
+```
+Show the course picker only when the chosen audience has `needscourse`. A site-wide caller gets every course
+and no `0` entry.
+
+### count_recipients — GET
+| param | type | req | description |
+|---|---|---|---|
+| audience | string | yes | an audience key |
+| courseid | int | for course audiences | see the table above |
+
+`{"count":2}`. Show "will be sent to N users" before sending. Errors: `audience`, `course`, `choosecourse`.
+
+### send_notification — POST
+| param | type | req | description |
+|---|---|---|---|
+| audience | string | yes | an audience key |
+| courseid | int | for course audiences | |
+| type | string | no | default `general` |
+| title | string | yes | ≤ 200 |
+| body | string | yes | ≤ 4000, plain text (new lines kept) |
+| url | string | no | full link opened from the notification |
+| email | 0/1 | no | also send by email |
+
+```json
+{"status":"success","data":{"notification":{"id":4,"title":"امتحان الفيزياء يوم الخميس","body":"راجعوا الباب الأول",
+  "url":"https://…/local/academy/course.php?id=4","type":"courses","source":"manual","audience":"course_students",
+  "courseid":4,"coursename":"الفيزياء - الصف الثالث الثانوي","senderid":13,"sendername":"مدير تجريبي",
+  "email":false,"status":"done","total":2,"sent":2,"failed":0,"read":0,"timecreated":1791285548}}}
+```
+Errors (show the message): `audience`, `course`, `choosecourse`, `type`, `required`, `titletoolong`,
+`bodytoolong`, `url`, `norecipients` (nobody in that group, nothing sent), `postrequired`, `nopermissions`.
+
+### get_notification_log — GET
+| param | type | req | description |
+|---|---|---|---|
+| source | string | no | `manual` or `auto`; empty = both |
+| type | string | no | a type key |
+| courseid | int | no | one course |
+| q | string | no | search the title and text |
+| page / perpage | int | no | default 30, max 100 |
+
+`{"page":0,"perpage":30,"total":1,"notifications":[<notification as above>]}`, newest first. Admins and site
+managers see everything; a scoped manager sees what they sent plus what went to the courses they manage.
+`senderid` `0` = sent by the system. `audience` `users` = an automatic notification to specific users.
+
+### get_notification — GET
+| param | type | req | description |
+|---|---|---|---|
+| id | int | yes | notification id |
+| state | string | no | `sent`, `failed`, `queued`, `read`, `unread`; empty = all |
+| page / perpage | int | no | default 50, max 200 |
+
+```json
+{"status":"success","data":{"notification":{…},"page":0,"perpage":50,"total":2,
+  "recipients":[{"userid":12,"fullname":"طالب تجريبي","status":"sent","timesent":1791285548,"timeread":0}]}}
+```
+`timeread` `0` = not read yet. Errors: `notificationnotfound`, `nopermissions` (not in the caller's scope).
