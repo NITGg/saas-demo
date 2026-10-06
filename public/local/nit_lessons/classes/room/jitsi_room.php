@@ -71,6 +71,7 @@ class jitsi_room implements room_interface {
         }
 
         self::lock_down_teacher_visibility($courseid);
+        self::let_students_into_hidden_course($courseid);
         self::enrol($courseid, $teacherid, 'editingteacher');
         self::enrol($courseid, $studentid, 'student');
 
@@ -206,6 +207,29 @@ class jitsi_room implements room_interface {
         if ($changed) {
             $context->mark_dirty();
         }
+    }
+
+    /**
+     * The lessons course is meant to be hidden (kept out of the catalogue), but Moodle then
+     * shuts its enrolled students out of the Jitsi room: let students in this course see it.
+     *
+     * @param int $courseid
+     * @return void
+     */
+    private static function let_students_into_hidden_course(int $courseid): void {
+        global $DB;
+        $roleid = $DB->get_field('role', 'id', ['shortname' => 'student']);
+        if (!$roleid) {
+            return;
+        }
+        $context = \context_course::instance($courseid);
+        $existing = $DB->get_field('role_capabilities', 'permission',
+            ['roleid' => $roleid, 'contextid' => $context->id, 'capability' => 'moodle/course:viewhiddencourses']);
+        if ((int) $existing === CAP_ALLOW) {
+            return;
+        }
+        assign_capability('moodle/course:viewhiddencourses', CAP_ALLOW, $roleid, $context->id, true);
+        $context->mark_dirty();
     }
 
     /**

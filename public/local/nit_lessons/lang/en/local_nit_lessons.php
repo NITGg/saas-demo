@@ -40,7 +40,7 @@ $string['notateacher'] = 'This page is for teachers.';
 // Settings.
 $string['lessonsettings'] = 'Live lesson settings';
 $string['lessonscourse'] = 'Course for the lesson rooms';
-$string['lessonscourse_desc'] = 'When a teacher starts a live lesson, a Jitsi room is created in this course, visible only to that teacher and student. Use a hidden course made for this.';
+$string['lessonscourse_desc'] = 'When a teacher starts a live lesson, a Jitsi room is created in this course, visible only to that teacher and student. Use a hidden course made for this (its students can still open their rooms).';
 $string['set_min_booking_minutes'] = 'Book at least (minutes ahead)';
 $string['set_min_booking_minutes_desc'] = 'How long before its start a lesson can still be requested or moved.';
 $string['set_cancel_deadline_minutes'] = 'Free cancellation until (minutes before)';
