@@ -40,7 +40,7 @@ $primary = new core\navigation\output\primary($PAGE);
 $renderer = $PAGE->get_renderer('core');
 $primarymenu = $primary->export_for_template($renderer);
 
-$admintoolbar = $PAGE->nit_admin_toolbar ?? '';
+$admintoolbar = $GLOBALS['NIT_ADMIN_TOOLBAR'] ?? '';
 
 $templatecontext = [
     'sitename' => format_string(

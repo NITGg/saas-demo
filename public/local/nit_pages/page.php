@@ -114,8 +114,11 @@ $PAGE->set_heading($title);
 
 // Handle inline edit toggle for admins.
 $edittoggle = optional_param('edit', -1, PARAM_INT);
-if ($edittoggle !== -1 && $isadmin && confirm_sesskey()) {
-    $USER->editing = ($edittoggle === 1);
+$reqsesskey = optional_param('sesskey', '', PARAM_RAW);
+if ($edittoggle !== -1 && $isadmin) {
+    if (!empty($reqsesskey) && confirm_sesskey($reqsesskey)) {
+        $USER->editing = ($edittoggle === 1);
+    }
     redirect($PAGE->url);
 }
 
@@ -168,7 +171,7 @@ if ($isadmin) {
           '</div>'
         : '';
 
-    $PAGE->nit_admin_toolbar = '
+    $GLOBALS['NIT_ADMIN_TOOLBAR'] = '
     <div class="nit-admin-cms-toolbar d-print-none" style="background:#ffffff;border-bottom:2px solid #e2e8f0;box-shadow:0 4px 16px rgba(0,0,0,0.06);margin-top:96px;font-family:\'Tajawal\',\'Almarai\',sans-serif;position:relative;z-index:90;">
       <div style="max-width:1400px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
