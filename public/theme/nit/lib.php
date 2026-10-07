@@ -2995,7 +2995,10 @@ function theme_nit_footer_context(): array {
  *
  * @return string[]
  */
-function theme_nit_navmenu_audiences(): array {
+function theme_nit_navmenu_audiences(string $menu = ''): array {
+    if ($menu === 'bar') {
+        return ['all', 'guest', 'user', 'student', 'teacher', 'admin'];
+    }
     return ['all', 'student', 'teacher', 'admin'];
 }
 
@@ -3019,10 +3022,11 @@ function theme_nit_ml_string(string $identifier, string $component): string {
  * The rows a navbar menu starts with: today's links, so saving the list
  * unchanged keeps the menu as it was.
  *
+ * - bar: inline links next to the logo.
  * - gear: Moodle's primary navigation plus the pages our plugins add to it.
  * - user: the avatar menu (Site administration → Navigation → User menu items, + Preferences).
  *
- * @param string $menu 'gear' or 'user'
+ * @param string $menu 'bar', 'gear' or 'user'
  * @return array<int, array{name:string, url:string, show:string}>
  */
 function theme_nit_navmenu_default(string $menu): array {
@@ -3033,6 +3037,14 @@ function theme_nit_navmenu_default(string $menu): array {
             $rows[] = ['name' => $name, 'url' => $url, 'show' => $show];
         }
     };
+    if ($menu === 'bar') {
+        $add(theme_nit_ml('Home', 'الرئيسية'), '/');
+        $add(theme_nit_ml('Courses', 'المقررات'), '/course/index.php');
+        $add(theme_nit_ml('About Us', 'من نحن'), '/local/nit_pages/page.php?p=about');
+        $add(theme_nit_ml('Contact Us', 'تواصل معنا'), '/local/nit_pages/page.php?p=contact');
+        $add(theme_nit_ml('Articles', 'المقالات'), '/local/nit_pages/page.php?p=articles');
+        return $rows;
+    }
     if ($menu === 'gear') {
         $add(theme_nit_ml_string('home', 'core'), '/');
         $add(theme_nit_ml_string('myhome', 'core'), '/my/');
@@ -3128,6 +3140,16 @@ function theme_nit_navmenu_audience_ok(string $show, int $userid): bool {
     if ($show === 'all') {
         return true;
     }
+    $isguest = !isloggedin() || isguestuser();
+    if ($show === 'guest') {
+        return $isguest;
+    }
+    if ($show === 'user') {
+        return !$isguest;
+    }
+    if ($isguest) {
+        return false;
+    }
     $sys = \context_system::instance();
     $isadmin = is_siteadmin($userid) || has_capability('moodle/site:configview', $sys, $userid);
     if ($show === 'admin') {
@@ -3143,9 +3165,9 @@ function theme_nit_navmenu_audience_ok(string $show, int $userid): bool {
 /**
  * The links an admin set for a navbar menu that the current user sees.
  *
- * @param string $menu 'gear' or 'user'
+ * @param string $menu 'bar', 'gear' or 'user'
  * @return array<int, array{name:string, url:string}>|null null while the list was
- *         never saved (the menu then keeps Moodle's own links)
+ *         never saved (the menu then keeps Moodle's own links / default links)
  */
 function theme_nit_navmenu_links(string $menu): ?array {
     global $USER;
@@ -3154,15 +3176,24 @@ function theme_nit_navmenu_links(string $menu): ?array {
         return null;
     }
     $rows = json_decode((string) $raw, true);
-    if (!is_array($rows) || !$rows) {
-        return null; // An emptied list keeps Moodle's links: a menu is never left blank.
+    if (!is_array($rows)) {
+        return null;
     }
+    if (empty($rows)) {
+        return ($menu === 'bar') ? [] : null; // Emptied bar menu returns [] to show nothing; gear/user return null.
+    }
+    $isguest = !isloggedin() || isguestuser();
     $links = [];
     foreach ($rows as $row) {
         $url = theme_nit_footer_absolute_url((string) ($row['url'] ?? ''));
         $name = trim((string) ($row['name'] ?? ''));
-        if ($url === '' || $name === '' || !isloggedin() || isguestuser()
-                || !theme_nit_navmenu_audience_ok((string) ($row['show'] ?? 'all'), (int) $USER->id)) {
+        if ($url === '' || $name === '') {
+            continue;
+        }
+        if ($menu !== 'bar' && $isguest) {
+            continue;
+        }
+        if (!theme_nit_navmenu_audience_ok((string) ($row['show'] ?? 'all'), (int) ($USER->id ?? 0))) {
             continue;
         }
         $links[] = ['name' => format_string($name), 'url' => $url];

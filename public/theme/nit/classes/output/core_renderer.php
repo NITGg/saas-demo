@@ -140,6 +140,59 @@ class core_renderer extends \theme_boost\output\core_renderer {
     }
 
     /**
+     * The navbar inline links (words placed between the logo and the search button).
+     *
+     * @return array<int, array{name:string, url:string, isactive:bool}>
+     */
+    public function nit_navbar_links(): array {
+        global $USER;
+        $links = \theme_nit_navmenu_links('bar');
+        if ($links === null) {
+            $defaultrows = \theme_nit_navmenu_default('bar');
+            $links = [];
+            foreach ($defaultrows as $row) {
+                if (\theme_nit_navmenu_audience_ok((string) ($row['show'] ?? 'all'), (int) ($USER->id ?? 0))) {
+                    $url = \theme_nit_footer_absolute_url((string) ($row['url'] ?? ''));
+                    $name = trim((string) ($row['name'] ?? ''));
+                    if ($url !== '' && $name !== '') {
+                        $links[] = ['name' => format_string($name), 'url' => $url];
+                    }
+                }
+            }
+        }
+        if (empty($links)) {
+            return [];
+        }
+        $here = $this->page->has_set_url() ? $this->page->url : null;
+        $items = [];
+        foreach ($links as $link) {
+            try {
+                $url = new \moodle_url($link['url']);
+                $outurl = $url->out(false);
+                $isactive = $here && $here->compare($url, URL_MATCH_BASE);
+            } catch (\Throwable $e) {
+                $outurl = $link['url'];
+                $isactive = false;
+            }
+            $items[] = [
+                'name' => $link['name'],
+                'url' => $outurl,
+                'isactive' => (bool) $isactive,
+            ];
+        }
+        return $items;
+    }
+
+    /**
+     * Whether there are any navbar inline links to display.
+     *
+     * @return bool
+     */
+    public function nit_has_navbar_links(): bool {
+        return !empty($this->nit_navbar_links());
+    }
+
+    /**
      * The gear menu items, in the shape of the primary navigation
      * (text, url, isactive, haschildren, children): the links set on
      * Site pages → Navbar menus, else Moodle's primary navigation.

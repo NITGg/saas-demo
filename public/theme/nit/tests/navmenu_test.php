@@ -105,4 +105,21 @@ final class navmenu_test extends \advanced_testcase {
         $this->assertSame('all', json_decode(get_config('theme_nit', 'navmenu_gear'), true)[0]['show']);
         $this->assertNotSame('', $setting->write_setting(['name' => ['A'], 'url' => ['ftp://a'], 'show' => ['all']]));
     }
+
+    public function test_bar_menu_shows_inline_links_and_supports_guests(): void {
+        set_config('navmenu_bar', json_encode([
+            ['name' => 'All', 'url' => '/a.php', 'show' => 'all'],
+            ['name' => 'Visitors', 'url' => '/v.php', 'show' => 'guest'],
+            ['name' => 'Users', 'url' => '/u.php', 'show' => 'user'],
+        ]), 'theme_nit');
+        $names = fn() => array_column(theme_nit_navmenu_links('bar'), 'name');
+
+        // Signed-in user:
+        $this->setUser($this->getDataGenerator()->create_user());
+        $this->assertSame(['All', 'Users'], $names());
+
+        // Guest/visitor:
+        $this->setUser(null);
+        $this->assertSame(['All', 'Visitors'], $names());
+    }
 }

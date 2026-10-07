@@ -111,6 +111,8 @@ class sitepages_settings {
      */
     private static function navmenus_tab(): admin_settingpage {
         $tab = new admin_settingpage('theme_nit_sitepages_navmenus', get_string('sitepages_navmenus', 'theme_nit'));
+        $tab->add(new \theme_nit\admin_setting_navlinks('bar',
+            get_string('navmenu_bar', 'theme_nit'), get_string('navmenu_bar_desc', 'theme_nit')));
         $tab->add(new \theme_nit\admin_setting_navlinks('gear',
             get_string('navmenu_gear', 'theme_nit'), get_string('navmenu_gear_desc', 'theme_nit')));
         $tab->add(new \theme_nit\admin_setting_navlinks('user',

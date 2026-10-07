@@ -50,14 +50,14 @@ class admin_setting_navlinks extends admin_setting_footerpages {
 
     protected function audiences(): array {
         $labels = [];
-        foreach (\theme_nit_navmenu_audiences() as $value) {
+        foreach (\theme_nit_navmenu_audiences($this->menu) as $value) {
             $labels[$value] = get_string('navmenu_show_' . $value, 'theme_nit');
         }
         return $labels;
     }
 
     protected function empty_shows_defaults(): bool {
-        return true;
+        return $this->menu !== 'bar';
     }
 
     /**
