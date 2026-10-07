@@ -41,9 +41,10 @@ class pdf {
      * @param array $columns key => label
      * @param array $rows
      * @param array $help column key => what it means (listed after the table)
+     * @param array $cardhelp card label => what it means (listed after the columns)
      */
     public static function download(string $filename, string $title, string $filterline, array $cards, array $columns,
-            array $rows, array $help = []): void {
+            array $rows, array $help = [], array $cardhelp = []): void {
         global $CFG, $SITE;
         require_once($CFG->libdir . '/pdflib.php');
 
@@ -97,17 +98,23 @@ class pdf {
             $html .= '<p>' . $e($s('pdftruncated', self::MAX_ROWS)) . '</p>';
         }
 
-        // What the columns mean.
-        $help = array_intersect_key($help, $columns);
-        if ($help) {
-            $html .= '<br><h3>' . $e($s('columnmeanings')) . '</h3>'
-                . '<table cellpadding="4" border="1" style="border-color:#cccccc;">';
-            foreach ($help as $col => $text) {
-                $html .= '<tr><td width="20%" style="background-color:#f4f6f8;"><b>' . $e($columns[$col]) . '</b></td>'
+        // What the cards and the columns mean.
+        $legend = function(string $heading, array $items) use ($e): string {
+            if (!$items) {
+                return '';
+            }
+            $out = '<br><h3>' . $e($heading) . '</h3><table cellpadding="4" border="1" style="border-color:#cccccc;">';
+            foreach ($items as $label => $text) {
+                $out .= '<tr><td width="20%" style="background-color:#f4f6f8;"><b>' . $e($label) . '</b></td>'
                     . '<td width="80%">' . $e($text) . '</td></tr>';
             }
-            $html .= '</table>';
+            return $out . '</table>';
+        };
+        $columnhelp = [];
+        foreach (array_intersect_key($help, $columns) as $col => $text) {
+            $columnhelp[$columns[$col]] = $text;
         }
+        $html .= $legend($s('cardmeanings'), $cardhelp) . $legend($s('columnmeanings'), $columnhelp);
 
         $doc->writeHTML($html, true, false, true, false, '');
         $doc->Output($filename . '.pdf', 'D');

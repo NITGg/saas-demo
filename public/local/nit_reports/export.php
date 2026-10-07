@@ -62,5 +62,12 @@ if ($format !== 'pdf') {
     exit;
 }
 
-\local_nit_reports\pdf::download($filename, $class::name(), $filters->describe(), $report->summary(), $columns, $rows,
-    $report->help());
+$cards = $report->summary();
+$cardhelp = [];
+foreach ($cards as $card) {
+    if ($text = $report->card_help($card)) {
+        $cardhelp[$card['label']] = $text;
+    }
+}
+\local_nit_reports\pdf::download($filename, $class::name(), $filters->describe(), $cards, $columns, $rows,
+    $report->help(), $cardhelp);

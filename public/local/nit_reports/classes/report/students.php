@@ -162,14 +162,14 @@ class students extends base {
                 SELECT 1 FROM {external_tokens} et WHERE et.userid = u.id AND et.lastaccess >= :wk2))",
             $params + ['wk' => time() - WEEKSECS, 'wk2' => time() - WEEKSECS]);
         $cards = [
-            ['label' => self::str('card_students'), 'value' => self::num($total)],
-            ['label' => self::str('card_activeweek'), 'value' => self::num($week)],
+            ['id' => 'card_students', 'label' => self::str('card_students'), 'value' => self::num($total)],
+            ['id' => 'card_activeweek', 'label' => self::str('card_activeweek'), 'value' => self::num($week)],
         ];
         if ($DB->get_manager()->table_exists('nit_sub_purchase')) {
             $subs = (int) $DB->count_records_sql("SELECT COUNT(DISTINCT p.userid) FROM {nit_sub_purchase} p
                 WHERE p.status = 'active' AND (p.expires_at = 0 OR p.expires_at > :now)
                   AND p.userid IN (SELECT u.id $from)", $params + ['now' => time()]);
-            $cards[] = ['label' => self::str('card_withsubscription'), 'value' => self::num($subs)];
+            $cards[] = ['id' => 'card_withsubscription', 'label' => self::str('card_withsubscription'), 'value' => self::num($subs)];
         }
         return $cards;
     }

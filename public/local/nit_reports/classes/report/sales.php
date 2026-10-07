@@ -240,11 +240,11 @@ class sales extends base {
         $refunded = $DB->get_records_sql("SELECT t.currency, SUM(t.amount) AS total $all AND t.status = 'refunded'
                                           GROUP BY t.currency", $aparams);
         $cards = [
-            ['label' => self::str('card_paidcount'), 'value' => self::num(array_sum(array_map(fn($r) => $r->n, $paid)))],
-            ['label' => self::str('card_revenue'), 'value' => self::moneys(array_map(fn($r) => $r->total, $paid))],
-            ['label' => self::str('card_refunded'), 'value' => self::num($bystatus['refunded'] ?? 0) . ' — '
+            ['id' => 'card_paidcount', 'label' => self::str('card_paidcount'), 'value' => self::num(array_sum(array_map(fn($r) => $r->n, $paid)))],
+            ['id' => 'card_revenue', 'label' => self::str('card_revenue'), 'value' => self::moneys(array_map(fn($r) => $r->total, $paid))],
+            ['id' => 'card_refunded', 'label' => self::str('card_refunded'), 'value' => self::num($bystatus['refunded'] ?? 0) . ' — '
                 . self::moneys(array_map(fn($r) => $r->total, $refunded))],
-            ['label' => self::str('card_failed'), 'value' => self::num(($bystatus['failed'] ?? 0) + ($bystatus['cancelled'] ?? 0)
+            ['id' => 'card_failed', 'label' => self::str('card_failed'), 'value' => self::num(($bystatus['failed'] ?? 0) + ($bystatus['cancelled'] ?? 0)
                 + ($bystatus['expired'] ?? 0))],
         ];
 
@@ -254,19 +254,19 @@ class sales extends base {
             [$period, $pp] = $this->f->period_sql('timeused');
             $codes = (int) $DB->get_field_sql("SELECT COALESCE(SUM(amount_minor), 0) FROM {nit_access_code}
                                                 WHERE status = 'used' AND $period", $pp);
-            $cards[] = ['label' => self::str('card_codesales'), 'value' => data::minor($codes)];
+            $cards[] = ['id' => 'card_codesales', 'label' => self::str('card_codesales'), 'value' => data::minor($codes)];
         }
         if ($dbman->table_exists('nit_payment')) {
             [$period, $pp] = $this->f->period_sql('timecreated');
             $offline = (int) $DB->get_field_sql("SELECT COALESCE(SUM(amount_minor), 0) FROM {nit_payment}
                 WHERE method IN ('offline', 'bank', 'cash') AND status = 'success' AND $period", $pp);
-            $cards[] = ['label' => self::str('card_offlinepackages'), 'value' => data::minor($offline)];
+            $cards[] = ['id' => 'card_offlinepackages', 'label' => self::str('card_offlinepackages'), 'value' => data::minor($offline)];
         }
         if ($dbman->table_exists('nit_sub_purchase')) {
             [$period, $pp] = $this->f->period_sql('timecreated');
             $assigned = (float) $DB->get_field_sql("SELECT COALESCE(SUM(price_paid), 0) FROM {nit_sub_purchase}
                 WHERE source = 'admin_assigned' AND $period", $pp);
-            $cards[] = ['label' => self::str('card_assignedsubs'), 'value' => self::money($assigned)];
+            $cards[] = ['id' => 'card_assignedsubs', 'label' => self::str('card_assignedsubs'), 'value' => self::money($assigned)];
         }
         return $cards;
     }

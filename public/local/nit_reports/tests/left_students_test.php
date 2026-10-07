@@ -114,6 +114,9 @@ final class left_students_test extends \advanced_testcase {
         foreach (['students', 'courses', 'student_results'] as $key) {
             $report = $this->report($key, []);
             $this->assertSame([], array_diff_key($report->columns(), $report->help()), "$key columns without help");
+            foreach ($report->summary() as $card) {
+                $this->assertNotNull($report->card_help($card), "$key card {$card['label']} without help");
+            }
         }
     }
 }

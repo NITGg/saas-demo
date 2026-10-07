@@ -115,15 +115,15 @@ class courses extends base {
             $students = (int) $DB->count_records_sql("SELECT COUNT(DISTINCT m.userid) FROM ($members) m", $mparams);
         }
         $cards = [
-            ['label' => self::str('card_courses'), 'value' => self::num(count($ids))],
-            ['label' => self::str('card_students'), 'value' => self::num($students)],
+            ['id' => 'card_courses', 'label' => self::str('card_courses'), 'value' => self::num(count($ids))],
+            ['id' => 'card_students', 'label' => self::str('card_students'), 'value' => self::num($students)],
         ];
         if ($ids && class_exists('\local_nit_reviews\api')) {
             $aggs = array_filter(\local_nit_reviews\api::get_aggregates($ids), fn($a) => $a->count > 0);
             $count = array_sum(array_map(fn($a) => $a->count, $aggs));
             if ($count) {
                 $avg = array_sum(array_map(fn($a) => $a->avg * $a->count, $aggs)) / $count;
-                $cards[] = ['label' => self::str('card_avgrating'), 'value' => format_float($avg, 1) . ' (' . $count . ')'];
+                $cards[] = ['id' => 'card_avgrating', 'label' => self::str('card_avgrating'), 'value' => format_float($avg, 1) . ' (' . $count . ')'];
             }
         }
         return $cards;
@@ -180,6 +180,7 @@ class courses extends base {
         $quizcount = $DB->get_records_sql_menu("SELECT course, COUNT(1) FROM {quiz} WHERE course $csql GROUP BY course", $cparams);
         $ratings = class_exists('\local_nit_reviews\api') ? \local_nit_reviews\api::get_aggregates($ids) : [];
         $categories = $DB->get_records_menu('course_categories', null, '', 'id, name');
+        $countries = get_string_manager()->get_list_of_countries();
 
         $sales = $refunds = $prices = [];
         if ($this->money_visible()) {
@@ -199,9 +200,11 @@ class courses extends base {
             $refunds = $DB->get_records_sql_menu("SELECT t.courseid, COUNT(1) FROM {local_payments_transactions} t
                 WHERE t.courseid $csql AND t.status = 'refunded' AND $rperiod GROUP BY t.courseid", $cparams + $rpparams);
             if ($DB->get_manager()->table_exists('local_payments_course_prices')) {
-                foreach ($DB->get_records_sql("SELECT id, courseid, price, currency FROM {local_payments_course_prices}
-                        WHERE courseid $csql AND is_default = 1 AND is_active = 1 ORDER BY id", $cparams) as $p) {
-                    $prices[(int) $p->courseid] = $prices[(int) $p->courseid] ?? $p;
+                // Every active price: the default one first, then the country ones.
+                foreach ($DB->get_records_sql("SELECT id, courseid, country, price, currency, is_default
+                        FROM {local_payments_course_prices}
+                        WHERE courseid $csql AND is_active = 1 ORDER BY is_default DESC, country, id", $cparams) as $p) {
+                    $prices[(int) $p->courseid][] = $p;
                 }
             }
         }
@@ -234,8 +237,11 @@ class courses extends base {
                 ],
             ];
             if ($this->money_visible()) {
-                $price = $prices[$id] ?? null;
-                $row['price'] = $price ? self::money((float) $price->price, (string) $price->currency) : self::str('free');
+                $list = $prices[$id] ?? [];
+                $price = $list[0] ?? null;
+                $row['price'] = $list ? implode(' · ', array_map(fn($p) => ($p->is_default || $p->country === '*' ? ''
+                    : ($countries[$p->country] ?? $p->country) . ': ') . self::money((float) $p->price, (string) $p->currency),
+                    $list)) : self::str('free');
                 $row['sales'] = self::num($sales[$id]['n'] ?? 0);
                 $row['revenue'] = isset($sales[$id]) ? implode(' + ', $sales[$id]['money']) : '0';
                 $row['refunds'] = self::num($refunds[$id] ?? 0);

@@ -96,11 +96,11 @@ class student_results extends base {
         global $DB;
         [$from, $params] = $this->from();
         $pairs = (int) $DB->count_records_sql("SELECT COUNT(1) $from", $params);
-        $cards = [['label' => self::str('card_enrolments'), 'value' => self::num($pairs)]];
+        $cards = [['id' => 'card_enrolments', 'label' => self::str('card_enrolments'), 'value' => self::num($pairs)]];
         [$members, $mparams] = $this->pairs();
         $avg = data::quiz_avg($members, $mparams, 'courseid');
         if ($avg) {
-            $cards[] = ['label' => self::str('card_quizavg'), 'value' => self::pct(array_sum($avg) / count($avg))];
+            $cards[] = ['id' => 'card_quizavg', 'label' => self::str('card_quizavg'), 'value' => self::pct(array_sum($avg) / count($avg))];
         }
         return $cards;
     }

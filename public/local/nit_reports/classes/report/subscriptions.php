@@ -148,11 +148,11 @@ class subscriptions extends base {
         $stats = $DB->get_record_sql("SELECT COUNT(1) AS sold, COALESCE(SUM(p.price_paid), 0) AS revenue,
                                              COALESCE(SUM($renewal), 0) AS renewals $from", $params);
         return [
-            ['label' => self::str('card_activesubs'), 'value' => self::num($active)],
-            ['label' => self::str('card_endingweek'), 'value' => self::num($ending)],
-            ['label' => self::str('card_subssold'), 'value' => self::num($stats->sold)],
-            ['label' => self::str('col_renewals'), 'value' => self::num($stats->renewals)],
-            ['label' => self::str('card_revenue'), 'value' => self::money((float) $stats->revenue)],
+            ['id' => 'card_activesubs', 'label' => self::str('card_activesubs'), 'value' => self::num($active)],
+            ['id' => 'card_endingweek', 'label' => self::str('card_endingweek'), 'value' => self::num($ending)],
+            ['id' => 'card_subssold', 'label' => self::str('card_subssold'), 'value' => self::num($stats->sold)],
+            ['id' => 'col_renewals', 'label' => self::str('col_renewals'), 'value' => self::num($stats->renewals)],
+            ['id' => 'card_revenue', 'label' => self::str('card_revenue'), 'value' => self::money((float) $stats->revenue)],
         ];
     }
 

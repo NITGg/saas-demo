@@ -310,6 +310,12 @@
         player.on('play', function () {
             tryResume(true);
             played = true;
+            // Playback starts here: without this the first time update only sets "last",
+            // so the stretch before it (the whole first slice of a short video) was never
+            // counted and a fully watched short video stayed at 99%.
+            if (last === null) {
+                last = player.time();
+            }
         });
 
         var restart = root.querySelector('[data-nitvp-restart]');

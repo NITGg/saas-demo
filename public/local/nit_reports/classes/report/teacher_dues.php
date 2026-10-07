@@ -163,10 +163,10 @@ class teacher_dues extends base {
         $fig = $this->figures($this->teacher_ids());
         $sum = fn($k) => array_sum(array_column($fig, $k));
         return [
-            ['label' => self::str('col_earned'), 'value' => data::minor($sum('earned'))],
-            ['label' => self::str('col_paidout'), 'value' => data::minor($sum('paid'))],
-            ['label' => self::str('col_requested'), 'value' => data::minor($sum('requested'))],
-            ['label' => self::str('col_balance'), 'value' => data::minor($sum('balance'))],
+            ['id' => 'col_earned', 'label' => self::str('col_earned'), 'value' => data::minor($sum('earned'))],
+            ['id' => 'col_paidout', 'label' => self::str('col_paidout'), 'value' => data::minor($sum('paid'))],
+            ['id' => 'col_requested', 'label' => self::str('col_requested'), 'value' => data::minor($sum('requested'))],
+            ['id' => 'col_balance', 'label' => self::str('col_balance'), 'value' => data::minor($sum('balance'))],
         ];
     }
 

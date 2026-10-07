@@ -113,7 +113,7 @@ class teachers extends base {
     public function summary(): array {
         global $DB;
         [$from, $params] = $this->from();
-        $cards = [['label' => self::str('card_teachers'),
+        $cards = [['id' => 'card_teachers', 'label' => self::str('card_teachers'),
             'value' => self::num($DB->count_records_sql("SELECT COUNT(1) $from", $params))]];
         if (self::tables()['finance']) {
             [$period, $pparams] = $this->f->period_sql('e.timecreated');
@@ -122,8 +122,8 @@ class teachers extends base {
             [$wperiod, $wparams] = $this->f->period_sql('w.timeprocessed', 'w');
             $paid = (int) $DB->get_field_sql("SELECT COALESCE(SUM(w.amount_minor), 0) FROM {nit_withdrawal} w
                 WHERE w.status = 'paid' AND $wperiod AND w.teacherid IN (SELECT u.id $from)", $wparams + $params);
-            $cards[] = ['label' => self::str('card_earned'), 'value' => data::minor($earned)];
-            $cards[] = ['label' => self::str('card_paidout'), 'value' => data::minor($paid)];
+            $cards[] = ['id' => 'card_earned', 'label' => self::str('card_earned'), 'value' => data::minor($earned)];
+            $cards[] = ['id' => 'card_paidout', 'label' => self::str('card_paidout'), 'value' => data::minor($paid)];
         }
         return $cards;
     }

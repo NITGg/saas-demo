@@ -147,10 +147,34 @@ abstract class base {
     /**
      * The number cards above the table.
      *
-     * @return array [['label' => string, 'value' => string], …]
+     * @return array [['id' => string id of the label, 'label' => string, 'value' => string], …]
      */
     public function summary(): array {
         return [];
+    }
+
+    /**
+     * What a number card means: the first string found of
+     * help_card_<report>_<view>_<id>, help_card_<report>_<id> and help_card_<id>.
+     *
+     * @param array $card one of summary()
+     * @return string|null
+     */
+    public function card_help(array $card): ?string {
+        if (empty($card['id'])) {
+            return null;
+        }
+        $ids = ['help_card_' . static::key() . '_' . $card['id'], 'help_card_' . $card['id']];
+        if ($this->view_options()) {
+            array_unshift($ids, 'help_card_' . static::key() . '_' . $this->view() . '_' . $card['id']);
+        }
+        $sm = get_string_manager();
+        foreach ($ids as $id) {
+            if ($sm->string_exists($id, 'local_nit_reports')) {
+                return self::str($id);
+            }
+        }
+        return null;
     }
 
     /**

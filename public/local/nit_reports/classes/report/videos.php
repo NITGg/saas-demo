@@ -114,9 +114,9 @@ class videos extends base {
                                        WHERE p.percent > 0 AND $period AND p.cmid IN (SELECT cm.id $from)",
             $mparams + $pparams + $params);
         return [
-            ['label' => self::str('card_videos'), 'value' => self::num($videos)],
-            ['label' => self::str('card_viewers'), 'value' => self::num($stats->viewers ?? 0)],
-            ['label' => self::str('card_avgwatched'), 'value' => $stats && $stats->views ? self::pct((float) $stats->avgpct) : '—'],
+            ['id' => 'card_videos', 'label' => self::str('card_videos'), 'value' => self::num($videos)],
+            ['id' => 'card_viewers', 'label' => self::str('card_viewers'), 'value' => self::num($stats->viewers ?? 0)],
+            ['id' => 'card_avgwatched', 'label' => self::str('card_avgwatched'), 'value' => $stats && $stats->views ? self::pct((float) $stats->avgpct) : '—'],
         ];
     }
 

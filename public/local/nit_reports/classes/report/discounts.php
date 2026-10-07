@@ -129,10 +129,10 @@ class discounts extends base {
         $items = $this->all();
         $sum = fn($field) => array_sum(array_map(fn($i) => (float) ($i['raw']->$field ?? 0), $items));
         return [
-            ['label' => self::str('card_discounts'), 'value' => self::num(count($items))],
-            ['label' => self::str('col_uses'), 'value' => self::num($sum('uses'))],
-            ['label' => self::str('col_discountgiven'), 'value' => self::money($sum('given'))],
-            ['label' => self::str('card_discountsales'), 'value' => self::money($sum('sales'))],
+            ['id' => 'card_discounts', 'label' => self::str('card_discounts'), 'value' => self::num(count($items))],
+            ['id' => 'col_uses', 'label' => self::str('col_uses'), 'value' => self::num($sum('uses'))],
+            ['id' => 'col_discountgiven', 'label' => self::str('col_discountgiven'), 'value' => self::money($sum('given'))],
+            ['id' => 'card_discountsales', 'label' => self::str('card_discountsales'), 'value' => self::money($sum('sales'))],
         ];
     }
 

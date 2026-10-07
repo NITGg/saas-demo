@@ -144,13 +144,13 @@ class packages extends base {
         $refunds = (int) $DB->get_field_sql("SELECT COALESCE(SUM(ABS(amount_minor)), 0) FROM {nit_payment}
                                               WHERE method = 'refund' AND $period", $pp);
         return [
-            ['label' => self::str('card_packagessold'), 'value' => self::num($s->sold)],
-            ['label' => self::str('col_flexbought'), 'value' => self::num($s->flex)],
-            ['label' => self::str('col_flexused'), 'value' => self::num($s->used)],
-            ['label' => self::str('col_flexleft'), 'value' => self::num($s->lefts)],
-            ['label' => self::str('col_flexexpired'), 'value' => self::num($expired)],
-            ['label' => self::str('card_revenue'), 'value' => data::minor((int) $s->revenue)],
-            ['label' => self::str('card_refundedvalue'), 'value' => data::minor($refunds)],
+            ['id' => 'card_packagessold', 'label' => self::str('card_packagessold'), 'value' => self::num($s->sold)],
+            ['id' => 'col_flexbought', 'label' => self::str('col_flexbought'), 'value' => self::num($s->flex)],
+            ['id' => 'col_flexused', 'label' => self::str('col_flexused'), 'value' => self::num($s->used)],
+            ['id' => 'col_flexleft', 'label' => self::str('col_flexleft'), 'value' => self::num($s->lefts)],
+            ['id' => 'col_flexexpired', 'label' => self::str('col_flexexpired'), 'value' => self::num($expired)],
+            ['id' => 'card_revenue', 'label' => self::str('card_revenue'), 'value' => data::minor((int) $s->revenue)],
+            ['id' => 'card_refundedvalue', 'label' => self::str('card_refundedvalue'), 'value' => data::minor($refunds)],
         ];
     }
 

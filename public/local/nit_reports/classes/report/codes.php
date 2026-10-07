@@ -131,10 +131,10 @@ class codes extends base {
                     COALESCE(SUM(CASE WHEN a.status = 'used' THEN a.amount_minor ELSE 0 END), 0) AS redeemed
                $from", $params + ['nowsum' => time()]);
         return [
-            ['label' => self::str('col_made'), 'value' => self::num($s->made)],
-            ['label' => self::str('code_used'), 'value' => self::num($s->used ?? 0)],
-            ['label' => self::str('code_active'), 'value' => self::num($s->open ?? 0)],
-            ['label' => self::str('col_redeemed'), 'value' => data::minor((int) $s->redeemed)],
+            ['id' => 'col_made', 'label' => self::str('col_made'), 'value' => self::num($s->made)],
+            ['id' => 'code_used', 'label' => self::str('code_used'), 'value' => self::num($s->used ?? 0)],
+            ['id' => 'code_active', 'label' => self::str('code_active'), 'value' => self::num($s->open ?? 0)],
+            ['id' => 'col_redeemed', 'label' => self::str('col_redeemed'), 'value' => data::minor((int) $s->redeemed)],
         ];
     }
 

@@ -198,10 +198,10 @@ class lessons extends base {
                 LEFT JOIN {academy_session_attendance} sa ON sa.sessionid = ss.sessionid AND sa.userid = ss.userid
                WHERE ss.sessionid IN (SELECT ls.id $from)", $params);
             return [
-                ['label' => self::str('card_sessions'), 'value' => self::num(array_sum($by))],
-                ['label' => self::str('live_ended'), 'value' => self::num($by['ended'] ?? 0)],
-                ['label' => self::str('live_cancelled'), 'value' => self::num($by['cancelled'] ?? 0)],
-                ['label' => self::str('card_attendance'), 'value' => $att && $att->invited
+                ['id' => 'card_sessions', 'label' => self::str('card_sessions'), 'value' => self::num(array_sum($by))],
+                ['id' => 'live_ended', 'label' => self::str('live_ended'), 'value' => self::num($by['ended'] ?? 0)],
+                ['id' => 'live_cancelled', 'label' => self::str('live_cancelled'), 'value' => self::num($by['cancelled'] ?? 0)],
+                ['id' => 'card_attendance', 'label' => self::str('card_attendance'), 'value' => $att && $att->invited
                     ? self::pct(100 * $att->attended / $att->invited) : '—'],
             ];
         }
@@ -210,13 +210,13 @@ class lessons extends base {
         $completed = (int) ($by['completed'] ?? 0);
         $absent = (int) ($by['student_absent'] ?? 0);
         return [
-            ['label' => self::str('card_lessons'), 'value' => self::num(array_sum($by))],
-            ['label' => self::str('lesson_completed'), 'value' => self::num($completed)],
-            ['label' => self::str('lesson_student_absent'), 'value' => self::num($absent)],
-            ['label' => self::str('lesson_teacher_absent'), 'value' => self::num($by['teacher_absent'] ?? 0)],
-            ['label' => self::str('card_cancelled'), 'value' => self::num(($by['cancelled'] ?? 0) + ($by['cancelled_teacher'] ?? 0)
+            ['id' => 'card_lessons', 'label' => self::str('card_lessons'), 'value' => self::num(array_sum($by))],
+            ['id' => 'lesson_completed', 'label' => self::str('lesson_completed'), 'value' => self::num($completed)],
+            ['id' => 'lesson_student_absent', 'label' => self::str('lesson_student_absent'), 'value' => self::num($absent)],
+            ['id' => 'lesson_teacher_absent', 'label' => self::str('lesson_teacher_absent'), 'value' => self::num($by['teacher_absent'] ?? 0)],
+            ['id' => 'card_cancelled', 'label' => self::str('card_cancelled'), 'value' => self::num(($by['cancelled'] ?? 0) + ($by['cancelled_teacher'] ?? 0)
                 + ($by['rejected'] ?? 0))],
-            ['label' => self::str('card_attendance'), 'value' => ($completed + $absent)
+            ['id' => 'card_attendance', 'label' => self::str('card_attendance'), 'value' => ($completed + $absent)
                 ? self::pct(100 * $completed / ($completed + $absent)) : '—'],
         ];
     }

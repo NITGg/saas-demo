@@ -49,7 +49,9 @@ class ui {
         $percent = $row ? (int) $row->percent : 0;
         $resume = progress::resume_position($row);
 
-        $PAGE->requires->js(new moodle_url('/local/nit_videoprogress/js/tracker.js'));
+        // The plugin version in the URL: browsers fetch the script again after an update.
+        $PAGE->requires->js(new moodle_url('/local/nit_videoprogress/js/tracker.js',
+            ['v' => get_config('local_nit_videoprogress', 'version')]));
         $s = fn(string $key, $a = null) => get_string($key, 'local_nit_videoprogress', $a);
 
         $attrs = [

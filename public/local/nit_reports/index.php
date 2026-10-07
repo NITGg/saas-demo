@@ -143,12 +143,23 @@ foreach (['pdf' => 'PDF', 'excel' => 'Excel', 'csv' => 'CSV'] as $format => $lab
 echo html_writer::div(html_writer::span($s('export') . ':', 'small text-muted') . $exports,
     'd-flex flex-wrap align-items-center gap-2 mb-3');
 
+// A (?) that opens what a column or a card means.
+$helpicon = fn(string $label, string $text) => $OUTPUT->render_from_template('core/help_icon', [
+    'text' => $text,
+    'alt' => get_string('helpprefix2', '', $label),
+    'title' => get_string('helpprefix2', '', $label),
+    'ltr' => !right_to_left(),
+    'icon' => (new pix_icon('help', get_string('helpprefix2', '', $label)))->export_for_template($OUTPUT),
+]);
+
 // Number cards.
 if ($cards = $report->summary()) {
     $html = '';
     foreach ($cards as $card) {
+        $cardhelp = $report->card_help($card);
         $html .= html_writer::div(
-            html_writer::div(s($card['label']), 'small text-muted') .
+            html_writer::div(s($card['label']) . ($cardhelp ? ' ' . $helpicon($card['label'], $cardhelp) : ''),
+                'small text-muted') .
             html_writer::div(s($card['value']), 'fs-4 fw-bold'),
             'border rounded p-3 bg-white', ['style' => 'min-width:170px']);
     }
@@ -189,13 +200,7 @@ if (!$result['rows']) {
             }
         }
         if (isset($help[$col])) {
-            $html .= ' ' . $OUTPUT->render_from_template('core/help_icon', [
-                'text' => $help[$col],
-                'alt' => get_string('helpprefix2', '', $label),
-                'title' => get_string('helpprefix2', '', $label),
-                'ltr' => !right_to_left(),
-                'icon' => (new pix_icon('help', get_string('helpprefix2', '', $label)))->export_for_template($OUTPUT),
-            ]);
+            $html .= ' ' . $helpicon($label, $help[$col]);
         }
         $head[] = html_writer::span($html, 'text-nowrap');
     }
