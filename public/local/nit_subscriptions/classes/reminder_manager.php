@@ -434,6 +434,25 @@ class reminder_manager {
 
         $plan = $DB->get_record('nit_subscription', ['id' => (int) $purchase->subscriptionid]);
         $planname = $plan ? format_string(subscription_manager::resolve_mlang($plan->name)) : '';
+        $key = ($daysleft <= 0) ? '_today' : '';
+
+        // Through the notification center when it is installed: kept in its log, and written
+        // in every language so the recipient gets theirs (the plan name too).
+        if (class_exists('\local_nit_notifications\auto')) {
+            try {
+                $rawplan = $plan ? (string) $plan->name : '';
+                $expires = (int) $purchase->expires_at;
+                return \local_nit_notifications\auto::expiry_reminder('subscription_expiry', (int) $user->id,
+                    self::COMPONENT, 'reminder_msg_subject' . $key, 'reminder_msg_body' . $key,
+                    fn() => ['plan' => $rawplan, 'days' => $daysleft,
+                        'expires' => userdate($expires, get_string('strftimedaydate'))],
+                    self::COMPONENT . '/subscriptionreminder', new \moodle_url('/'));
+            } catch (\Throwable $e) {
+                debugging('local_nit_subscriptions: expiry reminder failed for purchase '
+                    . (int) $purchase->id . ': ' . $e->getMessage(), DEBUG_NORMAL);
+                return false;
+            }
+        }
 
         // The recipient's language, not the sender's.
         $old = force_current_language($user->lang ?: $CFG->lang);
@@ -449,10 +468,8 @@ class reminder_manager {
             // there is no per-plan page to link to here — so that is where "renew" leads.
             $renewurl = new \moodle_url('/');
 
-            // The day it actually ends reads differently from a warning about it: past tense,
-            // no countdown, and renewal is the only thing left to offer. "0 day(s) remaining"
-            // would be both wrong and slightly insulting.
-            $key = ($daysleft <= 0) ? '_today' : '';
+            // The day it actually ends reads differently from a warning about it ($key above):
+            // past tense, no countdown, and renewal is the only thing left to offer.
 
             $body = get_string('reminder_msg_body' . $key, self::COMPONENT, $a);
 

@@ -8,6 +8,7 @@
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="senderid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Who sent it; 0 = the system"/>
         <FIELD NAME="source" TYPE="char" LENGTH="50" NOTNULL="true" DEFAULT="manual" SEQUENCE="false" COMMENT="manual, or the automatic notification's key"/>
+        <FIELD NAME="provider" TYPE="char" LENGTH="100" NOTNULL="true" DEFAULT="local_nit_notifications/announcement" SEQUENCE="false" COMMENT="component/name of the Moodle message provider it is sent with (the user's preference row)"/>
         <FIELD NAME="type" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="general" SEQUENCE="false" COMMENT="general | courses | subscriptions | offers"/>
         <FIELD NAME="audience" TYPE="char" LENGTH="30" NOTNULL="true" SEQUENCE="false" COMMENT="course_students | course_teachers | all_students | all_teachers | managers | admins | users"/>
         <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The course for the course audiences; 0 = every course the sender manages, or none"/>
@@ -49,6 +50,18 @@
         <INDEX NAME="notifstatus" UNIQUE="false" FIELDS="notifid, status"/>
         <INDEX NAME="userid" UNIQUE="false" FIELDS="userid"/>
       </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_nit_notif_once" COMMENT="Automatic notifications already sent for an item (a quiz, a session reminder), so each goes out once">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="source" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false" COMMENT="What was sent, e.g. newquiz, session_60"/>
+        <FIELD NAME="itemid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The item it was about (cmid, session id, lesson id)"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="sourceitem" TYPE="unique" FIELDS="source, itemid"/>
+      </KEYS>
     </TABLE>
   </TABLES>
 </XMLDB>

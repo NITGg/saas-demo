@@ -15,8 +15,9 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * NIT notifications — admins and managers send notifications to groups of users,
- * and every notification (sent by hand or by the system) is kept with its recipients.
+ * Event observers for local_nit_notifications: a quiz that is created or changed
+ * may need the "new quiz" notification. Not internal, so they run after the
+ * transaction that created the quiz has committed.
  *
  * @package    local_nit_notifications
  * @copyright  2026 NIT
@@ -25,9 +26,15 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_nit_notifications';
-$plugin->version   = 2026100900;
-$plugin->requires  = 2024100700;
-$plugin->supported = [405, 502];
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.3.0';
+$observers = [
+    [
+        'eventname' => '\core\event\course_module_created',
+        'callback' => '\local_nit_notifications\observer::course_module_changed',
+        'internal' => false,
+    ],
+    [
+        'eventname' => '\core\event\course_module_updated',
+        'callback' => '\local_nit_notifications\observer::course_module_changed',
+        'internal' => false,
+    ],
+];

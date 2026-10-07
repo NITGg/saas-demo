@@ -93,8 +93,23 @@ if (optional_param('confirm', 0, PARAM_BOOL) && confirm_sesskey()) {
 }
 
 $form = new \local_nit_notifications\form\compose_form($pageurl, ['audiences' => $audiences, 'courses' => $courses]);
-$form->set_data(['courseid' => $courseid, 'type' => 'general',
-    'audience' => $courseid ? audience::COURSE_STUDENTS : array_key_first($audiences)]);
+$defaults = ['courseid' => $courseid, 'type' => 'general',
+    'audience' => $courseid ? audience::COURSE_STUDENTS : array_key_first($audiences)];
+
+// Opened from an offer or a coupon ("Send a notification"): start from a ready text.
+$offerid = optional_param('offerid', 0, PARAM_INT);
+$couponid = optional_param('couponid', 0, PARAM_INT);
+if (($offerid || $couponid) && audience::is_sitewide()
+        && ($prefill = \local_nit_notifications\auto::commerce_prefill($couponid ? 'coupon' : 'offer', $couponid ?: $offerid))) {
+    $defaults = ['type' => $prefill['type'], 'audience' => $prefill['audience'], 'url' => $prefill['url']] + $defaults;
+    $first = array_key_first(\local_nit_notifications\mlang::languages());
+    foreach (['title', 'body'] as $field) {
+        foreach (\local_nit_notifications\mlang::split($prefill[$field]) as $code => $text) {
+            $defaults[$field . '_' . ($code !== '' ? $code : $first)] = $text;
+        }
+    }
+}
+$form->set_data($defaults);
 
 if ($form->is_cancelled()) {
     redirect($pageurl);

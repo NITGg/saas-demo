@@ -15,8 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * NIT notifications — admins and managers send notifications to groups of users,
- * and every notification (sent by hand or by the system) is kept with its recipients.
+ * Scheduled tasks for local_nit_notifications.
  *
  * @package    local_nit_notifications
  * @copyright  2026 NIT
@@ -25,9 +24,16 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_nit_notifications';
-$plugin->version   = 2026100900;
-$plugin->requires  = 2024100700;
-$plugin->supported = [405, 502];
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.3.0';
+$tasks = [
+    // Live session and private lesson reminders: every 5 minutes, so a reminder
+    // lands at most 5 minutes after its lead time.
+    [
+        'classname' => '\local_nit_notifications\task\session_reminders',
+        'blocking' => 0,
+        'minute' => '*/5',
+        'hour' => '*',
+        'day' => '*',
+        'month' => '*',
+        'dayofweek' => '*',
+    ],
+];

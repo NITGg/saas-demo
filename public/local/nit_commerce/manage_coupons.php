@@ -50,13 +50,15 @@ $STR = local_nit_commerce_string_map(array(
     'cpn_scope_courses', 'cpn_scope_packages', 'cpn_scope_subscriptions', 'cpn_scope_programs', 'cpn_scope_all',
     'cpn_scope_specific', 'cpn_created', 'cpn_updated', 'cpn_activated', 'cpn_deactivated',
     'cpn_deleted', 'cpn_confirm_delete', 'cpn_edit_titled', 'cpn_scope_required', 'cpn_unlimited',
-    'cpn_used_count',
+    'cpn_used_count', 'ui_notify',
     'err_sessionexpired', 'err_requestfailed',
 ));
 echo html_writer::script('window.ACADEMY_CFG = ' . json_encode(array(
     'endpoint' => (new moodle_url('/local/nit_commerce/api.php'))->out(false),
     'sesskey'  => sesskey(),
     'lang'     => optional_param('lang', current_language(), PARAM_LANG),
+    // "Send a notification" about a coupon opens the notification center, filled in.
+    'notifyurl' => local_nit_commerce_notify_url(),
 )) . ';');
 echo html_writer::script('window.ACADEMY_STR = ' . json_encode($STR) . ';');
 ?>
@@ -258,6 +260,9 @@ echo html_writer::script(<<<'JS'
                     '<button class="btn btn-sm btn-secondary" data-act="edit" data-id="'+c.id+'">'+esc(str('ui_edit'))+'</button> '+
                     toggle+' '+
                     '<button class="btn btn-sm btn-danger" data-act="delete" data-id="'+c.id+'">'+esc(str('ui_delete'))+'</button>'+
+                    (CFG.notifyurl && c.status === 'active'
+                        ? ' <a class="btn btn-sm btn-info" href="'+esc(CFG.notifyurl+'?couponid='+c.id)+'">'+esc(str('ui_notify'))+'</a>'
+                        : '')+
                 '</td>';
             tr._c = c;
             tbody.appendChild(tr);

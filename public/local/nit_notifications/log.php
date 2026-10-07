@@ -64,6 +64,15 @@ if (audience::is_sitewide()) {
 $datetime = get_string('strftimedatetimeshort', 'langconfig');
 
 /**
+ * "System — New quiz": what sent an automatic notification.
+ *
+ * @param string $source
+ * @return string
+ */
+$sourcetext = fn(string $source): string => $s('system') . ' — ' . (get_string_manager()->string_exists('source_' . $source,
+    'local_nit_notifications') ? $s('source_' . $source) : $source);
+
+/**
  * "Students — Course X", "All teachers", "System: subscription_expiry".
  *
  * @param stdClass $n
@@ -98,7 +107,7 @@ if ($id) {
         echo html_writer::div(html_writer::link($notif->url, s($notif->url), ['target' => '_blank']), 'mb-3');
     }
     $facts = [
-        $s('sender') => $sender ? fullname($sender) : $s('system') . ' (' . $notif->source . ')',
+        $s('sender') => $sender ? fullname($sender) : $sourcetext($notif->source),
         $s('audience') => $audiencetext($notif),
         $s('type') => $s('type_' . $notif->type),
         get_string('date') => userdate($notif->timecreated, $datetime),
@@ -221,7 +230,7 @@ foreach ($list['items'] as $n) {
         html_writer::link(new moodle_url($listurl, ['id' => $n->id]), s(\local_nit_notifications\mlang::resolve($n->title))),
         $s('type_' . $n->type),
         s($audiencetext($n)),
-        $n->sendername !== '' ? s($n->sendername) : html_writer::span($s('system'), 'text-muted'),
+        $n->sendername !== '' ? s($n->sendername) : html_writer::span(s($sourcetext($n->source)), 'text-muted'),
         (int) $n->total,
         (int) $n->sent,
         (int) $n->failed ? html_writer::span((int) $n->failed, 'text-danger fw-bold') : 0,

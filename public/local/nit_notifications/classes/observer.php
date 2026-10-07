@@ -14,20 +14,26 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+namespace local_nit_notifications;
+
 /**
- * NIT notifications — admins and managers send notifications to groups of users,
- * and every notification (sent by hand or by the system) is kept with its recipients.
+ * Event observers (see db/events.php).
  *
  * @package    local_nit_notifications
  * @copyright  2026 NIT
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+class observer {
 
-defined('MOODLE_INTERNAL') || die();
-
-$plugin->component = 'local_nit_notifications';
-$plugin->version   = 2026100900;
-$plugin->requires  = 2024100700;
-$plugin->supported = [405, 502];
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.3.0';
+    /**
+     * A course module was created or changed: when it is a quiz, it may now be
+     * visible to students — \local_nit_notifications\auto::quiz_changed() decides.
+     *
+     * @param \core\event\base $event course_module_created | course_module_updated
+     */
+    public static function course_module_changed(\core\event\base $event): void {
+        if (($event->other['modulename'] ?? '') === 'quiz') {
+            auto::quiz_changed((int) $event->objectid);
+        }
+    }
+}

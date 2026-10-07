@@ -39,6 +39,20 @@ function local_nit_commerce_string_map(array $keys): array {
 }
 
 /**
+ * The notification center's send page, for the "Send a notification" button on an
+ * offer or a coupon — '' when local_nit_notifications is missing or the user may
+ * not send to the whole site.
+ *
+ * @return string
+ */
+function local_nit_commerce_notify_url(): string {
+    if (!class_exists('\local_nit_notifications\audience') || !\local_nit_notifications\audience::is_sitewide()) {
+        return '';
+    }
+    return (new moodle_url('/local/nit_notifications/send.php'))->out(false);
+}
+
+/**
  * Whether the academy's licence includes a nit_commerce feature (coupons|offers).
  *
  * Returns true when local_license is absent or enforcement is off — license::has_feature()

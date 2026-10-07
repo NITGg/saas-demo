@@ -37,6 +37,9 @@ namespace local_nit_notifications;
  */
 class sender {
 
+    /** The provider of hand-written notifications. */
+    public const PROVIDER = 'local_nit_notifications/announcement';
+
     /** Notification types. */
     public const TYPES = ['general', 'courses', 'subscriptions', 'offers'];
 
@@ -156,10 +159,12 @@ class sender {
      * @param string $body plain text, or multilang markup
      * @param int $courseid the course it is about (scopes it in managers' logs), 0 = none
      * @param string $url optional link
+     * @param string $provider the message provider "component/name" — its row in the users'
+     *     notification preferences decides bell / push / email for this kind of notification
      * @return \stdClass|null the notification, null when nobody is left to send to
      */
     public static function send_to_users(string $source, string $type, array $userids, string $title, string $body,
-            int $courseid = 0, string $url = ''): ?\stdClass {
+            int $courseid = 0, string $url = '', string $provider = self::PROVIDER): ?\stdClass {
         $recipients = audience::active(array_values(array_unique(array_map('intval', $userids))));
         if (!$recipients) {
             return null;
@@ -174,6 +179,7 @@ class sender {
             'body' => trim($body),
             'url' => $url,
             'email' => 0,
+            'provider' => $provider,
         ], $recipients);
         return self::dispatch($notif);
     }
@@ -290,8 +296,7 @@ class sender {
         $html = '<p>' . nl2br(s($body)) . '</p>';
 
         $message = new \core\message\message();
-        $message->component = 'local_nit_notifications';
-        $message->name = 'announcement';
+        [$message->component, $message->name] = explode('/', (string) ($notif->provider ?? self::PROVIDER), 2) + [1 => ''];
         $message->userfrom = $from;
         $message->userto = $to;
         $message->subject = $title;

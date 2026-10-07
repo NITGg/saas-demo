@@ -42,6 +42,7 @@ $string['ui_activate']     = 'تفعيل';
 $string['ui_deactivate']   = 'إلغاء التفعيل';
 $string['ui_edit']         = 'تعديل';
 $string['ui_delete']       = 'حذف';
+$string['ui_notify']       = 'ابعت إشعار';
 $string['ui_never']        = 'بلا انتهاء';
 $string['ui_optional']     = '(اختياري)';
 $string['ui_pager_info']   = 'عرض {from}–{to} من {total}';

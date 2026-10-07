@@ -50,13 +50,15 @@ $STR = local_nit_commerce_string_map(array(
     'ofr_new', 'ofr_none', 'ofr_col_name', 'ofr_field_name', 'ofr_created', 'ofr_updated',
     'ofr_activated', 'ofr_deactivated', 'ofr_deleted', 'ofr_confirm_delete', 'ofr_edit_titled',
     'ofr_delete_title',
-    'pkg_field_name_en', 'pkg_field_name_ar',
+    'pkg_field_name_en', 'pkg_field_name_ar', 'ui_notify',
     'err_sessionexpired', 'err_requestfailed',
 ));
 echo html_writer::script('window.ACADEMY_CFG = ' . json_encode(array(
     'endpoint' => (new moodle_url('/local/nit_commerce/api.php'))->out(false),
     'sesskey'  => sesskey(),
     'lang'     => optional_param('lang', current_language(), PARAM_LANG),
+    // "Send a notification" about an offer opens the notification center, filled in.
+    'notifyurl' => local_nit_commerce_notify_url(),
 )) . ';');
 echo html_writer::script('window.ACADEMY_STR = ' . json_encode($STR) . ';');
 ?>
@@ -296,6 +298,9 @@ echo html_writer::script(<<<'JS'
                     '<button class="btn btn-sm btn-secondary" data-act="edit" data-id="'+o.id+'">'+esc(str('ui_edit'))+'</button> '+
                     toggle+' '+
                     '<button class="btn btn-sm btn-danger" data-act="delete" data-id="'+o.id+'">'+esc(str('ui_delete'))+'</button>'+
+                    (CFG.notifyurl && o.status === 'active'
+                        ? ' <a class="btn btn-sm btn-info" href="'+esc(CFG.notifyurl+'?offerid='+o.id)+'">'+esc(str('ui_notify'))+'</a>'
+                        : '')+
                 '</td>';
             tr._o = o;
             tbody.appendChild(tr);

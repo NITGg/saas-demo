@@ -60,5 +60,29 @@ function xmldb_local_nit_notifications_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026100802, 'local', 'nit_notifications');
     }
 
+    if ($oldversion < 2026100900) {
+        // Automatic notifications are sent with their own message provider (a row of
+        // their own in the users' notification preferences).
+        $table = new xmldb_table('local_nit_notif');
+        $field = new xmldb_field('provider', XMLDB_TYPE_CHAR, '100', null, XMLDB_NOTNULL, null,
+            'local_nit_notifications/announcement', 'source');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Receipts of automatic notifications sent once per item (a quiz, a session reminder).
+        $table = new xmldb_table('local_nit_notif_once');
+        if (!$dbman->table_exists($table)) {
+            $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+            $table->add_field('source', XMLDB_TYPE_CHAR, '50', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('itemid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+            $table->add_key('sourceitem', XMLDB_KEY_UNIQUE, ['source', 'itemid']);
+            $dbman->create_table($table);
+        }
+        upgrade_plugin_savepoint(true, 2026100900, 'local', 'nit_notifications');
+    }
+
     return true;
 }

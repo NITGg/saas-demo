@@ -151,6 +151,11 @@ class subscription_purchase_manager {
         $purchase->timecreated      = $now;
         $purchase->id = $DB->insert_record('nit_sub_purchase', $purchase);
 
+        // "Your subscription is active / was renewed" (local_nit_notifications, when installed).
+        if (class_exists('\local_nit_notifications\auto')) {
+            \local_nit_notifications\auto::subscription_started($purchase);
+        }
+
         return self::summary($purchase);
     }
 
@@ -460,6 +465,11 @@ class subscription_purchase_manager {
             'id'     => $purchase->id,
             'status' => self::STATUS_CANCELLED,
         ]);
+
+        // "Your subscription was cancelled" (local_nit_notifications, when installed).
+        if ($purchase->status !== self::STATUS_CANCELLED && class_exists('\local_nit_notifications\auto')) {
+            \local_nit_notifications\auto::subscription_cancelled($purchase);
+        }
 
         // Unenrol the user from courses covered by this subscription plan.
         $courseids = $DB->get_fieldset_select('nit_course_access',

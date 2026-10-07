@@ -127,6 +127,39 @@ class mlang {
     }
 
     /**
+     * A language string in every installed language, as one stored value (for
+     * automatic notifications: each recipient later gets their own language).
+     *
+     * Placeholder values may themselves be multilang (a course or plan name written
+     * in two languages); each language gets its own version of them. $a may also be
+     * a function of the language code, for values that depend on it (dates): it runs
+     * with that language forced, so userdate() writes the month in it.
+     *
+     * @param string $identifier
+     * @param string $component
+     * @param array|\stdClass|string|int|\Closure|null $a
+     * @return string multilang markup, or plain text with one language installed
+     */
+    public static function from_string(string $identifier, string $component, $a = null): string {
+        $bylang = [];
+        foreach (array_keys(self::languages()) as $code) {
+            $old = force_current_language($code);
+            try {
+                $local = $a instanceof \Closure ? $a($code) : $a;
+                if (is_array($local) || is_object($local)) {
+                    $local = (object) array_map(fn($v) => is_string($v) ? self::resolve($v, $code) : $v, (array) $local);
+                } else if (is_string($local)) {
+                    $local = self::resolve($local, $code);
+                }
+                $bylang[$code] = (new \lang_string($identifier, $component, $local))->out($code);
+            } finally {
+                force_current_language($old);
+            }
+        }
+        return self::compose($bylang);
+    }
+
+    /**
      * The language a user reads notifications in.
      *
      * @param \stdClass $user

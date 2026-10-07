@@ -129,5 +129,10 @@ class course_purchase_manager {
         $DB->update_record('local_payments_transactions', $update);
 
         $dbtx->allow_commit();
+
+        // "Your course purchase was cancelled / refunded" (local_nit_notifications, when installed).
+        if ($courseid > 0 && class_exists('\local_nit_notifications\auto')) {
+            \local_nit_notifications\auto::course_purchase_cancelled($userid, $courseid, $refund);
+        }
     }
 }

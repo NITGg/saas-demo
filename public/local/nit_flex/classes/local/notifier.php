@@ -40,12 +40,26 @@ final class notifier {
                 return;
             }
             $name = (string) $DB->get_field('nit_package', 'name', ['id' => $purchase->packageid]);
+            $url = new \moodle_url('/local/nit_lessons/student.php', ['tab' => 'book']);
+
+            // Through the notification center when it is installed: kept in its log, and in the
+            // recipient's own language (the package name and date too).
+            if (class_exists('\local_nit_notifications\auto')) {
+                $flex = (int) $purchase->remaining_flex;
+                $expires = (int) $purchase->expires_at;
+                \local_nit_notifications\auto::expiry_reminder('flex_expiry', (int) $user->id, 'local_nit_flex',
+                    'msg_expiry_subject', 'msg_expiry_body',
+                    fn() => ['package' => $name, 'flex' => $flex,
+                        'date' => userdate($expires, get_string('strftimedatefullshort', 'langconfig'))],
+                    'local_nit_flex/expiry', $url);
+                return;
+            }
+
             $a = (object) [
                 'package' => format_string($name),
                 'flex' => (int) $purchase->remaining_flex,
                 'date' => userdate((int) $purchase->expires_at, get_string('strftimedatefullshort', 'langconfig')),
             ];
-            $url = new \moodle_url('/local/nit_lessons/student.php', ['tab' => 'book']);
 
             $message = new \core\message\message();
             $message->component = 'local_nit_flex';

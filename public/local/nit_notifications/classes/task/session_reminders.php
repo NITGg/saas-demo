@@ -14,20 +14,33 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+namespace local_nit_notifications\task;
+
+use local_nit_notifications\auto;
+
 /**
- * NIT notifications — admins and managers send notifications to groups of users,
- * and every notification (sent by hand or by the system) is kept with its recipients.
+ * Sends the reminders before live sessions and private lessons start.
  *
  * @package    local_nit_notifications
  * @copyright  2026 NIT
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+class session_reminders extends \core\task\scheduled_task {
 
-defined('MOODLE_INTERNAL') || die();
+    /**
+     * Name shown in the task list.
+     *
+     * @return string
+     */
+    public function get_name() {
+        return get_string('task_sessionreminders', 'local_nit_notifications');
+    }
 
-$plugin->component = 'local_nit_notifications';
-$plugin->version   = 2026100900;
-$plugin->requires  = 2024100700;
-$plugin->supported = [405, 502];
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.3.0';
+    /**
+     * Send what is due.
+     */
+    public function execute() {
+        $count = auto::send_session_reminders(time());
+        mtrace("local_nit_notifications: $count session/lesson reminder(s) sent");
+    }
+}

@@ -41,6 +41,7 @@ $string['ui_activate']     = 'Activate';
 $string['ui_deactivate']   = 'Deactivate';
 $string['ui_edit']         = 'Edit';
 $string['ui_delete']       = 'Delete';
+$string['ui_notify']       = 'Send a notification';
 $string['ui_never']        = 'Never';
 $string['ui_optional']     = '(optional)';
 $string['ui_pager_info']   = 'Showing {from}–{to} of {total}';
