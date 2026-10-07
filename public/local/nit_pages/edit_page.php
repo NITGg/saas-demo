@@ -51,9 +51,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && confirm_sesskey()) {
     $slug_en = optional_param('slug_en', '', PARAM_RAW_TRIMMED);
     $seo_desc_ar = optional_param('seo_desc_ar', '', PARAM_TEXT);
     $seo_desc_en = optional_param('seo_desc_en', '', PARAM_TEXT);
-    $share_image = optional_param('share_image', '', PARAM_URL);
-    $status = optional_param('status', page_manager::STATUS_PUBLISHED, PARAM_ALPHA);
-    $loggedin_only = optional_param('loggedin_only', 0, PARAM_BOOL);
 
     if ($slug_ar === '') {
         $slug_ar = page_manager::clean_slug($title_ar);
@@ -69,12 +66,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && confirm_sesskey()) {
         'slug_en'       => $slug_en,
         'seo_desc_ar'   => $seo_desc_ar,
         'seo_desc_en'   => $seo_desc_en,
-        'share_image'   => $share_image,
-        'status'        => $status,
-        'loggedin_only' => $loggedin_only ? 1 : 0,
     ];
     if ($page) {
         $data['id'] = $page->id;
+        $data['share_image'] = $page->share_image ?? '';
+        $data['status'] = $page->status ?? page_manager::STATUS_PUBLISHED;
+        $data['loggedin_only'] = $page->loggedin_only ?? 0;
+    } else {
+        $data['share_image'] = '';
+        $data['status'] = page_manager::STATUS_PUBLISHED;
+        $data['loggedin_only'] = 0;
     }
 
     $saved = page_manager::save_page($data);
@@ -88,15 +89,15 @@ $currlang = current_language();
 $isar = (strpos($currlang, 'ar') === 0);
 
 echo '
-<div style="max-width:840px;margin:0 auto;padding-bottom:60px;font-family:\'Almarai\',sans-serif;">
+<div style="max-width:840px;margin:24px auto 60px;font-family:\'Tajawal\',\'Almarai\',sans-serif;">
   <div style="margin-bottom:20px;">
-    <a href="' . (new \moodle_url('/local/nit_pages/index.php'))->out() . '" style="color:var(--nit-brand-textsecondary, #94a3b8);text-decoration:none;">
+    <a href="' . (new \moodle_url('/local/nit_pages/index.php'))->out() . '" style="color:#64748b;text-decoration:none;font-weight:700;display:inline-flex;align-items:center;gap:6px;">
       ← ' . get_string('back_to_pages', 'local_nit_pages') . '
     </a>
   </div>
 
-  <div class="card" style="border-radius:16px;border:1px solid var(--nit-brand-border, #223244);background:var(--nit-brand-surface, #121e2d);padding:32px;">
-    <h2 style="font-size:24px;font-weight:800;color:var(--nit-brand-textprimary, #eef3f9);margin:0 0 24px;">' . $title_str . '</h2>
+  <div class="card" style="border-radius:20px;border:1px solid #e2e8f0;background:#ffffff;box-shadow:0 6px 20px rgba(0,0,0,0.04);padding:36px;">
+    <h2 style="font-size:24px;font-weight:800;color:#0f172a;margin:0 0 24px;">' . $title_str . '</h2>
 
     <form method="post" action="' . $PAGE->url->out(false) . '">
       <input type="hidden" name="sesskey" value="' . sesskey() . '">
@@ -104,63 +105,40 @@ echo '
 
       <div class="row g-3 mb-3">
         <div class="col-md-6">
-          <label class="form-label fw-bold" style="color:var(--nit-brand-textprimary, #eef3f9);">' . get_string('title_ar', 'local_nit_pages') . ' *</label>
-          <input type="text" name="title_ar" class="form-control" required value="' . $val('title_ar') . '" placeholder="عن المنصة" dir="rtl" style="background:#0c141f;border-color:#223244;color:#eef3f9;">
+          <label class="form-label fw-bold" style="color:#1e293b;">' . get_string('title_ar', 'local_nit_pages') . ' *</label>
+          <input type="text" name="title_ar" class="form-control" required value="' . $val('title_ar') . '" placeholder="عن المنصة" dir="rtl" style="background:#f8fafc;border:1px solid #cbd5e1;color:#0f172a;border-radius:10px;padding:10px 14px;">
         </div>
         <div class="col-md-6">
-          <label class="form-label fw-bold" style="color:var(--nit-brand-textprimary, #eef3f9);">' . get_string('title_en', 'local_nit_pages') . ' *</label>
-          <input type="text" name="title_en" class="form-control" required value="' . $val('title_en') . '" placeholder="About Us" dir="ltr" style="background:#0c141f;border-color:#223244;color:#eef3f9;">
+          <label class="form-label fw-bold" style="color:#1e293b;">' . get_string('title_en', 'local_nit_pages') . ' *</label>
+          <input type="text" name="title_en" class="form-control" required value="' . $val('title_en') . '" placeholder="About Us" dir="ltr" style="background:#f8fafc;border:1px solid #cbd5e1;color:#0f172a;border-radius:10px;padding:10px 14px;">
         </div>
       </div>
 
       <div class="row g-3 mb-3">
         <div class="col-md-6">
-          <label class="form-label fw-bold" style="color:var(--nit-brand-textprimary, #eef3f9);">' . get_string('slug_ar', 'local_nit_pages') . '</label>
-          <input type="text" name="slug_ar" class="form-control" value="' . $val('slug_ar') . '" placeholder="عن-المنصة" dir="rtl" style="background:#0c141f;border-color:#223244;color:#eef3f9;">
+          <label class="form-label fw-bold" style="color:#1e293b;">' . get_string('slug_ar', 'local_nit_pages') . '</label>
+          <input type="text" name="slug_ar" class="form-control" value="' . $val('slug_ar') . '" placeholder="عن-المنصة" dir="rtl" style="background:#f8fafc;border:1px solid #cbd5e1;color:#0f172a;border-radius:10px;padding:10px 14px;">
         </div>
         <div class="col-md-6">
-          <label class="form-label fw-bold" style="color:var(--nit-brand-textprimary, #eef3f9);">' . get_string('slug_en', 'local_nit_pages') . '</label>
-          <input type="text" name="slug_en" class="form-control" value="' . $val('slug_en') . '" placeholder="about" dir="ltr" style="background:#0c141f;border-color:#223244;color:#eef3f9;">
+          <label class="form-label fw-bold" style="color:#1e293b;">' . get_string('slug_en', 'local_nit_pages') . '</label>
+          <input type="text" name="slug_en" class="form-control" value="' . $val('slug_en') . '" placeholder="about" dir="ltr" style="background:#f8fafc;border:1px solid #cbd5e1;color:#0f172a;border-radius:10px;padding:10px 14px;">
         </div>
-      </div>
-
-      <div class="row g-3 mb-3">
-        <div class="col-md-6">
-          <label class="form-label fw-bold" style="color:var(--nit-brand-textprimary, #eef3f9);">' . get_string('seo_desc_ar', 'local_nit_pages') . '</label>
-          <textarea name="seo_desc_ar" rows="3" class="form-control" dir="rtl" style="background:#0c141f;border-color:#223244;color:#eef3f9;">' . $val('seo_desc_ar') . '</textarea>
-        </div>
-        <div class="col-md-6">
-          <label class="form-label fw-bold" style="color:var(--nit-brand-textprimary, #eef3f9);">' . get_string('seo_desc_en', 'local_nit_pages') . '</label>
-          <textarea name="seo_desc_en" rows="3" class="form-control" dir="ltr" style="background:#0c141f;border-color:#223244;color:#eef3f9;">' . $val('seo_desc_en') . '</textarea>
-        </div>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label fw-bold" style="color:var(--nit-brand-textprimary, #eef3f9);">' . get_string('share_image', 'local_nit_pages') . ' (URL)</label>
-        <input type="text" name="share_image" class="form-control" value="' . $val('share_image') . '" placeholder="https://example.com/image.jpg" dir="ltr" style="background:#0c141f;border-color:#223244;color:#eef3f9;">
       </div>
 
       <div class="row g-3 mb-4">
         <div class="col-md-6">
-          <label class="form-label fw-bold" style="color:var(--nit-brand-textprimary, #eef3f9);">' . get_string('status', 'local_nit_pages') . '</label>
-          <select name="status" class="form-select" style="background:#0c141f;border-color:#223244;color:#eef3f9;">
-            <option value="published" ' . ($val('status') === 'published' ? 'selected' : '') . '>' . get_string('published', 'local_nit_pages') . '</option>
-            <option value="draft" ' . ($val('status') === 'draft' ? 'selected' : '') . '>' . get_string('draft', 'local_nit_pages') . '</option>
-          </select>
+          <label class="form-label fw-bold" style="color:#1e293b;">' . get_string('seo_desc_ar', 'local_nit_pages') . '</label>
+          <textarea name="seo_desc_ar" rows="3" class="form-control" dir="rtl" style="background:#f8fafc;border:1px solid #cbd5e1;color:#0f172a;border-radius:10px;padding:10px 14px;">' . $val('seo_desc_ar') . '</textarea>
         </div>
-        <div class="col-md-6 d-flex align-items-center mt-md-4">
-          <div class="form-check mt-3">
-            <input class="form-check-input" type="checkbox" name="loggedin_only" value="1" id="loggedin_only_chk" ' . ($val('loggedin_only') ? 'checked' : '') . '>
-            <label class="form-check-label fw-bold" for="loggedin_only_chk" style="color:var(--nit-brand-textprimary, #eef3f9);">
-              ' . get_string('loggedin_only', 'local_nit_pages') . '
-            </label>
-          </div>
+        <div class="col-md-6">
+          <label class="form-label fw-bold" style="color:#1e293b;">' . get_string('seo_desc_en', 'local_nit_pages') . '</label>
+          <textarea name="seo_desc_en" rows="3" class="form-control" dir="ltr" style="background:#f8fafc;border:1px solid #cbd5e1;color:#0f172a;border-radius:10px;padding:10px 14px;">' . $val('seo_desc_en') . '</textarea>
         </div>
       </div>
 
       <div class="d-flex gap-2">
-        <button type="submit" class="btn btn-primary px-4 fw-bold" style="border-radius:8px;">' . ($isar ? 'حفظ الصفحة' : 'Save Page') . '</button>
-        <a href="' . (new \moodle_url('/local/nit_pages/index.php'))->out() . '" class="btn btn-outline-secondary" style="border-radius:8px;">' . ($isar ? 'إلغاء' : 'Cancel') . '</a>
+        <button type="submit" class="btn fw-bold" style="background:#1b75d0;border-color:#1b75d0;color:#ffffff;border-radius:10px;padding:10px 24px;">' . ($isar ? 'حفظ الصفحة' : 'Save Page') . '</button>
+        <a href="' . (new \moodle_url('/local/nit_pages/index.php'))->out() . '" class="btn btn-outline-secondary fw-bold" style="border-radius:10px;padding:10px 20px;border-color:#cbd5e1;color:#334155;">' . ($isar ? 'إلغاء' : 'Cancel') . '</a>
       </div>
     </form>
   </div>

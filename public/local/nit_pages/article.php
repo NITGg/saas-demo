@@ -97,21 +97,21 @@ if ($isadmin) {
     $editurl = new \moodle_url('/local/nit_pages/edit_article.php', ['id' => $article->id]);
     $manageurl = new \moodle_url('/local/nit_pages/manage_articles.php');
     $statusbadge = ($article->status === article_manager::STATUS_PUBLISHED)
-        ? '<span class="badge bg-success" style="font-size:12px;">' . get_string('published', 'local_nit_pages') . '</span>'
-        : '<span class="badge bg-warning text-dark" style="font-size:12px;">' . get_string('draft', 'local_nit_pages') . '</span>';
+        ? '<span class="badge" style="background:#dcfce7;color:#15803d;font-size:12px;font-weight:700;padding:5px 12px;border-radius:9999px;">' . get_string('published', 'local_nit_pages') . '</span>'
+        : '<span class="badge" style="background:#fef3c7;color:#b45309;font-size:12px;font-weight:700;padding:5px 12px;border-radius:9999px;">' . get_string('draft', 'local_nit_pages') . '</span>';
 
     echo '
-    <div class="nit-admin-cms-toolbar d-print-none" style="background:var(--nit-brand-surface, #121e2d);border-bottom:1px solid var(--nit-brand-border, #223244);padding:10px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;font-family:\'Almarai\',sans-serif;font-size:13px;">
+    <div class="nit-admin-cms-toolbar d-print-none" style="background:#ffffff;border-bottom:2px solid #e2e8f0;box-shadow:0 4px 16px rgba(0,0,0,0.06);margin-top:96px;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;font-family:\'Tajawal\',\'Almarai\',sans-serif;font-size:13px;position:relative;z-index:90;">
       <div style="display:flex;align-items:center;gap:12px;">
-        <span style="font-weight:700;color:var(--nit-brand-textprimary, #eef3f9);">' . get_string('admin_toolbar', 'local_nit_pages') . ':</span>
+        <span style="font-weight:800;color:#0f172a;font-size:14px;">📰 ' . get_string('admin_toolbar', 'local_nit_pages') . ':</span>
         ' . $statusbadge . '
-        <span style="color:var(--nit-brand-textsecondary, #94a3b8);font-size:12px;">ID: ' . $article->id . '</span>
+        <span style="color:#64748b;font-size:12px;">ID: ' . $article->id . '</span>
       </div>
       <div style="display:flex;align-items:center;gap:10px;">
-        <a href="' . $editurl->out() . '" class="btn btn-sm btn-outline-primary" style="border-radius:6px;font-weight:700;">
+        <a href="' . $editurl->out() . '" class="btn btn-sm fw-bold" style="background:#1b75d0;border-color:#1b75d0;color:#ffffff;border-radius:8px;padding:6px 14px;">
           ' . get_string('edit_article', 'local_nit_pages') . '
         </a>
-        <a href="' . $manageurl->out() . '" class="btn btn-sm btn-outline-secondary" style="border-radius:6px;">
+        <a href="' . $manageurl->out() . '" class="btn btn-sm btn-outline-secondary fw-bold" style="border-radius:8px;padding:6px 14px;border-color:#cbd5e1;color:#334155;">
           ' . get_string('manage_articles', 'local_nit_pages') . '
         </a>
       </div>
@@ -119,52 +119,55 @@ if ($isadmin) {
 }
 
 $articlespageurl = new \moodle_url('/local/nit_pages/page.php', ['p' => 'articles']);
+$topmargin = $isadmin ? '20px' : '110px';
 
 echo '
-<div class="nit-article-view" style="max-width:880px;margin:0 auto;padding:40px 20px 80px;font-family:\'Almarai\',\'Tajawal\',sans-serif;line-height:1.8;">
-  <nav style="margin-bottom:24px;font-size:14px;color:var(--nit-brand-textsecondary, #94a3b8);">
-    <a href="' . (new \moodle_url('/'))->out() . '" style="color:var(--nit-brand-textsecondary, #94a3b8);text-decoration:none;">' . ($isar ? 'الرئيسية' : 'Home') . '</a>
-    <span style="margin:0 8px;">/</span>
-    <a href="' . $articlespageurl->out() . '" style="color:var(--nit-brand-textsecondary, #94a3b8);text-decoration:none;">' . get_string('manage_articles', 'local_nit_pages') . '</a>
-    <span style="margin:0 8px;">/</span>
-    <span style="color:var(--nit-brand-textprimary, #eef3f9);">' . s($title) . '</span>
+<div class="nit-article-view" style="max-width:920px;margin:' . $topmargin . ' auto 80px;padding:20px;font-family:\'Tajawal\',\'Almarai\',sans-serif;line-height:1.8;">
+  <nav style="margin-bottom:24px;font-size:14px;color:#64748b;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+    <a href="' . (new \moodle_url('/'))->out() . '" style="color:#64748b;text-decoration:none;font-weight:600;">' . ($isar ? 'الرئيسية' : 'Home') . '</a>
+    <span>/</span>
+    <a href="' . $articlespageurl->out() . '" style="color:#64748b;text-decoration:none;font-weight:600;">' . get_string('manage_articles', 'local_nit_pages') . '</a>
+    <span>/</span>
+    <span style="color:#0f172a;font-weight:700;">' . s($title) . '</span>
   </nav>
 
-  <header style="margin-bottom:32px;">
-    <h1 style="font-size:clamp(28px,3.8vw,44px);font-weight:800;color:var(--nit-brand-textprimary, #eef3f9);line-height:1.3;margin:0 0 16px;">
-      ' . s($title) . '
-    </h1>
-    <div style="display:flex;align-items:center;gap:16px;color:var(--nit-brand-textsecondary, #94a3b8);font-size:14px;flex-wrap:wrap;">
-      <span style="display:flex;align-items:center;gap:6px;">✍️ <strong>' . s($authorname) . '</strong></span>
-      <span>•</span>
-      <span>📅 ' . s($pubdate) . '</span>
-    </div>
-  </header>';
+  <article class="card" style="border-radius:24px;border:1px solid #e2e8f0;background:#ffffff;box-shadow:0 8px 30px rgba(0,0,0,0.04);padding:clamp(24px,4vw,48px);">
+    <header style="margin-bottom:32px;">
+      <h1 style="font-size:clamp(26px,3.5vw,40px);font-weight:800;color:#0f172a;line-height:1.35;margin:0 0 18px;">
+        ' . s($title) . '
+      </h1>
+      <div style="display:flex;align-items:center;gap:18px;color:#64748b;font-size:14px;flex-wrap:wrap;">
+        <span style="display:flex;align-items:center;gap:6px;font-weight:700;color:#1e293b;">✍️ ' . s($authorname) . '</span>
+        <span>•</span>
+        <span style="display:flex;align-items:center;gap:6px;">📅 ' . s($pubdate) . '</span>
+      </div>
+    </header>';
 
 if (!empty($article->cover_image)) {
     echo '
-    <div style="border-radius:18px;overflow:hidden;margin-bottom:36px;box-shadow:0 12px 30px rgba(0,0,0,0.15);max-height:450px;display:flex;align-items:center;justify-content:center;background:#121e2d;">
-      <img src="' . s($article->cover_image) . '" alt="' . s($title) . '" style="width:100%;height:auto;object-fit:cover;max-height:450px;">
+    <div style="border-radius:18px;overflow:hidden;margin-bottom:36px;box-shadow:0 8px 24px rgba(0,0,0,0.08);max-height:480px;display:flex;align-items:center;justify-content:center;background:#f8fafc;">
+      <img src="' . s($article->cover_image) . '" alt="' . s($title) . '" style="width:100%;height:auto;object-fit:cover;max-height:480px;">
     </div>';
 }
 
 if (!empty($summary)) {
     echo '
-    <div style="background:var(--nit-brand-surface, #121e2d);border-inline-start:4px solid var(--nit-brand-primary, #5488c4);border-radius:12px;padding:20px 24px;margin-bottom:32px;font-size:16px;font-weight:600;color:var(--nit-brand-textprimary, #eef3f9);line-height:1.75;">
+    <div style="background:#f0f7ff;border-inline-start:4px solid #1b75d0;border-radius:12px;padding:20px 24px;margin-bottom:36px;font-size:16px;font-weight:600;color:#0f172a;line-height:1.8;">
       ' . s($summary) . '
     </div>';
 }
 
 echo '
-  <div class="nit-article-body" style="font-size:16px;color:var(--nit-brand-textprimary, #eef3f9);line-height:1.9;">
-    ' . format_text($body, FORMAT_HTML, ['filter' => true, 'noclean' => true]) . '
-  </div>
+    <div class="nit-article-body" style="font-size:16px;color:#334155;line-height:2.0;">
+      ' . format_text($body, FORMAT_HTML, ['filter' => true, 'noclean' => true]) . '
+    </div>
 
-  <footer style="margin-top:56px;padding-top:24px;border-top:1px solid var(--nit-brand-border, #223244);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
-    <a href="' . $articlespageurl->out() . '" class="btn btn-outline-secondary" style="border-radius:10px;font-weight:700;">
-      ← ' . get_string('back_to_articles', 'local_nit_pages') . '
-    </a>
-  </footer>
+    <footer style="margin-top:56px;padding-top:24px;border-top:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+      <a href="' . $articlespageurl->out() . '" class="btn btn-outline-secondary fw-bold" style="border-radius:10px;padding:9px 20px;border-color:#cbd5e1;color:#334155;">
+        ← ' . get_string('back_to_articles', 'local_nit_pages') . '
+      </a>
+    </footer>
+  </article>
 </div>';
 
 echo $OUTPUT->footer();

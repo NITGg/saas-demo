@@ -89,36 +89,51 @@
     margin-inline-end: clamp(8px, 1.2vw, 18px);
     flex-wrap: nowrap;
   }
+  .nit-navbar .nit-navbar-inline-links a,
+  .nit-navbar .nit-navbar-inline-links a:hover,
+  .nit-navbar .nit-navbar-inline-links a:focus,
+  .nit-navbar .nit-navbar-inline-links a:active,
+  .nit-navbar .nit-navbar-inline-links a:visited,
+  .nit-navbar .nit-navbar-inline-links .nit-navbar-link,
+  .nit-navbar .nit-navbar-inline-links .nit-navbar-link:hover,
+  .nit-navbar .nit-navbar-inline-links .nit-navbar-link:focus,
+  .nit-navbar .nit-navbar-inline-links .nit-navbar-link:active,
+  .nit-navbar .nit-navbar-inline-links .nit-navbar-link.active{
+    text-decoration: none !important;
+    text-decoration-line: none !important;
+    text-decoration-color: transparent !important;
+    border-bottom: 0 !important;
+  }
   .nit-navbar .nit-navbar-inline-links .nit-navbar-link{
-    color: var(--nit-brand-navbartitlecolor, #ffffff)!important;
+    color: var(--nit-brand-navbartitlecolor, #ffffff) !important;
     font-family: 'Tajawal', 'Almarai', sans-serif;
     font-size: 14px;
-    font-weight: 700;
-    text-decoration: none!important;
+    font-weight: 600;
     padding: 6px 14px;
     border-radius: 9999px;
     background: transparent;
     transition: all 0.2s ease;
     white-space: nowrap;
-    opacity: 0.92;
+    opacity: 0.88;
     display: inline-flex;
     align-items: center;
     line-height: 1.4;
   }
   .nit-navbar .nit-navbar-inline-links .nit-navbar-link:hover{
     opacity: 1;
-    background: var(--nb-pad-hover, rgba(255,255,255,0.18))!important;
-    color: var(--nit-brand-navbariconhovercolor, #ffffff)!important;
+    background: var(--nb-pad-hover, rgba(255,255,255,0.18)) !important;
+    color: var(--nit-brand-navbariconhovercolor, #ffffff) !important;
     transform: translateY(-1px);
   }
   .nit-navbar .nit-navbar-inline-links .nit-navbar-link.active{
     opacity: 1;
-    background: var(--nb-pad, rgba(255,255,255,0.14))!important;
+    background: var(--nb-pad, rgba(255,255,255,0.18)) !important;
     font-weight: 800;
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.22);
+    color: var(--nit-brand-navbariconhovercolor, #ffffff) !important;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.25) !important;
   }
   @media (max-width: 991px){
-    .nit-navbar .nit-navbar-inline-links{ display: none!important; }
+    .nit-navbar .nit-navbar-inline-links{ display: none !important; }
   }
 
   /* right cluster */
@@ -267,7 +282,7 @@
         {{# output.nit_has_navbar_links }}
             <div class="nit-navbar-inline-links d-none d-lg-flex align-items-center">
                 {{# output.nit_navbar_links }}
-                    <a href="{{{ url }}}" class="nit-navbar-link{{#isactive}} active{{/isactive}}">{{{ name }}}</a>
+                    <a href="{{{ url }}}" class="nav-link nit-navbar-link{{#isactive}} active{{/isactive}}">{{{ name }}}</a>
                 {{/ output.nit_navbar_links }}
             </div>
         {{/ output.nit_has_navbar_links }}

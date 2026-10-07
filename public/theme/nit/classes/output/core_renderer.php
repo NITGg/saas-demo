@@ -169,7 +169,27 @@ class core_renderer extends \theme_boost\output\core_renderer {
             try {
                 $url = new \moodle_url($link['url']);
                 $outurl = $url->out(false);
-                $isactive = $here && $here->compare($url, URL_MATCH_BASE);
+                $isactive = false;
+                if ($here) {
+                    $herepath = rtrim($here->get_path(), '/') ?: '/';
+                    $urlpath = rtrim($url->get_path(), '/') ?: '/';
+                    if ($herepath === $urlpath) {
+                        $hereparams = $here->params();
+                        $urlparams = $url->params();
+                        if (!empty($urlparams)) {
+                            $match = true;
+                            foreach ($urlparams as $pk => $pv) {
+                                if (!array_key_exists($pk, $hereparams) || (string) $hereparams[$pk] !== (string) $pv) {
+                                    $match = false;
+                                    break;
+                                }
+                            }
+                            $isactive = $match;
+                        } else {
+                            $isactive = empty($hereparams);
+                        }
+                    }
+                }
             } catch (\Throwable $e) {
                 $outurl = $link['url'];
                 $isactive = false;

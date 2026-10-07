@@ -176,8 +176,6 @@ if ($isadmin) {
       <div style="max-width:1400px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
           <span style="font-weight:800;color:#0f172a;font-size:16px;">📄 ' . s($title) . '</span>
-          ' . $statusbadge . '
-          ' . $accessbadge . '
         </div>
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
           <a href="' . $toggleediturl->out() . '" class="btn fw-bold" style="' . $editbtnstyle . 'border-radius:10px;padding:8px 20px;font-size:13px;display:inline-flex;align-items:center;gap:6px;box-shadow:0 2px 6px rgba(0,0,0,0.1);text-decoration:none;">
