@@ -176,8 +176,8 @@ class registration {
             'enabled'        => self::enabled(),
             'fields'         => $fields,
             'passwordpolicy' => self::password_policy_text(),
-            'termsurl'       => (new \moodle_url('/local/multitopics/legal.php',
-                ['doc' => 'terms', 'embedded' => 1, 'lang' => current_language()]))->out(false),
+            'termsurl'       => (new \moodle_url('/local/nit_pages/page.php',
+                ['p' => 'terms', 'embedded' => 1, 'lang' => current_language()]))->out(false),
         ];
     }
 

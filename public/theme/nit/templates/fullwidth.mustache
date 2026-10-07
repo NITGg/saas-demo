@@ -65,6 +65,16 @@
     {{> theme_boost/navbar }}
 
     <div id="page" data-region="mainpage" class="drawers drag-container">
+        {{#addblockbutton}}
+            <div class="nit-addblock-top d-print-none">
+                {{{ addblockbutton }}}
+            </div>
+        {{/addblockbutton}}
+        {{#hasfullwidthtop}}
+            <div class="nit-region nit-region-fullwidth-top" data-region="fullwidth-top">
+                {{{ fullwidthtop }}}
+            </div>
+        {{/hasfullwidthtop}}
         <div id="topofscroll" class="main-inner">
             <div id="page-content">
                 <div id="region-main-box">

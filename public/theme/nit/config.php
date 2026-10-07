@@ -91,7 +91,8 @@ $THEME->layouts['frontpage'] = [
 // the category details page (local_nit_category). See theme/nit/layout/fullwidth.php.
 $THEME->layouts['nit_fullwidth'] = [
     'file' => 'fullwidth.php',
-    'regions' => [],
+    'regions' => ['fullwidth-top'],
+    'defaultregion' => 'fullwidth-top',
 ];
 
 // -----------------------------------------------------------------------------

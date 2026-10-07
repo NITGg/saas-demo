@@ -30,6 +30,11 @@ defined('MOODLE_INTERNAL') || die();
 
 $bodyattributes = $OUTPUT->body_attributes(['uses-drawers', 'nit-fullwidth-page']);
 
+$editing = $PAGE->user_is_editing();
+$fullwidthtop = $OUTPUT->blocks('fullwidth-top');
+$hasfullwidthtop = $editing || (strpos($fullwidthtop, 'data-block=') !== false);
+$addblockbutton = $editing ? $OUTPUT->addblockbutton() : '';
+
 // Primary navigation (navbar) context — same source Boost's drawers layout uses.
 $primary = new core\navigation\output\primary($PAGE);
 $renderer = $PAGE->get_renderer('core');
@@ -47,6 +52,9 @@ $templatecontext = [
     'mobileprimarynav' => $primarymenu['mobileprimarynav'],
     'usermenu' => $primarymenu['user'],
     'langmenu' => $primarymenu['lang'],
+    'fullwidthtop' => $fullwidthtop,
+    'hasfullwidthtop' => $hasfullwidthtop,
+    'addblockbutton' => $addblockbutton,
 ];
 
 echo $OUTPUT->render_from_template('theme_nit/fullwidth', $templatecontext);

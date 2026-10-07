@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/nit_pages/db" VERSION="2026100700" COMMENT="XMLDB file for local_nit_pages">
+  <TABLES>
+    <TABLE NAME="nit_pages" COMMENT="Static pages managed by local_nit_pages">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="slug_ar" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="slug_en" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="title_ar" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="title_en" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="seo_desc_ar" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="seo_desc_en" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="share_image" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="published" SEQUENCE="false"/>
+        <FIELD NAME="is_default" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="default_key" TYPE="char" LENGTH="50" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="loggedin_only" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="slug_ar" UNIQUE="false" FIELDS="slug_ar"/>
+        <INDEX NAME="slug_en" UNIQUE="false" FIELDS="slug_en"/>
+        <INDEX NAME="default_key" UNIQUE="false" FIELDS="default_key"/>
+        <INDEX NAME="status" UNIQUE="false" FIELDS="status"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="nit_articles" COMMENT="Articles managed by local_nit_pages">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="slug" TYPE="char" LENGTH="150" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="title_ar" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="title_en" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="summary_ar" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="summary_en" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="body_ar" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="body_en" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="cover_image" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="draft" SEQUENCE="false"/>
+        <FIELD NAME="published_at" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="author_id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="slug" UNIQUE="true" FIELDS="slug"/>
+        <INDEX NAME="status" UNIQUE="false" FIELDS="status"/>
+        <INDEX NAME="published_at" UNIQUE="false" FIELDS="published_at"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>

@@ -81,12 +81,29 @@ $titles = [
 ];
 $title = $titles[$doc][$lang];
 
-// ── Content: admin override (config) or the bilingual default ─────────────────
-$override = get_config('local_multitopics', $doc . '_' . $lang);
-if (is_string($override) && trim($override) !== '') {
-    $body = $override;   // trusted admin-authored HTML.
-} else {
-    $body = local_multitopics_legal_default($doc, $isar, $appname, $support, $developer, $website);
+// ── Content: local_nit_pages CMS, admin override (config) or the bilingual default ───
+$body = '';
+if ($doc !== 'delete' && class_exists('\local_nit_pages\page_manager')) {
+    $nitpage = \local_nit_pages\page_manager::get_page_by_default_key($doc);
+    if ($nitpage) {
+        $pagetitle = $isar ? ($nitpage->title_ar ?: $nitpage->title_en) : ($nitpage->title_en ?: $nitpage->title_ar);
+        if (!empty($pagetitle)) {
+            $title = $pagetitle;
+        }
+        $cmshtml = \local_nit_pages\page_manager::get_page_html($nitpage, $lang);
+        if (trim($cmshtml) !== '') {
+            $body = $cmshtml;
+        }
+    }
+}
+
+if ($body === '') {
+    $override = get_config('local_multitopics', $doc . '_' . $lang);
+    if (is_string($override) && trim($override) !== '') {
+        $body = $override;   // trusted admin-authored HTML.
+    } else {
+        $body = local_multitopics_legal_default($doc, $isar, $appname, $support, $developer, $website);
+    }
 }
 
 // ── Render ────────────────────────────────────────────────────────────────────
