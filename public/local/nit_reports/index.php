@@ -46,13 +46,18 @@ if (!isset($reports[$key])) {
 }
 $filters = filters::from_request();
 $page = optional_param('page', 0, PARAM_INT);
-$perpage = 50;
+$perpageoptions = [5, 10, 20, 30];
+$perpage = optional_param('perpage', $perpageoptions[0], PARAM_INT);
+if (!in_array($perpage, $perpageoptions, true)) {
+    $perpage = $perpageoptions[0];
+}
 $class = $reports[$key];
 /** @var \local_nit_reports\report\base $report */
 $report = new $class($filters, $scope);
 $s = fn(string $k, $a = null) => get_string($k, 'local_nit_reports', $a);
 
-$pageurl = new moodle_url('/local/nit_reports/index.php', ['report' => $key] + $filters->params());
+$pageurl = new moodle_url('/local/nit_reports/index.php', ['report' => $key] + $filters->params()
+    + ($perpage !== $perpageoptions[0] ? ['perpage' => $perpage] : []));
 if ($scope->sitewide) {
     admin_externalpage_setup('local_nit_reports', '', null, $pageurl);
 } else {
@@ -108,12 +113,21 @@ if (in_array('user', $offered, true) && ($users = $report->user_options())) {
         $filters->userid, false, ['id' => 'nit-rp-user', 'class' => 'form-select']));
 }
 if (in_array('status', $offered, true) && ($statuses = $report->status_options())) {
-    echo $field(get_string('status'), 'nit-rp-status', html_writer::select(['' => $s('allstatuses')] + $statuses, 'status',
+    echo $field(get_string('status'), 'nit-rp-status', html_writer::select(['' => $report->status_all_label()] + $statuses, 'status',
         $filters->status, false, ['id' => 'nit-rp-status', 'class' => 'form-select']));
 }
 if (in_array('q', $offered, true)) {
     echo $field(get_string('search'), 'nit-rp-q', html_writer::empty_tag('input', ['type' => 'search', 'name' => 'q',
         'id' => 'nit-rp-q', 'value' => $filters->q, 'class' => 'form-control', 'placeholder' => $s('search_' . $key)]));
+}
+// The sort and rows-per-page stay when filtering again.
+foreach (['sort' => $filters->sort, 'dir' => $filters->sort !== '' ? $filters->dir : ''] as $name => $value) {
+    if ($value !== '') {
+        echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => $name, 'value' => $value]);
+    }
+}
+if ($perpage !== $perpageoptions[0]) {
+    echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'perpage', 'value' => $perpage]);
 }
 echo html_writer::tag('button', get_string('filter'), ['type' => 'submit', 'class' => 'btn btn-primary']);
 echo html_writer::link(new moodle_url('/local/nit_reports/index.php', ['report' => $key]), $s('clearfilters'),
@@ -148,22 +162,75 @@ if ($chart = $report->chart()) {
 
 // Table.
 $result = $report->rows($page, $perpage);
+if (!$result['rows'] && $page > 0) {
+    // Past the last page (e.g. after a filter): show the last one.
+    $page = max(0, (int) ceil($result['total'] / $perpage) - 1);
+    $result = $report->rows($page, $perpage);
+}
 if (!$result['rows']) {
     echo $OUTPUT->notification($s('norows'), \core\output\notification::NOTIFY_INFO, false);
 } else {
+    $columns = $report->columns();
+    $help = $report->help();
+    $sortable = $report->sortable();
+    $sort = $report->sort();
+
+    // Header: the label (a sort link when the column sorts) and its meaning behind a (?) icon.
+    $head = [];
+    foreach ($columns as $col => $label) {
+        $html = s($label);
+        if (isset($sortable[$col])) {
+            $dir = $sort && $sort[0] === $col && $sort[1] === 'asc' ? 'desc' : 'asc';
+            $html = html_writer::link(new moodle_url($pageurl, ['sort' => $col, 'dir' => $dir, 'page' => 0]), $html,
+                ['title' => $s('sortby', $label), 'class' => 'text-reset']);
+            if ($sort && $sort[0] === $col) {
+                $html .= ' ' . $OUTPUT->pix_icon($sort[1] === 'asc' ? 't/sort_asc' : 't/sort_desc',
+                    $s($sort[1] === 'asc' ? 'sortedasc' : 'sorteddesc'));
+            }
+        }
+        if (isset($help[$col])) {
+            $html .= ' ' . $OUTPUT->render_from_template('core/help_icon', [
+                'text' => $help[$col],
+                'alt' => get_string('helpprefix2', '', $label),
+                'title' => get_string('helpprefix2', '', $label),
+                'ltr' => !right_to_left(),
+                'icon' => (new pix_icon('help', get_string('helpprefix2', '', $label)))->export_for_template($OUTPUT),
+            ]);
+        }
+        $head[] = html_writer::span($html, 'text-nowrap');
+    }
+
     $table = new html_table();
     $table->attributes['class'] = 'generaltable table-sm';
-    $table->head = array_values($report->columns());
+    $table->head = $head;
     foreach ($result['rows'] as $row) {
         $cells = [];
-        foreach (array_keys($report->columns()) as $col) {
+        foreach (array_keys($columns) as $col) {
             $cells[] = s((string) ($row[$col] ?? ''));
         }
         $table->data[] = $cells;
     }
-    echo html_writer::div($s('nrows', $result['total']), 'small text-muted mb-1');
+
+    // Paging: rows per page, "showing a–b of n", page links above and below the table.
+    $first = $page * $perpage + 1;
+    $last = min($result['total'], ($page + 1) * $perpage);
+    $choices = [];
+    foreach ($perpageoptions as $n) {
+        $choices[(new moodle_url($pageurl, ['perpage' => $n, 'page' => 0]))->out(false)] = $n;
+    }
+    $selected = (new moodle_url($pageurl, ['perpage' => $perpage, 'page' => 0]))->out(false);
+    $perpageselect = new url_select($choices, $selected, null, 'nit-rp-perpage');
+    $perpageselect->set_label($s('perpage'));
+    $perpageselect->class = 'd-inline-block';
+    $pagingbar = $OUTPUT->paging_bar($result['total'], $page, $perpage, $pageurl);
+    echo html_writer::div(
+        html_writer::div($s('showingrows', (object) ['first' => $first, 'last' => $last, 'total' => $result['total']]),
+            'small text-muted') .
+        html_writer::div($OUTPUT->render($perpageselect), 'small'),
+        'd-flex flex-wrap align-items-center justify-content-between gap-2 mb-1');
+    echo $pagingbar;
     echo html_writer::div(html_writer::table($table), 'table-responsive');
-    echo $OUTPUT->paging_bar($result['total'], $page, $perpage, $pageurl);
+    echo $pagingbar;
 }
 
 echo $OUTPUT->footer();

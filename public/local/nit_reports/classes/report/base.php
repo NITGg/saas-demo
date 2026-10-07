@@ -101,6 +101,15 @@ abstract class base {
     }
 
     /**
+     * What the status filter means when nothing is picked.
+     *
+     * @return string
+     */
+    public function status_all_label(): string {
+        return self::str('allstatuses');
+    }
+
+    /**
      * The ways this report can group its rows: key => label (first = default).
      *
      * @return array
@@ -162,6 +171,98 @@ abstract class base {
         return null;
     }
 
+    /**
+     * What each column means, shown next to its header and at the end of the PDF.
+     *
+     * The text is the first string found of help_<report>_<view>_<column>,
+     * help_<report>_<column> and help_<column>.
+     *
+     * @return array column key => text
+     */
+    public function help(): array {
+        $sm = get_string_manager();
+        $out = [];
+        foreach (array_keys($this->columns()) as $col) {
+            $ids = ['help_' . static::key() . '_' . $col, 'help_' . $col];
+            if ($this->view_options()) {
+                array_unshift($ids, 'help_' . static::key() . '_' . $this->view() . '_' . $col);
+            }
+            foreach ($ids as $id) {
+                if ($sm->string_exists($id, 'local_nit_reports')) {
+                    $out[$col] = self::str($id);
+                    break;
+                }
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * The columns the table can be sorted by.
+     *
+     * A string is the SQL the report orders by (see order_sql()); true means the
+     * report sorts its rows itself with finish(), by the raw value in the row's
+     * "_sort" entry (or the shown text when there is none).
+     *
+     * @return array column key => SQL expression | true
+     */
+    public function sortable(): array {
+        return [];
+    }
+
+    /**
+     * The requested sort, when the column can be sorted.
+     *
+     * @return array{0:string, 1:string}|null [column, asc|desc]
+     */
+    public function sort(): ?array {
+        $sortable = $this->sortable();
+        if ($this->f->sort === '' || !isset($sortable[$this->f->sort]) || !isset($this->columns()[$this->f->sort])) {
+            return null;
+        }
+        return [$this->f->sort, $this->f->dir];
+    }
+
+    /**
+     * ORDER BY for a report that sorts in SQL: the requested column first, then the default.
+     *
+     * @param string $default the report's own order
+     * @return string
+     */
+    protected function order_sql(string $default): string {
+        $sort = $this->sort();
+        $sortable = $this->sortable();
+        if (!$sort || !is_string($sortable[$sort[0]])) {
+            return $default;
+        }
+        return $sortable[$sort[0]] . ' ' . strtoupper($sort[1]) . ', ' . $default;
+    }
+
+    /**
+     * Sort rows built in PHP (when a "true" column is requested) and cut out one page.
+     *
+     * @param array $rows every row, in the report's own order
+     * @param int $page
+     * @param int $perpage 0 = every row
+     * @return array{total:int, rows:array}
+     */
+    protected function finish(array $rows, int $page, int $perpage): array {
+        $sort = $this->sort();
+        if ($sort && $this->sortable()[$sort[0]] === true) {
+            [$col, $dir] = $sort;
+            $collator = new \Collator(current_language());
+            $value = fn($row) => $row['_sort'][$col] ?? ($row[$col] ?? '');
+            uasort($rows, function($a, $b) use ($value, $dir, $collator) {
+                $x = $value($a);
+                $y = $value($b);
+                $cmp = is_string($x) || is_string($y) ? $collator->compare((string) $x, (string) $y) : $x <=> $y;
+                return $dir === 'desc' ? -$cmp : $cmp;
+            });
+            $rows = array_values($rows);
+        }
+        return ['total' => count($rows), 'rows' => $perpage ? array_slice($rows, $page * $perpage, $perpage) : $rows];
+    }
+
     // =========================================================================
     // Helpers for the reports.
     // =========================================================================
@@ -173,10 +274,13 @@ abstract class base {
      * @return array{0:string, 1:array}
      */
     protected function course_where(string $column): array {
+        static $n = 0;
         [$sql, $params] = $this->s->course_sql($column, static::level());
         if ($this->f->courseid) {
-            $sql .= " AND $column = :fcourseid";
-            $params['fcourseid'] = $this->f->courseid;
+            // Own placeholder per call: two of these can sit in one query.
+            $p = 'fcourseid' . (++$n);
+            $sql .= " AND $column = :$p";
+            $params[$p] = $this->f->courseid;
         }
         return [$sql, $params];
     }

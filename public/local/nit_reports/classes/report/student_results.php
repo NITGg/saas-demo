@@ -22,6 +22,8 @@ use local_nit_reports\scope;
 /**
  * Student results: one row per student per course — quizzes taken out of the
  * course's quizzes, average quiz result, content completion and video watching.
+ * The current students by default; the status filter lists the ones who left
+ * instead, with what they did before leaving.
  *
  * @package    local_nit_reports
  * @copyright  2026 NIT
@@ -38,7 +40,31 @@ class student_results extends base {
     }
 
     public function filters(): array {
-        return ['course', 'q'];
+        return ['course', 'status', 'q'];
+    }
+
+    public function status_options(): array {
+        return ['left' => self::str('member_left')];
+    }
+
+    public function status_all_label(): string {
+        return self::str('member_current');
+    }
+
+    public function sortable(): array {
+        global $DB;
+        return ['name' => $DB->sql_fullname('u.firstname', 'u.lastname'), 'email' => 'u.email', 'course' => 'co.fullname'];
+    }
+
+    /**
+     * The (student, course) pairs listed: current students, or the ones who left.
+     *
+     * @return array{0:string, 1:array}
+     */
+    private function pairs(): array {
+        [$cwhere, $cparams] = $this->course_where('c.id');
+        return $this->f->status === 'left' ? data::left_sql($cwhere, $cparams)
+            : data::members_sql(data::student_roles(), $cwhere, $cparams);
     }
 
     public function columns(): array {
@@ -60,8 +86,7 @@ class student_results extends base {
      * @return array{0:string, 1:array}
      */
     private function from(): array {
-        [$cwhere, $cparams] = $this->course_where('c.id');
-        [$members, $params] = data::members_sql(data::student_roles(), $cwhere, $cparams);
+        [$members, $params] = $this->pairs();
         [$search, $sparams] = data::user_search_sql('u', $this->f->q);
         return ["FROM ($members) m JOIN {user} u ON u.id = m.userid JOIN {course} co ON co.id = m.courseid WHERE $search",
             $params + $sparams];
@@ -72,12 +97,8 @@ class student_results extends base {
         [$from, $params] = $this->from();
         $pairs = (int) $DB->count_records_sql("SELECT COUNT(1) $from", $params);
         $cards = [['label' => self::str('card_enrolments'), 'value' => self::num($pairs)]];
-        $ids = $this->s->course_ids(static::level());
-        if ($this->f->courseid) {
-            $ids = [$this->f->courseid];
-        }
-        $courses = $ids === null ? $DB->get_fieldset_select('course', 'id', 'id <> ?', [SITEID]) : $ids;
-        $avg = data::quiz_avg_by_course($courses);
+        [$members, $mparams] = $this->pairs();
+        $avg = data::quiz_avg($members, $mparams, 'courseid');
         if ($avg) {
             $cards[] = ['label' => self::str('card_quizavg'), 'value' => self::pct(array_sum($avg) / count($avg))];
         }
@@ -90,7 +111,7 @@ class student_results extends base {
         $total = (int) $DB->count_records_sql("SELECT COUNT(1) $from", $params);
         $names = \core_user\fields::for_name()->get_sql('u', false, '', '', false)->selects;
         $pairs = $DB->get_recordset_sql("SELECT m.userid, m.courseid, co.fullname AS coursename, u.email, $names
-                                           $from ORDER BY co.fullname, u.firstname, u.lastname, m.userid",
+                                           $from ORDER BY " . $this->order_sql('co.fullname, u.firstname, u.lastname, m.userid'),
             $params, $perpage ? $page * $perpage : 0, $perpage);
         $list = [];
         foreach ($pairs as $p) {

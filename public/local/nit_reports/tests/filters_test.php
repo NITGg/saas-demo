@@ -60,4 +60,12 @@ final class filters_test extends \advanced_testcase {
 
         $this->assertSame(['courseid' => 5, 'q' => 'ali'], $f->params());
     }
+
+    public function test_sort_is_kept_and_direction_is_asc_or_desc(): void {
+        $_GET = ['sort' => 'name', 'dir' => 'sideways'];
+        $f = filters::from_request();
+
+        $this->assertSame('asc', $f->dir);
+        $this->assertSame(['sort' => 'name', 'dir' => 'asc'], $f->params());
+    }
 }

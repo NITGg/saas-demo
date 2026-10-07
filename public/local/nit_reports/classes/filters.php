@@ -45,6 +45,10 @@ class filters {
     public $q = '';
     /** @var string how the report groups its rows (each report lists its own views) */
     public $view = '';
+    /** @var string the column the table is sorted by ('' = the report's own order) */
+    public $sort = '';
+    /** @var string asc | desc */
+    public $dir = 'asc';
 
     /**
      * Read the filters from the request.
@@ -65,6 +69,8 @@ class filters {
         $f->status = optional_param('status', '', PARAM_ALPHANUMEXT);
         $f->q = trim(optional_param('q', '', PARAM_TEXT));
         $f->view = optional_param('view', '', PARAM_ALPHA);
+        $f->sort = optional_param('sort', '', PARAM_ALPHANUMEXT);
+        $f->dir = optional_param('dir', 'asc', PARAM_ALPHA) === 'desc' ? 'desc' : 'asc';
         return $f;
     }
 
@@ -88,7 +94,8 @@ class filters {
      */
     public function params(): array {
         return array_filter(['from' => $this->fromtext, 'to' => $this->totext, 'courseid' => $this->courseid,
-            'userid' => $this->userid, 'status' => $this->status, 'q' => $this->q, 'view' => $this->view],
+            'userid' => $this->userid, 'status' => $this->status, 'q' => $this->q, 'view' => $this->view,
+            'sort' => $this->sort, 'dir' => $this->sort !== '' ? $this->dir : ''],
             fn($v) => $v !== '' && $v !== 0);
     }
 

@@ -80,14 +80,74 @@ class sales extends base {
             'date' => get_string('date'),
             'order' => self::str('col_order'),
             'student' => self::str('col_student'),
+            'email' => get_string('email'),
+            'phone' => get_string('phone1'),
             'type' => self::str('col_itemtype'),
             'item' => self::str('col_item'),
             'provider' => self::str('col_paymethod'),
+            'method' => self::str('col_paytype'),
             'amount' => self::str('col_amount'),
             'original' => self::str('col_originalamount'),
+            'discount' => self::str('col_discount'),
             'coupon' => self::str('col_coupon'),
+            'offer' => self::str('item_offer'),
             'status' => get_string('status'),
+            'reference' => self::str('col_reference'),
+            'country' => get_string('country'),
+            'reason' => self::str('col_failreason'),
         ];
+    }
+
+    public function sortable(): array {
+        global $DB;
+        if ($this->view() !== 'list') {
+            return array_fill_keys(array_keys($this->columns()), true);
+        }
+        return [
+            'date' => 't.timecreated',
+            'order' => 't.order_id',
+            'student' => $DB->sql_fullname('u.firstname', 'u.lastname'),
+            'email' => 'u.email',
+            'phone' => 'u.phone1',
+            'provider' => 'p.display_name',
+            'method' => 't.payment_method_type',
+            'amount' => 't.amount',
+            'original' => 't.original_amount',
+            'discount' => 'COALESCE(t.original_amount, t.amount) - t.amount',
+            'status' => 't.status',
+            'country' => 't.country',
+        ];
+    }
+
+    /**
+     * Offer names by id (local_nit_commerce), multilang resolved.
+     *
+     * @param int[] $ids
+     * @return array<int,string>
+     */
+    private static function offer_names(array $ids): array {
+        global $DB;
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
+        if (!$ids || !$DB->get_manager()->table_exists('nit_offer')) {
+            return [];
+        }
+        [$in, $params] = $DB->get_in_or_equal($ids, SQL_PARAMS_NAMED, 'of');
+        return array_map(fn($n) => self::cname($n), $DB->get_records_select_menu('nit_offer', "id $in", $params, '', 'id, name'));
+    }
+
+    /**
+     * How the student paid (card, wallet, …) as a label.
+     *
+     * @param string|null $type payment_method_type from the gateway
+     * @return string
+     */
+    private static function method(?string $type): string {
+        $type = trim((string) $type);
+        if ($type === '') {
+            return '—';
+        }
+        $id = 'method_' . strtolower(preg_replace('/[^a-z0-9_]/i', '', $type));
+        return get_string_manager()->string_exists($id, 'local_nit_reports') ? self::str($id) : $type;
     }
 
     /**
@@ -243,26 +303,49 @@ class sales extends base {
         $total = (int) $DB->count_records_sql("SELECT COUNT(1) $from", $params);
         $names = \core_user\fields::for_name()->get_sql('u', false, '', '', false)->selects;
         $list = $DB->get_records_sql("SELECT t.id, t.timecreated, t.order_id, t.courseid, t.amount, t.original_amount,
-                                             t.currency, t.status, t.metadata, p.display_name AS provider, $names
-                                      $from ORDER BY t.timecreated DESC, t.id DESC",
+                                             t.currency, t.status, t.metadata, t.payment_method_type, t.provider_txn_id,
+                                             t.provider_order_id, t.country, t.reject_reason, t.provider_response_message,
+                                             p.display_name AS provider, u.email, u.phone1, $names
+                                      $from ORDER BY " . $this->order_sql('t.timecreated DESC, t.id DESC'),
             $params, $perpage ? $page * $perpage : 0, $perpage);
         $coursenames = data::course_names(array_map(fn($t) => $t->courseid, $list));
+        $metas = array_map(fn($t) => json_decode((string) $t->metadata, true) ?: [], $list);
+        $offerids = [];
+        foreach ($metas as $meta) {
+            foreach ((array) ($meta['discount']['offers'] ?? []) as $o) {
+                $offerids[] = (int) ($o['id'] ?? 0);
+            }
+        }
+        $offers = self::offer_names($offerids);
+        $failed = ['failed', 'cancelled', 'expired', 'timed_out', 'voided', 'chargeback'];
         $rows = [];
-        foreach ($list as $t) {
+        foreach ($list as $id => $t) {
             [$type, $item] = self::item($t, $coursenames);
-            $meta = json_decode((string) $t->metadata, true) ?: [];
+            $meta = $metas[$id];
+            $original = $t->original_amount !== null ? (float) $t->original_amount : (float) $t->amount;
+            $offer = implode('، ', array_filter(array_map(fn($o) => $offers[(int) ($o['id'] ?? 0)] ?? '',
+                (array) ($meta['discount']['offers'] ?? []))));
+            $reason = in_array($t->status, $failed, true)
+                ? trim((string) ($t->reject_reason ?: $t->provider_response_message)) : '';
             $rows[] = [
                 'date' => self::date((int) $t->timecreated, true),
                 'order' => $t->order_id,
                 'student' => fullname($t),
+                'email' => $t->email,
+                'phone' => $t->phone1 ?: '—',
                 'type' => $type,
                 'item' => $item,
                 'provider' => format_string((string) $t->provider) ?: '—',
+                'method' => self::method($t->payment_method_type),
                 'amount' => self::money((float) $t->amount, (string) $t->currency),
-                'original' => $t->original_amount !== null && (float) $t->original_amount != (float) $t->amount
-                    ? self::money((float) $t->original_amount, (string) $t->currency) : '—',
+                'original' => $original != (float) $t->amount ? self::money($original, (string) $t->currency) : '—',
+                'discount' => $original > (float) $t->amount ? self::money($original - (float) $t->amount, (string) $t->currency) : '—',
                 'coupon' => (string) ($meta['coupon_code'] ?? '') ?: '—',
+                'offer' => $offer ?: '—',
                 'status' => self::str('pay_' . $t->status),
+                'reference' => (string) ($t->provider_txn_id ?: $t->provider_order_id) ?: '—',
+                'country' => $t->country ?: '—',
+                'reason' => $reason ?: '—',
             ];
         }
         return ['total' => $total, 'rows' => $rows];
@@ -317,9 +400,9 @@ class sales extends base {
         $rows = [];
         foreach ($groups as $g) {
             $rows[] = array_diff_key($g, ['n' => 1, 'money' => 1]) + ['count' => self::num($g['n']),
-                'revenue' => self::moneys($g['money']), 'refunded' => self::num($g['refunded'] ?? 0)];
+                'revenue' => self::moneys($g['money']), 'refunded' => self::num($g['refunded'] ?? 0),
+                '_sort' => ['count' => $g['n'], 'revenue' => array_sum($g['money']), 'refunded' => $g['refunded'] ?? 0]];
         }
-        $total = count($rows);
-        return ['total' => $total, 'rows' => $perpage ? array_slice($rows, $page * $perpage, $perpage) : $rows];
+        return $this->finish($rows, $page, $perpage);
     }
 }

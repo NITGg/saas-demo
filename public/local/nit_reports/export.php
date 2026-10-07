@@ -62,4 +62,5 @@ if ($format !== 'pdf') {
     exit;
 }
 
-\local_nit_reports\pdf::download($filename, $class::name(), $filters->describe(), $report->summary(), $columns, $rows);
+\local_nit_reports\pdf::download($filename, $class::name(), $filters->describe(), $report->summary(), $columns, $rows,
+    $report->help());

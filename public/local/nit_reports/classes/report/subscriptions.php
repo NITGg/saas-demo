@@ -75,6 +75,15 @@ class subscriptions extends base {
         ];
     }
 
+    public function sortable(): array {
+        global $DB;
+        if ($this->view() === 'plan') {
+            return array_fill_keys(array_keys($this->columns()), true);
+        }
+        return ['student' => $DB->sql_fullname('u.firstname', 'u.lastname'), 'plan' => 's.name', 'paid' => 'p.price_paid',
+            'source' => 'p.source', 'activated' => 'p.timeactivated', 'expires' => 'p.expires_at', 'status' => 'p.status'];
+    }
+
     /**
      * The effective status of a purchase, in SQL. Each use needs its own parameter
      * name (Moodle refuses a placeholder used twice in one query).
@@ -164,15 +173,17 @@ class subscriptions extends base {
             foreach ($list as $r) {
                 $rows[] = ['plan' => self::cname($r->name), 'price' => self::money((float) $r->price),
                     'active' => self::num($r->active), 'sold' => self::num($r->sold), 'renewals' => self::num($r->renewals),
-                    'revenue' => self::money((float) $r->revenue)];
+                    'revenue' => self::money((float) $r->revenue),
+                    '_sort' => ['price' => (float) $r->price, 'active' => (int) $r->active, 'sold' => (int) $r->sold,
+                        'renewals' => (int) $r->renewals, 'revenue' => (float) $r->revenue]];
             }
-            return ['total' => count($rows), 'rows' => $perpage ? array_slice($rows, $page * $perpage, $perpage) : $rows];
+            return $this->finish($rows, $page, $perpage);
         }
         $total = (int) $DB->count_records_sql("SELECT COUNT(1) $from", $params);
         $names = \core_user\fields::for_name()->get_sql('u', false, '', '', false)->selects;
         $list = $DB->get_records_sql("SELECT p.id, p.type, p.seats, p.price_paid, p.source, p.timeactivated, p.expires_at,
                                              $status AS effstatus, $renewal AS renewal, s.name AS planname, $names
-                                      $from ORDER BY p.timecreated DESC, p.id DESC",
+                                      $from ORDER BY " . $this->order_sql('p.timecreated DESC, p.id DESC'),
             $params, $perpage ? $page * $perpage : 0, $perpage);
         $rows = [];
         foreach ($list as $p) {

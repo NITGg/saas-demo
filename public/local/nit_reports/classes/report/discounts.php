@@ -115,6 +115,9 @@ class discounts extends base {
                     'given' => self::money((float) ($u->given ?? 0)),
                     'sales' => self::money((float) ($u->sales ?? 0)),
                     'raw' => $u,
+                    '_sort' => ['discount' => (float) $r->discount_value, 'dates' => (int) $r->startdate,
+                        'uses' => (int) ($u->uses ?? 0), 'users' => (int) ($u->users ?? 0),
+                        'given' => (float) ($u->given ?? 0), 'sales' => (float) ($u->sales ?? 0)],
                 ];
             }
         }
@@ -135,6 +138,10 @@ class discounts extends base {
 
     public function rows(int $page, int $perpage): array {
         $items = array_map(fn($i) => array_diff_key($i, ['sort' => 1, 'raw' => 1]), $this->all());
-        return ['total' => count($items), 'rows' => $perpage ? array_slice($items, $page * $perpage, $perpage) : $items];
+        return $this->finish($items, $page, $perpage);
+    }
+
+    public function sortable(): array {
+        return array_fill_keys(array_keys($this->columns()), true);
     }
 }

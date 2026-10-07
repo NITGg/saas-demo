@@ -99,11 +99,43 @@ class lessons extends base {
             return ['session' => self::str('col_session'), 'course' => get_string('course'), 'teacher' => self::str('col_teacher'),
                 'start' => self::str('col_start'), 'duration' => self::str('col_duration'), 'status' => get_string('status'),
                 'invited' => self::str('col_invited'), 'attended' => self::str('col_attended'),
-                'teacherjoined' => self::str('col_teacherjoined')];
+                'absent' => self::str('col_absent'), 'avgminutes' => self::str('col_avgminutes'),
+                'teacherjoined' => self::str('col_teacherjoined'), 'late' => self::str('col_teacherlate')];
         }
-        return ['time' => self::str('col_start'), 'student' => self::str('col_student'), 'teacher' => self::str('col_teacher'),
-            'subject' => self::str('col_subject'), 'duration' => self::str('col_duration'), 'status' => get_string('status'),
-            'flex' => self::str('col_flexstate'), 'actual' => self::str('col_actualminutes')];
+        $cols = ['requested' => self::str('col_requested_at'), 'time' => self::str('col_start'),
+            'student' => self::str('col_student'), 'teacher' => self::str('col_teacher'),
+            'subject' => self::str('col_subject'), 'package' => self::str('col_package'),
+            'duration' => self::str('col_duration'), 'status' => get_string('status'), 'reason' => self::str('col_reason'),
+            'flex' => self::str('col_flexstate'), 'actualstart' => self::str('col_actualstart'),
+            'actualend' => self::str('col_actualend'), 'actual' => self::str('col_actualminutes')];
+        if (self::has_earnings()) {
+            $cols['share'] = self::str('col_teachershare');
+        }
+        return $cols;
+    }
+
+    public function sortable(): array {
+        global $DB;
+        if ($this->view() === 'live') {
+            return ['session' => 'ls.title', 'course' => 'c.fullname', 'start' => 'ls.start_time', 'duration' => 'ls.duration',
+                'status' => 'ls.status', 'teacherjoined' => 'ls.teacher_joined_at',
+                'late' => 'CASE WHEN ls.teacher_joined_at > ls.start_time THEN ls.teacher_joined_at - ls.start_time ELSE 0 END'];
+        }
+        return ['requested' => 'l.requested_time', 'time' => 'l.confirmed_time',
+            'student' => $DB->sql_fullname('s.firstname', 's.lastname'), 'teacher' => $DB->sql_fullname('t.firstname', 't.lastname'),
+            'subject' => 'l.subject', 'duration' => 'l.duration', 'status' => 'l.status',
+            'actualstart' => 'l.actual_start', 'actualend' => 'l.actual_end',
+            'actual' => 'CASE WHEN l.actual_end > l.actual_start THEN l.actual_end - l.actual_start ELSE 0 END'];
+    }
+
+    /**
+     * Whether teacher earnings are recorded (local_nit_finance).
+     *
+     * @return bool
+     */
+    private static function has_earnings(): bool {
+        global $DB;
+        return $DB->get_manager()->table_exists('nit_earning');
     }
 
     /**
@@ -198,11 +230,18 @@ class lessons extends base {
             $list = $DB->get_records_sql("SELECT ls.id, ls.title, ls.teacherid, ls.start_time, ls.duration, ls.status,
                         ls.teacher_joined_at, c.fullname AS coursename,
                         (SELECT COUNT(1) FROM {academy_session_students} ss WHERE ss.sessionid = ls.id) AS invited,
-                        (SELECT COUNT(1) FROM {academy_session_attendance} sa WHERE sa.sessionid = ls.id) AS attended
-                   $from ORDER BY ls.start_time DESC, ls.id DESC", $params, $offset, $perpage);
+                        (SELECT COUNT(DISTINCT sa.userid) FROM {academy_session_attendance} sa WHERE sa.sessionid = ls.id) AS attended,
+                        (SELECT COUNT(1) FROM {academy_session_students} ss2 WHERE ss2.sessionid = ls.id AND NOT EXISTS (
+                            SELECT 1 FROM {academy_session_attendance} sa2
+                             WHERE sa2.sessionid = ss2.sessionid AND sa2.userid = ss2.userid)) AS absent,
+                        (SELECT AVG(sa3.duration_seconds) FROM {academy_session_attendance} sa3
+                          WHERE sa3.sessionid = ls.id AND sa3.duration_seconds > 0) AS avgseconds
+                   $from ORDER BY " . $this->order_sql('ls.start_time DESC, ls.id DESC'), $params, $offset, $perpage);
             $teachers = data::user_names(array_map(fn($l) => $l->teacherid, $list));
             $rows = [];
             foreach ($list as $l) {
+                $late = $l->teacher_joined_at && $l->teacher_joined_at > $l->start_time
+                    ? (int) floor(($l->teacher_joined_at - $l->start_time) / MINSECS) : 0;
                 $rows[] = [
                     'session' => self::cname($l->title),
                     'course' => self::cname($l->coursename),
@@ -212,7 +251,10 @@ class lessons extends base {
                     'status' => self::str('live_' . $l->status),
                     'invited' => self::num($l->invited),
                     'attended' => self::num($l->attended) . ($l->invited ? ' (' . self::pct(100 * $l->attended / $l->invited) . ')' : ''),
+                    'absent' => $l->status === 'ended' ? self::num($l->absent) : '—',
+                    'avgminutes' => $l->avgseconds ? self::str('minutes', (int) round($l->avgseconds / MINSECS)) : '—',
                     'teacherjoined' => $l->teacher_joined_at ? self::date((int) $l->teacher_joined_at, true) : get_string('no'),
+                    'late' => $l->teacher_joined_at ? ($late ? self::str('minutes', $late) : self::str('ontime')) : '—',
                 ];
             }
             return ['total' => $total, 'rows' => $rows];
@@ -222,9 +264,24 @@ class lessons extends base {
         $sn = \core_user\fields::for_name()->get_sql('s', false, 's_', '', false)->selects;
         $tn = \core_user\fields::for_name()->get_sql('t', false, 't_', '', false)->selects;
         $list = $DB->get_records_sql("SELECT l.id, l.subject, l.status, l.flex_state, l.duration, l.requested_time,
-                    l.confirmed_time, l.actual_start, l.actual_end, $sn, $tn
-               $from ORDER BY CASE WHEN l.confirmed_time > 0 THEN l.confirmed_time ELSE l.requested_time END DESC, l.id DESC",
+                    l.confirmed_time, l.actual_start, l.actual_end, l.purchaseid, l.cancel_reason, l.reject_reason, $sn, $tn
+               $from ORDER BY " . $this->order_sql('CASE WHEN l.confirmed_time > 0 THEN l.confirmed_time ELSE l.requested_time END DESC,
+                    l.id DESC'),
             $params, $offset, $perpage);
+        $packages = $shares = [];
+        if ($list) {
+            $purchases = array_values(array_unique(array_filter(array_map(fn($l) => (int) $l->purchaseid, $list))));
+            if ($purchases && $DB->get_manager()->table_exists('nit_package_purchase')) {
+                [$in, $pp] = $DB->get_in_or_equal($purchases, SQL_PARAMS_NAMED, 'lp');
+                $packages = $DB->get_records_sql_menu("SELECT pp.id, pk.name FROM {nit_package_purchase} pp
+                    JOIN {nit_package} pk ON pk.id = pp.packageid WHERE pp.id $in", $pp);
+            }
+            if (self::has_earnings()) {
+                [$in, $lp] = $DB->get_in_or_equal(array_keys($list), SQL_PARAMS_NAMED, 'le');
+                $shares = $DB->get_records_sql_menu("SELECT lessonid, SUM(teacher_amount_minor) FROM {nit_earning}
+                    WHERE lessonid $in AND status = 'active' GROUP BY lessonid", $lp);
+            }
+        }
         $person = function(\stdClass $r, string $prefix): string {
             $u = new \stdClass();
             foreach (\core_user\fields::get_name_fields() as $f) {
@@ -235,16 +292,25 @@ class lessons extends base {
         $rows = [];
         foreach ($list as $l) {
             $actual = $l->actual_start && $l->actual_end ? (int) round(($l->actual_end - $l->actual_start) / MINSECS) : null;
-            $rows[] = [
+            $row = [
+                'requested' => self::date((int) $l->requested_time, true),
                 'time' => self::date((int) ($l->confirmed_time ?: $l->requested_time), true),
                 'student' => $person($l, 's_'),
                 'teacher' => $person($l, 't_'),
                 'subject' => self::cname($l->subject),
+                'package' => isset($packages[$l->purchaseid]) ? self::cname($packages[$l->purchaseid]) : '—',
                 'duration' => self::str('minutes', (int) $l->duration),
                 'status' => self::str('lesson_' . $l->status),
+                'reason' => trim((string) ($l->cancel_reason ?: $l->reject_reason)) ?: '—',
                 'flex' => self::str('flex_' . $l->flex_state),
+                'actualstart' => self::date((int) $l->actual_start, true),
+                'actualend' => self::date((int) $l->actual_end, true),
                 'actual' => $actual === null ? '—' : self::str('minutes', $actual),
             ];
+            if (self::has_earnings()) {
+                $row['share'] = isset($shares[$l->id]) ? data::minor((int) $shares[$l->id]) : '—';
+            }
+            $rows[] = $row;
         }
         return ['total' => $total, 'rows' => $rows];
     }

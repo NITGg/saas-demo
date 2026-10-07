@@ -68,11 +68,30 @@ class packages extends base {
                 + ['expired' => self::str('col_flexexpired')];
         }
         return ['student' => self::str('col_student'), 'package' => self::str('col_package')] + $flex + [
+            'expired' => self::str('col_flexexpired'),
             'paid' => self::str('col_pricepaid'),
             'source' => self::str('col_source'),
             'activated' => self::str('col_activated'),
             'expires' => self::str('col_expires'),
             'status' => get_string('status'),
+        ];
+    }
+
+    public function sortable(): array {
+        global $DB;
+        if ($this->view() === 'student') {
+            return array_fill_keys(array_keys($this->columns()), true);
+        }
+        return [
+            'student' => $DB->sql_fullname('u.firstname', 'u.lastname'),
+            'package' => 'pk.name',
+            'bought' => 'pp.flex_count',
+            'used' => 'pp.consumed_flex',
+            'reserved' => 'pp.reserved_flex',
+            'paid' => 'pp.price_paid_minor',
+            'activated' => 'pp.timeactivated',
+            'expires' => 'pp.expires_at',
+            'status' => 'pp.status',
         ];
     }
 
@@ -153,26 +172,31 @@ class packages extends base {
             foreach ($list as $r) {
                 $rows[] = ['student' => fullname($r), 'packages' => self::num($r->packages), 'bought' => self::num($r->bought),
                     'used' => self::num($r->used), 'reserved' => self::num($r->reserved), 'left' => self::num($r->lefts),
-                    'expired' => self::num($r->expired)];
+                    'expired' => self::num($r->expired),
+                    '_sort' => ['packages' => (int) $r->packages, 'bought' => (int) $r->bought, 'used' => (int) $r->used,
+                        'reserved' => (int) $r->reserved, 'left' => (int) $r->lefts, 'expired' => (int) $r->expired]];
             }
-            return ['total' => count($rows), 'rows' => $perpage ? array_slice($rows, $page * $perpage, $perpage) : $rows];
+            return $this->finish($rows, $page, $perpage);
         }
         $total = (int) $DB->count_records_sql("SELECT COUNT(1) $from", $params);
         $st = self::status_sql('nowst');
         $list = $DB->get_records_sql("SELECT pp.id, pp.flex_count, pp.consumed_flex, pp.reserved_flex, pp.remaining_flex,
                     pp.price_paid_minor, pp.source, pp.timeactivated, pp.expires_at, $st AS effstatus,
                     pk.name AS packagename, $names
-               $from ORDER BY pp.timecreated DESC, pp.id DESC",
+               $from ORDER BY " . $this->order_sql('pp.timecreated DESC, pp.id DESC'),
             $params + ['nowst' => time()], $perpage ? $page * $perpage : 0, $perpage);
         $rows = [];
         foreach ($list as $p) {
+            // Only an active package's Flex can still be used; an ended one's rest is "expired".
+            $active = $p->effstatus === 'active';
             $rows[] = [
                 'student' => fullname($p),
                 'package' => self::cname($p->packagename),
                 'bought' => self::num($p->flex_count),
                 'used' => self::num($p->consumed_flex),
                 'reserved' => self::num($p->reserved_flex),
-                'left' => self::num($p->remaining_flex),
+                'left' => self::num($active ? $p->remaining_flex : 0),
+                'expired' => self::num($p->effstatus === 'expired' ? $p->remaining_flex : 0),
                 'paid' => data::minor((int) $p->price_paid_minor),
                 'source' => self::str($p->source === 'admin_assigned' ? 'source_admin' : 'source_online'),
                 'activated' => self::date((int) $p->timeactivated),

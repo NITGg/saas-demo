@@ -67,6 +67,14 @@ class codes extends base {
             'expired' => self::str('code_expired'), 'value' => self::str('col_valuemade'), 'redeemed' => self::str('col_redeemed')];
     }
 
+    public function sortable(): array {
+        if ($this->view() !== 'list') {
+            return array_fill_keys(array_keys($this->columns()), true);
+        }
+        return ['code' => 'a.code', 'batch' => 'a.batch', 'value' => 'a.amount_minor', 'status' => 'a.status',
+            'usedat' => 'a.timeused', 'expires' => 'a.timeexpires'];
+    }
+
     /**
      * The effective status in SQL (own placeholder per use).
      *
@@ -137,7 +145,8 @@ class codes extends base {
         if ($this->view() === 'list') {
             $total = (int) $DB->count_records_sql("SELECT COUNT(1) $from", $params);
             $st = self::status_sql('nowst');
-            $list = $DB->get_records_sql("SELECT a.*, $st AS effstatus $from ORDER BY a.timecreated DESC, a.id DESC",
+            $list = $DB->get_records_sql("SELECT a.*, $st AS effstatus $from ORDER BY "
+                    . $this->order_sql('a.timecreated DESC, a.id DESC'),
                 $params + ['nowst' => time()], $offset, $perpage);
             $courses = data::course_names(array_map(fn($a) => $a->courseid, $list));
             $users = data::user_names(array_map(fn($a) => $a->usedby, $list));
@@ -169,8 +178,11 @@ class codes extends base {
                 'item' => self::str($b->itemtype === 'wallet' ? 'item_wallet_topup' : ($b->itemtype === 'cm' ? 'item_activity' : 'item_course')),
                 'made' => self::num($b->made), 'used' => self::num($b->used), 'open' => self::num($b->open),
                 'disabled' => self::num($b->disabled), 'expired' => self::num($b->expired),
-                'value' => data::minor((int) $b->value), 'redeemed' => data::minor((int) $b->redeemed)];
+                'value' => data::minor((int) $b->value), 'redeemed' => data::minor((int) $b->redeemed),
+                '_sort' => ['made' => (int) $b->made, 'used' => (int) $b->used, 'open' => (int) $b->open,
+                    'disabled' => (int) $b->disabled, 'expired' => (int) $b->expired, 'value' => (int) $b->value,
+                    'redeemed' => (int) $b->redeemed]];
         }
-        return ['total' => count($rows), 'rows' => $perpage ? array_slice($rows, $page * $perpage, $perpage) : $rows];
+        return $this->finish($rows, $page, $perpage);
     }
 }
