@@ -85,12 +85,7 @@ if ($hassiteconfig) {
         new moodle_url('/local/payments/admin/providers.php')
     ));
 
-    // Reports link.
-    $ADMIN->add('local_payments_category', new admin_externalpage(
-        'local_payments_reports',
-        get_string('reports', 'local_payments'),
-        new moodle_url('/local/payments/report.php')
-    ));
+    // Revenue reports now live in local_nit_reports (Sales & revenue); report.php redirects there.
 
     // Payment provider sub-plugins: Moodle's admin/settings/plugins.php has no
     // built-in handling for our custom "paymentprovider" sub-plugin type, so we

@@ -74,15 +74,23 @@ class price_resolver {
     }
 
     /**
-     * Check if a user has already purchased a course.
+     * Check if a user has already purchased a course: a completed payment for it AND
+     * still being in the course. An admin who takes the student out of the course
+     * (unenrol, or "un-buy" in Manage course purchases) ends the purchase, so the
+     * student sees the price again and can buy it again.
      */
     public static function is_purchased(int $courseid, int $userid): bool {
         global $DB;
-        return $DB->record_exists('local_payments_transactions', [
+        $paid = $DB->record_exists('local_payments_transactions', [
             'courseid' => $courseid,
             'userid' => $userid,
             'status' => status_machine::COMPLETED,
         ]);
+        if (!$paid) {
+            return false;
+        }
+        $context = \context_course::instance($courseid, IGNORE_MISSING);
+        return $context && is_enrolled($context, $userid, '', true);
     }
 
     /**

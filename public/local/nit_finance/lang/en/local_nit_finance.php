@@ -28,7 +28,7 @@ $string['pluginname'] = 'NIT Finance';
 $string['local_nit_finance:manage'] = 'Manage NIT platform finances and withdrawals';
 
 // Admin page.
-$string['financialreports'] = 'Financial Reports';
+$string['financialreports'] = 'Teacher withdrawal requests';
 $string['platformwallet'] = 'Platform Wallet';
 $string['currentmoney'] = 'Current money';
 $string['undistributedmoney'] = 'Undistributed package money';

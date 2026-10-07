@@ -28,7 +28,7 @@ $string['pluginname'] = 'NIT للماليات';
 $string['local_nit_finance:manage'] = 'إدارة ماليات منصة NIT وطلبات السحب';
 
 // Admin page.
-$string['financialreports'] = 'التقارير المالية';
+$string['financialreports'] = 'طلبات سحب المدرسين';
 $string['platformwallet'] = 'محفظة المنصة';
 $string['currentmoney'] = 'الرصيد الحالي';
 $string['undistributedmoney'] = 'أموال الباقات غير الموزَّعة';

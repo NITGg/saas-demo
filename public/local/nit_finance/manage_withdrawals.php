@@ -60,36 +60,10 @@ function local_nit_finance_money(int $minor): string {
     return number_format($minor / 100, 2);
 }
 
-// Compose the platform wallet: Flex plugin (if installed) provides money-in + unconsumed value.
-$payments = 0;
-$undistributed = 0;
-if (class_exists('\local_nit_flex\api\flex')) {
-    $totals = \local_nit_flex\api\flex::money_totals();
-    $payments = (int) ($totals['payments_minor'] ?? 0);
-    $undistributed = (int) ($totals['undistributed_minor'] ?? 0);
-}
-$pw = wallet::platform($payments, $undistributed);
+// The platform totals moved to the Reports plugin (Teacher dues / Sales); this page is the queue only.
 $withdrawals = wallet::list_withdrawals();
 
 echo $OUTPUT->header();
-
-// Platform wallet cards.
-echo html_writer::start_div('', ['style' => 'display:flex;flex-wrap:wrap;gap:12px;margin-bottom:24px']);
-$cards = [
-    'currentmoney'        => $pw['current_money_minor'],
-    'undistributedmoney'  => $pw['undistributed_money_minor'],
-    'teachersmoney'       => $pw['teachers_money_minor'],
-    'platformearnings'    => $pw['platform_earnings_minor'],
-    'totalpaidout'        => $pw['total_paid_out_minor'],
-];
-foreach ($cards as $key => $minor) {
-    echo html_writer::div(
-        html_writer::div(get_string($key, 'local_nit_finance'), 'text-muted small') .
-        html_writer::div(local_nit_finance_money($minor) . ' EGP', 'h4 mt-1'),
-        'card p-3', ['style' => 'min-width:170px;flex:1']
-    );
-}
-echo html_writer::end_div();
 
 // Withdrawal queue.
 echo $OUTPUT->heading(get_string('withdrawals', 'local_nit_finance'), 3);
