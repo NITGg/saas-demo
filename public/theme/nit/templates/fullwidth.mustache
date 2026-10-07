@@ -65,6 +65,11 @@
     {{> theme_boost/navbar }}
 
     <div id="page" data-region="mainpage" class="drawers drag-container">
+        {{#admintoolbar}}
+            <div class="nit-admin-bar-wrapper d-print-none">
+                {{{ admintoolbar }}}
+            </div>
+        {{/admintoolbar}}
         {{#addblockbutton}}
             <div class="nit-addblock-top d-print-none">
                 {{{ addblockbutton }}}

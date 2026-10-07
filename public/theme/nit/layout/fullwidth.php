@@ -40,6 +40,8 @@ $primary = new core\navigation\output\primary($PAGE);
 $renderer = $PAGE->get_renderer('core');
 $primarymenu = $primary->export_for_template($renderer);
 
+$admintoolbar = $PAGE->nit_admin_toolbar ?? '';
+
 $templatecontext = [
     'sitename' => format_string(
         $SITE->shortname,
@@ -52,6 +54,7 @@ $templatecontext = [
     'mobileprimarynav' => $primarymenu['mobileprimarynav'],
     'usermenu' => $primarymenu['user'],
     'langmenu' => $primarymenu['lang'],
+    'admintoolbar' => $admintoolbar,
     'fullwidthtop' => $fullwidthtop,
     'hasfullwidthtop' => $hasfullwidthtop,
     'addblockbutton' => $addblockbutton,

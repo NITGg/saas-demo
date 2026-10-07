@@ -429,6 +429,12 @@ class page_manager {
      * @param string $key
      * @return string
      */
+    /**
+     * Generate bassthalk-styled starter HTML for each default page.
+     *
+     * @param string $key
+     * @return string
+     */
     public static function generate_starter_html(string $key): string {
         global $CFG;
         $supportemail = trim((string) ($CFG->supportemail ?? 'hello@bassthalk.com'));
@@ -439,37 +445,37 @@ class page_manager {
         switch ($key) {
             case 'about':
                 return <<<HTML
-<div dir="auto" class="nit-page-section nit-page-about" style="background:#0c141f;color:#eef3f9;padding:clamp(48px,6vw,80px) 20px;font-family:'Almarai','Tajawal',sans-serif;">
-  <div style="max-width:1140px;margin:0 auto;">
-    <div style="text-align:center;margin-bottom:48px;">
-      <span style="display:inline-block;background:rgba(84,136,196,0.18);border:1px solid rgba(84,136,196,0.35);border-radius:50px;padding:6px 20px;font-size:13px;font-weight:700;color:#7fabdb;margin-bottom:14px;">
+<div dir="auto" class="nit-page-section nit-page-about" style="background:#ffffff;color:#0f172a;padding:clamp(56px,7vw,96px) 20px;font-family:'Tajawal','Almarai',sans-serif;">
+  <div style="max-width:1160px;margin:0 auto;">
+    <div style="text-align:center;margin-bottom:56px;">
+      <span style="display:inline-block;background:#eff6ff;color:#1b75d0;border:1px solid #bfdbfe;border-radius:50px;padding:6px 20px;font-size:14px;font-weight:700;margin-bottom:16px;">
         {mlang en}About Bassthalk{mlang}{mlang ar}عن منصة بسطتهالك{mlang}
       </span>
-      <h1 style="font-size:clamp(28px,3.5vw,44px);font-weight:800;margin:0 0 16px;line-height:1.3;color:#ffffff;">
+      <h1 style="font-size:clamp(28px,3.5vw,46px);font-weight:800;margin:0 0 16px;line-height:1.35;color:#0f172a!important;">
         {mlang en}Simplifying learning for secondary school and beyond{mlang}{mlang ar}تهيئة الطالب لكامل جوانب الثانوية العامة وما بعدها{mlang}
       </h1>
-      <p style="font-size:16px;line-height:1.8;color:#94a3b8;max-width:720px;margin:0 auto;">
+      <p style="font-size:17px;line-height:1.85;color:#475569!important;max-width:760px;margin:0 auto;">
         {mlang en}Bassthalk platform is designed to make education accessible, engaging and straightforward. We bring top teachers, structured lesson paths, and comprehensive practice tests together in one seamless platform.{mlang}{mlang ar}تم بناء منصة بسطتهالك لتكون وجهتك الأولى نحو التفوق الدراسي. نجمع بين نخبة المدرسين، والمناهج المنظمة، والمتابعة الدقيقة لمساعدة كل طالب على استيعاب المواد وتحقيق أعلى النتائج بأبسط الطرق.{mlang}
       </p>
     </div>
 
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;margin-top:36px;">
-      <div style="background:#121e2d;border:1px solid #223244;border-radius:16px;padding:28px;text-align:start;">
-        <div style="width:48px;height:48px;border-radius:12px;background:rgba(84,136,196,0.2);color:#7fabdb;display:grid;place-items:center;font-size:22px;margin-bottom:18px;">🎯</div>
-        <h3 style="font-size:19px;font-weight:700;color:#ffffff;margin:0 0 10px;">{mlang en}Our Vision{mlang}{mlang ar}رؤيتنا{mlang}</h3>
-        <p style="font-size:14px;line-height:1.75;color:#94a3b8;margin:0;">{mlang en}Providing the highest quality online education accessible to every student across Egypt and the Arab world.{mlang}{mlang ar}أن يستطيع الدارس الحصول على أفضل خدمات تعليمية عبر الإنترنت بجودة عالية وتجربة تفاعلية متكاملة.{mlang}</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:28px;margin-top:40px;">
+      <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:20px;padding:32px 28px;box-shadow:0 10px 30px -5px rgba(0,0,0,0.05);text-align:start;">
+        <div style="width:52px;height:52px;border-radius:14px;background:#eff6ff;color:#1b75d0;display:grid;place-items:center;font-size:24px;margin-bottom:20px;border:1px solid #dbeafe;">🎯</div>
+        <h3 style="font-size:20px;font-weight:700;color:#0f172a!important;margin:0 0 12px;font-family:'Tajawal',sans-serif;">{mlang en}Our Vision{mlang}{mlang ar}رؤيتنا{mlang}</h3>
+        <p style="font-size:15px;line-height:1.8;color:#64748b!important;margin:0;">{mlang en}Providing the highest quality online education accessible to every student across Egypt and the Arab world.{mlang}{mlang ar}أن يستطيع الدارس الحصول على أفضل خدمات تعليمية عبر الإنترنت بجودة عالية وتجربة تفاعلية متكاملة.{mlang}</p>
       </div>
 
-      <div style="background:#121e2d;border:1px solid #223244;border-radius:16px;padding:28px;text-align:start;">
-        <div style="width:48px;height:48px;border-radius:12px;background:rgba(84,136,196,0.2);color:#7fabdb;display:grid;place-items:center;font-size:22px;margin-bottom:18px;">🚀</div>
-        <h3 style="font-size:19px;font-weight:700;color:#ffffff;margin:0 0 10px;">{mlang en}Our Mission{mlang}{mlang ar}رسالتنا{mlang}</h3>
-        <p style="font-size:14px;line-height:1.75;color:#94a3b8;margin:0;">{mlang en}Simplifying complex subjects through engaging, structured learning paths and continuous assessment.{mlang}{mlang ar}تبسيط المناهج المعقدة وشرحها بأسلوب مشوق يربط الفهم بالتطبيق العملي وحل الأسئلة والامتحانات.{mlang}</p>
+      <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:20px;padding:32px 28px;box-shadow:0 10px 30px -5px rgba(0,0,0,0.05);text-align:start;">
+        <div style="width:52px;height:52px;border-radius:14px;background:#eff6ff;color:#1b75d0;display:grid;place-items:center;font-size:24px;margin-bottom:20px;border:1px solid #dbeafe;">🚀</div>
+        <h3 style="font-size:20px;font-weight:700;color:#0f172a!important;margin:0 0 12px;font-family:'Tajawal',sans-serif;">{mlang en}Our Mission{mlang}{mlang ar}رسالتنا{mlang}</h3>
+        <p style="font-size:15px;line-height:1.8;color:#64748b!important;margin:0;">{mlang en}Simplifying complex subjects through engaging, structured learning paths and continuous assessment.{mlang}{mlang ar}تبسيط المناهج المعقدة وشرحها بأسلوب مشوق يربط الفهم بالتطبيق العملي وحل الأسئلة والامتحانات.{mlang}</p>
       </div>
 
-      <div style="background:#121e2d;border:1px solid #223244;border-radius:16px;padding:28px;text-align:start;">
-        <div style="width:48px;height:48px;border-radius:12px;background:rgba(84,136,196,0.2);color:#7fabdb;display:grid;place-items:center;font-size:22px;margin-bottom:18px;">💬</div>
-        <h3 style="font-size:19px;font-weight:700;color:#ffffff;margin:0 0 10px;">{mlang en}Our Goal{mlang}{mlang ar}هدفنا{mlang}</h3>
-        <p style="font-size:14px;line-height:1.75;color:#94a3b8;margin:0;">{mlang en}Empowering students to achieve academic excellence and build confidence for their future university careers.{mlang}{mlang ar}مساعدة الطلاب وأولياء الأمور على تخطي ضغوط الثانوية العامة بثقة وتفوق والوصول إلى كليات أحلامهم.{mlang}</p>
+      <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:20px;padding:32px 28px;box-shadow:0 10px 30px -5px rgba(0,0,0,0.05);text-align:start;">
+        <div style="width:52px;height:52px;border-radius:14px;background:#eff6ff;color:#1b75d0;display:grid;place-items:center;font-size:24px;margin-bottom:20px;border:1px solid #dbeafe;">💬</div>
+        <h3 style="font-size:20px;font-weight:700;color:#0f172a!important;margin:0 0 12px;font-family:'Tajawal',sans-serif;">{mlang en}Our Goal{mlang}{mlang ar}هدفنا{mlang}</h3>
+        <p style="font-size:15px;line-height:1.8;color:#64748b!important;margin:0;">{mlang en}Empowering students to achieve academic excellence and build confidence for their future university careers.{mlang}{mlang ar}مساعدة الطلاب وأولياء الأمور على تخطي ضغوط الثانوية العامة بثقة وتفوق والوصول إلى كليات أحلامهم.{mlang}</p>
       </div>
     </div>
   </div>
@@ -478,40 +484,43 @@ HTML;
 
             case 'contact':
                 return <<<HTML
-<div dir="auto" class="nit-page-section nit-page-contact" style="background:#0c141f;color:#eef3f9;padding:clamp(48px,6vw,80px) 20px;font-family:'Almarai','Tajawal',sans-serif;">
-  <div style="max-width:1140px;margin:0 auto;">
-    <div style="text-align:center;margin-bottom:48px;">
-      <span style="display:inline-block;background:rgba(84,136,196,0.18);border:1px solid rgba(84,136,196,0.35);border-radius:50px;padding:6px 20px;font-size:13px;font-weight:700;color:#7fabdb;margin-bottom:14px;">
+<div dir="auto" class="nit-page-section nit-page-contact" style="background:#ffffff;color:#0f172a;padding:clamp(56px,7vw,96px) 20px;font-family:'Tajawal','Almarai',sans-serif;">
+  <div style="max-width:1160px;margin:0 auto;">
+    <div style="text-align:center;margin-bottom:56px;">
+      <span style="display:inline-block;background:#eff6ff;color:#1b75d0;border:1px solid #bfdbfe;border-radius:50px;padding:6px 20px;font-size:14px;font-weight:700;margin-bottom:16px;">
         {mlang en}Contact Support{mlang}{mlang ar}فريق الدعم والتواصل{mlang}
       </span>
-      <h1 style="font-size:clamp(28px,3.5vw,44px);font-weight:800;margin:0 0 16px;color:#ffffff;">
-        {mlang en}We are here to help you{mlang}{mlang ar}تواصل معنا في أي وقت{mlang}
+      <h1 style="font-size:clamp(28px,3.5vw,46px);font-weight:800;margin:0 0 16px;line-height:1.35;color:#0f172a!important;">
+        {mlang en}We are here to support you{mlang}{mlang ar}تواصل معنا في أي وقت{mlang}
       </h1>
-      <p style="font-size:16px;line-height:1.8;color:#94a3b8;max-width:620px;margin:0 auto;">
+      <p style="font-size:17px;line-height:1.85;color:#475569!important;max-width:720px;margin:0 auto;">
         {mlang en}Have questions about course registration, subscriptions, or payments? Contact our team anytime through the channels below.{mlang}{mlang ar}لديك سؤال حول التسجيل، باقات الدروس أو المدفوعات؟ فريق الدعم متاح للإجابة على كل استفساراتك.{mlang}
       </p>
     </div>
 
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;">
-      <div style="background:#121e2d;border:1px solid #223244;border-radius:16px;padding:28px;">
-        <div style="width:44px;height:44px;border-radius:12px;background:rgba(84,136,196,0.2);color:#7fabdb;display:grid;place-items:center;font-size:20px;margin-bottom:16px;">✉</div>
-        <div style="font-size:12px;color:#94a3b8;font-weight:700;text-transform:uppercase;">{mlang en}Email{mlang}{mlang ar}البريد الإلكتروني{mlang}</div>
-        <a href="mailto:{$supportemail}" style="display:block;font-size:16px;color:#ffffff;font-weight:700;margin-top:6px;text-decoration:none;" dir="ltr">{$supportemail}</a>
-        <div style="font-size:13px;color:#64748b;margin-top:6px;">{mlang en}Response within 24 hours{mlang}{mlang ar}الرد خلال ٢٤ ساعة عمل{mlang}</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:24px;margin-bottom:48px;">
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:18px;padding:28px 24px;text-align:center;">
+        <div style="width:52px;height:52px;border-radius:14px;background:#eff6ff;color:#1b75d0;display:grid;place-items:center;font-size:24px;margin:0 auto 16px;">✉️</div>
+        <h4 style="font-size:17px;font-weight:700;color:#0f172a!important;margin:0 0 8px;">{mlang en}Email Support{mlang}{mlang ar}البريد الإلكتروني{mlang}</h4>
+        <a href="mailto:{$supportemail}" style="color:#1b75d0;text-decoration:none;font-weight:600;font-size:15px;">{$supportemail}</a>
       </div>
 
-      <div style="background:#121e2d;border:1px solid #223244;border-radius:16px;padding:28px;">
-        <div style="width:44px;height:44px;border-radius:12px;background:rgba(84,136,196,0.2);color:#7fabdb;display:grid;place-items:center;font-size:20px;margin-bottom:16px;">☎</div>
-        <div style="font-size:12px;color:#94a3b8;font-weight:700;text-transform:uppercase;">{mlang en}Phone / WhatsApp{mlang}{mlang ar}الهاتف والواتساب{mlang}</div>
-        <a href="tel:+201000000000" style="display:block;font-size:16px;color:#ffffff;font-weight:700;margin-top:6px;text-decoration:none;" dir="ltr">+20 100 000 0000</a>
-        <div style="font-size:13px;color:#64748b;margin-top:6px;">{mlang en}Sat – Thu · 9:00 – 18:00{mlang}{mlang ar}السبت – الخميس · ٩:٠٠ – ١٨:٠٠{mlang}</div>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:18px;padding:28px 24px;text-align:center;">
+        <div style="width:52px;height:52px;border-radius:14px;background:#f0fdf4;color:#16a34a;display:grid;place-items:center;font-size:24px;margin:0 auto 16px;">💬</div>
+        <h4 style="font-size:17px;font-weight:700;color:#0f172a!important;margin:0 0 8px;">{mlang en}WhatsApp{mlang}{mlang ar}واتساب الدعم{mlang}</h4>
+        <span style="color:#0f172a;font-weight:600;font-size:15px;direction:ltr;display:inline-block;">+20 100 000 0000</span>
       </div>
 
-      <div style="background:#121e2d;border:1px solid #223244;border-radius:16px;padding:28px;">
-        <div style="width:44px;height:44px;border-radius:12px;background:rgba(84,136,196,0.2);color:#7fabdb;display:grid;place-items:center;font-size:20px;margin-bottom:16px;">📍</div>
-        <div style="font-size:12px;color:#94a3b8;font-weight:700;text-transform:uppercase;">{mlang en}Location{mlang}{mlang ar}المقر الرئيسي{mlang}</div>
-        <div style="font-size:16px;color:#ffffff;font-weight:700;margin-top:6px;">{mlang en}Cairo, Egypt{mlang}{mlang ar}القاهرة، مصر{mlang}</div>
-        <div style="font-size:13px;color:#64748b;margin-top:6px;">{mlang en}Educational Hub{mlang}{mlang ar}المقر التعليمي الرئيسي{mlang}</div>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:18px;padding:28px 24px;text-align:center;">
+        <div style="width:52px;height:52px;border-radius:14px;background:#fff7ed;color:#ea580c;display:grid;place-items:center;font-size:24px;margin:0 auto 16px;">⏰</div>
+        <h4 style="font-size:17px;font-weight:700;color:#0f172a!important;margin:0 0 8px;">{mlang en}Working Hours{mlang}{mlang ar}أوقات العمل{mlang}</h4>
+        <span style="color:#475569;font-size:14px;">{mlang en}Saturday - Thursday: 9 AM - 9 PM{mlang}{mlang ar}السبت - الخميس: ٩ ص - ٩ م{mlang}</span>
+      </div>
+
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:18px;padding:28px 24px;text-align:center;">
+        <div style="width:52px;height:52px;border-radius:14px;background:#faf5ff;color:#9333ea;display:grid;place-items:center;font-size:24px;margin:0 auto 16px;">📍</div>
+        <h4 style="font-size:17px;font-weight:700;color:#0f172a!important;margin:0 0 8px;">{mlang en}Location{mlang}{mlang ar}المقر الرئيسي{mlang}</h4>
+        <span style="color:#475569;font-size:14px;">{mlang en}Cairo, Egypt{mlang}{mlang ar}القاهرة، مصر{mlang}</span>
       </div>
     </div>
   </div>
@@ -528,15 +537,15 @@ HTML;
                     local_multitopics_legal_default('terms', true, 'بسطتهالك', $supportemail);
 
                 return <<<HTML
-<div dir="auto" class="nit-page-section nit-page-legal" style="background:#0c141f;color:#eef3f9;padding:clamp(48px,6vw,80px) 20px;font-family:'Almarai','Tajawal',sans-serif;">
-  <div style="max-width:880px;margin:0 auto;background:#121e2d;border:1px solid #223244;border-radius:18px;padding:clamp(24px,4vw,48px);box-shadow:0 18px 40px rgba(0,0,0,0.2);">
-    <h1 style="font-size:clamp(24px,3vw,36px);font-weight:800;color:#ffffff;margin:0 0 8px;">
+<div dir="auto" class="nit-page-section nit-page-legal" style="background:#f8fafc;color:#0f172a;padding:clamp(56px,7vw,96px) 20px;font-family:'Tajawal','Almarai',sans-serif;">
+  <div style="max-width:920px;margin:0 auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:24px;padding:clamp(32px,5vw,56px);box-shadow:0 10px 40px -10px rgba(0,0,0,0.05);">
+    <h1 style="font-size:clamp(26px,3vw,38px);font-weight:800;color:#0f172a!important;margin:0 0 12px;font-family:'Tajawal',sans-serif;">
       {mlang en}Terms and Conditions{mlang}{mlang ar}الشروط والأحكام{mlang}
     </h1>
-    <div style="color:#7fabdb;font-size:13px;font-weight:600;margin-bottom:28px;">
+    <div style="display:inline-block;color:#1b75d0;background:#eff6ff;border:1px solid #dbeafe;padding:4px 14px;border-radius:9999px;font-size:13px;font-weight:600;margin-bottom:28px;">
       {mlang en}Last updated: 2026{mlang}{mlang ar}آخر تحديث: ٢٠٢٦{mlang}
     </div>
-    <div class="nit-legal-body" style="line-height:1.85;color:#eef3f9;font-size:15px;">
+    <div class="nit-legal-body" style="line-height:1.85;color:#334155!important;font-size:16px;">
       {mlang en}{$body_en}{mlang}
       {mlang ar}{$body_ar}{mlang}
     </div>
@@ -554,15 +563,15 @@ HTML;
                     local_multitopics_legal_default('privacy', true, 'بسطتهالك', $supportemail);
 
                 return <<<HTML
-<div dir="auto" class="nit-page-section nit-page-legal" style="background:#0c141f;color:#eef3f9;padding:clamp(48px,6vw,80px) 20px;font-family:'Almarai','Tajawal',sans-serif;">
-  <div style="max-width:880px;margin:0 auto;background:#121e2d;border:1px solid #223244;border-radius:18px;padding:clamp(24px,4vw,48px);box-shadow:0 18px 40px rgba(0,0,0,0.2);">
-    <h1 style="font-size:clamp(24px,3vw,36px);font-weight:800;color:#ffffff;margin:0 0 8px;">
+<div dir="auto" class="nit-page-section nit-page-legal" style="background:#f8fafc;color:#0f172a;padding:clamp(56px,7vw,96px) 20px;font-family:'Tajawal','Almarai',sans-serif;">
+  <div style="max-width:920px;margin:0 auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:24px;padding:clamp(32px,5vw,56px);box-shadow:0 10px 40px -10px rgba(0,0,0,0.05);">
+    <h1 style="font-size:clamp(26px,3vw,38px);font-weight:800;color:#0f172a!important;margin:0 0 12px;font-family:'Tajawal',sans-serif;">
       {mlang en}Privacy Policy{mlang}{mlang ar}سياسة الخصوصية{mlang}
     </h1>
-    <div style="color:#7fabdb;font-size:13px;font-weight:600;margin-bottom:28px;">
+    <div style="display:inline-block;color:#1b75d0;background:#eff6ff;border:1px solid #dbeafe;padding:4px 14px;border-radius:9999px;font-size:13px;font-weight:600;margin-bottom:28px;">
       {mlang en}Last updated: 2026{mlang}{mlang ar}آخر تحديث: ٢٠٢٦{mlang}
     </div>
-    <div class="nit-legal-body" style="line-height:1.85;color:#eef3f9;font-size:15px;">
+    <div class="nit-legal-body" style="line-height:1.85;color:#334155!important;font-size:16px;">
       {mlang en}{$body_en}{mlang}
       {mlang ar}{$body_ar}{mlang}
     </div>
@@ -572,50 +581,57 @@ HTML;
 
             case 'faq':
                 return <<<HTML
-<div dir="auto" class="nit-page-section nit-page-faq" style="background:#0c141f;color:#eef3f9;padding:clamp(48px,6vw,80px) 20px;font-family:'Almarai','Tajawal',sans-serif;">
-  <div style="max-width:880px;margin:0 auto;">
-    <div style="text-align:center;margin-bottom:44px;">
-      <span style="display:inline-block;background:rgba(84,136,196,0.18);border:1px solid rgba(84,136,196,0.35);border-radius:50px;padding:6px 20px;font-size:13px;font-weight:700;color:#7fabdb;margin-bottom:14px;">
+<div dir="auto" class="nit-page-section nit-page-faq" style="background:#ffffff;color:#0f172a;padding:clamp(56px,7vw,96px) 20px;font-family:'Tajawal','Almarai',sans-serif;">
+  <div style="max-width:920px;margin:0 auto;">
+    <div style="text-align:center;margin-bottom:52px;">
+      <span style="display:inline-block;background:#eff6ff;color:#1b75d0;border:1px solid #bfdbfe;border-radius:50px;padding:6px 20px;font-size:14px;font-weight:700;margin-bottom:16px;">
         {mlang en}Common Questions{mlang}{mlang ar}الأسئلة الشائعة{mlang}
       </span>
-      <h1 style="font-size:clamp(28px,3.5vw,42px);font-weight:800;color:#ffffff;margin:0;">
+      <h1 style="font-size:clamp(28px,3.5vw,44px);font-weight:800;color:#0f172a!important;margin:0 0 14px;">
         {mlang en}Frequently Asked Questions{mlang}{mlang ar}كل ما تريد معرفته عن المنصة{mlang}
       </h1>
+      <p style="font-size:16px;line-height:1.8;color:#475569!important;margin:0;">
+        {mlang en}Find answers to the most common questions about courses, payments, and subscriptions.{mlang}{mlang ar}إجابات على أكثر الأسئلة شيوعاً حول الدورات، طرق الدفع، ونظام المنصة.{mlang}
+      </p>
     </div>
 
-    <div style="display:flex;flex-direction:column;gap:14px;">
-      <details style="background:#121e2d;border:1px solid #223244;border-radius:14px;padding:20px 24px;" open>
-        <summary style="font-size:16px;font-weight:700;color:#ffffff;cursor:pointer;list-style:none;">
-          {mlang en}How do I enroll in a course or package?{mlang}{mlang ar}كيف يمكنني الاشتراك في الكورسات أو الباقات؟{mlang}
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <details style="background:#ffffff;border:1px solid #e2e8f0;border-radius:16px;padding:22px 26px;box-shadow:0 4px 12px rgba(0,0,0,0.03);" open>
+        <summary style="font-size:17px;font-weight:700;color:#0f172a!important;cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;">
+          <span>{mlang en}How do I enroll in a course or package?{mlang}{mlang ar}كيف يمكنني الاشتراك في الكورسات أو الباقات؟{mlang}</span>
+          <span style="color:#1b75d0;font-size:18px;">▾</span>
         </summary>
-        <p style="margin:14px 0 0;font-size:14px;line-height:1.8;color:#94a3b8;">
+        <p style="margin:16px 0 0;font-size:15px;line-height:1.8;color:#475569!important;border-top:1px solid #f1f5f9;padding-top:14px;">
           {mlang en}You can create a free account, browse the course catalog, and click enroll. You can pay using your wallet, credit card, or supported local payment methods.{mlang}{mlang ar}يمكنك إنشاء حساب مجاني، ثم اختيار الدورة أو الباقة والضغط على زر الشراء أو الاشتراك. يتوفر الدفع عبر البطاقات البنكية، المحافظ الإلكترونية، أو فوري.{mlang}
         </p>
       </details>
 
-      <details style="background:#121e2d;border:1px solid #223244;border-radius:14px;padding:20px 24px;">
-        <summary style="font-size:16px;font-weight:700;color:#ffffff;cursor:pointer;list-style:none;">
-          {mlang en}Can I watch videos on multiple devices?{mlang}{mlang ar}هل يمكنني فتح حسابي ومشاهدة الفيديوهات من أكثر من جهاز؟{mlang}
+      <details style="background:#ffffff;border:1px solid #e2e8f0;border-radius:16px;padding:22px 26px;box-shadow:0 4px 12px rgba(0,0,0,0.03);">
+        <summary style="font-size:17px;font-weight:700;color:#0f172a!important;cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;">
+          <span>{mlang en}Can I watch videos on multiple devices?{mlang}{mlang ar}هل يمكنني فتح حسابي ومشاهدة الفيديوهات من أكثر من جهاز؟{mlang}</span>
+          <span style="color:#1b75d0;font-size:18px;">▾</span>
         </summary>
-        <p style="margin:14px 0 0;font-size:14px;line-height:1.8;color:#94a3b8;">
+        <p style="margin:16px 0 0;font-size:15px;line-height:1.8;color:#475569!important;border-top:1px solid #f1f5f9;padding-top:14px;">
           {mlang en}Yes, you can access your account from your computer or our mobile app. However, sharing accounts is protected by security limits to safeguard your account.{mlang}{mlang ar}يمكنك استخدام الحساب من حاسوبك أو من تطبيق الموبايل، وتطبق المنصة نظام حماية لمنع مشاركة الحساب مع أطراف أخرى للحفاظ على بياناتك.{mlang}
         </p>
       </details>
 
-      <details style="background:#121e2d;border:1px solid #223244;border-radius:14px;padding:20px 24px;">
-        <summary style="font-size:16px;font-weight:700;color:#ffffff;cursor:pointer;list-style:none;">
-          {mlang en}How long do I keep access to purchased lessons?{mlang}{mlang ar}ما هي مدة صلاحية الوصول للدروس والكورسات؟{mlang}
+      <details style="background:#ffffff;border:1px solid #e2e8f0;border-radius:16px;padding:22px 26px;box-shadow:0 4px 12px rgba(0,0,0,0.03);">
+        <summary style="font-size:17px;font-weight:700;color:#0f172a!important;cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;">
+          <span>{mlang en}How long do I keep access to purchased lessons?{mlang}{mlang ar}ما هي مدة صلاحية الوصول للدروس والكورسات؟{mlang}</span>
+          <span style="color:#1b75d0;font-size:18px;">▾</span>
         </summary>
-        <p style="margin:14px 0 0;font-size:14px;line-height:1.8;color:#94a3b8;">
+        <p style="margin:16px 0 0;font-size:15px;line-height:1.8;color:#475569!important;border-top:1px solid #f1f5f9;padding-top:14px;">
           {mlang en}Course purchases remain accessible until the end of the academic year, allowing you to re-watch and revise lessons at your own pace.{mlang}{mlang ar}تظل الكورسات المشتركة متاحة طوال العام الدراسي حتى انتهاء فترة الامتحانات، مما يتيح لك مراجعة الحصص في أي وقت.{mlang}
         </p>
       </details>
 
-      <details style="background:#121e2d;border:1px solid #223244;border-radius:14px;padding:20px 24px;">
-        <summary style="font-size:16px;font-weight:700;color:#ffffff;cursor:pointer;list-style:none;">
-          {mlang en}What if I need help or have a question during study?{mlang}{mlang ar}ماذا أفعل إذا واجهت مشكلة أو سؤالاً أثناء المذاكرة؟{mlang}
+      <details style="background:#ffffff;border:1px solid #e2e8f0;border-radius:16px;padding:22px 26px;box-shadow:0 4px 12px rgba(0,0,0,0.03);">
+        <summary style="font-size:17px;font-weight:700;color:#0f172a!important;cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;">
+          <span>{mlang en}What if I need help or have a question during study?{mlang}{mlang ar}ماذا أفعل إذا واجهت مشكلة أو سؤالاً أثناء المذاكرة؟{mlang}</span>
+          <span style="color:#1b75d0;font-size:18px;">▾</span>
         </summary>
-        <p style="margin:14px 0 0;font-size:14px;line-height:1.8;color:#94a3b8;">
+        <p style="margin:16px 0 0;font-size:15px;line-height:1.8;color:#475569!important;border-top:1px solid #f1f5f9;padding-top:14px;">
           {mlang en}Every course includes interactive quizzes, downloadable PDFs, and direct contact with teachers and technical support.{mlang}{mlang ar}يوجد تحت كل درس مساحة لطرح الأسئلة ومتابعة من المدرس والمساعدين، بالإضافة لفريق الدعم الفني المتاح لمساعدتك.{mlang}
         </p>
       </details>
@@ -626,15 +642,15 @@ HTML;
 
             case 'articles':
                 return <<<HTML
-<div dir="auto" class="nit-page-section nit-page-articles-banner" style="background:#0c141f;color:#eef3f9;padding:clamp(40px,5vw,64px) 20px 24px;font-family:'Almarai','Tajawal',sans-serif;text-align:center;">
+<div dir="auto" class="nit-page-section nit-page-articles-hero" style="background:#f8fafc;border-bottom:1px solid #e2e8f0;color:#0f172a;padding:clamp(48px,6vw,72px) 20px;text-align:center;font-family:'Tajawal','Almarai',sans-serif;">
   <div style="max-width:880px;margin:0 auto;">
-    <span style="display:inline-block;background:rgba(84,136,196,0.18);border:1px solid rgba(84,136,196,0.35);border-radius:50px;padding:6px 20px;font-size:13px;font-weight:700;color:#7fabdb;margin-bottom:14px;">
-      {mlang en}Articles & News{mlang}{mlang ar}المقالات التعليمية{mlang}
+    <span style="display:inline-block;background:#eff6ff;color:#1b75d0;border:1px solid #bfdbfe;border-radius:50px;padding:6px 20px;font-size:14px;font-weight:700;margin-bottom:16px;">
+      {mlang en}Knowledge Hub{mlang}{mlang ar}مدونة بسطتهالك{mlang}
     </span>
-    <h1 style="font-size:clamp(28px,3.5vw,42px);font-weight:800;color:#ffffff;margin:0 0 12px;">
-      {mlang en}Latest Articles & Study Guides{mlang}{mlang ar}أحدث المقالات والنصائح الدراسية{mlang}
+    <h1 style="font-size:clamp(28px,3.5vw,44px);font-weight:800;margin:0 0 16px;line-height:1.35;color:#0f172a!important;">
+      {mlang en}Educational Articles & Exam Tips{mlang}{mlang ar}المقالات والنصائح التعليمية{mlang}
     </h1>
-    <p style="font-size:16px;line-height:1.75;color:#94a3b8;margin:0 auto;max-width:600px;">
+    <p style="font-size:17px;line-height:1.8;color:#475569!important;margin:0 auto;max-width:620px;">
       {mlang en}Read tips and advice from expert teachers to help you excel in your studies.{mlang}{mlang ar}اكتشف نصائح وإرشادات نخبة المعلمين لتنظيم وقتك والتفوق في اختباراتك الدراسية.{mlang}
     </p>
   </div>
@@ -644,4 +660,37 @@ HTML;
 
         return '';
     }
+
+    /**
+     * Refresh default starter blocks in the database with the updated Bassthalk light design.
+     */
+    public static function refresh_default_blocks(): void {
+        global $DB;
+        $defaults = ['about', 'contact', 'terms', 'privacy', 'faq', 'articles'];
+        foreach ($defaults as $key) {
+            $page = self::get_page_by_default_key($key);
+            if (!$page) {
+                continue;
+            }
+            $blocks = $DB->get_records('block_instances', [
+                'pagetypepattern' => 'local-nit_pages-page',
+                'subpagepattern'  => (string) $page->id,
+                'blockname'       => 'nit_section',
+            ]);
+            $newhtml = self::generate_starter_html($key);
+            foreach ($blocks as $b) {
+                $cfg = !empty($b->configdata) ? unserialize(base64_decode($b->configdata)) : new \stdClass();
+                $cfg->htmltext = $newhtml;
+                $cfg->mode = 'html';
+                $cfg->plain = 1;
+                $cfg->width = 'full';
+                $DB->update_record('block_instances', (object) [
+                    'id'         => $b->id,
+                    'configdata' => base64_encode(serialize($cfg)),
+                    'timemodified' => time(),
+                ]);
+            }
+        }
+    }
 }
+

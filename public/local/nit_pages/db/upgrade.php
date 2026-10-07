@@ -38,5 +38,10 @@ function xmldb_local_nit_pages_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026100700, 'local', 'nit_pages');
     }
 
+    if ($oldversion < 2026100701) {
+        \local_nit_pages\page_manager::refresh_default_blocks();
+        upgrade_plugin_savepoint(true, 2026100701, 'local', 'nit_pages');
+    }
+
     return true;
 }

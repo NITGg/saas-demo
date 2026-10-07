@@ -137,9 +137,7 @@ if ($shareimage !== '') {
 }
 $CFG->additionalhtmlhead = ($CFG->additionalhtmlhead ?? '') . "\n" . $seometa;
 
-echo $OUTPUT->header();
-
-// Admin toolbar (visible only to admins).
+// Admin toolbar setup (rendered at the top of the page in fullwidth template).
 if ($isadmin) {
     $isediting = !empty($USER->editing);
     $toggleediturl = new \moodle_url($PAGE->url, ['edit' => $isediting ? 0 : 1, 'sesskey' => sesskey()]);
@@ -147,34 +145,54 @@ if ($isadmin) {
     $dashboardurl = new \moodle_url('/local/nit_pages/index.php');
 
     $statusbadge = ($page->status === page_manager::STATUS_PUBLISHED)
-        ? '<span class="badge bg-success" style="font-size:12px;">' . get_string('published', 'local_nit_pages') . '</span>'
-        : '<span class="badge bg-warning text-dark" style="font-size:12px;">' . get_string('draft', 'local_nit_pages') . '</span>';
+        ? '<span class="badge" style="background:#dcfce7;color:#15803d;font-size:12px;font-weight:700;padding:5px 12px;border-radius:9999px;">' . get_string('published', 'local_nit_pages') . '</span>'
+        : '<span class="badge" style="background:#fef3c7;color:#b45309;font-size:12px;font-weight:700;padding:5px 12px;border-radius:9999px;">' . get_string('draft', 'local_nit_pages') . '</span>';
 
     $accessbadge = !empty($page->loggedin_only)
-        ? '<span class="badge bg-secondary" style="font-size:12px;">' . get_string('loggedin_only', 'local_nit_pages') . '</span>'
+        ? '<span class="badge" style="background:#f1f5f9;color:#475569;font-size:12px;font-weight:700;padding:5px 12px;border-radius:9999px;">' . get_string('loggedin_only', 'local_nit_pages') . '</span>'
+        : '<span class="badge" style="background:#eff6ff;color:#1d4ed8;font-size:12px;font-weight:700;padding:5px 12px;border-radius:9999px;">' . ($isar ? 'عام للجميع' : 'Public') . '</span>';
+
+    $editbtntext = $isediting
+        ? ($isar ? '✓ إنهاء وضع التحرير' : '✓ Finish Editing')
+        : ($isar ? '✏️ تعديل المحتوى (وضع التحرير)' : '✏️ Edit Content (Edit Mode)');
+
+    $editbtnstyle = $isediting
+        ? 'background:#16a34a;border-color:#16a34a;color:#ffffff;'
+        : 'background:#1b75d0;border-color:#1b75d0;color:#ffffff;';
+
+    $tiphtml = $isediting
+        ? '<div style="background:#eff6ff;color:#1e40af;padding:12px 24px;border-top:1px solid #dbeafe;font-size:13px;font-weight:600;display:flex;align-items:center;gap:10px;justify-content:center;text-align:center;">' .
+            '💡 ' . ($isar
+                ? 'وضع التحرير مفعّل الآن: اضغط على القائمة (⋮ أو ⚙️) أعلى أي بلوك لتعديل محتواه، أو استخدم زر (+ إضافة كتلة) لإضافة قسم جديد.'
+                : 'Edit mode active: click (⋮) on any block to edit its content, or click (+ Add a block) to add new sections.') .
+          '</div>'
         : '';
 
-    echo '
-    <div class="nit-admin-cms-toolbar d-print-none" style="background:var(--nit-brand-surface, #121e2d);border-bottom:1px solid var(--nit-brand-border, #223244);padding:10px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;font-family:\'Almarai\',sans-serif;font-size:13px;z-index:100;position:relative;">
-      <div style="display:flex;align-items:center;gap:12px;">
-        <span style="font-weight:700;color:var(--nit-brand-textprimary, #eef3f9);">' . get_string('admin_toolbar', 'local_nit_pages') . ':</span>
-        ' . $statusbadge . '
-        ' . $accessbadge . '
-        <span style="color:var(--nit-brand-textsecondary, #94a3b8);font-size:12px;">ID: ' . $page->id . '</span>
+    $PAGE->nit_admin_toolbar = '
+    <div class="nit-admin-cms-toolbar d-print-none" style="background:#ffffff;border-bottom:2px solid #e2e8f0;box-shadow:0 4px 16px rgba(0,0,0,0.06);margin-top:96px;font-family:\'Tajawal\',\'Almarai\',sans-serif;position:relative;z-index:90;">
+      <div style="max-width:1400px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <span style="font-weight:800;color:#0f172a;font-size:16px;">📄 ' . s($title) . '</span>
+          ' . $statusbadge . '
+          ' . $accessbadge . '
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <a href="' . $toggleediturl->out() . '" class="btn fw-bold" style="' . $editbtnstyle . 'border-radius:10px;padding:8px 20px;font-size:13px;display:inline-flex;align-items:center;gap:6px;box-shadow:0 2px 6px rgba(0,0,0,0.1);text-decoration:none;">
+            ' . $editbtntext . '
+          </a>
+          <a href="' . $editsettingsurl->out() . '" class="btn btn-outline-secondary fw-bold" style="border-radius:10px;padding:8px 16px;font-size:13px;color:#334155;border-color:#cbd5e1;text-decoration:none;">
+            ⚙️ ' . get_string('edit_settings', 'local_nit_pages') . '
+          </a>
+          <a href="' . $dashboardurl->out() . '" class="btn btn-outline-secondary" style="border-radius:10px;padding:8px 16px;font-size:13px;color:#64748b;border-color:#e2e8f0;text-decoration:none;">
+            ← ' . get_string('back_to_pages', 'local_nit_pages') . '
+          </a>
+        </div>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <a href="' . $toggleediturl->out() . '" class="btn btn-sm ' . ($isediting ? 'btn-warning' : 'btn-outline-primary') . '" style="border-radius:6px;font-weight:700;">
-          ' . ($isediting ? get_string('turn_editing_off', 'local_nit_pages') : get_string('turn_editing_on', 'local_nit_pages')) . '
-        </a>
-        <a href="' . $editsettingsurl->out() . '" class="btn btn-sm btn-outline-secondary" style="border-radius:6px;">
-          ' . get_string('edit_settings', 'local_nit_pages') . '
-        </a>
-        <a href="' . $dashboardurl->out() . '" class="btn btn-sm btn-outline-secondary" style="border-radius:6px;">
-          ' . get_string('manage_pages', 'local_nit_pages') . '
-        </a>
-      </div>
+      ' . $tiphtml . '
     </div>';
 }
+
+echo $OUTPUT->header();
 
 // If this is the Articles page, render the automatic articles list underneath the block area!
 if ($page->default_key === 'articles') {
