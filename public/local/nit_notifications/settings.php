@@ -43,10 +43,18 @@ if ($hassiteconfig || has_capability('local/nit_notifications:send', context_sys
         'local/nit_notifications:send'
     ));
 
-    // Automatic notifications: each kind on/off, and when the reminders go out.
+    // Automatic notifications: each kind on/off, and when the reminders go out. The
+    // settings page is hidden from the tree and reached through a link, so the
+    // category page lists it as a link instead of repeating its fields inline.
     if ($hassiteconfig) {
         $s = fn(string $key) => get_string($key, 'local_nit_notifications');
-        $page = new admin_settingpage('local_nit_notifications_auto', $s('autosettings'));
+        $ADMIN->add('local_nit_notifications_cat', new admin_externalpage(
+            'local_nit_notifications_autolink',
+            $s('autosettings'),
+            new moodle_url('/admin/settings.php', ['section' => 'local_nit_notifications_auto']),
+            'moodle/site:config'
+        ));
+        $page = new admin_settingpage('local_nit_notifications_auto', $s('autosettings'), 'moodle/site:config', true);
         $page->add(new admin_setting_heading('local_nit_notifications/autohead', '', $s('autosettings_desc')));
         foreach (['subscription', 'newquiz', 'sessionreminder'] as $kind) {
             $page->add(new admin_setting_configcheckbox('local_nit_notifications/auto_' . $kind,

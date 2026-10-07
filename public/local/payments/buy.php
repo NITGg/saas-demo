@@ -56,8 +56,8 @@ if (!\local_payments\price_resolver::has_pricing($courseid) && !$can_enroll_via_
 
     $PAGE->set_url(new moodle_url('/local/payments/buy.php', ['courseid' => $courseid]));
     $PAGE->set_context($context);
-    $PAGE->set_title($course->fullname);
-    $PAGE->set_heading($course->fullname);
+    $PAGE->set_title(format_string($course->fullname, true, ['context' => $context]));
+    $PAGE->set_heading(format_string($course->fullname, true, ['context' => $context]));
     $PAGE->set_pagelayout('standard');
 
     echo $OUTPUT->header();
@@ -77,8 +77,8 @@ if (!\local_payments\price_resolver::has_pricing($courseid) && !$can_enroll_via_
 
 $PAGE->set_url(new moodle_url('/local/payments/buy.php', ['courseid' => $courseid]));
 $PAGE->set_context($context);
-$PAGE->set_title($course->fullname);
-$PAGE->set_heading($course->fullname);
+$PAGE->set_title(format_string($course->fullname, true, ['context' => $context]));
+$PAGE->set_heading(format_string($course->fullname, true, ['context' => $context]));
 $PAGE->set_pagelayout('standard');
 
 // NIT: shared checkout modal (coupon + auto offer) for the course buy button.

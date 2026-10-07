@@ -98,7 +98,8 @@ try {
         $course = $DB->get_record('course', ['id' => $result->courseid], 'id, fullname');
         $templatedata = [
             'success'      => true,
-            'course_name'  => $course->fullname ?? '',
+            'course_name'  => $course ? format_string($course->fullname, true,
+                ['context' => context_course::instance($course->id), 'escape' => false]) : '',
             'course_url'   => (new moodle_url('/course/view.php', ['id' => $result->courseid]))->out(false),
             'order_id'     => $order_id,
             'history_url'  => (new moodle_url('/local/payments/history.php'))->out(false),

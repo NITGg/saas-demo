@@ -44,7 +44,8 @@ if (empty($transactions)) {
 
     $rows = [];
     foreach ($transactions as $txn) {
-        $coursename = isset($coursenames[$txn->courseid]) ? $coursenames[$txn->courseid]->fullname : '';
+        $coursename = isset($coursenames[$txn->courseid]) ? format_string($coursenames[$txn->courseid]->fullname, true,
+            ['context' => context_course::instance($txn->courseid), 'escape' => false]) : '';
         $invoice = $invoices[$txn->id] ?? null;
 
         $status_class = '';

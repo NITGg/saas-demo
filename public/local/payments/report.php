@@ -71,7 +71,7 @@ $templatedata = [
     }, $by_provider)),
     'has_provider_data' => !empty($by_provider),
     'top_courses' => array_values(array_map(function($r) {
-        return ['course' => $r->fullname, 'currency' => $r->currency,
+        return ['course' => format_string($r->fullname), 'currency' => $r->currency,
                 'purchases' => $r->purchases, 'revenue' => number_format((float) $r->revenue, 2)];
     }, $top_courses)),
     'has_course_data' => !empty($top_courses),

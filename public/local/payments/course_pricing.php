@@ -15,7 +15,7 @@ require_capability('local/payments:managecoursepricing', $context);
 
 $PAGE->set_url(new moodle_url('/local/payments/course_pricing.php', ['courseid' => $courseid]));
 $PAGE->set_title(get_string('coursepricing', 'local_payments'));
-$PAGE->set_heading($course->fullname);
+$PAGE->set_heading(format_string($course->fullname));
 $PAGE->set_pagelayout('incourse');
 
 // Handle delete.

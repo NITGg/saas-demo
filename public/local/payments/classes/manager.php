@@ -208,7 +208,8 @@ class manager {
             'amount' => $amount,
             'currency' => $pricing->currency,
             'description' => get_string('paymentfor', 'local_payments',
-                $DB->get_field('course', 'fullname', ['id' => $courseid])),
+                format_string($DB->get_field('course', 'fullname', ['id' => $courseid]), true,
+                    ['context' => \context_course::instance($courseid), 'escape' => false])),
             'userid' => $userid,
             'courseid' => $courseid,
             'customer_email' => $user->email,
@@ -1431,33 +1432,38 @@ class manager {
             return;
         }
 
-        $message = new \core\message\message();
-        $message->component = 'local_payments';
-        $message->name = 'payment_confirmation';
-        $message->userfrom = \core_user::get_noreply_user();
-        $message->userto = $user;
-        $message->subject = get_string('payment_confirmation_subject', 'local_payments', $course->fullname);
-        $message->fullmessage = get_string('payment_confirmation_body', 'local_payments', (object) [
-            'coursename' => $course->fullname,
-            'amount' => $transaction->amount,
-            'currency' => $transaction->currency,
-            'order_id' => $transaction->order_id,
-        ]);
-        $message->fullmessageformat = FORMAT_PLAIN;
-        $message->fullmessagehtml = get_string('payment_confirmation_html', 'local_payments', (object) [
-            'coursename' => $course->fullname,
-            'amount' => $transaction->amount,
-            'currency' => $transaction->currency,
-            'order_id' => $transaction->order_id,
-        ]);
-        $message->smallmessage = get_string('payment_confirmation_small', 'local_payments', $course->fullname);
-        $message->notification = 1;
-
+        // In the buyer's language: the strings, and the course name (which may hold one
+        // version per language, {mlang} — resolved by format_string's multilang filter).
+        global $CFG;
+        $oldlang = force_current_language($user->lang ?: $CFG->lang);
         try {
+            $coursename = format_string($course->fullname, true,
+                ['context' => \context_course::instance($course->id), 'escape' => false]);
+            $a = (object) [
+                'coursename' => $coursename,
+                'amount' => $transaction->amount,
+                'currency' => $transaction->currency,
+                'order_id' => $transaction->order_id,
+            ];
+
+            $message = new \core\message\message();
+            $message->component = 'local_payments';
+            $message->name = 'payment_confirmation';
+            $message->userfrom = \core_user::get_noreply_user();
+            $message->userto = $user;
+            $message->subject = get_string('payment_confirmation_subject', 'local_payments', $coursename);
+            $message->fullmessage = get_string('payment_confirmation_body', 'local_payments', $a);
+            $message->fullmessageformat = FORMAT_PLAIN;
+            $message->fullmessagehtml = get_string('payment_confirmation_html', 'local_payments', $a);
+            $message->smallmessage = get_string('payment_confirmation_small', 'local_payments', $coursename);
+            $message->notification = 1;
+
             message_send($message);
         } catch (\Exception $e) {
             self::log_entry($transaction->provider_id, $transaction->id, 'warning',
                 'Confirmation message failed: ' . $e->getMessage());
+        } finally {
+            force_current_language($oldlang);
         }
     }
 }
