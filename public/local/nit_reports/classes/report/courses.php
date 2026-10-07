@@ -22,8 +22,8 @@ use local_nit_reports\scope;
 /**
  * Course performance: category, teachers, current students (and how many were
  * active this week or left), how many finished the course, quiz and video
- * averages, what the course holds, learner rating, and (for managers) price and
- * the gateway sales of the period.
+ * averages, what the course holds, learner rating, and (for managers) the gateway
+ * sales of the period with the prices it was really bought at.
  *
  * Every figure about students covers the current students only; the ones who
  * left are counted in their own column. Sales still count every payment (money
@@ -72,7 +72,7 @@ class courses extends base {
             'rating' => self::str('col_rating'),
         ];
         if ($this->money_visible()) {
-            $cols['price'] = self::str('col_price');
+            $cols['price'] = self::str('col_soldat');
             $cols['sales'] = self::str('col_sales');
             $cols['revenue'] = self::str('col_revenue');
             $cols['refunds'] = self::str('col_refunds');
@@ -180,7 +180,6 @@ class courses extends base {
         $quizcount = $DB->get_records_sql_menu("SELECT course, COUNT(1) FROM {quiz} WHERE course $csql GROUP BY course", $cparams);
         $ratings = class_exists('\local_nit_reviews\api') ? \local_nit_reviews\api::get_aggregates($ids) : [];
         $categories = $DB->get_records_menu('course_categories', null, '', 'id, name');
-        $countries = get_string_manager()->get_list_of_countries();
 
         $sales = $refunds = $prices = [];
         if ($this->money_visible()) {
@@ -199,14 +198,18 @@ class courses extends base {
             [$rperiod, $rpparams] = $this->f->period_sql('t.timemodified', 'r');
             $refunds = $DB->get_records_sql_menu("SELECT t.courseid, COUNT(1) FROM {local_payments_transactions} t
                 WHERE t.courseid $csql AND t.status = 'refunded' AND $rperiod GROUP BY t.courseid", $cparams + $rpparams);
-            if ($DB->get_manager()->table_exists('local_payments_course_prices')) {
-                // Every active price: the default one first, then the country ones.
-                foreach ($DB->get_records_sql("SELECT id, courseid, country, price, currency, is_default
-                        FROM {local_payments_course_prices}
-                        WHERE courseid $csql AND is_active = 1 ORDER BY is_default DESC, country, id", $cparams) as $p) {
-                    $prices[(int) $p->courseid][] = $p;
-                }
+            // The prices it was really bought at in the period (each amount and currency, how many times):
+            // the price on the day of the purchase, after any discount.
+            [$speriod, $spparams] = $this->f->period_sql('t.timecreated', 'sp');
+            $rs = $DB->get_recordset_sql("SELECT t.courseid, t.amount, t.currency, COUNT(1) AS n
+                FROM {local_payments_transactions} t
+               WHERE t.courseid $csql AND t.status IN ('completed', 'partially_refunded') AND $speriod
+            GROUP BY t.courseid, t.amount, t.currency
+            ORDER BY COUNT(1) DESC, t.amount DESC", $cparams + $spparams);
+            foreach ($rs as $r) {
+                $prices[(int) $r->courseid][] = $r;
             }
+            $rs->close();
         }
 
         $rows = [];
@@ -238,14 +241,12 @@ class courses extends base {
             ];
             if ($this->money_visible()) {
                 $list = $prices[$id] ?? [];
-                $price = $list[0] ?? null;
-                $row['price'] = $list ? implode(' · ', array_map(fn($p) => ($p->is_default || $p->country === '*' ? ''
-                    : ($countries[$p->country] ?? $p->country) . ': ') . self::money((float) $p->price, (string) $p->currency),
-                    $list)) : self::str('free');
+                $row['price'] = $list ? implode(' · ', array_map(fn($p) => self::money((float) $p->amount, (string) $p->currency)
+                    . ((int) $p->n > 1 ? ' × ' . self::num($p->n) : ''), $list)) : '—';
                 $row['sales'] = self::num($sales[$id]['n'] ?? 0);
                 $row['revenue'] = isset($sales[$id]) ? implode(' + ', $sales[$id]['money']) : '0';
                 $row['refunds'] = self::num($refunds[$id] ?? 0);
-                $row['_sort'] += ['price' => $price ? (float) $price->price : 0.0, 'sales' => (int) ($sales[$id]['n'] ?? 0),
+                $row['_sort'] += ['price' => $list ? (float) $list[0]->amount : -1.0, 'sales' => (int) ($sales[$id]['n'] ?? 0),
                     'revenue' => (float) ($sales[$id]['sum'] ?? 0), 'refunds' => (int) ($refunds[$id] ?? 0)];
             }
             $rows[] = $row;

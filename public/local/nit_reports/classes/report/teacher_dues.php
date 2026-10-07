@@ -55,6 +55,7 @@ class teacher_dues extends base {
         return [
             'teacher' => self::str('col_teacher'),
             'operations' => self::str('col_operations'),
+            'unpaid' => self::str('col_unpaidlessons'),
             'percent' => self::str('col_teacherpercent'),
             'activities' => self::str('col_earnedactivities'),
             'lessons' => self::str('col_earnedlessons'),
@@ -122,8 +123,13 @@ class teacher_dues extends base {
         }
         // Count, share range and the platform's part of the same earnings (taken-back ones included, like "earned").
         [$speriod, $sp] = $this->f->period_sql('timecreated', 's');
-        $stats = $DB->get_records_sql("SELECT teacherid, COUNT(1) AS n, MIN(teacher_percent) AS minpct,
-                    MAX(teacher_percent) AS maxpct, SUM(platform_amount_minor) AS platform
+        // A 0% earning is a lesson the teacher is not paid for (student absent or late cancel): the
+        // platform keeps the Flex. Counted on its own, and left out of the teacher's percent.
+        $stats = $DB->get_records_sql("SELECT teacherid, COUNT(1) AS n,
+                    SUM(CASE WHEN teacher_percent = 0 THEN 1 ELSE 0 END) AS unpaid,
+                    MIN(CASE WHEN teacher_percent > 0 THEN teacher_percent END) AS minpct,
+                    MAX(CASE WHEN teacher_percent > 0 THEN teacher_percent END) AS maxpct,
+                    SUM(platform_amount_minor) AS platform
                FROM {nit_earning} WHERE teacherid $in AND $speriod GROUP BY teacherid", $params + $sp);
         $lastpaid = $DB->get_records_sql_menu("SELECT teacherid, MAX(timeprocessed) FROM {nit_withdrawal}
             WHERE teacherid $in AND status = 'paid' GROUP BY teacherid", $params);
@@ -143,8 +149,9 @@ class teacher_dues extends base {
             $st = $stats[$id] ?? null;
             $out[$id] = [
                 'operations' => (int) ($st->n ?? 0),
-                'minpct' => $st ? (float) $st->minpct : null,
-                'maxpct' => $st ? (float) $st->maxpct : null,
+                'unpaid' => (int) ($st->unpaid ?? 0),
+                'minpct' => $st && $st->minpct !== null ? (float) $st->minpct : null,
+                'maxpct' => $st && $st->maxpct !== null ? (float) $st->maxpct : null,
                 'activities' => (int) ($e['cm'] ?? 0),
                 'lessons' => (int) ($e['lesson'] ?? 0),
                 'platform' => (int) ($st->platform ?? 0),
@@ -179,13 +186,14 @@ class teacher_dues extends base {
         $money = ['activities', 'earned', 'lessons', 'platform', 'reversed', 'paid', 'requested', 'balance'];
         foreach ($fig as $id => $f) {
             $row = ['teacher' => $names[$id] ?? '#' . $id, 'operations' => self::num($f['operations']),
+                'unpaid' => self::num($f['unpaid']),
                 'percent' => $f['minpct'] === null ? '—' : ($f['minpct'] == $f['maxpct'] ? self::pct($f['minpct'])
                     : self::pct($f['minpct']) . ' – ' . self::pct($f['maxpct'])),
                 'lastpaid' => self::date($f['lastpaid'])];
             foreach ($money as $k) {
                 $row[$k] = data::minor($f[$k]);
             }
-            $row['_sort'] = array_intersect_key($f, array_flip(array_merge($money, ['operations', 'lastpaid'])))
+            $row['_sort'] = array_intersect_key($f, array_flip(array_merge($money, ['operations', 'unpaid', 'lastpaid'])))
                 + ['percent' => $f['maxpct'] ?? -1.0];
             $rows[] = $row;
         }
