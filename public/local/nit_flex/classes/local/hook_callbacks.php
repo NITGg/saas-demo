@@ -43,7 +43,7 @@ class hook_callbacks {
         $primary = $hook->get_primaryview();
         $primary->add(
             get_string('availablepackages', 'local_nit_flex'),
-            new \moodle_url('/local/nit_flex/packages.php'),
+            new \moodle_url('/local/nit_lessons/student.php', ['tab' => 'flexavailable']),
             \navigation_node::TYPE_CUSTOM,
             null,
             'local_nit_flex_packages'

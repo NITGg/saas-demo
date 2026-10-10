@@ -17,13 +17,14 @@
 {{!
     @template local_nit_lessons/student_hub
 
-    "My lessons & Flex" (local/nit_lessons/student.php): Flex balance and five tabs.
+    "My lessons & Flex" (local/nit_lessons/student.php): Flex balance and the tabs (hub::TABS, classes/local/hub.php);
+    the Flex packages, wallet and earnings tabs embed their plugins' pages (embedhtml).
     Colours from Brand Colors → Bassthalk; styles in local/nit_flex/styles.css.
 
     Example context (json):
     {
         "sesskey": "abc", "actionurl": "#", "packagesurl": "#", "flex": 4, "hasflex": true,
-        "package": "Flex 10", "expires": "5/11/26", "reserved": 1,
+        "package": "Flex 10", "expires": "5/11/26", "reserved": 1, "showflexbar": true,
         "tabs": [{"key": "book", "label": "Book a lesson", "url": "#", "active": true}],
         "isbook": true, "search": "", "hasteachers": false, "teachers": []
     }
@@ -32,6 +33,7 @@
     <div class="nitfin__wrap">
         <h1 class="nitfin__title">{{#str}}studenthub, local_nit_lessons{{/str}}</h1>
 
+        {{#showflexbar}}
         <div class="nitlx-flexbar">
             <div class="nitlx-flexbar__count">
                 <span class="nitlx-flexbar__num">{{flex}}</span>
@@ -44,12 +46,13 @@
                 {{/package}}
                 {{^package}}<span>{{#str}}nopackage, local_nit_lessons{{/str}}</span>{{/package}}
             </div>
-            <a class="nitfin-btn nitfin-btn--small nitlx-flexbar__btn" href="{{packagesurl}}">{{#str}}availablepackages, local_nit_flex{{/str}}</a>
+            <a class="nitfin-btn nitfin-btn--small nitlx-flexbar__btn" href="{{packagesurl}}">{{#str}}tab_flexavailable, local_nit_lessons{{/str}}</a>
         </div>
+        {{/showflexbar}}
 
         <nav class="nitlx-tabs" aria-label="{{#str}}studenthub, local_nit_lessons{{/str}}">
             {{#tabs}}
-            <a class="nitlx-tab{{#active}} is-active{{/active}}" href="{{url}}" {{#active}}aria-current="page"{{/active}}>{{label}}</a>
+            <a class="nitlx-tab{{#groupstart}} nitlx-tab--group{{/groupstart}}{{#active}} is-active{{/active}}" href="{{url}}" {{#active}}aria-current="page"{{/active}}>{{label}}</a>
             {{/tabs}}
         </nav>
 
@@ -63,7 +66,7 @@
             </form>
             {{^hasflex}}
             <p class="nitfin-note nitlx-note">{{#str}}needflex, local_nit_lessons{{/str}}
-                <a href="{{packagesurl}}">{{#str}}availablepackages, local_nit_flex{{/str}}</a></p>
+                <a href="{{packagesurl}}">{{#str}}tab_flexavailable, local_nit_lessons{{/str}}</a></p>
             {{/hasflex}}
             {{#hasteachers}}
             <div class="nitlx-teachers">
@@ -122,7 +125,7 @@
                 </tr>{{/mypackages}}</tbody>
             </table></div>
             {{/hasmypackages}}
-            {{^hasmypackages}}<p class="nitfin-empty">{{#str}}nopackage, local_nit_lessons{{/str}} <a href="{{packagesurl}}">{{#str}}availablepackages, local_nit_flex{{/str}}</a></p>{{/hasmypackages}}
+            {{^hasmypackages}}<p class="nitfin-empty">{{#str}}nopackage, local_nit_lessons{{/str}} <a href="{{packagesurl}}">{{#str}}tab_flexavailable, local_nit_lessons{{/str}}</a></p>{{/hasmypackages}}
 
             <h2 class="nitfin-section__title nitlx-gap">{{#str}}paymenthistory, local_nit_lessons{{/str}}</h2>
             {{#haspayments}}
@@ -223,6 +226,11 @@
             {{^hassubpayments}}<p class="nitfin-empty">{{#str}}nopayments, local_nit_lessons{{/str}}</p>{{/hassubpayments}}
         </section>
         {{/ismysubs}}
+
+        {{! Flex packages to buy, the wallet and the earnings: their plugins' own pages, drawn here. }}
+        {{#embedhtml}}
+        <section class="nitlx-panel nitlx-embed">{{{embedhtml}}}</section>
+        {{/embedhtml}}
     </div>
     {{> local_nit_lessons/lesson_dialog}}
 </div>

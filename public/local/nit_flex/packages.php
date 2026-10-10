@@ -16,6 +16,7 @@
 
 /**
  * "Available packages": the Flex packages a student can buy, paid from the wallet or online.
+ * Shown as a tab of the student hub (local/nit_lessons/student.php?tab=flexavailable).
  *
  * @package    local_nit_flex
  * @copyright  2026 NIT
@@ -34,6 +35,9 @@ if (isguestuser()) {
 }
 
 $url = new moodle_url('/local/nit_flex/packages.php');
+// Shown as the "باقات الفلكسات المتاحة" tab of the student hub; this page keeps the buy action.
+$back = file_exists($CFG->dirroot . '/local/nit_lessons/student.php')
+    ? new moodle_url('/local/nit_lessons/student.php', ['tab' => 'flexavailable']) : $url;
 $PAGE->set_url($url);
 $PAGE->set_context(context_system::instance());
 $PAGE->set_pagelayout('standard');
@@ -55,10 +59,14 @@ if ($action === 'buy' && confirm_sesskey()) {
         }
         purchase::buy_with_wallet((int) $USER->id, $packageid, $coupon);
     } catch (moodle_exception $e) {
-        redirect($url, $e->getMessage(), null, \core\output\notification::NOTIFY_ERROR);
+        redirect($back, $e->getMessage(), null, \core\output\notification::NOTIFY_ERROR);
     }
     redirect($hub, get_string('msg_package_purchased', 'local_nit_flex'), null,
         \core\output\notification::NOTIFY_SUCCESS);
+}
+
+if ($back->compare($url, URL_MATCH_BASE) === false) {
+    redirect($back);
 }
 
 $PAGE->requires->strings_for_js(['couponapplied', 'couponcheckfailed', 'buysummary'], 'local_nit_flex');

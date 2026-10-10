@@ -57,9 +57,12 @@ $string['set_absence_report_minutes_desc'] = 'عدد الدقائق بعد مو�
 // Tabs and hub.
 $string['tab_book'] = 'احجز حصة';
 $string['tab_lessons'] = 'حصصي';
-$string['tab_packages'] = 'الباقات والفلكس';
+$string['tab_flexavailable'] = 'باقات الفلكسات المتاحة';
+$string['tab_packages'] = 'فلكساتي';
 $string['tab_subavailable'] = 'الاشتراكات المتاحة';
 $string['tab_mysubs'] = 'اشتراكاتي';
+$string['tab_wallet'] = 'محفظتي';
+$string['tab_earnings'] = 'أرباحي';
 $string['flexavailable'] = 'فلكس متاح';
 $string['flexbooked'] = '{$a} محجوز لحصص قادمة';
 $string['nopackage'] = 'ليس لديك باقة نشطة.';

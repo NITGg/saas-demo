@@ -23,8 +23,8 @@ use local_nit_lessons\api\lessons;
 use local_nit_lessons\service\teacher_service;
 
 /**
- * Builds "My lessons & Flex" for a student: book a lesson, my lessons, packages & Flex,
- * available subscriptions, my subscriptions.
+ * Builds "My lessons & Flex" for a student: book a lesson, my lessons, Flex packages to buy,
+ * my Flex, available subscriptions, my subscriptions, my wallet and (teachers) my earnings.
  *
  * @package    local_nit_lessons
  * @copyright  2026 NIT
@@ -32,26 +32,66 @@ use local_nit_lessons\service\teacher_service;
  */
 final class hub {
 
-    /** The tabs, in order. */
-    const TABS = ['book', 'lessons', 'packages', 'subavailable', 'mysubs'];
+    /**
+     * The tabs, in order, in pairs: book / my lessons, Flex packages to buy / my Flex
+     * ("packages" — the key older links use), subscriptions to buy / mine, then the
+     * wallet and (teachers) the earnings that used to be pages of their own.
+     */
+    const TABS = ['book', 'lessons', 'flexavailable', 'packages', 'subavailable', 'mysubs', 'wallet', 'earnings'];
+
+    /** The tabs that need Flex (local_nit_flex switched on). */
+    const FLEX_TABS = ['book', 'lessons', 'flexavailable', 'packages'];
+
+    /**
+     * The tabs this user has: no Flex tabs while Flex is switched off, and "My
+     * earnings" for teachers only.
+     *
+     * @param int $userid
+     * @return string[]
+     */
+    public static function tabs(int $userid): array {
+        $flexon = !function_exists('local_nit_flex_enabled') || local_nit_flex_enabled();
+        return array_values(array_filter(self::TABS, static function (string $key) use ($userid, $flexon): bool {
+            if (!$flexon && in_array($key, self::FLEX_TABS, true)) {
+                return false;
+            }
+            if ($key === 'earnings') {
+                return class_exists('\local_nit_finance\local\earnings_page')
+                    && \local_nit_finance\local\earnings_page::is_teacher($userid);
+            }
+            return true;
+        }));
+    }
+
+    /**
+     * The address of a tab.
+     *
+     * @param string $tab
+     * @return \moodle_url
+     */
+    public static function url(string $tab): \moodle_url {
+        return new \moodle_url('/local/nit_lessons/student.php', ['tab' => $tab]);
+    }
 
     /**
      * Template context for local_nit_lessons/student_hub.
      *
      * @param int $userid
-     * @param string $tab
+     * @param string $tab one of tabs($userid)
      * @param array $params search, status
      * @return array
      */
     public static function context(int $userid, string $tab, array $params = []): array {
         global $DB;
-        $active = purchase::active($userid);
+        $flexon = in_array('packages', self::tabs($userid), true);
+        $active = $flexon ? purchase::active($userid) : null;
         $ctx = [
             'sesskey' => sesskey(),
             'back' => 'hub',
             'status' => (string) ($params['status'] ?? ''),
             'actionurl' => (new \moodle_url('/local/nit_lessons/action.php'))->out(false),
-            'packagesurl' => (new \moodle_url('/local/nit_flex/packages.php'))->out(false),
+            'packagesurl' => self::url('flexavailable')->out(false),
+            'showflexbar' => $flexon,
             'flex' => $active ? $active['remaining_flex'] : 0,
             'hasflex' => $active && $active['remaining_flex'] > 0,
             'package' => $active ? format_string((string) $DB->get_field('nit_package', 'name', ['id' => $active['packageid']]))
@@ -61,12 +101,14 @@ final class hub {
             'reserved' => $active ? $active['reserved_flex'] : 0,
             'tabs' => [],
         ];
-        foreach (self::TABS as $key) {
+        foreach (self::tabs($userid) as $key) {
             $ctx['tabs'][] = [
                 'key' => $key,
                 'label' => get_string('tab_' . $key, 'local_nit_lessons'),
-                'url' => (new \moodle_url('/local/nit_lessons/student.php', ['tab' => $key]))->out(false),
+                'url' => self::url($key)->out(false),
                 'active' => $key === $tab,
+                // A divider before each pair after the first.
+                'groupstart' => $ctx['tabs'] && in_array($key, ['flexavailable', 'subavailable', 'wallet'], true),
             ];
         }
         $ctx['is' . $tab] = true;
@@ -249,5 +291,48 @@ final class hub {
         }
         return ['mysubs' => $mysubs, 'hasmysubs' => !empty($mysubs),
             'subpayments' => $payments, 'hassubpayments' => !empty($payments)];
+    }
+
+    /**
+     * Tab: the Flex packages to buy — local_nit_flex's "Available packages" page,
+     * drawn in the hub (its buy form still posts to local/nit_flex/packages.php).
+     *
+     * @param int $userid
+     * @param array $params
+     * @return array
+     */
+    private static function tab_flexavailable(int $userid, array $params): array {
+        global $OUTPUT;
+        $url = new \moodle_url('/local/nit_flex/packages.php');
+        return ['embedhtml' => $OUTPUT->render_from_template('local_nit_flex/packages_page',
+            \local_nit_flex\local\packages_page::context($userid, $url))];
+    }
+
+    /**
+     * Tab: "My wallet" (local_nit_finance; its forms still post to wallet.php).
+     *
+     * @param int $userid
+     * @param array $params
+     * @return array
+     */
+    private static function tab_wallet(int $userid, array $params): array {
+        global $OUTPUT;
+        return ['embedhtml' => $OUTPUT->render_from_template('local_nit_finance/wallet_page',
+            \local_nit_finance\local\wallet_page::context($userid, '/local/nit_lessons/student.php?tab=wallet'))];
+    }
+
+    /**
+     * Tab: "My earnings", teachers only (local_nit_finance; the withdrawal form still
+     * posts to earnings.php).
+     *
+     * @param int $userid
+     * @param array $params
+     * @return array
+     */
+    private static function tab_earnings(int $userid, array $params): array {
+        global $OUTPUT;
+        $url = new \moodle_url('/local/nit_finance/earnings.php');
+        return ['embedhtml' => $OUTPUT->render_from_template('local_nit_finance/earnings_page',
+            \local_nit_finance\local\earnings_page::context($userid, $url))];
     }
 }

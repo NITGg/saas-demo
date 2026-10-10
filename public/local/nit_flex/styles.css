@@ -327,6 +327,34 @@
     background: var(--nit-brand-primary);
     color: var(--nit-brand-onprimary);
 }
+/* The hub's tabs come in pairs (to buy / mine): wrap instead of scrolling, with a
+   thin divider where a new pair starts. */
+.nitlx-tabs {
+    flex-wrap: wrap;
+    overflow-x: visible;
+}
+.nitlx a.nitlx-tab--group {
+    position: relative;
+    margin-inline-start: 9px;
+}
+.nitlx a.nitlx-tab--group::before {
+    content: "";
+    position: absolute;
+    inset-inline-start: -9px;
+    top: 22%;
+    bottom: 22%;
+    width: 1px;
+    background: var(--nit-brand-borderprimary);
+}
+/* A plugin page drawn as a hub tab (Flex packages, wallet, earnings): no second
+   frame or title — the hub has them. */
+.nitlx-embed .nitfin__wrap {
+    max-width: none;
+    padding: 0;
+}
+.nitlx-embed .nitfin__wrap > .nitfin__title {
+    display: none;
+}
 .nitlx-toolbar {
     display: flex;
     gap: 10px;

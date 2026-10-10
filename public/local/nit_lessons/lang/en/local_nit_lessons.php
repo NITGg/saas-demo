@@ -57,9 +57,12 @@ $string['set_absence_report_minutes_desc'] = 'Minutes after the start time befor
 // Tabs and hub.
 $string['tab_book'] = 'Book a lesson';
 $string['tab_lessons'] = 'My lessons';
-$string['tab_packages'] = 'Packages & Flex';
+$string['tab_flexavailable'] = 'Available Flex packages';
+$string['tab_packages'] = 'My Flex';
 $string['tab_subavailable'] = 'Available subscriptions';
 $string['tab_mysubs'] = 'My subscriptions';
+$string['tab_wallet'] = 'My wallet';
+$string['tab_earnings'] = 'My earnings';
 $string['flexavailable'] = 'Flex available';
 $string['flexbooked'] = '{$a} booked for upcoming lessons';
 $string['nopackage'] = 'You have no active package.';

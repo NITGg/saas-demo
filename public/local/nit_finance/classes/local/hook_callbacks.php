@@ -36,7 +36,7 @@ class hook_callbacks {
         }
         $hook->get_primaryview()->add(
             get_string('mywallet', 'local_nit_finance'),
-            new \moodle_url('/local/nit_finance/wallet.php'),
+            wallet_page::url(), // The student hub's "محفظتي" tab.
             \navigation_node::TYPE_CUSTOM,
             null,
             'local_nit_finance_wallet'
@@ -46,7 +46,9 @@ class hook_callbacks {
         if (earnings_page::is_teacher((int) $USER->id)) {
             $hook->get_primaryview()->add(
                 get_string('myearnings', 'local_nit_finance'),
-                new \moodle_url('/local/nit_finance/earnings.php'),
+                file_exists($GLOBALS['CFG']->dirroot . '/local/nit_lessons/student.php')
+                    ? new \moodle_url('/local/nit_lessons/student.php', ['tab' => 'earnings'])
+                    : new \moodle_url('/local/nit_finance/earnings.php'),
                 \navigation_node::TYPE_CUSTOM,
                 null,
                 'local_nit_finance_earnings'

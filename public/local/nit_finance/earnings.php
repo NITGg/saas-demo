@@ -16,7 +16,8 @@
 
 /**
  * "My earnings" for teachers: balance cards, withdrawal requests and every earning
- * (activities sold on their own and live lessons paid with a Flex).
+ * (activities sold on their own and live lessons paid with a Flex). Shown as the
+ * "أرباحي" tab of the student hub (local/nit_lessons/student.php?tab=earnings).
  *
  * @package    local_nit_finance
  * @copyright  2026 NIT
@@ -35,6 +36,9 @@ if (isguestuser()) {
 }
 
 $url = new moodle_url('/local/nit_finance/earnings.php');
+// Shown as the "أرباحي" tab of the student hub; this page keeps the withdrawal action.
+$back = file_exists($CFG->dirroot . '/local/nit_lessons/student.php')
+    ? new moodle_url('/local/nit_lessons/student.php', ['tab' => 'earnings']) : $url;
 $PAGE->set_url($url);
 $PAGE->set_context(context_system::instance());
 $PAGE->set_pagelayout('standard');
@@ -62,9 +66,13 @@ if (optional_param('action', '', PARAM_ALPHA) === 'withdraw' && confirm_sesskey(
         }
         wallet::request_withdrawal($userid, $amount, $method, $account);
     } catch (\local_nit_finance\exception\finance_exception $e) {
-        redirect($url, $e->getMessage(), null, \core\output\notification::NOTIFY_ERROR);
+        redirect($back, $e->getMessage(), null, \core\output\notification::NOTIFY_ERROR);
     }
-    redirect($url, get_string('earn_requested', 'local_nit_finance'), null, \core\output\notification::NOTIFY_SUCCESS);
+    redirect($back, get_string('earn_requested', 'local_nit_finance'), null, \core\output\notification::NOTIFY_SUCCESS);
+}
+
+if ($back->compare($url, URL_MATCH_BASE) === false) {
+    redirect($back);
 }
 
 echo $OUTPUT->header();

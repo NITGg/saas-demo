@@ -15,8 +15,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * "My lessons & Flex" (student): book a lesson, my lessons, packages & Flex, available
- * subscriptions, my subscriptions.
+ * "My lessons & Flex" (student): book a lesson, my lessons, Flex packages to buy, my Flex,
+ * available subscriptions, my subscriptions, my wallet and (teachers) my earnings.
  *
  * @package    local_nit_lessons
  * @copyright  2026 NIT
@@ -33,9 +33,11 @@ if (isguestuser()) {
     throw new require_login_exception('Guests have no lessons');
 }
 
-$tab = optional_param('tab', 'book', PARAM_ALPHA);
-if (!in_array($tab, hub::TABS, true)) {
-    $tab = 'book';
+// The tabs this user has (no Flex tabs while Flex is off, "My earnings" for teachers).
+$tabs = hub::tabs((int) $USER->id);
+$tab = optional_param('tab', $tabs[0], PARAM_ALPHA);
+if (!in_array($tab, $tabs, true)) {
+    $tab = $tabs[0];
 }
 $url = new moodle_url('/local/nit_lessons/student.php', ['tab' => $tab]);
 $PAGE->set_url($url);
@@ -43,7 +45,6 @@ $PAGE->set_context(context_system::instance());
 $PAGE->set_pagelayout('standard');
 $PAGE->set_title(get_string('studenthub', 'local_nit_lessons'));
 $PAGE->set_heading(get_string('studenthub', 'local_nit_lessons'));
-local_nit_flex_require_enabled();
 
 // Buy a subscription plan online (tab 4).
 if (optional_param('action', '', PARAM_ALPHA) === 'buysub' && confirm_sesskey()) {
@@ -58,6 +59,11 @@ if (optional_param('action', '', PARAM_ALPHA) === 'buysub' && confirm_sesskey())
 
 $PAGE->requires->strings_for_js(['noslots', 'picktimefirst', 'field_note', 'field_completenote', 'field_reason',
     'field_reasonoptional'], 'local_nit_lessons');
+if ($tab === 'flexavailable') {
+    // The buy dialog of local_nit_flex/packages_page.
+    $PAGE->requires->strings_for_js(['couponapplied', 'couponcheckfailed', 'buysummary'], 'local_nit_flex');
+    $PAGE->requires->strings_for_js(['amountwithcurrency'], 'local_nit_finance');
+}
 
 $params = [
     'search' => optional_param('search', '', PARAM_TEXT),
