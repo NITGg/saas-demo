@@ -2,6 +2,7 @@
 require_once(__DIR__ . '/../../config.php');
 require_once($CFG->dirroot . '/course/lib.php');
 require_once($CFG->libdir . '/filelib.php');
+require_once($CFG->dirroot . '/local/nit_category/lib.php');
 
 // Respect the site's forced-login policy: if the site requires login to browse,
 // gate this catalogue page too (core_course_category visibility checks below
@@ -12,6 +13,9 @@ if (!empty($CFG->forcelogin)) {
 
 $categoryid = optional_param('id', 0, PARAM_INT);   // Parent category; 0 = the whole catalogue (all courses).
 $subid      = optional_param('sub', 0, PARAM_INT);  // 0 = "All" (every subcategory as its own section).
+// Search text (?q=; the navbar search box's "all results" lands here): kept as typed for
+// the box, matched lower-cased on the course names and summary (catalogue::matches_text()).
+$qtext      = core_text::substr(trim(optional_param('q', '', PARAM_TEXT)), 0, 100);
 
 // Parent category. id=0 → the top category, i.e. the global "All courses" catalogue
 // (every top-level category becomes a section).
@@ -39,7 +43,8 @@ if ($subid) {
     }
 }
 
-$PAGE->set_url(new moodle_url('/local/nit_category/index.php', ['id' => $categoryid, 'sub' => $subid]));
+$PAGE->set_url(new moodle_url('/local/nit_category/index.php',
+    ['id' => $categoryid, 'sub' => $subid] + ($qtext !== '' ? ['q' => $qtext] : [])));
 $PAGE->set_context($context);
 $pagetitle = $istop ? get_string('courses') : $category->get_formatted_name();
 $PAGE->set_title($pagetitle);
@@ -71,6 +76,7 @@ $sort         = $filters['sort'];
 $pricefilter  = $filters['price'];
 $levelfilter  = $filters['level'];
 $ratingfilter = $filters['rating'];
+$filters['q'] = \local_nit_category\catalogue::normalise_query($qtext);
 $leveloptions = \local_nit_category\course_meta::level_options();
 $hasreviews   = \local_nit_category\catalogue::has_reviews();
 
@@ -92,10 +98,12 @@ foreach ($rootnodes as $n) {
 // of any subcategory filter currently selected.
 $bannertotal = $category->get_courses_count(['recursive' => true]);
 
-// Category image: Moodle categories have no image of their own, so fall back to
-// the site logo ("if the category has no image, show the site logo").
-$logo = $OUTPUT->get_logo_url() ?: $OUTPUT->get_compact_logo_url();
-$categoryimage = $logo ? $logo->out(false) : '';
+// Category image + icon (set on the category's "Category image & icon" tab, image.php).
+// The image walks uploaded → first image in the description → nearest parent's; the page
+// head shows it only when there is a real one (a site logo on every category is noise).
+$categoryimage = $istop ? '' : local_nit_category_get_image_url((int) $category->id);
+$categoryicon  = $istop ? '' : local_nit_category_render_icon((int) $category->id, 'nit-cat-icon nit-cat-icon--h1',
+    $category->get_formatted_name());
 
 // Colour palette: this page reads entirely from the site Brand Colors palette
 // (theme_nit's --nit-brand-* custom properties), so it re-skins with the rest of
@@ -143,17 +151,25 @@ $pill = function (moodle_url $url, string $label, bool $active): string {
 $description  = $istop ? '' : format_text($category->description, $category->descriptionformat, ['context' => $context]);
 $categoryname = $istop ? $t('All courses', 'كل الدورات') : $category->get_formatted_name();
 
-// NIT: checkout modal + course offer/price support (guarded — degrade if the plugins are absent).
+// Course pricing present → the price filter is offered.
 $nitcheckout = \local_nit_category\catalogue::checkout_available();
-if ($nitcheckout) {
-    require_once($CFG->dirroot . '/local/nit_commerce/lib.php');
-    $PAGE->requires->js(new moodle_url('/local/nit_commerce/checkout_modal.js'), true);
-}
-// Per-course state for a card: enrolment, subscription coverage, pricing, offer.
-$nitcourseinfo = static function ($courseid): array {
-    global $USER;
-    return \local_nit_category\catalogue::course_state((int) $courseid, (int) ($USER->id ?? 0));
+
+// Every link of the page keeps the search text.
+$withq = static fn(array $p): array => $qtext !== '' ? $p + ['q' => $qtext] : $p;
+
+// The courses are drawn with THE site course card (local_academy/course_card — the same
+// card as the home, teacher and subject pages), from one course query for the page.
+$cardids = [];
+$collectids = static function (array $node) use (&$collectids, &$cardids): void {
+    foreach ($node['courses'] as $c) {
+        $cardids[] = (int) $c->id;
+    }
+    foreach ($node['children'] as $child) {
+        $collectids($child);
+    }
 };
+array_map($collectids, $rootnodes);
+$courserecords = $cardids ? $DB->get_records_list('course', 'id', $cardids) : [];
 
 echo $OUTPUT->header();
 ?>
@@ -196,33 +212,34 @@ echo $OUTPUT->header();
   .nit-cat-pill.on{ background:var(--t-ink); color:var(--t-bg); border-color:var(--t-ink); }
   .nit-cat-secttitle{ font-size:clamp(20px,2.2vw,26px); font-weight:250; letter-spacing:-0.02em; margin:8px 0 20px; display:flex; align-items:baseline; gap:10px; }
   .nit-cat-secttitle .c{ font-size:14px; color:var(--t-muted); font-weight:400; }
+  /* The cards are local_academy/course_card (styles: theme/nit/scss/components/_bthcoursecard.scss). */
   .nit-cat-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); gap:24px; align-items:stretch; }
   .nit-cat-block{ margin-bottom:40px; }
   .nit-cat-block--nested{ margin-inline-start:14px; }
-  .nit-t1-card{ background:var(--t-bg); border:1px solid var(--t-border); border-radius:16px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 14px 34px rgba(20,24,28,0.05); transition:box-shadow .25s ease, transform .25s ease; }
-  .nit-t1-card:hover{ box-shadow:0 22px 48px rgba(20,24,28,0.12); transform:translateY(-3px); }
-  .nit-t1-thumb{ aspect-ratio:16/9; background:repeating-linear-gradient(135deg,#EFEFEC 0 11px,#F7F7F5 11px 22px) center/cover no-repeat; position:relative; }
-  .nit-t1-badge{ position:absolute; top:12px; inset-inline-start:12px; background:var(--t-bg); color:var(--t-accent); font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:5px 9px; border-radius:6px; box-shadow:0 4px 12px rgba(20,24,28,.12); }
-  .nit-t1-badge--level{ inset-inline-start:auto; inset-inline-end:12px; background:var(--t-ink); color:var(--t-bg); }
-  .nit-t1-rating{ font-size:13px; font-weight:600; color:var(--t-ink); margin-top:6px; display:flex; align-items:center; gap:5px; }
-  .nit-t1-rating .s{ color:#F5A623; }
-  .nit-t1-rating .c{ color:var(--t-muted); font-weight:500; }
-  .nit-t1-cb{ padding:20px; display:flex; flex-direction:column; flex:1; }
-  .nit-t1-title{ font-size:18px; font-weight:550; line-height:1.35; letter-spacing:-0.015em; margin:0; color:var(--t-ink); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-  .nit-t1-teacher{ display:flex; align-items:center; gap:8px; margin-top:12px; font-size:13px; color:var(--t-muted); }
-  .nit-t1-foot{ margin-top:auto; padding-top:16px; border-top:1px solid color-mix(in srgb, var(--t-border) 80%, transparent); }
-  .nit-t1-priceslot{ min-height:26px; display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px; font-weight:650; }
-  .nit-t1-strike{ font-size:13px; color:var(--t-muted); text-decoration:line-through; opacity:.7; font-weight:400; }
-  .nit-t1-price{ font-size:17px; font-weight:650; letter-spacing:-0.02em; color:var(--t-ink); }
-  .nit-t1-offer{ background:var(--t-accent); color:var(--t-on); font-size:11px; font-weight:700; padding:3px 9px; border-radius:50px; }
-  .nit-t1-free{ font-size:13px; font-weight:700; color:var(--nit-brand-success); }
-  .nit-t1-chip{ display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:700; padding:4px 12px; border-radius:50px; }
-  .nit-t1-chip--enr{ background:color-mix(in srgb, var(--nit-brand-success) 15%, transparent); color:var(--nit-brand-success); }
-  .nit-t1-chip--cov{ background:var(--t-accent-soft); color:var(--t-accent); }
-  .nit-cat .nit-t1-foot .btn{ border-radius:10px !important; font-weight:600 !important; }
-  .nit-cat .nit-t1-foot .btn-primary{ background:var(--t-accent) !important; border-color:var(--t-accent) !important; color:var(--t-on) !important; }
-  .nit-cat .nit-t1-foot .btn-outline-primary{ border:1px solid var(--t-border) !important; color:var(--t-ink) !important; }
   .nit-cat .lp-card-badge{ display:none !important; }
+  /* Category image + icon (image.php). One rule for both icon kinds the renderer emits:
+     an <img> (uploaded icon) or a <span> holding an emoji. */
+  .nit-cat-heroimg{ width:140px; height:140px; flex:none; object-fit:cover; border-radius:20px; border:1px solid var(--t-border); background:var(--cbg3); }
+  .nit-cat-headtext{ flex:1 1 320px; min-width:0; }
+  .nit-cat-h1{ display:flex; align-items:center; gap:12px; }
+  .nit-cat-icon{ display:inline-block; flex:none; object-fit:contain; text-align:center; line-height:1; }
+  .nit-cat-icon--h1{ width:44px; height:44px; font-size:38px; }
+  .nit-cat-icon--pill{ width:20px; height:20px; font-size:17px; }
+  .nit-cat-icon--sect, .nit-cat-sectimg{ width:30px; height:30px; font-size:26px; align-self:center; }
+  .nit-cat-sectimg{ object-fit:cover; border-radius:8px; }
+  .nit-cat .nit-cat-filter .nit-cat-filtername{ display:inline-flex; align-items:center; gap:8px; font-size:14px; color:inherit; }
+  @media (max-width:600px){ .nit-cat-heroimg{ width:96px; height:96px; border-radius:16px; } }
+  /* Search box (same look as the navbar search pill). */
+  .nit-cat-search{ display:flex; align-items:center; gap:8px; margin-top:22px; max-width:560px; }
+  .nit-cat-search-box{ position:relative; flex:1; min-width:0; }
+  .nit-cat-search-box svg{ position:absolute; inset-inline-start:14px; top:50%; transform:translateY(-50%); width:18px; height:18px; color:var(--t-muted); pointer-events:none; }
+  .nit-cat .nit-cat-search input{ width:100%; height:46px; border:1px solid var(--t-border) !important; border-radius:9999px !important; padding-inline:42px 16px; font:inherit; font-size:15px;
+    background:var(--t-bg) !important; color:var(--t-ink) !important; outline:none; transition:border-color .2s ease, box-shadow .2s ease; }
+  .nit-cat .nit-cat-search input:focus{ border-color:var(--t-accent) !important; box-shadow:0 0 0 3px var(--t-accent-soft); }
+  .nit-cat-search button{ height:46px; padding:0 22px; border:0; border-radius:9999px; background:var(--t-accent); color:var(--t-on); font:inherit; font-size:15px; font-weight:700; cursor:pointer; white-space:nowrap; }
+  .nit-cat-search button:hover{ filter:brightness(.92); }
+  .nit-cat-searchnote{ margin-top:10px; font-size:14px; color:var(--t-muted); }
+  .nit-cat-searchnote a{ color:var(--t-accent); font-weight:600; margin-inline-start:6px; }
 </style>
 <div dir="auto" class="nit-cat<?= $brandgroupclass !== '' ? ' ' . $brandgroupclass : '' ?>" style="<?= $stylevars ?>">
   <div class="nit-cat-wrap">
@@ -237,13 +254,36 @@ echo $OUTPUT->header();
     </nav>
 
     <div class="nit-cat-head">
-      <div>
+      <?php if ($categoryimage !== ''): ?>
+        <img class="nit-cat-heroimg" src="<?= s($categoryimage) ?>" alt="">
+      <?php endif; ?>
+      <div class="nit-cat-headtext">
         <div class="nit-cat-eyebrow"><?= $t('Catalog', 'الكتالوج') ?></div>
-        <h1 class="nit-cat-h1"><?= $categoryname ?></h1>
+        <h1 class="nit-cat-h1"><?= $categoryicon ?><span><?= $categoryname ?></span></h1>
         <?php if (trim(strip_tags($description)) !== ''): ?>
           <div class="nit-cat-desc"><?= $description ?></div>
         <?php endif; ?>
         <div class="nit-cat-count"><strong><?= $totalcourses ?></strong> <?= $t('courses', 'دورة') ?> · <?= $categoryname ?></div>
+        <form method="get" class="nit-cat-search" role="search" action="<?= (new moodle_url('/local/nit_category/index.php'))->out(false) ?>">
+          <?php if ($categoryid): ?><input type="hidden" name="id" value="<?= (int) $categoryid ?>"><?php endif; ?>
+          <?php if ($subid): ?><input type="hidden" name="sub" value="<?= (int) $subid ?>"><?php endif; ?>
+          <?php if ($sort !== 'recommended'): ?><input type="hidden" name="sort" value="<?= s($sort) ?>"><?php endif; ?>
+          <?php if ($pricefilter !== 'all'): ?><input type="hidden" name="price" value="<?= s($pricefilter) ?>"><?php endif; ?>
+          <?php if ($levelfilter !== ''): ?><input type="hidden" name="level" value="<?= s($levelfilter) ?>"><?php endif; ?>
+          <?php if ($ratingfilter > 0): ?><input type="hidden" name="rating" value="<?= (int) $ratingfilter ?>"><?php endif; ?>
+          <div class="nit-cat-search-box">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5A6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5S14 7.01 14 9.5S11.99 14 9.5 14"/></svg>
+            <input type="search" name="q" value="<?= s($qtext) ?>" maxlength="100" autocomplete="off"
+              placeholder="<?= s($t('Search courses…', 'ابحث عن كورس…')) ?>" aria-label="<?= s($t('Search courses', 'ابحث عن كورس')) ?>">
+          </div>
+          <button type="submit"><?= $t('Search', 'بحث') ?></button>
+        </form>
+        <?php if ($qtext !== ''): ?>
+          <div class="nit-cat-searchnote">
+            <?= $t('Results for', 'نتائج البحث عن') ?> «<?= s($qtext) ?>»
+            <a href="<?= (new moodle_url('/local/nit_category/index.php', array_filter(['id' => $categoryid, 'sub' => $subid, 'sort' => $sort !== 'recommended' ? $sort : null, 'price' => $pricefilter !== 'all' ? $pricefilter : null, 'level' => $levelfilter !== '' ? $levelfilter : null, 'rating' => $ratingfilter ?: null])))->out() ?>"><?= $t('Clear search', 'مسح البحث') ?></a>
+          </div>
+        <?php endif; ?>
       </div>
       <form method="get" class="nit-cat-sort" action="<?= (new moodle_url('/local/nit_category/index.php'))->out(false) ?>">
         <input type="hidden" name="id" value="<?= (int) $categoryid ?>">
@@ -251,6 +291,7 @@ echo $OUTPUT->header();
         <?php if ($pricefilter !== 'all'): ?><input type="hidden" name="price" value="<?= s($pricefilter) ?>"><?php endif; ?>
         <?php if ($levelfilter !== ''): ?><input type="hidden" name="level" value="<?= s($levelfilter) ?>"><?php endif; ?>
         <?php if ($ratingfilter > 0): ?><input type="hidden" name="rating" value="<?= (int) $ratingfilter ?>"><?php endif; ?>
+        <?php if ($qtext !== ''): ?><input type="hidden" name="q" value="<?= s($qtext) ?>"><?php endif; ?>
         <label for="nit-sort"><?= $t('Sort', 'ترتيب') ?></label>
         <select id="nit-sort" name="sort" onchange="this.form.submit()">
           <option value="recommended" <?= $sort === 'recommended' ? 'selected' : '' ?>><?= $t('Recommended', 'موصى به') ?></option>
@@ -264,17 +305,17 @@ echo $OUTPUT->header();
       <aside class="nit-cat-side">
         <div class="nit-cat-side-head">
           <span><?= $t('Categories', 'التصنيفات') ?></span>
-          <?php if ($subid): ?><a href="<?= (new moodle_url('/local/nit_category/index.php', array_filter(['id' => $categoryid, 'sort' => $sort, 'price' => $pricefilter !== 'all' ? $pricefilter : null, 'level' => $levelfilter !== '' ? $levelfilter : null, 'rating' => $ratingfilter ?: null])))->out() ?>"><?= $t('Clear', 'مسح') ?></a><?php endif; ?>
+          <?php if ($subid): ?><a href="<?= (new moodle_url('/local/nit_category/index.php', $withq(array_filter(['id' => $categoryid, 'sort' => $sort, 'price' => $pricefilter !== 'all' ? $pricefilter : null, 'level' => $levelfilter !== '' ? $levelfilter : null, 'rating' => $ratingfilter ?: null]))))->out() ?>"><?= $t('Clear', 'مسح') ?></a><?php endif; ?>
         </div>
         <?php
           // Preserve the active price / level / rating filters across category switches.
-          $caturl = function (?int $sub) use ($categoryid, $sort, $pricefilter, $levelfilter, $ratingfilter): string {
+          $caturl = function (?int $sub) use ($withq, $categoryid, $sort, $pricefilter, $levelfilter, $ratingfilter): string {
               $p = ['id' => $categoryid, 'sort' => $sort];
               if ($sub) { $p['sub'] = $sub; }
               if ($pricefilter !== 'all') { $p['price'] = $pricefilter; }
               if ($levelfilter !== '') { $p['level'] = $levelfilter; }
               if ($ratingfilter > 0) { $p['rating'] = $ratingfilter; }
-              return (new moodle_url('/local/nit_category/index.php', $p))->out();
+              return (new moodle_url('/local/nit_category/index.php', $withq($p)))->out();
           };
         ?>
         <a class="nit-cat-filter<?= $subid === 0 ? ' on' : '' ?>" href="<?= $caturl(null) ?>">
@@ -284,7 +325,7 @@ echo $OUTPUT->header();
         <?php foreach ($subcategories as $sc): ?>
           <?php $sccount = (int) $sc->get_courses_count(['recursive' => true]); ?>
           <a class="nit-cat-filter<?= $subid === (int) $sc->id ? ' on' : '' ?>" href="<?= $caturl((int) $sc->id) ?>">
-            <span style="font-size:14px;color:inherit;"><?= $sc->get_formatted_name() ?></span>
+            <span class="nit-cat-filtername"><?= local_nit_category_render_icon((int) $sc->id, 'nit-cat-icon nit-cat-icon--pill', $sc->get_formatted_name()) ?><?= $sc->get_formatted_name() ?></span>
             <span><?= $sccount ?></span>
           </a>
         <?php endforeach; ?>
@@ -293,13 +334,13 @@ echo $OUTPUT->header();
           <div class="nit-cat-side-head" style="margin-top:24px;"><span><?= $t('Price', 'السعر') ?></span></div>
           <?php
             $priceopts = ['all' => $t('All', 'الكل'), 'free' => $t('Free', 'مجانًا'), 'paid' => $t('Paid', 'مدفوعة')];
-            $priceurl = function (string $pk) use ($categoryid, $subid, $sort, $levelfilter, $ratingfilter): string {
+            $priceurl = function (string $pk) use ($withq, $categoryid, $subid, $sort, $levelfilter, $ratingfilter): string {
                 $p = ['id' => $categoryid, 'sort' => $sort];
                 if ($subid) { $p['sub'] = $subid; }
                 if ($pk !== 'all') { $p['price'] = $pk; }
                 if ($levelfilter !== '') { $p['level'] = $levelfilter; }
                 if ($ratingfilter > 0) { $p['rating'] = $ratingfilter; }
-                return (new moodle_url('/local/nit_category/index.php', $p))->out();
+                return (new moodle_url('/local/nit_category/index.php', $withq($p)))->out();
             };
             foreach ($priceopts as $pk => $plabel): ?>
               <a class="nit-cat-filter<?= $pricefilter === $pk ? ' on' : '' ?>" href="<?= $priceurl($pk) ?>">
@@ -311,13 +352,13 @@ echo $OUTPUT->header();
         <?php if (!empty($leveloptions)): // Level filter — only when the field exists. ?>
           <div class="nit-cat-side-head" style="margin-top:24px;"><span><?= get_string('level', 'local_nit_category') ?></span></div>
           <?php
-            $levelurl = function (string $lv) use ($categoryid, $subid, $sort, $pricefilter, $ratingfilter): string {
+            $levelurl = function (string $lv) use ($withq, $categoryid, $subid, $sort, $pricefilter, $ratingfilter): string {
                 $p = ['id' => $categoryid, 'sort' => $sort];
                 if ($subid) { $p['sub'] = $subid; }
                 if ($pricefilter !== 'all') { $p['price'] = $pricefilter; }
                 if ($lv !== '') { $p['level'] = $lv; }
                 if ($ratingfilter > 0) { $p['rating'] = $ratingfilter; }
-                return (new moodle_url('/local/nit_category/index.php', $p))->out();
+                return (new moodle_url('/local/nit_category/index.php', $withq($p)))->out();
             };
           ?>
           <a class="nit-cat-filter<?= $levelfilter === '' ? ' on' : '' ?>" href="<?= $levelurl('') ?>">
@@ -333,13 +374,13 @@ echo $OUTPUT->header();
         <?php if ($hasreviews): // Rating filter — only when the reviews plugin is present. ?>
           <div class="nit-cat-side-head" style="margin-top:24px;"><span><?= get_string('rating', 'local_nit_reviews') ?></span></div>
           <?php
-            $ratingurl = function (int $rv) use ($categoryid, $subid, $sort, $pricefilter, $levelfilter): string {
+            $ratingurl = function (int $rv) use ($withq, $categoryid, $subid, $sort, $pricefilter, $levelfilter): string {
                 $p = ['id' => $categoryid, 'sort' => $sort];
                 if ($subid) { $p['sub'] = $subid; }
                 if ($pricefilter !== 'all') { $p['price'] = $pricefilter; }
                 if ($levelfilter !== '') { $p['level'] = $levelfilter; }
                 if ($rv > 0) { $p['rating'] = $rv; }
-                return (new moodle_url('/local/nit_category/index.php', $p))->out();
+                return (new moodle_url('/local/nit_category/index.php', $withq($p)))->out();
             };
             $ratingopts = [0 => $t('All', 'الكل'), 4 => '★★★★ ' . $t('& up', 'فأكثر'), 3 => '★★★ ' . $t('& up', 'فأكثر')];
             foreach ($ratingopts as $rv => $rlabel): ?>
@@ -350,79 +391,18 @@ echo $OUTPUT->header();
         <?php endif; ?>
       </aside>
 
-      <main class="nit-cat-main">
+      <main class="nit-cat-main" data-bthtp>
         <?php
-          // T1 course card — restyled; the pricing/offer/enrolment display and the
-          // checkout trigger (data-nit-buy-course) are IDENTICAL to before.
-          $rendercard = function (core_course_list_element $course, string $sectionname) use ($t, $nitcourseinfo, $hasreviews) {
-              $courseurl  = new moodle_url('/course/view.php', ['id' => $course->id]);
-              $coursename = $course->get_formatted_name();
-              $level      = \local_nit_category\course_meta::get_level((int) $course->id);
-              $agg        = $hasreviews ? \local_nit_reviews\api::get_aggregate((int) $course->id) : null;
-              $price      = function_exists('theme_nit_course_price') ? theme_nit_course_price((int) $course->id) : '';
-              $teacher    = function_exists('theme_nit_course_teacher') ? theme_nit_course_teacher((int) $course->id) : '';
-              $pricelabel = $price !== '' ? $price : $t('Free', 'مجانًا');
-              $info       = $nitcourseinfo($course->id);
-              $detailsurl = $courseurl->out();
-              $enrolurl   = (new moodle_url('/local/nit_subscriptions/enrol.php',
-                  ['courseid' => $course->id, 'sesskey' => sesskey()]))->out(false);
-              // Course thumbnail from the overview files (falls back to the striped placeholder).
-              $img = '';
-              foreach ($course->get_course_overviewfiles() as $f) {
-                  if ($f->is_valid_image()) {
-                      $img = moodle_url::make_pluginfile_url($f->get_contextid(), $f->get_component(),
-                          $f->get_filearea(), $f->get_itemid() ?: null, $f->get_filepath(), $f->get_filename())->out(false);
-                      break;
-                  }
+          // THE site course card (local_academy/course_card), drawn from the course record
+          // like on the home, teacher and subject pages; the year label is the course's
+          // own category, as there.
+          $rendercard = function (core_course_list_element $course, string $sectionname) use ($courserecords, $OUTPUT): void {
+              $record = $courserecords[(int) $course->id] ?? null;
+              if (!$record) {
+                  return;
               }
-          ?>
-          <div class="nit-t1-card">
-            <div class="nit-t1-thumb"<?= $img !== '' ? ' style="background-image:url(\'' . s($img) . '\');"' : '' ?>>
-              <span class="nit-t1-badge"><?= $sectionname ?></span>
-              <?php if ($level !== null): ?><span class="nit-t1-badge nit-t1-badge--level"><?= s($level) ?></span><?php endif; ?>
-            </div>
-            <div class="nit-t1-cb">
-              <a href="<?= $detailsurl ?>" style="color:inherit;"><h3 class="nit-t1-title"><?= $coursename ?></h3></a>
-              <?php if ($teacher !== ''): ?><div class="nit-t1-teacher">👤 <?= s($teacher) ?></div><?php endif; ?>
-              <?php if ($agg && $agg->count > 0): ?>
-                <div class="nit-t1-rating"><span class="s">★</span> <?= number_format($agg->avg, 1) ?> <span class="c">(<?= (int) $agg->count ?>)</span></div>
-              <?php endif; ?>
-              <div class="nit-t1-foot">
-                <div class="nit-t1-priceslot">
-                  <?php if ($info['enrolled']): ?>
-                    <span class="nit-t1-chip nit-t1-chip--enr">✓ <?= $t('Enrolled', 'مُسجَّل') ?></span>
-                  <?php elseif ($info['covered']): ?>
-                    <span class="nit-t1-chip nit-t1-chip--cov">★ <?= $t('In your subscription', 'ضمن اشتراكك') ?></span>
-                  <?php elseif ($info['offerlabel'] !== '' && $info['offerfinal'] > 0): ?>
-                    <span class="nit-t1-strike"><?= s($pricelabel) ?></span>
-                    <span class="nit-t1-price"><?= s(number_format($info['offerfinal'], 0)) ?> <?= $t('EGP', 'ج.م') ?></span>
-                    <span class="nit-t1-offer"><?= s($info['offerlabel']) ?></span>
-                  <?php elseif ($info['haspricing']): ?>
-                    <span class="nit-t1-price"><?= s($pricelabel) ?></span>
-                  <?php else: ?>
-                    <span class="nit-t1-free"><?= $t('Free', 'مجانًا') ?></span>
-                  <?php endif; ?>
-                </div>
-                <div class="d-grid gap-2">
-                  <?php if ($info['enrolled']): ?>
-                    <a href="<?= $detailsurl ?>" class="btn btn-outline-primary fw-bold"><?= $t('Course details', 'تفاصيل الكورس') ?></a>
-                  <?php elseif ($info['covered']): ?>
-                    <a href="<?= $enrolurl ?>" class="btn btn-primary fw-bold"><?= $t('Enroll', 'التحاق') ?></a>
-                    <a href="<?= $detailsurl ?>" class="btn btn-outline-primary fw-bold"><?= $t('Course details', 'تفاصيل الكورس') ?></a>
-                  <?php elseif ($info['haspricing']): ?>
-                    <button type="button" class="btn btn-primary fw-bold" data-nit-buy-course
-                      data-courseid="<?= (int) $course->id ?>" data-name="<?= s($coursename) ?>"
-                      data-price="<?= s((string) $info['price']) ?>"><?= $t('Buy now', 'اشترِ الآن') ?></button>
-                    <a href="<?= $detailsurl ?>" class="btn btn-outline-primary fw-bold"><?= $t('Course details', 'تفاصيل الكورس') ?></a>
-                  <?php else: ?>
-                    <a href="<?= $enrolurl ?>" class="btn btn-primary fw-bold"><?= $t('Enroll', 'التحاق') ?></a>
-                    <a href="<?= $detailsurl ?>" class="btn btn-outline-primary fw-bold"><?= $t('Course details', 'تفاصيل الكورس') ?></a>
-                  <?php endif; ?>
-                </div>
-              </div>
-            </div>
-          </div>
-          <?php
+              $card = \local_academy\local\home_data::course_card($record, $sectionname);
+              echo $OUTPUT->render_from_template('local_academy/course_card', \local_academy\local\home_data::card_view($card));
           };
 
           // Section renderer: a light T1 heading + the course grid, children nested.
@@ -432,9 +412,15 @@ echo $OUTPUT->header();
               $count = $counttree($node);
           ?>
           <div class="nit-cat-block<?= $depth > 0 ? ' nit-cat-block--nested' : '' ?>">
-            <h2 class="nit-cat-secttitle"><?= $name ?> <span class="c">(<?= $count ?>)</span></h2>
+            <?php
+              // Beside the name: the category's own icon, else its own image (no inheriting —
+              // every subcategory of an imaged parent would look the same), else nothing.
+              $secicon = local_nit_category_render_icon((int) $cat->id, 'nit-cat-icon nit-cat-icon--sect', $name);
+              $secimage = $secicon === '' ? local_nit_category_get_image_url((int) $cat->id, false) : '';
+            ?>
+            <h2 class="nit-cat-secttitle"><?= $secicon ?><?php if ($secimage !== ''): ?><img class="nit-cat-sectimg" src="<?= s($secimage) ?>" alt=""><?php endif; ?><?= $name ?> <span class="c">(<?= $count ?>)</span></h2>
             <?php if (!empty($node['courses'])): ?>
-              <div class="nit-cat-grid">
+              <div class="nit-cat-grid nit-brand-18">
                 <?php foreach ($node['courses'] as $course): ?><?php $rendercard($course, $name); ?><?php endforeach; ?>
               </div>
             <?php endif; ?>
@@ -453,6 +439,9 @@ echo $OUTPUT->header();
               foreach ($rootnodes as $node) {
                   $rendernode($node, 0);
               }
+          } else if ($qtext !== '') {
+              echo '<div style="text-align:center; color:var(--t-muted); padding:40px;">'
+                  . $t('No courses match your search.', 'مفيش كورسات مطابقة لبحثك.') . '</div>';
           } else {
               echo '<div style="text-align:center; color:var(--t-muted); padding:40px;">' . $t('No courses found in this category.', 'لا توجد دورات في هذا التصنيف.') . '</div>';
           }
@@ -463,47 +452,7 @@ echo $OUTPUT->header();
 </div>
 <?php
 
-// NIT: wire the course Buy buttons to the shared checkout modal (coupon + auto offer → Kashier).
-if ($nitcheckout) {
-    $costr = local_nit_commerce_string_map([
-        'co_title', 'co_intro', 'co_total', 'co_total_sub', 'co_offer', 'co_coupon', 'co_apply', 'co_discount',
-        'co_secure', 'co_proceed', 'co_cancel', 'co_loading', 'co_coupon_failed', 'co_currency',
-    ]);
-    echo html_writer::script('window.NIT_CO = ' . json_encode([
-        'wwwroot'  => $CFG->wwwroot,
-        'sesskey'  => sesskey(),
-        'commerce' => '/local/nit_commerce/api.php',
-        'str'      => $costr,
-        'loggedin' => isloggedin() && !isguestuser(),
-    ]) . ';');
-    echo html_writer::script(<<<'JS'
-(function () {
-    function init() {
-        if (!window.NitCheckout || !window.NIT_CO) { return; }
-        NitCheckout.init(window.NIT_CO);
-        document.addEventListener('click', function (ev) {
-            var btn = ev.target.closest('[data-nit-buy-course]');
-            if (!btn) { return; }
-            ev.preventDefault();
-            if (!window.NIT_CO.loggedin) { window.location.href = window.NIT_CO.wwwroot + '/login/index.php'; return; }
-            var id = btn.getAttribute('data-courseid');
-            NitCheckout.open({
-                itemType: 'course',
-                itemId: parseInt(id, 10),
-                name: btn.getAttribute('data-name'),
-                price: parseFloat(btn.getAttribute('data-price')) || 0,
-                proceed: function (code) {
-                    window.location.href = window.NIT_CO.wwwroot + '/local/payments/checkout.php?courseid=' + id +
-                        '&sesskey=' + encodeURIComponent(window.NIT_CO.sesskey) + '&coupon_code=' + encodeURIComponent(code);
-                }
-            });
-        });
-    }
-    if (document.readyState !== 'loading') { init(); }
-    else { document.addEventListener('DOMContentLoaded', init); }
-})();
-JS
-    );
-}
+// "… عرض باقي التفاصيل" on the cards (local_academy/course_cards).
+echo $OUTPUT->render_from_template('local_academy/course_cards_js', []);
 
 echo $OUTPUT->footer();

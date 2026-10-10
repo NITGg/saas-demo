@@ -104,33 +104,39 @@
     text-decoration-color: transparent !important;
     border-bottom: 0 !important;
   }
+  /* One fixed-size pill per link: hover tints it, the current page fills it.
+     Bold is kept for every state so the words never shift when the state changes. */
   .nit-navbar .nit-navbar-inline-links .nit-navbar-link{
+    position: relative;
     color: var(--nit-brand-navbartitlecolor, #ffffff) !important;
     font-family: 'Tajawal', 'Almarai', sans-serif;
-    font-size: 14px;
-    font-weight: 600;
-    padding: 6px 14px;
+    font-size: 15px;
+    font-weight: 700;
+    height: 40px;
+    padding: 0 16px;
     border-radius: 9999px;
     background: transparent;
-    transition: all 0.2s ease;
+    box-shadow: none !important;
+    transition: background-color .2s ease, color .2s ease;
     white-space: nowrap;
-    opacity: 0.88;
     display: inline-flex;
     align-items: center;
-    line-height: 1.4;
+    line-height: 1;
   }
-  .nit-navbar .nit-navbar-inline-links .nit-navbar-link:hover{
-    opacity: 1;
-    background: var(--nb-pad-hover, rgba(255,255,255,0.18)) !important;
-    color: var(--nit-brand-navbariconhovercolor, #ffffff) !important;
-    transform: translateY(-1px);
+  /* _navbar_t1.scss gives .nit-navbar-link a sliding underline (::after, absolute);
+     on this pill it stretched under the whole link group — no underline here. */
+  .nit-navbar .nit-navbar-inline-links .nit-navbar-link::after{ content:none !important; display:none !important; }
+  .nit-navbar .nit-navbar-inline-links .nit-navbar-link:hover,
+  .nit-navbar .nit-navbar-inline-links .nit-navbar-link:focus-visible{
+    background: var(--nb-pad-hover, rgba(255,255,255,0.22)) !important;
+    color: var(--nit-brand-navbartitlecolor, #ffffff) !important;
   }
-  .nit-navbar .nit-navbar-inline-links .nit-navbar-link.active{
-    opacity: 1;
-    background: var(--nb-pad, rgba(255,255,255,0.18)) !important;
-    font-weight: 800;
-    color: var(--nit-brand-navbariconhovercolor, #ffffff) !important;
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.25) !important;
+  .nit-navbar .nit-navbar-inline-links .nit-navbar-link:focus-visible{ outline:2px solid var(--nit-brand-navbartitlecolor, #ffffff); outline-offset:2px; }
+  .nit-navbar .nit-navbar-inline-links .nit-navbar-link.active,
+  .nit-navbar .nit-navbar-inline-links .nit-navbar-link.active:hover{
+    background: var(--nit-brand-navbartitlecolor, #ffffff) !important;
+    color: var(--nit-brand-navbarbackground1) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,.12) !important;
   }
   @media (max-width: 991px){
     .nit-navbar .nit-navbar-inline-links{ display: none !important; }
@@ -251,6 +257,18 @@
   .nit-search-submit{ width:100%; height:48px; border:1px solid var(--nit-brand-btnprimaryborder); border-radius:6px; background:var(--nit-brand-primary);
     color:var(--nit-brand-onprimary); font-family:'Almarai',sans-serif; font-size:20px; cursor:pointer; transition:background-color .2s ease; }
   .nit-search-submit:hover{ background:var(--nit-brand-btnprimaryhoverbg); border-color:var(--nit-brand-btnprimaryhoverborder); color:var(--nit-brand-btnprimaryhovertext); }
+  /* live results */
+  .nit-search-card{ width:480px; }
+  .nit-search-results{ display:flex; flex-direction:column; gap:4px; max-height:min(360px, 50vh); overflow-y:auto; margin:-8px -6px 0; }
+  .nit-search-results[hidden]{ display:none; }
+  .nit-search-results a.nit-search-item{ display:flex; align-items:center; gap:12px; padding:8px; border-radius:8px; color:var(--nit-brand-textprimary)!important; text-decoration:none!important; }
+  .nit-search-results a.nit-search-item:hover, .nit-search-results a.nit-search-item:focus-visible{ background:var(--nit-brand-surface)!important; }
+  .nit-search-thumb{ flex:none; width:64px; height:40px; border-radius:6px; object-fit:cover; background:color-mix(in srgb, var(--nit-brand-navbarbackground1) 18%, var(--nit-brand-surface)); }
+  .nit-search-text{ display:flex; flex-direction:column; min-width:0; }
+  .nit-search-name{ font-size:15px; font-weight:700; line-height:1.4; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .nit-search-cat{ font-size:12px; color:var(--nit-brand-textsecondary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .nit-search-msg{ padding:8px; font-size:14px; color:var(--nit-brand-textsecondary); text-align:center; }
+  .nit-search-results a.nit-search-all{ display:block; padding:10px 8px 4px; text-align:center; font-size:14px; font-weight:700; color:var(--nit-brand-bthfieldicon)!important; text-decoration:underline!important; }
   @keyframes nitFade{ from{ opacity:0; } to{ opacity:1; } }
   @keyframes nitPop{ from{ opacity:0; transform:translateY(8px) scale(.98); } to{ opacity:1; transform:none; } }
 </style>
@@ -351,19 +369,27 @@
     </div>
 </nav>
 
-{{! Search dialog — posts to Moodle's real course search. }}
+{{! Search dialog — live results while typing (local/nit_category/suggest.php); submitting
+    (or "view all") opens the course catalogue filtered by the text (local/nit_category/index.php?q=). }}
 <div class="nit-search-modal nit-brand-18" id="nit-search-modal" role="dialog" aria-modal="true" aria-labelledby="nit-search-title" aria-hidden="true">
     <div class="nit-search-backdrop" data-nit-search-close></div>
-    <form class="nit-search-card" action="{{ config.wwwroot }}/course/search.php" method="get" role="search">
+    <form class="nit-search-card" action="{{ config.wwwroot }}/local/nit_category/index.php" method="get" role="search"
+          data-suggest="{{ config.wwwroot }}/local/nit_category/suggest.php"
+          data-str-viewall="{{#str}}bth_searchviewall, theme_nit, %N%{{/str}}"
+          data-str-none="{{#str}}bth_searchnone, theme_nit, %Q%{{/str}}"
+          data-str-browse="{{#str}}bth_searchbrowse, theme_nit{{/str}}"
+          data-str-loading="{{#str}}bth_searchloading, theme_nit{{/str}}">
         <div class="nit-search-title" id="nit-search-title">{{#str}}bth_searchtitle, theme_nit{{/str}}</div>
         <div class="nit-search-group">
-            <input type="text" name="search" id="nit-search-input" required placeholder=" " autocomplete="off">
+            <input type="text" name="q" id="nit-search-input" required maxlength="100" placeholder=" " autocomplete="off"
+                   aria-controls="nit-search-results">
             <label for="nit-search-input">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5A6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5S14 7.01 14 9.5S11.99 14 9.5 14"/></svg>
                 <span>{{#str}}bth_searchlabel, theme_nit{{/str}}</span>
             </label>
             <span class="nit-search-bar"></span>
         </div>
+        <div class="nit-search-results" id="nit-search-results" aria-live="polite" hidden></div>
         <button type="submit" class="nit-search-submit">{{#str}}bth_searchsubmit, theme_nit{{/str}}</button>
     </form>
 </div>
@@ -387,11 +413,50 @@
   var modal = document.getElementById('nit-search-modal');
   var input = document.getElementById('nit-search-input');
   function openSearch(){ if(!modal) return; modal.classList.add('open'); modal.setAttribute('aria-hidden','false');
-    setTimeout(function(){ if(input){ input.focus(); } }, 50); }
+    if(input){ input.focus(); } }
   function closeSearch(){ if(!modal) return; modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); }
   document.querySelectorAll('[data-nit-search-open]').forEach(function(b){ b.addEventListener('click', openSearch); });
   document.querySelectorAll('[data-nit-search-close]').forEach(function(b){ b.addEventListener('click', closeSearch); });
   document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && modal && modal.classList.contains('open')){ closeSearch(); } });
+
+  // ---- live results: the first matching courses + "view all" → the catalogue (?q=) ----
+  var form = modal ? modal.querySelector('form') : null;
+  var box = document.getElementById('nit-search-results');
+  if(form && box && input && window.fetch){
+    var timer = null, seq = 0;
+    var plain = function(html){ return new DOMParser().parseFromString(html, 'text/html').body.textContent || ''; };
+    var el = function(tag, cls, text){ var n = document.createElement(tag); if(cls){ n.className = cls; } if(text){ n.textContent = text; } return n; };
+    var render = function(data, q){
+      box.textContent = '';
+      (data.courses || []).forEach(function(c){
+        var a = el('a', 'nit-search-item'); a.href = c.url;
+        var img = el('img', 'nit-search-thumb'); img.alt = ''; img.loading = 'lazy';
+        if(c.image){ img.src = c.image; }
+        var text = el('span', 'nit-search-text');
+        text.appendChild(el('span', 'nit-search-name', plain(c.name)));
+        if(c.category){ text.appendChild(el('span', 'nit-search-cat', plain(c.category))); }
+        a.appendChild(img); a.appendChild(text); box.appendChild(a);
+      });
+      if(!data.total){ box.appendChild(el('div', 'nit-search-msg', form.dataset.strNone.replace('%Q%', q))); }
+      var all = el('a', 'nit-search-all', data.total ? form.dataset.strViewall.replace('%N%', data.total) : form.dataset.strBrowse);
+      all.href = data.total ? data.moreurl : form.action;
+      box.appendChild(all);
+      box.hidden = false;
+    };
+    input.addEventListener('input', function(){
+      clearTimeout(timer);
+      var q = input.value.trim();
+      if(q.length < 2){ seq++; box.hidden = true; box.textContent = ''; return; }
+      timer = setTimeout(function(){
+        var mine = ++seq;
+        box.textContent = ''; box.appendChild(el('div', 'nit-search-msg', form.dataset.strLoading)); box.hidden = false;
+        fetch(form.dataset.suggest + '?q=' + encodeURIComponent(q), {credentials: 'same-origin'})
+          .then(function(r){ return r.json(); })
+          .then(function(data){ if(mine === seq){ render(data, q); } })
+          .catch(function(){ if(mine === seq){ box.hidden = true; } });
+      }, 250);
+    });
+  }
 })();
 </script>
 

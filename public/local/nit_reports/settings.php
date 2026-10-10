@@ -32,3 +32,8 @@ if ($hassiteconfig || has_capability('local/nit_reports:view', context_system::i
         'local/nit_reports:view'
     ));
 }
+
+// Site administration → Local plugins: keep our pages in the agreed order.
+if (class_exists('\local_academy\local\admin_order')) {
+    \local_academy\local\admin_order::apply($ADMIN);
+}

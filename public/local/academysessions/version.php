@@ -2,7 +2,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_academysessions';
-$plugin->version   = 2026091304;        // JWT affiliation (roles); Vimeo recording; Jitsi+Excalidraw.
+$plugin->version   = 2026101000;        // teacher_first_join (lateness); no secret baked into the code.
 $plugin->requires  = 2024100700;        // Moodle 4.5 LTS baseline (matches the platform).
 $plugin->supported = [405, 502];
 $plugin->maturity  = MATURITY_STABLE;

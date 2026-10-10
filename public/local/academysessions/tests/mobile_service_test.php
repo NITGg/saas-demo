@@ -119,10 +119,38 @@ final class mobile_service_test extends \advanced_testcase {
         mobile_service::teacher_sessions((int) $student->id, (int) $course->id);
     }
 
+    public function test_join_before_the_teacher_records_no_attendance(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [, , $student, $sessionid, $cmid] = $this->fixture();
+        if (!$cmid) {
+            $this->markTestSkipped('mod_jitsi is not installed');
+        }
+
+        $data = mobile_service::join($sessionid, (int) $student->id);
+        $this->assertFalse($data['teacher_present']);
+        $this->assertFalse($DB->record_exists('academy_session_attendance',
+            ['sessionid' => $sessionid, 'userid' => $student->id]));
+    }
+
+    public function test_join_without_a_jitsi_room_records_attendance_at_once(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [, , $student, $sessionid] = $this->fixture(false);
+
+        mobile_service::join($sessionid, (int) $student->id);
+        $this->assertTrue($DB->record_exists('academy_session_attendance',
+            ['sessionid' => $sessionid, 'userid' => $student->id]));
+    }
+
     public function test_join_leave_rejoin(): void {
         global $DB;
         $this->resetAfterTest();
-        [, $teacher, $student, $sessionid] = $this->fixture();
+        [, $teacher, $student, $sessionid, $cmid] = $this->fixture();
+        if ($cmid) {
+            // The teacher is in the call, so the student's join counts.
+            \mod_jitsi\local\presence::set(get_coursemodule_from_id('jitsi', $cmid), (int) $teacher->id, true);
+        }
 
         $data = mobile_service::join($sessionid, (int) $student->id);
         $this->assertSame($sessionid, $data['sessionid']);

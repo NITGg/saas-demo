@@ -20,6 +20,7 @@ video-progress protocol has one new step, and payment messages arrive in the buy
 | 6 | Payment messages in the buyer's language | the `payment_confirmation` notification, the gateway page description | No |
 | 7 | Device limit | New sign-in `POST /local/nit_devices/token.php` (+ `deviceid`); optional `deviceid` on Google sign-in and `register_student`; new errorcodes `devicelimit`, `appupdaterequired`; new `/local/nit_devices/api.php` → `get_my_devices` | **Yes**: send a per-install `deviceid` and handle the two errors (§4) |
 | 8 | Teacher reports API | New endpoint `/local/nit_reports/api.php`: `get_reports`, `get_report` (the 5 teacher reports as cards + table) | Yes, for the new teacher "Reports" screen (§5) |
+| 9 | Live-session rooms (Jitsi) | `mod_jitsi_get_session_info` (`jwt` empty until `available`), `/mod/jitsi/api_token.php` (new errorcodes `waitingforteacher`, `jitsinotconfigured`), `join_session` (attendance after the teacher arrives) | **Check**: don't join with an empty `jwt` (§3.5) |
 
 ---
 
@@ -247,6 +248,30 @@ fields).
 - The payment description sent to the gateway ("Payment for <course>", shown on the Kashier page) uses the
   resolved course name.
 - **App action:** none.
+
+### 3.5 Live-session rooms (Jitsi): one access rule for web and mobile
+
+`mod_jitsi_get_session_info`, `/mod/jitsi/api_token.php` and `join_session` now follow the same rule as the
+web room page:
+- **Moderator = the session's own teacher** (and site admins). Another teacher of the same course is no
+  longer a moderator of a session that is not theirs. They are refused like any non-invited user:
+  `available=false` from `get_session_info`, and HTTP 403 `notallowed` from `api_token.php`.
+- **`mod_jitsi_get_session_info`: `jwt` is now `""` while `available` is `false`.** Before, the JWT came back
+  even while the student was waiting for the teacher, so the room could be opened early. Keep polling every
+  5 s while `available` is false (as documented); the JWT arrives with `available=true`. `available_info` is
+  the message to show.
+- **`/mod/jitsi/api_token.php` now applies the "waiting for teacher" gate:** new 403 errorcode
+  `waitingforteacher` (poll again). The other 403 codes are unchanged: `notallowed`, `sessionnotavailable`,
+  `sessionended`, `nopermissions`.
+- **New 503 errorcode `jitsinotconfigured`** (`api_token.php`; a WS exception with the same code from
+  `get_session_info`): the academy has no Jitsi secret set. Show "live sessions are not available"; this is
+  an admin setup problem.
+- **`join_session` records attendance only once the teacher is in the call** (for a session with a Jitsi
+  room). Before that it still returns the session, with `teacher_present=false`. The student's attendance is
+  recorded when `get_session_info` lets them in.
+- `set_teacher_present` / `end_room` already used the session-teacher rule. No change.
+- **App action:** don't join the room when `jwt` is empty; handle `waitingforteacher` and
+  `jitsinotconfigured` if the app uses `api_token.php`.
 
 ---
 

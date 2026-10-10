@@ -151,7 +151,7 @@ class core_renderer extends \theme_boost\output\core_renderer {
             $defaultrows = \theme_nit_navmenu_default('bar');
             $links = [];
             foreach ($defaultrows as $row) {
-                if (\theme_nit_navmenu_audience_ok((string) ($row['show'] ?? 'all'), (int) ($USER->id ?? 0))) {
+                if (\theme_nit_navmenu_audience_ok($row['show'] ?? 'all', (int) ($USER->id ?? 0), 'bar')) {
                     $url = \theme_nit_footer_absolute_url((string) ($row['url'] ?? ''));
                     $name = trim((string) ($row['name'] ?? ''));
                     if ($url !== '' && $name !== '') {
@@ -164,43 +164,63 @@ class core_renderer extends \theme_boost\output\core_renderer {
             return [];
         }
         $here = $this->page->has_set_url() ? $this->page->url : null;
-        $items = [];
-        foreach ($links as $link) {
+        $urls = [];
+        foreach ($links as $i => $link) {
             try {
-                $url = new \moodle_url($link['url']);
-                $outurl = $url->out(false);
-                $isactive = false;
-                if ($here) {
-                    $herepath = rtrim($here->get_path(), '/') ?: '/';
-                    $urlpath = rtrim($url->get_path(), '/') ?: '/';
-                    if ($herepath === $urlpath) {
-                        $hereparams = $here->params();
-                        $urlparams = $url->params();
-                        if (!empty($urlparams)) {
-                            $match = true;
-                            foreach ($urlparams as $pk => $pv) {
-                                if (!array_key_exists($pk, $hereparams) || (string) $hereparams[$pk] !== (string) $pv) {
-                                    $match = false;
-                                    break;
-                                }
-                            }
-                            $isactive = $match;
-                        } else {
-                            $isactive = empty($hereparams);
-                        }
-                    }
-                }
+                $urls[$i] = new \moodle_url($link['url']);
             } catch (\Throwable $e) {
-                $outurl = $link['url'];
-                $isactive = false;
+                $urls[$i] = null;
             }
+        }
+        $active = self::navbar_active_flags($here, $urls);
+        $items = [];
+        foreach ($links as $i => $link) {
             $items[] = [
                 'name' => $link['name'],
-                'url' => $outurl,
-                'isactive' => (bool) $isactive,
+                'url' => $urls[$i] ? $urls[$i]->out(false) : $link['url'],
+                'isactive' => $active[$i],
             ];
         }
         return $items;
+    }
+
+    /**
+     * Which navbar links point at the page being viewed.
+     *
+     * A link matches when it has the page's path ("/x/" = "/x/index.php") and every
+     * one of its own parameters equals the page's; the page may carry more (a link
+     * to the catalogue stays lit on "?id=0&sub=0"). When several links match, only
+     * the most specific (most parameters) is lit, so "page.php" does not light up
+     * next to "page.php?slug=about".
+     *
+     * @param \moodle_url|null $here the page url
+     * @param array<int|string, \moodle_url|null> $urls the links (null = unparsable)
+     * @return array<int|string, bool> same keys as $urls
+     */
+    public static function navbar_active_flags(?\moodle_url $here, array $urls): array {
+        $path = static function (\moodle_url $u): string {
+            return rtrim(preg_replace('~/index\.php$~', '', $u->get_path()), '/');
+        };
+        $scores = [];
+        foreach ($urls as $i => $url) {
+            $scores[$i] = -1;
+            if (!$here || !$url || $path($here) !== $path($url)) {
+                continue;
+            }
+            $hereparams = $here->params();
+            $match = true;
+            foreach ($url->params() as $pk => $pv) {
+                if (!array_key_exists($pk, $hereparams) || (string) $hereparams[$pk] !== (string) $pv) {
+                    $match = false;
+                    break;
+                }
+            }
+            if ($match) {
+                $scores[$i] = count($url->params());
+            }
+        }
+        $best = $scores ? max($scores) : -1;
+        return array_map(static fn(int $s): bool => $s >= 0 && $s === $best, $scores);
     }
 
     /**

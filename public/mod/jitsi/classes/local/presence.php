@@ -44,8 +44,10 @@ class presence {
 
     /**
      * Mark the teacher as present in (or gone from) the room. Stamps
-     * academy_live_sessions.teacher_joined_at (the student entry gate), records the
-     * teacher's first join in the attendance table and the lesson audit timeline.
+     * academy_live_sessions.teacher_joined_at (the student entry gate: set while the
+     * teacher is in the call, cleared when they leave), the session teacher's first
+     * join (teacher_first_join, never changed afterwards: what lateness is measured
+     * from) and their attendance row.
      * Standalone rooms (no linked session) have no gate: nothing is stored.
      *
      * @param \stdClass|\cm_info $cm the jitsi course module
@@ -61,61 +63,39 @@ class presence {
             return null;
         }
 
-        $session->teacher_joined_at = $present ? time() : null;
+        $now = time();
+        $session->teacher_joined_at = $present ? $now : null;
         $DB->set_field('academy_live_sessions', 'teacher_joined_at',
             $session->teacher_joined_at, ['id' => $session->id]);
 
-        // Track first join time in attendance table for historical reports,
-        // since teacher_joined_at is cleared when they leave the room.
-        if ($present && !$DB->record_exists('academy_session_attendance',
-                ['sessionid' => $session->id, 'userid' => $userid])) {
-            $att = new \stdClass();
-            $att->sessionid        = $session->id;
-            $att->userid           = $userid;
-            $att->joined_at        = time();
-            $att->duration_seconds = 0;
-            $DB->insert_record('academy_session_attendance', $att);
+        // The session teacher's first entry, kept for lateness reports. Only stamped while
+        // still empty (in SQL, so two racing "joined" pings cannot overwrite it); a site
+        // admin dropping in for support does not count as the teacher arriving.
+        if ($present && (int) $session->teacherid === $userid) {
+            $DB->execute('UPDATE {academy_live_sessions} SET teacher_first_join = :now
+                           WHERE id = :id AND teacher_first_join IS NULL',
+                ['now' => $now, 'id' => $session->id]);
+            $session->teacher_first_join = $DB->get_field('academy_live_sessions', 'teacher_first_join',
+                ['id' => $session->id]);
         }
 
-        // Audit timeline: record when the teacher actually entered the meeting room — a distinct
-        // step from clicking "Start" (which creates the room). record_once so leaving/rejoining
-        // does not add duplicate rows. Keyed off the lesson that owns this session.
-        if ($present && class_exists('\local_academy\audit_manager')
-                && $DB->get_manager()->table_exists('academy_lessons')) {
-            $lessonid = $DB->get_field('academy_lessons', 'id', ['sessionid' => $session->id]);
-            if ($lessonid) {
-                \local_academy\audit_manager::record_once($lessonid, 'teacher_joined', $userid, 'teacher');
-            }
+        // The teacher's attendance row (first join; a rejoin after a leave reopens it).
+        if ($present) {
+            \local_academysessions\session_manager::record_attendance((int) $session->id, $userid, true);
         }
 
         return $session;
     }
 
     /**
-     * Whether a user moderates this room — the same rule as view.php: a holder of
-     * mod/jitsi:moderate; for a room linked to a live session only the session's
-     * assigned teacher (site admins keep moderator for support unless they are a
-     * whitelisted student of it).
+     * Whether a user moderates this room. See access::is_moderator().
      *
      * @param \stdClass|\cm_info $cm the jitsi course module
      * @param int $userid
      * @return bool
      */
     public static function is_moderator($cm, int $userid): bool {
-        global $DB;
-        $context = \context_module::instance($cm->id);
-        if (!has_capability('mod/jitsi:moderate', $context, $userid)) {
-            return false;
-        }
-        $session = self::linked_session($cm);
-        if (!$session) {
-            return true;
-        }
-        if ((int) $session->teacherid === $userid) {
-            return true;
-        }
-        return is_siteadmin($userid) && !$DB->record_exists('academy_session_students',
-            ['sessionid' => $session->id, 'userid' => $userid]);
+        return access::is_moderator($cm, $userid);
     }
 
     /**

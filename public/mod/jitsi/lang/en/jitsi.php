@@ -17,6 +17,7 @@ $string['notallowed']      = 'You are not enrolled in this session.';
 $string['sessionopening']  = 'The session will open in {$a} minute(s).';
 $string['waitingforteacher'] = 'Waiting for the teacher to start the meeting.';
 $string['sessionended']    = 'This session has ended.';
+$string['roomunavailable'] = 'This room is not available to you.';
 $string['youarehost']      = 'You are the host';
 $string['featurelocked']   = 'Live sessions (Jitsi) are available on the Professional plan. Please upgrade your academy to use this activity.';
 $string['recording']       = 'Recording';

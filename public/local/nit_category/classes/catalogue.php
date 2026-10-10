@@ -175,19 +175,34 @@ class catalogue {
      */
     public static function has_active_filter(array $filters): bool {
         $price = ($filters['price'] ?? 'all') !== 'all' && class_exists('\local_payments\price_resolver');
-        return $price || ($filters['level'] ?? '') !== '' || ($filters['rating'] ?? 0) > 0;
+        return $price || ($filters['level'] ?? '') !== '' || ($filters['rating'] ?? 0) > 0
+            || ($filters['q'] ?? '') !== '';
     }
 
     /**
-     * Recursively drop the courses of a node that fail the filters.
+     * The search text as matches_text() wants it: trimmed, single-spaced, lower-cased,
+     * at most 100 characters ('' = no search).
+     *
+     * @param string $q raw search text
+     * @return string
+     */
+    public static function normalise_query(string $q): string {
+        $q = trim(preg_replace('/\s+/u', ' ', $q));
+        return \core_text::strtolower(\core_text::substr($q, 0, 100));
+    }
+
+    /**
+     * Recursively drop the courses of a node that fail the filters (and the search
+     * text in $filters['q'], from normalise_query(), when there is one).
      *
      * @param array $node
      * @param array $filters
      * @return array
      */
     public static function filter_node(array $node, array $filters): array {
+        $q = (string) ($filters['q'] ?? '');
         $node['courses'] = array_values(array_filter($node['courses'],
-            static fn($c) => self::course_matches((int) $c->id, $filters)));
+            static fn($c) => ($q === '' || self::matches_text($c, $q)) && self::course_matches((int) $c->id, $filters)));
         $node['children'] = array_map(static fn($child) => self::filter_node($child, $filters), $node['children']);
         return $node;
     }
@@ -203,7 +218,7 @@ class catalogue {
      * @param core_course_category $category the parent (top() for "all")
      * @param core_course_category[] $subcategories its direct children
      * @param core_course_category|null $target the chosen subcategory, null = all
-     * @param array $filters from normalise_filters()
+     * @param array $filters from normalise_filters(), plus an optional 'q' (normalise_query())
      * @return array[] root nodes
      */
     public static function root_nodes(core_course_category $category, array $subcategories,
@@ -413,6 +428,52 @@ class catalogue {
                 'ratingenabled'  => self::has_reviews(),
             ],
             'courses' => $out,
+        ];
+    }
+
+    /**
+     * The quick results under the navbar search box: the first $limit courses (that
+     * the current user may see) matching the text, in the catalogue's curated order,
+     * and the total — the box links to the catalogue (index.php?q=) for the rest.
+     *
+     * @param string $q raw search text
+     * @param int $limit
+     * @return array{q:string, total:int, courses:array[], moreurl:string}
+     */
+    public static function suggest(string $q, int $limit = 6): array {
+        $q = self::normalise_query($q);
+        $matched = [];
+        if (\core_text::strlen($q) >= 2) {
+            foreach (self::fetch_courses(core_course_category::top(), true, 'recommended') as $course) {
+                if (self::matches_text($course, $q)) {
+                    $matched[] = $course;
+                }
+            }
+        }
+        $out = [];
+        foreach (array_slice($matched, 0, $limit) as $course) {
+            $image = '';
+            foreach ($course->get_course_overviewfiles() as $f) {
+                if ($f->is_valid_image()) {
+                    $image = \moodle_url::make_pluginfile_url($f->get_contextid(), $f->get_component(),
+                        $f->get_filearea(), null, $f->get_filepath(), $f->get_filename())->out(false);
+                    break;
+                }
+            }
+            $category = core_course_category::get((int) $course->category, IGNORE_MISSING, true);
+            $out[] = [
+                'id'       => (int) $course->id,
+                'name'     => $course->get_formatted_name(),
+                'url'      => (new \moodle_url('/course/view.php', ['id' => $course->id]))->out(false),
+                'image'    => $image,
+                'category' => $category ? $category->get_formatted_name() : '',
+            ];
+        }
+        return [
+            'q'       => $q,
+            'total'   => count($matched),
+            'courses' => $out,
+            'moreurl' => (new \moodle_url('/local/nit_category/index.php', ['q' => $q]))->out(false),
         ];
     }
 

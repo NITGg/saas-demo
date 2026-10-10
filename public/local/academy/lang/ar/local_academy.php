@@ -59,6 +59,7 @@ $string['subjectpage_teachers'] = 'المدرسين';
 $string['subjectpage_teachercount'] = 'عدد المدرسين';
 $string['subjectpage_teachersh1'] = 'مدرسين';
 $string['subjectpage_heading2'] = 'المادة';
+$string['subjectpage_coursesh1'] = 'كورسات';
 $string['subjectpage_noteachers'] = 'لسه مفيش مدرسين ظاهرين هنا';
 $string['subjectpage_noteachers_desc'] = 'أول ما يتضاف مدرسين للمادة دي هتلاقيهم في المكان ده. تقدر تتصفح الكورسات المتاحة.';
 $string['subjectpage_browse'] = 'تصفح الكورسات';

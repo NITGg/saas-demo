@@ -283,8 +283,10 @@ class mobile_service {
     }
 
     /**
-     * A whitelisted student joins: checks the window, records attendance (a rejoin
-     * after leave_session reopens the row) and returns the meeting details.
+     * A whitelisted student joins: checks the window and returns the meeting details.
+     * For a Jitsi room, attendance is only recorded once the teacher is in the call (a
+     * rejoin after leave_session reopens the row); before that the student is still
+     * waiting outside, and mod_jitsi_get_session_info records it when it lets them in.
      *
      * @param int $sessionid
      * @param int $userid
@@ -302,7 +304,10 @@ class mobile_service {
             $code = time() < (int) $session->start_time ? 'err_sessionnotavailable' : 'err_sessionended';
             throw new \moodle_exception($code, 'local_academysessions');
         }
-        session_manager::record_attendance($sessionid, $userid, true);
+        // A session without a Jitsi room (external meeting link) has no teacher gate.
+        if (empty($session->jitsiid) || !empty($session->teacher_joined_at)) {
+            session_manager::record_attendance($sessionid, $userid, true);
+        }
         $cmids = self::jitsi_cmids([(int) $session->jitsiid]);
         return [
             'meeting_link'    => (string) $session->meeting_link,

@@ -70,6 +70,13 @@
     .nit-sf-inner{ flex-direction:column; align-items:flex-start; padding:32px 20px 40px; gap:28px; }
     .nit-sf-cols{ gap:40px; }
   }
+  /* The fixed "?" button (Boost's footer popover toggle): Bassthalk → Help button roles.
+     !important: it carries Boost's .bg-secondary utility. */
+  #page-footer .btn-footer-popover{ background-color:var(--nit-brand-bthhelpbg)!important; color:var(--nit-brand-bthhelpicon)!important;
+    border:0; transition:background-color .2s ease; }
+  #page-footer .btn-footer-popover:hover, #page-footer .btn-footer-popover:focus-visible{
+    background-color:color-mix(in srgb, var(--nit-brand-bthhelpbg) 85%, black)!important; }
+  #page-footer .btn-footer-popover .icon{ color:inherit!important; margin:0; }
 </style>
 {{#output.nit_footer}}
 <div class="nit-site-footer nit-brand-18" role="contentinfo">
@@ -120,7 +127,7 @@
                 {{#pix}}t/messages-o, core{{/pix}}
             </button>
         {{/output.has_communication_links}}
-        <button class="btn btn-icon rounded-circle bg-secondary btn-footer-popover" data-action="footer-popover" aria-label="{{#str}}showfooter, theme_boost{{/str}}">
+        <button class="btn btn-icon rounded-circle bg-secondary btn-footer-popover nit-brand-18" data-action="footer-popover" aria-label="{{#str}}showfooter, theme_boost{{/str}}">
             {{#pix}}e/question, core{{/pix}}
         </button>
     </div>

@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 if ($hassiteconfig) {
-    $ADMIN->add('appearance', new admin_category('local_nit_pages_cat', get_string('pluginname', 'local_nit_pages')));
+    $ADMIN->add('localplugins', new admin_category('local_nit_pages_cat', get_string('pluginname', 'local_nit_pages')));
 
     $ADMIN->add('local_nit_pages_cat', new admin_externalpage(
         'local_nit_pages_manage',

@@ -22,7 +22,11 @@ $present = optional_param('present', 1, PARAM_BOOL);
 list($course, $cm) = get_course_and_cm_from_cmid($cmid, 'jitsi');
 $context = context_module::instance($cm->id);
 require_login($course, false, $cm);
-require_capability('mod/jitsi:moderate', $context);
+// The room's moderator only: for a linked room that is the session's teacher, not any
+// teacher of the course (who could otherwise open another teacher's room to students).
+if (!\mod_jitsi\local\presence::is_moderator($cm, (int) $USER->id)) {
+    throw new required_capability_exception($context, 'mod/jitsi:moderate', 'nopermissions', '');
+}
 
 \mod_jitsi\local\presence::set($cm, (int) $USER->id, (bool) $present);
 

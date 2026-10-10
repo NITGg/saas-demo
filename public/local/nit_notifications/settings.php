@@ -66,3 +66,8 @@ if ($hassiteconfig || has_capability('local/nit_notifications:send', context_sys
         $ADMIN->add('local_nit_notifications_cat', $page);
     }
 }
+
+// Site administration → Local plugins: keep our pages in the agreed order.
+if (class_exists('\local_academy\local\admin_order')) {
+    \local_academy\local\admin_order::apply($ADMIN);
+}

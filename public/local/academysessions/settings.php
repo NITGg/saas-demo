@@ -2,7 +2,8 @@
 defined('MOODLE_INTERNAL') || die();
 
 // NIT SaaS note: one shared Jitsi + Excalidraw server serves EVERY academy, so the
-// connection details below are baked as defaults (a fresh academy needs no config).
+// connection details below are baked as defaults. The two secrets are not: a fresh
+// academy needs them set by provisioning (admin/cli/cfg.php) or by the admin.
 // Rooms are namespaced per-academy in mod_jitsi (jitsi_room_name()), so tenants can
 // safely share the same Jitsi host. Recording storage is VdoCipher (local_vdocipher)
 // — MinIO/Bunny were removed. The Jitsi ACTIVITY is gated to the Professional tier
@@ -31,11 +32,22 @@ if ($hassiteconfig) {
         'academy_jitsi'
     ));
 
+    // The two secrets below have no default: a default is written in the code, so it is
+    // known to everyone who has the code. Provisioning (or the admin) sets them. A site
+    // still on the value that used to be the default gets a warning here.
+    foreach (['jitsi_jwt_app_secret' => 'Jitsi JWT App Secret', 'jibri_notify_key' => 'Jibri Recording Notify Key']
+            as $secretname => $secretlabel) {
+        if (\local_academysessions\jitsi_jwt::uses_public_secret($secretname)) {
+            $settings->add(new admin_setting_heading('local_academysessions/publicsecret_' . $secretname, '',
+                $OUTPUT->notification(get_string('publicsecretwarning', 'local_academysessions', $secretlabel), 'error')));
+        }
+    }
+
     $settings->add(new admin_setting_configpasswordunmask(
         'local_academysessions/jitsi_jwt_app_secret',
         'Jitsi JWT App Secret',
-        'The shared HS256 secret configured on the Jitsi server. Change from the default in production.',
-        'academy_jitsi_secret_2024_change_in_prod'
+        'The shared HS256 secret configured on the Jitsi server. Required: without it nobody can enter a live session.',
+        ''
     ));
 
     $settings->add(new admin_setting_configtext(
@@ -48,8 +60,8 @@ if ($hassiteconfig) {
     $settings->add(new admin_setting_configpasswordunmask(
         'local_academysessions/jibri_notify_key',
         'Jibri Recording Notify Key',
-        'Shared secret the Jibri finalize script sends (X-Notify-Key) to record_notify.php after uploading a recording to VdoCipher. Must match the finalize script\'s MOODLE_NOTIFY_KEY.',
-        'academy-cron-2024'
+        'Shared secret the Jibri finalize script sends (X-Notify-Key) to record_notify.php after uploading a recording. Must match the finalize script\'s MOODLE_NOTIFY_KEY. Empty = recordings are refused.',
+        ''
     ));
 
     $settings->add(new admin_setting_heading(

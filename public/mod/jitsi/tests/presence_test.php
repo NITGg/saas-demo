@@ -62,6 +62,33 @@ final class presence_test extends \advanced_testcase {
         $this->assertNull($DB->get_field('academy_live_sessions', 'teacher_joined_at', ['id' => $sessionid]));
     }
 
+    public function test_first_join_is_kept_when_the_teacher_leaves_and_rejoins(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [, $cm, $teacher, , $sessionid] = $this->linked_room();
+
+        presence::set($cm, (int) $teacher->id, true);
+        $first = (int) $DB->get_field('academy_live_sessions', 'teacher_first_join', ['id' => $sessionid]);
+        $this->assertGreaterThan(0, $first);
+
+        // Leaving clears the gate but not the first join; a later rejoin does not move it.
+        presence::set($cm, (int) $teacher->id, false);
+        $this->waitForSecond();
+        presence::set($cm, (int) $teacher->id, true);
+        $row = $DB->get_record('academy_live_sessions', ['id' => $sessionid]);
+        $this->assertSame($first, (int) $row->teacher_first_join);
+        $this->assertGreaterThan($first, (int) $row->teacher_joined_at);
+    }
+
+    public function test_site_admin_joining_is_not_the_teacher_arriving(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [, $cm, , , $sessionid] = $this->linked_room();
+
+        presence::set($cm, (int) get_admin()->id, true);
+        $this->assertNull($DB->get_field('academy_live_sessions', 'teacher_first_join', ['id' => $sessionid]));
+    }
+
     public function test_set_present_on_standalone_room_stores_nothing(): void {
         global $DB;
         $this->resetAfterTest();

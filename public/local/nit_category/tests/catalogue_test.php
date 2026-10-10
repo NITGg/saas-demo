@@ -175,4 +175,63 @@ final class catalogue_test extends \advanced_testcase {
         $this->assertSame((int) $full->id, (int) $nodes[0]['cat']->id);
         $this->assertSame(1, catalogue::count_tree($nodes[0]));
     }
+
+    public function test_normalise_query(): void {
+        $this->assertSame('', catalogue::normalise_query("  \t "));
+        $this->assertSame('math basics', catalogue::normalise_query("  Math \n  Basics "));
+        $this->assertSame(100, \core_text::strlen(catalogue::normalise_query(str_repeat('ر', 150))));
+    }
+
+    public function test_root_nodes_keep_only_courses_matching_the_search(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $gen = $this->getDataGenerator();
+        $parent = $gen->create_category();
+        $a = $gen->create_category(['parent' => $parent->id]);
+        $b = $gen->create_category(['parent' => $parent->id]);
+        $gen->create_course(['category' => $a->id, 'fullname' => 'Mathematics One']);
+        $gen->create_course(['category' => $a->id, 'fullname' => 'History']);
+        $gen->create_course(['category' => $b->id, 'fullname' => 'Arabic', 'summary' => 'النحو والصرف']);
+
+        $cat = \core_course_category::get($parent->id);
+        $filters = catalogue::normalise_filters('recommended', 'all', '', 0);
+        $courses = static fn(array $nodes): array => array_merge(...array_map(
+            static fn($n) => array_map(static fn($c) => $c->fullname, $n['courses']), $nodes));
+
+        // Name match: only that course, and the category left without a match is dropped.
+        $nodes = catalogue::root_nodes($cat, $cat->get_children(), null,
+            $filters + ['q' => catalogue::normalise_query('MATH')]);
+        $this->assertSame(['Mathematics One'], $courses($nodes));
+        $this->assertSame((int) $a->id, (int) $nodes[0]['cat']->id);
+
+        // Summary match, Arabic text.
+        $nodes = catalogue::root_nodes($cat, $cat->get_children(), null, $filters + ['q' => 'الصرف']);
+        $this->assertSame(['Arabic'], $courses($nodes));
+
+        // No search text: everything.
+        $this->assertCount(3, $courses(catalogue::root_nodes($cat, $cat->get_children(), null, $filters + ['q' => ''])));
+    }
+
+    public function test_suggest_lists_the_first_matches_and_links_to_the_catalogue(): void {
+        $this->resetAfterTest();
+        $gen = $this->getDataGenerator();
+        $cat = $gen->create_category(['name' => 'Year 1']);
+        for ($i = 1; $i <= 8; $i++) {
+            $gen->create_course(['category' => $cat->id, 'fullname' => "Physics $i"]);
+        }
+        $gen->create_course(['category' => $cat->id, 'fullname' => 'Chemistry']);
+        $gen->create_course(['category' => $cat->id, 'fullname' => 'Physics hidden', 'visible' => 0]);
+        $this->setUser($gen->create_user());
+
+        $out = catalogue::suggest('  physics ', 6);
+        $this->assertSame('physics', $out['q']);
+        $this->assertSame(8, $out['total']); // The hidden course is not offered to a student.
+        $this->assertCount(6, $out['courses']);
+        $this->assertSame('Year 1', $out['courses'][0]['category']);
+        $this->assertStringContainsString('/course/view.php?id=', $out['courses'][0]['url']);
+        $this->assertStringContainsString('/local/nit_category/index.php?q=physics', $out['moreurl']);
+
+        // One letter is too short to search.
+        $this->assertSame(0, catalogue::suggest('p')['total']);
+    }
 }

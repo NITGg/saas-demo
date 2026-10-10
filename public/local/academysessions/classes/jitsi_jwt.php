@@ -8,6 +8,29 @@ namespace local_academysessions;
 class jitsi_jwt {
 
     /**
+     * SHA-256 of secret values that were once shipped in the source code (as code
+     * fallbacks / setting defaults). A site still using one is open to anyone with the
+     * code, so the settings page warns about it. Hashes only: never put a secret here.
+     */
+    const PUBLIC_SECRET_HASHES = [
+        'jitsi_jwt_app_secret' => '8850a2b57004fc8dfbe911865842e32a91c831650476a79101441eb63a9108ac',
+        'jibri_notify_key'     => '8dd55df7af73da142b9a87e2cf351377e912fe3f76c12dff930145881b23f316',
+    ];
+
+    /**
+     * Whether a local_academysessions secret setting still holds a value that was
+     * published in the source code.
+     *
+     * @param string $name jitsi_jwt_app_secret or jibri_notify_key
+     * @return bool
+     */
+    public static function uses_public_secret(string $name): bool {
+        $value = (string) get_config('local_academysessions', $name);
+        return $value !== '' && isset(self::PUBLIC_SECRET_HASHES[$name])
+            && hash_equals(self::PUBLIC_SECRET_HASHES[$name], hash('sha256', $value));
+    }
+
+    /**
      * Generate a signed JWT token for a Jitsi room.
      *
      * @param string $room       Jitsi room name
@@ -15,10 +38,15 @@ class jitsi_jwt {
      * @param string $email      User email
      * @param bool   $moderator  True for teachers/hosts
      * @return string  Signed JWT string
+     * @throws \moodle_exception jitsinotconfigured when the site has no secret
      */
     public static function generate(string $room, string $name, string $email, bool $moderator): string {
         $app_id     = get_config('local_academysessions', 'jitsi_jwt_app_id')     ?: 'academy_jitsi';
-        $app_secret = get_config('local_academysessions', 'jitsi_jwt_app_secret') ?: 'academy_jitsi_secret_2024_change_in_prod';
+        // No fallback: a secret written in the code is known to everyone who has the code.
+        $app_secret = (string) get_config('local_academysessions', 'jitsi_jwt_app_secret');
+        if ($app_secret === '') {
+            throw new \moodle_exception('jitsinotconfigured', 'local_academysessions');
+        }
         // The JWT `sub` must be the Jitsi XMPP domain (prosody muc_mapper_domain_base),
         // NOT the public web host. On the shared server that is "meet.jitsi" — using
         // the public host (academy2026.nitg-eg.com) makes prosody reject the token

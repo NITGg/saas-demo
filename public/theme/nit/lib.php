@@ -470,6 +470,8 @@ function theme_nit_brand_roles(): array {
         'bthsearchbg'       => ['section' => 'bassthalk', 'sub' => 'bthnavbar', 'label' => 'Search pill background', 'short' => 'Search pill background', 'usage' => ['the "ابحث في الموقع" pill next to the logo (its hover is derived)'], 'default' => '#d1d5db'],
         'bthprogresstrack'  => ['section' => 'bassthalk', 'sub' => 'bthnavbar', 'label' => 'Scroll progress track', 'short' => 'Progress track', 'usage' => ['the thin bar along the bottom of the navbar while the page is scrolled'], 'default' => '#38bdf8'],
         'bthprogressfill'   => ['section' => 'bassthalk', 'sub' => 'bthnavbar', 'label' => 'Scroll progress fill', 'short' => 'Progress fill', 'usage' => ['the part of the scroll bar already read'], 'default' => '#0369a1'],
+        'bthhelpbg'         => ['section' => 'bassthalk', 'sub' => 'bthnavbar', 'label' => 'Help button background', 'short' => 'Help button background', 'usage' => ['the round "?" button fixed at the bottom corner of every page (opens the page footer: documentation, support, log-in info)', 'its hover is this colour mixed darker'], 'default' => '#0080ff'],
+        'bthhelpicon'       => ['section' => 'bassthalk', 'sub' => 'bthnavbar', 'label' => 'Help button icon', 'short' => 'Help button icon', 'usage' => ['the "?" mark on that button'], 'default' => '#ffffff'],
         'bthloginimagebg'   => ['section' => 'bassthalk', 'sub' => 'bthauth', 'label' => 'Log-in illustration background', 'short' => 'Log-in illustration', 'usage' => ['the panel behind the log-in illustration — match the picture\'s own blue'], 'default' => '#0080ff'],
         'bthregisterimagebg' => ['section' => 'bassthalk', 'sub' => 'bthauth', 'label' => 'Registration illustration background', 'short' => 'Registration illustration', 'usage' => ['the panel behind the registration illustration — match the picture\'s own teal'], 'default' => '#01b4b8'],
         'bthregisteraccent' => ['section' => 'bassthalk', 'sub' => 'bthauth', 'label' => 'Registration accent', 'short' => 'Registration accent', 'usage' => ['the "التالي" and "طلب انشاء حساب" buttons', 'the step name above the progress bar', 'the terms box, its link and the terms dialog header', 'focused fields on the registration form'], 'default' => '#0ea5e9'],
@@ -1274,6 +1276,8 @@ function theme_nit_brand_group_defaults(): array {
         'bthsearchbg'       => '#d1d5db',
         'bthprogresstrack'  => '#38bdf8',
         'bthprogressfill'   => '#0369a1',
+        'bthhelpbg'         => '#0080ff',
+        'bthhelpicon'       => '#ffffff',
         'bthloginimagebg'   => '#0080ff',
         'bthregisterimagebg' => '#01b4b8',
         'bthregisteraccent' => '#0ea5e9',
@@ -2991,15 +2995,17 @@ function theme_nit_footer_context(): array {
 }
 
 /**
- * Who a navbar menu link can be for (the "Who sees it" choices, the first is the default).
+ * Who a navbar menu link can be for: the "Show to" checkboxes, in display order.
+ * The bar is also seen by visitors; the gear and avatar menus only signed in.
  *
+ * @param string $menu 'bar', 'gear' or 'user'
  * @return string[]
  */
 function theme_nit_navmenu_audiences(string $menu = ''): array {
     if ($menu === 'bar') {
-        return ['all', 'guest', 'user', 'student', 'teacher', 'admin'];
+        return ['admin', 'manager', 'teacher', 'student', 'guest'];
     }
-    return ['all', 'student', 'teacher', 'admin'];
+    return ['admin', 'manager', 'teacher', 'student'];
 }
 
 /**
@@ -3130,36 +3136,75 @@ function theme_nit_navmenu_merge_current(array $rows, array $nav): array {
 }
 
 /**
- * Whether a navbar menu link is for this user.
+ * The roles a navbar menu link is for, as the "Show to" checkboxes store them.
  *
- * @param string $show all | student | teacher | admin
- * @param int $userid
- * @return bool
+ * Reads the saved list and the older single choice alike: 'all' = every role of the
+ * menu, 'user' = every signed-in role, 'admin' = admins and managers (what it meant).
+ *
+ * @param mixed $show string[] of roles, or a legacy all | guest | user | student | teacher | admin
+ * @param string $menu 'bar', 'gear' or 'user'
+ * @return string[] roles of theme_nit_navmenu_audiences($menu), in that order
  */
-function theme_nit_navmenu_audience_ok(string $show, int $userid): bool {
-    if ($show === 'all') {
-        return true;
+function theme_nit_navmenu_roles($show, string $menu = 'bar'): array {
+    $known = theme_nit_navmenu_audiences($menu);
+    if (is_array($show)) {
+        $roles = array_map('strval', $show);
+    } else {
+        $legacy = [
+            'all' => $known,
+            'user' => ['admin', 'manager', 'teacher', 'student'],
+            'admin' => ['admin', 'manager'],
+        ];
+        $roles = $legacy[(string) $show] ?? [(string) $show];
     }
-    $isguest = !isloggedin() || isguestuser();
-    if ($show === 'guest') {
-        return $isguest;
-    }
-    if ($show === 'user') {
-        return !$isguest;
-    }
-    if ($isguest) {
-        return false;
+    return array_values(array_intersect($known, $roles));
+}
+
+/**
+ * The navbar-menu roles of the current user: 'guest' for a visitor, else any of
+ * admin (site admin), manager (a system Manager role, or site-config access without
+ * being a site admin), teacher (local_academy), and student (signed in, none of those).
+ *
+ * @param int $userid the current user
+ * @return string[]
+ */
+function theme_nit_navmenu_user_roles(int $userid): array {
+    if (!isloggedin() || isguestuser()) {
+        return ['guest'];
     }
     $sys = \context_system::instance();
-    $isadmin = is_siteadmin($userid) || has_capability('moodle/site:configview', $sys, $userid);
-    if ($show === 'admin') {
-        return $isadmin;
+    $roles = [];
+    $isadmin = is_siteadmin($userid);
+    if ($isadmin) {
+        $roles[] = 'admin';
     }
-    $isteacher = class_exists('\local_academy\teacher_manager') && \local_academy\teacher_manager::is_teacher($userid);
-    if ($show === 'teacher') {
-        return $isteacher;
+    $managerroles = array_keys(get_archetype_roles('manager'));
+    $ismanager = false;
+    foreach ($managerroles as $roleid) {
+        if (user_has_role_assignment($userid, $roleid, $sys->id)) {
+            $ismanager = true;
+            break;
+        }
     }
-    return $show === 'student' && !$isteacher && !$isadmin;
+    if ($ismanager || (!$isadmin && has_capability('moodle/site:configview', $sys, $userid))) {
+        $roles[] = 'manager';
+    }
+    if (class_exists('\local_academy\teacher_manager') && \local_academy\teacher_manager::is_teacher($userid)) {
+        $roles[] = 'teacher';
+    }
+    return $roles ?: ['student'];
+}
+
+/**
+ * Whether a navbar menu link is for this user (one of its roles is ticked).
+ *
+ * @param mixed $show the row's "show" (see theme_nit_navmenu_roles())
+ * @param int $userid
+ * @param string $menu 'bar', 'gear' or 'user'
+ * @return bool
+ */
+function theme_nit_navmenu_audience_ok($show, int $userid, string $menu = 'bar'): bool {
+    return (bool) array_intersect(theme_nit_navmenu_roles($show, $menu), theme_nit_navmenu_user_roles($userid));
 }
 
 /**
@@ -3193,7 +3238,7 @@ function theme_nit_navmenu_links(string $menu): ?array {
         if ($menu !== 'bar' && $isguest) {
             continue;
         }
-        if (!theme_nit_navmenu_audience_ok((string) ($row['show'] ?? 'all'), (int) ($USER->id ?? 0))) {
+        if (!theme_nit_navmenu_audience_ok($row['show'] ?? 'all', (int) ($USER->id ?? 0), $menu)) {
             continue;
         }
         $links[] = ['name' => format_string($name), 'url' => $url];

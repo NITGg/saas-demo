@@ -51,20 +51,15 @@ class get_session_info extends external_api {
         self::validate_context($context);
         require_capability('mod/jitsi:view', $context);
 
-        $is_teacher = has_capability('mod/jitsi:moderate', $context);
-        $available  = $is_teacher || (bool)$cm->available;
-
-        // For a linked academy lesson room, hold the student until the teacher is in the call
-        // (teacher_joined_at is stamped by teacher_present.php). The teacher is never gated.
-        $available_info = strip_tags($cm->availableinfo ?? '');
-        if ($available && !$is_teacher) {
-            $session = $DB->get_record('academy_live_sessions',
-                ['jitsiid' => $jitsi->id], 'id, teacher_joined_at');
-            if ($session && empty($session->teacher_joined_at)) {
-                $available      = false;
-                $available_info = get_string('waitingforteacher', 'jitsi');
-            }
-        }
+        // Same rule as view.php (\mod_jitsi\local\access): only the session's teacher
+        // moderates a linked room, and a student is held out (no JWT) until the
+        // teacher is in the call.
+        $decision   = \mod_jitsi\local\access::check($cm, (int) $USER->id);
+        $is_teacher = $decision->moderator;
+        $available  = $decision->allowed;
+        $available_info = $decision->code === \mod_jitsi\local\access::UNAVAILABLE
+            ? strip_tags($cm->availableinfo ?? '') : $decision->message;
+        \mod_jitsi\local\access::record_entry($decision, (int) $USER->id);
 
         // ── Jitsi config ─────────────────────────────────────────────────────
         $jitsi_host = get_config('local_academysessions', 'jitsi_host') ?: 'localhost:8443';
@@ -74,10 +69,11 @@ class get_session_info extends external_api {
 
         // Site-salted room name — matches view.php/api_token so web + mobile join
         // the SAME room, and tenants sharing one Jitsi server never collide.
+        // The JWT is the key to the room: only handed out when the user may enter now.
         $room = jitsi_room_name($jitsi, $cm);
-        $jwt  = \local_academysessions\jitsi_jwt::generate(
+        $jwt  = $available ? \local_academysessions\jitsi_jwt::generate(
             $room, fullname($USER), $USER->email, $is_teacher
-        );
+        ) : '';
 
         // ── Whiteboard URL ────────────────────────────────────────────────────
         $excalidraw_app = get_config('local_academysessions', 'excalidraw_app')
@@ -131,7 +127,7 @@ class get_session_info extends external_api {
             'is_teacher'     => new external_value(PARAM_BOOL, 'Whether current user is moderator'),
             'server_url'     => new external_value(PARAM_URL,  'Jitsi server URL for native SDK'),
             'room'           => new external_value(PARAM_TEXT, 'Jitsi room name'),
-            'jwt'            => new external_value(PARAM_RAW,  'JWT token for native Jitsi SDK'),
+            'jwt'            => new external_value(PARAM_RAW,  'JWT token for native Jitsi SDK; empty while available is false'),
             'subject'        => new external_value(PARAM_TEXT, 'Conference subject/title'),
             'whiteboard_url' => new external_value(PARAM_URL,  'Excalidraw whiteboard URL (open in WebView)'),
             'recordings'     => new external_multiple_structure(

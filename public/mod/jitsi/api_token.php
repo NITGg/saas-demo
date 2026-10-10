@@ -16,7 +16,10 @@
  * }
  *
  * Error response:
- * { "error": "message", "errorcode": "<code>" }   (HTTP 401 / 403 / 404)
+ * { "error": "message", "errorcode": "<code>" }   (HTTP 401 / 403 / 404 / 503)
+ * 403 codes: nopermissions, notallowed, sessionnotavailable, sessionended,
+ * waitingforteacher (poll again; the teacher is not in the call yet).
+ * 503 jitsinotconfigured: the site has no Jitsi JWT secret.
  *
  * The token is validated by \local_academy\token_auth (expiry, IP restriction,
  * service enabled, account state) like every other token API.
@@ -84,26 +87,17 @@ if (!has_capability('mod/jitsi:view', $context)) {
     api_error('You cannot access this activity', 403, 'nopermissions');
 }
 
-$is_moderator = has_capability('mod/jitsi:moderate', $context);
-
-// ── Access control (same rules as view.php) ──────────────────────────────
-$session = $DB->get_record('academy_live_sessions', ['jitsiid' => $jitsi->id]);
-if ($session && !$is_moderator) {
-    $allowed = $DB->record_exists('academy_session_students', [
-        'sessionid' => $session->id,
-        'userid'    => $USER->id,
-    ]);
-    if (!$allowed) {
-        api_error('You are not enrolled in this session', 403, 'notallowed');
-    }
-    $now = time();
-    if ($now < $session->start_time - 1800) {
-        api_error('Session not open yet', 403, 'sessionnotavailable');
-    }
-    if ($now > $session->start_time + ($session->duration * 60)) {
-        api_error('Session has ended', 403, 'sessionended');
-    }
+// ── Access control (the same rule as view.php: \mod_jitsi\local\access) ──
+// Only the session's teacher moderates a linked room; a student gets no JWT before
+// the window opens, after it closes, or while the teacher is not in the call.
+$cminfo   = get_fast_modinfo($course, (int) $USER->id)->get_cm($cm->id);
+$decision = \mod_jitsi\local\access::check($cminfo, (int) $USER->id);
+if (!$decision->allowed) {
+    $code = $decision->code === \mod_jitsi\local\access::UNAVAILABLE ? 'nopermissions' : $decision->code;
+    api_error($decision->message, 403, $code);
 }
+$is_moderator = $decision->moderator;
+\mod_jitsi\local\access::record_entry($decision, (int) $USER->id);
 
 // ── Build Jitsi params ───────────────────────────────────────────────────
 $jitsi_host  = get_config('local_academysessions', 'jitsi_host') ?: 'localhost:8443';
@@ -111,9 +105,13 @@ $jitsi_scheme = 'https';
 $jitsi_room  = jitsi_room_name($jitsi, $cm);
 $display_name = fullname($USER);
 
-$jwt = \local_academysessions\jitsi_jwt::generate(
-    $jitsi_room, $display_name, $USER->email, $is_moderator
-);
+try {
+    $jwt = \local_academysessions\jitsi_jwt::generate(
+        $jitsi_room, $display_name, $USER->email, $is_moderator
+    );
+} catch (\moodle_exception $e) {
+    api_error($e->getMessage(), 503, $e->errorcode);
+}
 
 echo json_encode([
     'server_url'   => $jitsi_scheme . '://' . $jitsi_host,

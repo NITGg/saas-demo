@@ -17,6 +17,7 @@ $string['notallowed']      = 'أنت غير مسجّل في هذه الجلسة.
 $string['sessionopening']  = 'ستُفتح الجلسة خلال {$a} دقيقة.';
 $string['waitingforteacher'] = 'في انتظار انضمام المعلم لبدء الجلسة. سيتم إدخالك تلقائياً عند انضمامه.';
 $string['sessionended']    = 'انتهت هذه الجلسة.';
+$string['roomunavailable'] = 'هذه الغرفة غير متاحة لك.';
 $string['youarehost']      = 'أنت المضيف';
 $string['featurelocked']   = 'الجلسات المباشرة (Jitsi) متاحة في الباقة الاحترافية. يُرجى ترقية الأكاديمية لاستخدام هذا النشاط.';
 $string['recording']       = 'تسجيل';

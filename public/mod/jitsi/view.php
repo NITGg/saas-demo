@@ -47,163 +47,52 @@ if (!jitsi_feature_enabled()) {
     exit;
 }
 
-// ── Moodle availability / date restriction check ──────────────────────────
-// If the activity has "available until" in the past, block access for students.
-$is_teacher = has_capability('mod/jitsi:moderate', $context);
-if (!$is_teacher && !$cm->available) {
-    $PAGE->set_url('/mod/jitsi/view.php', ['id' => $cm->id]);
-    $PAGE->set_context($context);
-    $PAGE->set_title(format_string($jitsi->name));
-    $PAGE->set_heading(format_string($course->fullname));
-    $session_for_locked = $DB->get_record('academy_live_sessions', ['jitsiid' => $jitsi->id]);
-    echo $OUTPUT->header();
-    echo $OUTPUT->heading(format_string($jitsi->name));
-    echo $OUTPUT->notification(
-        $cm->availableinfo ?: get_string('sessionended', 'jitsi'),
-        'warning'
-    );
-    jitsi_print_recordings($session_for_locked ?: null, $context, $is_teacher, $cm->id);
-    echo $OUTPUT->footer();
-    exit;
-}
+// ── Access: who may enter, and as moderator or not ─────────────────────────
+// One rule for the web page and the mobile APIs: \mod_jitsi\local\access. A linked
+// lesson/academy room is only for its teacher and invited students; the moderator is
+// the session's teacher (site admins too, for support); students wait outside until
+// the teacher is in the call.
+$decision   = \mod_jitsi\local\access::check($cm, (int) $USER->id);
+$is_teacher = $decision->moderator;
+$session    = $decision->session;
 
 $PAGE->set_url('/mod/jitsi/view.php', ['id' => $cm->id]);
 $PAGE->set_context($context);
 $PAGE->set_title(format_string($jitsi->name));
 $PAGE->set_heading(format_string($course->fullname));
 
-// -------------------------------------------------------------------------
-// Access control – check linked academy session (if any).
-// -------------------------------------------------------------------------
-// $is_teacher already set above.
-
-// Standalone ended check (no linked session — teacher ended via AJAX).
-if (get_config('mod_jitsi', 'ended_' . $cm->id)) {
-    $session_for_ended = $DB->get_record('academy_live_sessions', ['jitsiid' => $jitsi->id]);
+if (!$decision->allowed) {
     echo $OUTPUT->header();
     echo $OUTPUT->heading(format_string($jitsi->name));
-    echo $OUTPUT->notification(get_string('sessionended', 'jitsi'), 'info');
-    jitsi_print_recordings($session_for_ended ?: null, $context, $is_teacher, $cm->id);
+    switch ($decision->code) {
+        case \mod_jitsi\local\access::UNAVAILABLE:
+            // Moodle availability ("available until" passed etc.).
+            echo $OUTPUT->notification($cm->availableinfo ?: get_string('sessionended', 'jitsi'), 'warning');
+            jitsi_print_recordings($session, $context, $is_teacher, $cm->id);
+            break;
+        case \mod_jitsi\local\access::WAITING:
+            // The waiting page reloads, so the student drops into the room the moment
+            // the teacher arrives (teacher_present.php stamps teacher_joined_at).
+            echo html_writer::tag('div',
+                $OUTPUT->notification($decision->message, 'info'), ['id' => 'jitsi-waiting']);
+            echo html_writer::script('setTimeout(function(){ location.reload(); }, 5000);');
+            break;
+        case \mod_jitsi\local\access::ENDED:
+            echo $OUTPUT->notification($decision->message, 'info');
+            jitsi_print_recordings($session, $context, $is_teacher, $cm->id);
+            break;
+        case \mod_jitsi\local\access::NOT_ALLOWED:
+            echo $OUTPUT->notification($decision->message, 'warning');
+            break;
+        default:
+            echo $OUTPUT->notification($decision->message, 'info');
+    }
     echo $OUTPUT->footer();
     exit;
 }
 
-$session    = $DB->get_record('academy_live_sessions', ['jitsiid' => $jitsi->id]);
-
-if ($session) {
-
-    // ── Restrict a linked lesson/academy room to its related participants ──────
-    // Only the session's assigned teacher and the whitelisted students may enter.
-    // $is_teacher above is the course-wide mod/jitsi:moderate capability, but every
-    // lesson room lives in one shared lessons course (and create_for_lesson() enrols
-    // each teacher there as editingteacher), so without this gate any other teacher
-    // or manager could open someone else's room as a moderator. Pin access — and
-    // moderator status — to the people actually related to this session.
-    $is_session_teacher     = ((int)$session->teacherid === (int)$USER->id);
-    $is_whitelisted_student = $DB->record_exists('academy_session_students', [
-        'sessionid' => $session->id,
-        'userid'    => $USER->id,
-    ]);
-
-    if (!$is_session_teacher && !$is_whitelisted_student && !is_siteadmin()) {
-        echo $OUTPUT->header();
-        echo $OUTPUT->heading(format_string($jitsi->name));
-        echo $OUTPUT->notification(get_string('notallowed', 'jitsi'), 'warning');
-        echo $OUTPUT->footer();
-        exit;
-    }
-
-    // Moderator is the assigned teacher only (site admins keep moderator for support).
-    $is_teacher = $is_session_teacher || (is_siteadmin() && !$is_whitelisted_student);
-
-    // For everyone (teachers included): once the session is marked 'ended',
-    // the room is closed — refreshing should not allow rejoining.
-    if ($session->status === 'ended') {
-        echo $OUTPUT->header();
-        echo $OUTPUT->heading(format_string($jitsi->name));
-        echo $OUTPUT->notification(get_string('sessionended', 'jitsi'), 'info');
-        jitsi_print_recordings($session, $context, $is_teacher);
-        echo $OUTPUT->footer();
-        exit;
-    }
-
-    if (!$is_teacher) {
-        // 1. Student must be on the allowed list.
-        $allowed = $DB->record_exists('academy_session_students', [
-            'sessionid' => $session->id,
-            'userid'    => $USER->id,
-        ]);
-        if (!$allowed) {
-            echo $OUTPUT->header();
-            echo $OUTPUT->heading(format_string($jitsi->name));
-            echo $OUTPUT->notification(get_string('notallowed', 'jitsi'), 'warning');
-            echo $OUTPUT->footer();
-            exit;
-        }
-
-        $now       = time();
-        $open_from = $session->start_time - 1800;
-        $open_until = $session->start_time + ($session->duration * 60);
-
-        // 2. Too early.
-        if ($now < $open_from) {
-            $mins = ceil(($open_from - $now) / 60);
-            echo $OUTPUT->header();
-            echo $OUTPUT->heading(format_string($jitsi->name));
-            echo $OUTPUT->notification(
-                get_string('sessionopening', 'jitsi', $mins),
-                'info'
-            );
-            echo $OUTPUT->footer();
-            exit;
-        }
-
-        // 3. Time window passed (but status not yet 'ended' — lifecycle cron hasn't run).
-        if ($now > $open_until) {
-            echo $OUTPUT->header();
-            echo $OUTPUT->heading(format_string($jitsi->name));
-            echo $OUTPUT->notification(get_string('sessionended', 'jitsi'), 'info');
-            jitsi_print_recordings($session, $context, $is_teacher);
-            echo $OUTPUT->footer();
-            exit;
-        }
-
-        // 4. Hold the student out of the room until the teacher is actually in the call.
-        //    teacher_joined_at is stamped by teacher_present.php on the teacher's
-        //    videoConferenceJoined event (and cleared when they leave). The waiting page
-        //    auto-reloads, so the student drops into the room the moment the teacher arrives.
-        if (empty($session->teacher_joined_at)) {
-            echo $OUTPUT->header();
-            echo $OUTPUT->heading(format_string($jitsi->name));
-            echo html_writer::tag('div',
-                $OUTPUT->notification(get_string('waitingforteacher', 'jitsi'), 'info'),
-                ['id' => 'jitsi-waiting']);
-            echo html_writer::script('setTimeout(function(){ location.reload(); }, 5000);');
-            echo $OUTPUT->footer();
-            exit;
-        }
-
-        // 5. Record attendance (first join only).
-        if (!$DB->record_exists('academy_session_attendance', ['sessionid' => $session->id, 'userid' => $USER->id])) {
-            $att                   = new stdClass();
-            $att->sessionid        = $session->id;
-            $att->userid           = $USER->id;
-            $att->joined_at        = $now;
-            $att->duration_seconds = 0;
-            $DB->insert_record('academy_session_attendance', $att);
-        }
-
-        // Audit timeline: record when the student entered the meeting room (distinct from the
-        // teacher's start/join). record_once so a reload/rejoin adds no duplicate rows.
-        if (!$is_teacher && class_exists('\local_academy\audit_manager')
-                && $DB->get_manager()->table_exists('academy_lessons')) {
-            $lessonid = $DB->get_field('academy_lessons', 'id', ['sessionid' => $session->id]);
-            if ($lessonid) {
-                \local_academy\audit_manager::record_once($lessonid, 'student_joined', $USER->id, 'student');
-            }
-        }
-    }
-}
+// A student let in: open their attendance row.
+\mod_jitsi\local\access::record_entry($decision, (int) $USER->id);
 
 // Completion tracking.
 $completion = new completion_info($course);

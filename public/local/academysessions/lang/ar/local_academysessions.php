@@ -39,3 +39,7 @@ $string['academysessions:viewattendance'] = 'عرض تقارير الحضور';
 $string['lifecycle_task'] = 'إدارة دورة حياة الحصص';
 $string['cleanup_task'] = 'تنظيف التسجيلات المنتهية';
 $string['meetinglink'] = 'رابط الاجتماع (Google Meet)';
+
+// أسرار Jitsi (لم تعد مكتوبة في الكود).
+$string['jitsinotconfigured'] = 'الحصص المباشرة غير مُعدّة بعد: المفتاح السري لـ Jitsi (JWT secret) غير موجود. اطلب من مدير الموقع إدخاله (إدارة الموقع ← الإضافات ← Local plugins ← Academy Sessions).';
+$string['publicsecretwarning'] = 'تنبيه أمني: {$a} ما زال يستخدم القيمة القديمة المنشورة في الكود المصدري، ويمكن لأي شخص لديه الكود استخدامها. ضع قيمة عشوائية جديدة على خادم Jitsi (أو سكربت Jibri) وهنا في الوقت نفسه.';

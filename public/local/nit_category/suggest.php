@@ -15,25 +15,26 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Admin navigation for local_jobform: the "Manage Job Form" page.
+ * JSON for the navbar search box (theme/nit/templates/theme_boost/navbar.mustache):
  *
- * @package    local_jobform
+ *   ?q=<text> → {"q", "total", "courses": [{id, name, url, image, category}], "moreurl"}
+ *
+ * The courses the viewer may see in the catalogue (index.php), so it is public like
+ * the catalogue and behind the log-in when the site forces log-in.
+ *
+ * @package    local_nit_category
  * @copyright  2026 NIT
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
+require(__DIR__ . '/../../config.php');
 
-if ($hassiteconfig) {
-    $ADMIN->add('localplugins', new admin_externalpage(
-        'local_jobform_manage',
-        get_string('managejobform', 'local_jobform'),
-        new moodle_url('/local/jobform/manage.php'),
-        'local/jobform:manage'
-    ));
+$q = optional_param('q', '', PARAM_TEXT);
+$PAGE->set_context(context_system::instance());
+if (!empty($CFG->forcelogin)) {
+    require_login();
 }
 
-// Site administration → Local plugins: keep our pages in the agreed order.
-if (class_exists('\local_academy\local\admin_order')) {
-    \local_academy\local\admin_order::apply($ADMIN);
-}
+header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store');
+echo json_encode(\local_nit_category\catalogue::suggest($q), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

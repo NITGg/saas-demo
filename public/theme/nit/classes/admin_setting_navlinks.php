@@ -56,6 +56,41 @@ class admin_setting_navlinks extends admin_setting_footerpages {
         return $labels;
     }
 
+    /**
+     * "Show to" is a set of roles (any number of them); a new row starts with all ticked.
+     *
+     * @param string $field
+     * @param array $row
+     * @return string HTML
+     */
+    protected function show_cell(string $field, array $row): string {
+        $ticked = !empty($row['isnew']) ? array_keys($this->audiences())
+            : \theme_nit_navmenu_roles($row['show'] ?? 'all', $this->menu);
+        $html = '<div class="d-flex flex-wrap gap-3">';
+        foreach ($this->audiences() as $value => $label) {
+            $html .= '<label class="form-check mb-0 text-nowrap">'
+                . '<input type="checkbox" class="form-check-input" name="' . $field . '[]" value="' . s($value) . '"'
+                . (in_array($value, $ticked, true) ? ' checked' : '') . '> '
+                . '<span class="form-check-label">' . s($label) . '</span></label>';
+        }
+        return $html . '</div>';
+    }
+
+    /**
+     * The ticked roles; a row with none ticked is refused (nobody would see it).
+     *
+     * @param mixed $raw
+     * @return string[]|null
+     */
+    protected function parse_show($raw) {
+        $roles = \theme_nit_navmenu_roles(is_array($raw) ? $raw : [], $this->menu);
+        return $roles ?: null;
+    }
+
+    protected function show_error(): string {
+        return get_string('navmenu_show_none', 'theme_nit');
+    }
+
     protected function empty_shows_defaults(): bool {
         return $this->menu !== 'bar';
     }

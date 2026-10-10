@@ -180,10 +180,10 @@ class teachers extends base {
         }
         if ($t['live']) {
             [$speriod, $sparams] = $this->f->period_sql('start_time', 's');
-            foreach ($DB->get_recordset_sql("SELECT teacherid, CASE WHEN teacher_joined_at > 0 THEN 1 ELSE 0 END AS joined,
+            foreach ($DB->get_recordset_sql("SELECT teacherid, CASE WHEN teacher_first_join > 0 THEN 1 ELSE 0 END AS joined,
                         COUNT(1) AS n FROM {academy_live_sessions}
                     WHERE teacherid $usql AND status = 'ended' AND $speriod
-                 GROUP BY teacherid, CASE WHEN teacher_joined_at > 0 THEN 1 ELSE 0 END", $uparams + $sparams) as $r) {
+                 GROUP BY teacherid, CASE WHEN teacher_first_join > 0 THEN 1 ELSE 0 END", $uparams + $sparams) as $r) {
                 if ((int) $r->joined) {
                     $sessions[(int) $r->teacherid] = (int) $r->n;
                 } else {

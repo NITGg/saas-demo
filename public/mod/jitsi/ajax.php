@@ -19,16 +19,18 @@ if ($function === 'end_session') {
     $sessionid = required_param('sessionid', PARAM_INT);
     $session   = $DB->get_record('academy_live_sessions', ['id' => $sessionid], '*', MUST_EXIST);
 
-    // Require mod/jitsi:moderate on the linked jitsi activity.
+    // Only the room's moderator (the session's teacher, or a site admin) may end it, not
+    // any other teacher of the course.
     $jitsi = $DB->get_record('jitsi', ['id' => $session->jitsiid]);
     if ($jitsi) {
         $cm      = get_coursemodule_from_instance('jitsi', $jitsi->id, 0, false, MUST_EXIST);
         $context = context_module::instance($cm->id);
-        require_capability('mod/jitsi:moderate', $context);
+        if (!\mod_jitsi\local\presence::is_moderator($cm, (int) $USER->id)) {
+            throw new required_capability_exception($context, 'mod/jitsi:moderate', 'nopermissions', '');
+        }
     } else {
-        // Fallback: course-level teacher check.
-        $context = context_course::instance($session->courseid);
-        require_capability('moodle/course:manageactivities', $context);
+        // No room: the session's owner (the mobile API rule).
+        \local_academysessions\mobile_service::require_session_owner($session);
     }
 
     \local_academysessions\session_manager::end_session($sessionid);
@@ -44,7 +46,9 @@ if ($function === 'end_room') {
     $cmid = required_param('cmid', PARAM_INT);
     $cm   = get_coursemodule_from_id('jitsi', $cmid, 0, false, MUST_EXIST);
     $context = context_module::instance($cm->id);
-    require_capability('mod/jitsi:moderate', $context);
+    if (!\mod_jitsi\local\presence::is_moderator($cm, (int) $USER->id)) {
+        throw new required_capability_exception($context, 'mod/jitsi:moderate', 'nopermissions', '');
+    }
 
     \mod_jitsi\local\presence::end_room((int) $cm->id);
 

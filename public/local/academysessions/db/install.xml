@@ -15,6 +15,7 @@
         <FIELD NAME="meeting_link" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="scheduled" SEQUENCE="false"/>
         <FIELD NAME="teacher_joined_at" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Unix time the teacher last entered the Jitsi call; null = not present (students wait)"/>
+        <FIELD NAME="teacher_first_join" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Unix time the session's teacher first entered the call; never changed afterwards (lateness reports)"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
       </FIELDS>

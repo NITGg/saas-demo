@@ -79,5 +79,29 @@ function xmldb_local_academysessions_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026091303, 'local', 'academysessions');
     }
 
+    if ($oldversion < 2026101000) {
+        // The session teacher's FIRST entry into the call. teacher_joined_at is the
+        // student gate (cleared when the teacher leaves, overwritten on a rejoin), so
+        // lateness reports read this field instead.
+        $table = new xmldb_table('academy_live_sessions');
+        $field = new xmldb_field('teacher_first_join', XMLDB_TYPE_INTEGER, '10', null, null, null, null,
+            'teacher_joined_at');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Back-fill from the teacher's attendance row (stamped on their first join);
+        // failing that, a teacher_joined_at that is still set shows they did come in.
+        $DB->execute("UPDATE {academy_live_sessions}
+                         SET teacher_first_join = COALESCE(
+                             (SELECT MIN(a.joined_at) FROM {academy_session_attendance} a
+                               WHERE a.sessionid = {academy_live_sessions}.id
+                                 AND a.userid = {academy_live_sessions}.teacherid),
+                             teacher_joined_at)
+                       WHERE teacher_first_join IS NULL");
+
+        upgrade_plugin_savepoint(true, 2026101000, 'local', 'academysessions');
+    }
+
     return true;
 }

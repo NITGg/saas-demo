@@ -77,9 +77,49 @@ class admin_setting_footerpages extends \admin_setting {
     }
 
     /**
-     * Validate and store the posted rows.
+     * The stored "show" of one posted row.
      *
-     * @param mixed $data ['name' => string[], 'url' => string[], 'show' => string[]]
+     * @param mixed $raw what the row's "Show to" control posted
+     * @return mixed the value to store, or null when the row is invalid
+     */
+    protected function parse_show($raw) {
+        $audiences = array_keys($this->audiences());
+        $show = is_string($raw) ? $raw : $audiences[0];
+        return in_array($show, $audiences, true) ? $show : $audiences[0];
+    }
+
+    /**
+     * The error shown when parse_show() rejects a row.
+     *
+     * @return string
+     */
+    protected function show_error(): string {
+        return get_string('errorsetting', 'admin');
+    }
+
+    /**
+     * The "Show to" control of one row.
+     *
+     * @param string $field the input name prefix of the row's show value
+     * @param array $row
+     * @return string HTML
+     */
+    protected function show_cell(string $field, array $row): string {
+        $labels = $this->audiences();
+        $first = array_key_first($labels);
+        $opts = '';
+        foreach ($labels as $value => $label) {
+            $opts .= \html_writer::tag('option', s($label),
+                ['value' => $value] + ((($row['show'] ?? $first) === $value) ? ['selected' => 'selected'] : []));
+        }
+        return '<select class="form-select" name="' . $field . '">' . $opts . '</select>';
+    }
+
+    /**
+     * Validate and store the posted rows, in the order they were posted (the order
+     * an admin arranged them in with the ↑ / ↓ buttons).
+     *
+     * @param mixed $data ['name' => [key => string], 'url' => [key => string], 'show' => [key => mixed]]
      * @return string '' on success, else an error message
      */
     public function write_setting($data) {
@@ -95,7 +135,7 @@ class admin_setting_footerpages extends \admin_setting {
             $name = trim(clean_param((string) $name, PARAM_TEXT));
             $url = trim(clean_param((string) ($urls[$i] ?? ''), PARAM_RAW_TRIMMED));
             if ($name === '' && $url === '') {
-                continue; // An empty row is simply dropped.
+                continue; // An empty row (and the always-posted marker) is simply dropped.
             }
             if ($name === '' || $url === '') {
                 return get_string('footerpages_incomplete', 'theme_nit');
@@ -103,12 +143,14 @@ class admin_setting_footerpages extends \admin_setting {
             if ($url[0] !== '/' && !preg_match('~^https?://~i', $url)) {
                 return get_string('footerpages_invalidurl', 'theme_nit', s($url));
             }
-            $audiences = array_keys($this->audiences());
-            $show = (string) ($shows[$i] ?? $audiences[0]);
+            $show = $this->parse_show($shows[$i] ?? null);
+            if ($show === null) {
+                return $this->show_error();
+            }
             $rows[] = [
                 'name' => $name,
                 'url' => clean_param($url, PARAM_URL) ?: $url,
-                'show' => in_array($show, $audiences, true) ? $show : $audiences[0],
+                'show' => $show,
             ];
         }
         $json = json_encode($rows, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -126,46 +168,52 @@ class admin_setting_footerpages extends \admin_setting {
         if (is_array($data)) {
             $rows = [];
             foreach ((array) ($data['name'] ?? []) as $i => $n) {
-                $rows[] = ['name' => $n, 'url' => $data['url'][$i] ?? '', 'show' => $data['show'][$i] ?? ''];
+                if (trim((string) $n) === '' && trim((string) ($data['url'][$i] ?? '')) === '') {
+                    continue; // The hidden marker / an empty row.
+                }
+                $rows[] = ['name' => $n, 'url' => $data['url'][$i] ?? '', 'show' => $data['show'][$i] ?? []];
             }
         } else {
             $decoded = ($data === null || $data === false) ? null : json_decode((string) $data, true);
             $rows = is_array($decoded) && ($decoded || !$this->empty_shows_defaults()) ? $decoded : $this->default_rows();
         }
 
+        // Each row posts under its own key ([name][k], [url][k], [show][k]…), so a row's
+        // fields stay together whatever its "Show to" control posts; PHP keeps the keys
+        // in page order, which is the order an admin set with ↑ / ↓.
         $full = $this->get_full_name();
-        $labels = $this->audiences();
-        $first = array_key_first($labels);
-        $rowhtml = function(array $row) use ($full, $labels, $first): string {
-            $opts = '';
-            foreach ($labels as $value => $label) {
-                $opts .= \html_writer::tag('option', s($label),
-                    ['value' => $value] + ((($row['show'] ?? $first) === $value) ? ['selected' => 'selected'] : []));
-            }
+        $first = array_key_first($this->audiences());
+        $rowhtml = function(array $row, string $key) use ($full): string {
+            $up = s(get_string('moveup'));
+            $down = s(get_string('movedown'));
             return '<tr class="nit-fp-row">'
-                . '<td><input type="text" class="form-control" name="' . $full . '[name][]" value="' . s($row['name'] ?? '') . '"'
+                . '<td class="text-nowrap">'
+                . '<button type="button" class="btn btn-outline-secondary btn-sm" data-nit-fp-up title="' . $up . '" aria-label="' . $up . '">↑</button> '
+                . '<button type="button" class="btn btn-outline-secondary btn-sm" data-nit-fp-down title="' . $down . '" aria-label="' . $down . '">↓</button>'
+                . '</td>'
+                . '<td><input type="text" class="form-control" name="' . $full . '[name][' . $key . ']" value="' . s($row['name'] ?? '') . '"'
                 . ' placeholder="' . s(get_string('footerpages_name', 'theme_nit')) . '"></td>'
-                . '<td><input type="text" class="form-control" dir="ltr" name="' . $full . '[url][]" value="' . s($row['url'] ?? '') . '"'
+                . '<td><input type="text" class="form-control" dir="ltr" name="' . $full . '[url][' . $key . ']" value="' . s($row['url'] ?? '') . '"'
                 . ' placeholder="/my/  ·  https://…"></td>'
-                . '<td><select class="form-select" name="' . $full . '[show][]">' . $opts . '</select></td>'
+                . '<td>' . $this->show_cell($full . '[show][' . $key . ']', $row) . '</td>'
                 . '<td class="text-center"><button type="button" class="btn btn-outline-danger btn-sm" data-nit-fp-remove>'
                 . s(get_string('footerpages_remove', 'theme_nit')) . '</button></td>'
                 . '</tr>';
         };
 
         $body = '';
-        foreach ($rows as $row) {
-            $body .= $rowhtml($row);
+        foreach (array_values($rows) as $i => $row) {
+            $body .= $rowhtml($row, 'r' . $i);
         }
-        $template = $rowhtml(['name' => '', 'url' => '', 'show' => $first]);
+        $template = $rowhtml(['name' => '', 'url' => '', 'show' => $first, 'isnew' => true], '__KEY__');
         $id = 'nit-fp-' . $this->name;
 
         $html = '<div class="nit-footerpages" id="' . $id . '">'
             // An always-present hidden marker so an emptied list still posts.
-            . '<input type="hidden" name="' . $full . '[name][]" value="">'
-            . '<input type="hidden" name="' . $full . '[url][]" value="">'
-            . '<input type="hidden" name="' . $full . '[show][]" value="' . s($first) . '">'
+            . '<input type="hidden" name="' . $full . '[name][_]" value="">'
+            . '<input type="hidden" name="' . $full . '[url][_]" value="">'
             . '<table class="table table-sm align-middle mb-2"><thead><tr>'
+            . '<th><span class="visually-hidden">' . s(get_string('order')) . '</span></th>'
             . '<th>' . s(get_string('footerpages_name', 'theme_nit')) . '</th>'
             . '<th>' . s(get_string('footerpages_url', 'theme_nit')) . '</th>'
             . '<th>' . s(get_string('footerpages_show', 'theme_nit')) . '</th>'
@@ -175,11 +223,15 @@ class admin_setting_footerpages extends \admin_setting {
             . s(get_string('footerpages_add', 'theme_nit')) . '</button>'
             . '</div>'
             . '<script>(function(){var w=document.getElementById(' . json_encode($id) . ');if(!w){return;}'
-            . 'var tb=w.querySelector("tbody"),tp=w.querySelector("template");'
+            . 'var tb=w.querySelector("tbody"),tp=w.querySelector("template"),n=0;'
             . 'w.addEventListener("click",function(e){'
-            . 'if(e.target.closest("[data-nit-fp-add]")){tb.insertAdjacentHTML("beforeend",tp.innerHTML);'
-            . 'var r=tb.lastElementChild;if(r){var i=r.querySelector("input");if(i){i.focus();}}}'
-            . 'var rm=e.target.closest("[data-nit-fp-remove]");if(rm){rm.closest("tr").remove();}});})();</script>';
+            . 'if(e.target.closest("[data-nit-fp-add]")){'
+            . 'tb.insertAdjacentHTML("beforeend",tp.innerHTML.split("__KEY__").join("n"+Date.now()+"_"+(n++)));'
+            . 'var r=tb.lastElementChild;if(r){var i=r.querySelector("input[type=text]");if(i){i.focus();}}}'
+            . 'var tr=e.target.closest("tr");'
+            . 'if(e.target.closest("[data-nit-fp-up]")&&tr.previousElementSibling){tb.insertBefore(tr,tr.previousElementSibling);e.target.closest("button").focus();}'
+            . 'if(e.target.closest("[data-nit-fp-down]")&&tr.nextElementSibling){tb.insertBefore(tr.nextElementSibling,tr);e.target.closest("button").focus();}'
+            . 'if(e.target.closest("[data-nit-fp-remove]")){tr.remove();}});})();</script>';
 
         return format_admin_setting($this, $this->visiblename, $html, $this->description, false, '', null, $query);
     }

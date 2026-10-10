@@ -37,3 +37,7 @@ $string['err_notjitsiactivity'] = 'Live session room not found.';
 $string['err_invalidvalue'] = 'Invalid value for "{$a}".';
 $string['err_notsessionteacher'] = 'Only the teacher of this session can change it.';
 $string['err_studentnotenrolled'] = 'Student {$a} is not enrolled in this course.';
+
+// Jitsi secrets (task 19: no secret is baked into the code any more).
+$string['jitsinotconfigured'] = 'Live sessions are not set up yet: the Jitsi JWT secret is missing. Ask the site administrator to fill it in (Site administration > Plugins > Local plugins > Academy Sessions).';
+$string['publicsecretwarning'] = 'Security: {$a} still uses the old value that was published in the source code. Anyone who has the code can use it. Put a new random value on the Jitsi server (or the Jibri finalize script) and here, at the same time.';

@@ -41,9 +41,11 @@ global $CFG, $DB;
 header('Content-Type: application/json');
 
 // ── Auth: shared notify key ─────────────────────────────────────────────────
-$notify_key   = get_config('local_academysessions', 'jibri_notify_key') ?: 'academy-cron-2024';
+// No fallback key: one written in the code is known to everyone who has the code. A site
+// without a key refuses every notification.
+$notify_key   = (string) get_config('local_academysessions', 'jibri_notify_key');
 $provided_key = $_SERVER['HTTP_X_NOTIFY_KEY'] ?? optional_param('key', '', PARAM_RAW_TRIMMED);
-if (!is_string($provided_key) || !hash_equals($notify_key, $provided_key)) {
+if ($notify_key === '' || !is_string($provided_key) || !hash_equals($notify_key, $provided_key)) {
     http_response_code(401);
     echo json_encode(['error' => 'Unauthorized']);
     exit;

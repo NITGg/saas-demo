@@ -44,3 +44,8 @@ if ($hassiteconfig || has_capability('local/nit_flex:managepackages', context_sy
         $ADMIN->add('local_nit_flex_cat', $settings);
     }
 }
+
+// Site administration → Local plugins: keep our pages in the agreed order.
+if (class_exists('\local_academy\local\admin_order')) {
+    \local_academy\local\admin_order::apply($ADMIN);
+}

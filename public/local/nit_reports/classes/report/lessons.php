@@ -118,8 +118,8 @@ class lessons extends base {
         global $DB;
         if ($this->view() === 'live') {
             return ['session' => 'ls.title', 'course' => 'c.fullname', 'start' => 'ls.start_time', 'duration' => 'ls.duration',
-                'status' => 'ls.status', 'teacherjoined' => 'ls.teacher_joined_at',
-                'late' => 'CASE WHEN ls.teacher_joined_at > ls.start_time THEN ls.teacher_joined_at - ls.start_time ELSE 0 END'];
+                'status' => 'ls.status', 'teacherjoined' => 'ls.teacher_first_join',
+                'late' => 'CASE WHEN ls.teacher_first_join > ls.start_time THEN ls.teacher_first_join - ls.start_time ELSE 0 END'];
         }
         return ['requested' => 'l.requested_time', 'time' => 'l.confirmed_time',
             'student' => $DB->sql_fullname('s.firstname', 's.lastname'), 'teacher' => $DB->sql_fullname('t.firstname', 't.lastname'),
@@ -228,20 +228,23 @@ class lessons extends base {
             [$from, $params] = $this->from_live();
             $total = (int) $DB->count_records_sql("SELECT COUNT(1) $from", $params);
             $list = $DB->get_records_sql("SELECT ls.id, ls.title, ls.teacherid, ls.start_time, ls.duration, ls.status,
-                        ls.teacher_joined_at, c.fullname AS coursename,
+                        ls.teacher_first_join, c.fullname AS coursename,
                         (SELECT COUNT(1) FROM {academy_session_students} ss WHERE ss.sessionid = ls.id) AS invited,
-                        (SELECT COUNT(DISTINCT sa.userid) FROM {academy_session_attendance} sa WHERE sa.sessionid = ls.id) AS attended,
+                        (SELECT COUNT(DISTINCT sa.userid) FROM {academy_session_attendance} sa
+                           JOIN {academy_session_students} ssa ON ssa.sessionid = sa.sessionid AND ssa.userid = sa.userid
+                          WHERE sa.sessionid = ls.id) AS attended,
                         (SELECT COUNT(1) FROM {academy_session_students} ss2 WHERE ss2.sessionid = ls.id AND NOT EXISTS (
                             SELECT 1 FROM {academy_session_attendance} sa2
                              WHERE sa2.sessionid = ss2.sessionid AND sa2.userid = ss2.userid)) AS absent,
                         (SELECT AVG(sa3.duration_seconds) FROM {academy_session_attendance} sa3
+                           JOIN {academy_session_students} ss3 ON ss3.sessionid = sa3.sessionid AND ss3.userid = sa3.userid
                           WHERE sa3.sessionid = ls.id AND sa3.duration_seconds > 0) AS avgseconds
                    $from ORDER BY " . $this->order_sql('ls.start_time DESC, ls.id DESC'), $params, $offset, $perpage);
             $teachers = data::user_names(array_map(fn($l) => $l->teacherid, $list));
             $rows = [];
             foreach ($list as $l) {
-                $late = $l->teacher_joined_at && $l->teacher_joined_at > $l->start_time
-                    ? (int) floor(($l->teacher_joined_at - $l->start_time) / MINSECS) : 0;
+                $late = $l->teacher_first_join && $l->teacher_first_join > $l->start_time
+                    ? (int) floor(($l->teacher_first_join - $l->start_time) / MINSECS) : 0;
                 $rows[] = [
                     'session' => self::cname($l->title),
                     'course' => self::cname($l->coursename),
@@ -253,8 +256,8 @@ class lessons extends base {
                     'attended' => self::num($l->attended) . ($l->invited ? ' (' . self::pct(100 * $l->attended / $l->invited) . ')' : ''),
                     'absent' => $l->status === 'ended' ? self::num($l->absent) : '—',
                     'avgminutes' => $l->avgseconds ? self::str('minutes', (int) round($l->avgseconds / MINSECS)) : '—',
-                    'teacherjoined' => $l->teacher_joined_at ? self::date((int) $l->teacher_joined_at, true) : get_string('no'),
-                    'late' => $l->teacher_joined_at ? ($late ? self::str('minutes', $late) : self::str('ontime')) : '—',
+                    'teacherjoined' => $l->teacher_first_join ? self::date((int) $l->teacher_first_join, true) : get_string('no'),
+                    'late' => $l->teacher_first_join ? ($late ? self::str('minutes', $late) : self::str('ontime')) : '—',
                 ];
             }
             return ['total' => $total, 'rows' => $rows];

@@ -115,6 +115,7 @@ $string['subjectpage_teachers'] = 'Teachers';
 $string['subjectpage_teachercount'] = 'Number of teachers';
 $string['subjectpage_teachersh1'] = 'Teachers';
 $string['subjectpage_heading2'] = 'of the subject';
+$string['subjectpage_coursesh1'] = 'Courses';
 $string['subjectpage_noteachers'] = 'No teachers shown here yet';
 $string['subjectpage_noteachers_desc'] = 'As soon as teachers are added to this subject you will find them here. Meanwhile you can browse the available courses.';
 $string['subjectpage_browse'] = 'Browse courses';
