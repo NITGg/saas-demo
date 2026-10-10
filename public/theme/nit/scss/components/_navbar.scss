@@ -90,14 +90,10 @@ $nit-navpanel-divider: var(--nit-navbarpanelborder, #dedede); // light row divid
         color: inherit;
     }
 
-    // ---- Legacy match: hide extra items + space the right cluster -----------
-    // The legacy header shows only three items on the right (bell, gear,
-    // avatar). Hide the messages popover; the notifications bell stays. The
-    // edit-mode switch is NOT hidden here any more — it was relocated into the
-    // gear/navigation dropdown (styled in `.nit-navmenu-editswitch` below).
-    [data-region="popover-region-messages"] {
-        display: none !important;
-    }
+    // ---- Right cluster spacing -----------------------------------------------
+    // The messages popover is shown next to the bell (it only renders when
+    // messaging is enabled in Advanced features). The edit-mode switch lives in
+    // the gear/navigation dropdown (styled in `.nit-navmenu-editswitch` below).
 
     // Breathing room between the round buttons.
     #usernavigation {
