@@ -147,6 +147,40 @@ class format_topics_renderer extends \format_topics\output\renderer {
         return !isloggedin() || isguestuser();
     }
 
+    /** @var array<int, bool> course id => the viewer may open its lessons */
+    protected $acadcanopen = [];
+
+    /**
+     * Whether the viewer may open the lessons of a course: an enrolled learner (an
+     * active enrolment) or staff. Everyone else — visitors and signed-in users not
+     * enrolled yet — sees every lesson's title, without a link (free previews and
+     * lessons sold on their own keep theirs, see acad_item_row()).
+     *
+     * @param int $courseid
+     * @return bool
+     */
+    protected function acad_can_open(int $courseid): bool {
+        global $USER;
+        if (!isset($this->acadcanopen[$courseid])) {
+            $context = context_course::instance($courseid);
+            $this->acadcanopen[$courseid] = !$this->acad_is_visitor()
+                && (is_enrolled($context, $USER->id, '', true) || has_capability('moodle/course:update', $context));
+        }
+        return $this->acadcanopen[$courseid];
+    }
+
+    /**
+     * Whether a row is drawn for an activity: one the viewer can see, or one held back
+     * by "Restrict access" that the teacher left listed on the course page (it is drawn
+     * locked, with the conditions).
+     *
+     * @param \cm_info $cm
+     * @return bool
+     */
+    protected function acad_lists_cm($cm): bool {
+        return $cm->uservisible || ($cm->is_visible_on_course_page() && !empty($cm->availableinfo));
+    }
+
     /**
      * Build the full branded page for the given course format.
      *
@@ -1144,7 +1178,7 @@ class format_topics_renderer extends \format_topics\output\renderer {
 
         foreach ($cmlist as $cmid) {
             $cm = $modinfo->cms[$cmid];
-            if (!$cm->uservisible) {
+            if (!$cm->uservisible && ($cm->modname === 'subsection' || !$this->acad_lists_cm($cm))) {
                 continue;
             }
             if ($cm->modname === 'subsection') {
@@ -1174,7 +1208,7 @@ class format_topics_renderer extends \format_topics\output\renderer {
         if ($sub && $sub->uservisible && !empty($modinfo->sections[$sub->section])) {
             foreach ($modinfo->sections[$sub->section] as $subcmid) {
                 $subcm = $modinfo->cms[$subcmid];
-                if ($subcm->uservisible && $subcm->modname !== 'subsection') {
+                if ($subcm->modname !== 'subsection' && $this->acad_lists_cm($subcm)) {
                     $items .= $this->acad_item_row($subcm, $accessible, $isfree);
                 }
             }
@@ -1220,33 +1254,54 @@ class format_topics_renderer extends \format_topics\output\renderer {
 
         // Lessons sold one by one (local_nit_finance) and watched % (local_nit_videoprogress).
         [$salemarker, $saleurl] = $nomarker ? ['', null] : $this->acad_sale_marker($cm);
-        // A visitor sees what the course holds but cannot open a lesson.
-        // Lessons open inside the course player frame (video lessons are their own player).
+        $canopen = $this->acad_can_open((int) $cm->course);
+        // Held back by "Restrict access": listed (title + the conditions), never linked.
+        $restricted = !$cm->uservisible;
+        // A free part of a lesson (a video's free preview minutes) stays open to a
+        // signed-in learner who cannot open the lesson itself yet.
+        if (!$restricted && !$nomarker && $saleurl === null && !$canopen) {
+            [$previewchip, $previewurl] = $this->acad_preview_marker($cm);
+            if ($previewurl) {
+                [$salemarker, $saleurl] = [$previewchip, $previewurl];
+            }
+        }
+        // Lessons open inside the course player frame (video lessons are their own player);
+        // someone not enrolled sees the titles only.
         $lessonurl = ($cm->url && class_exists('\local_academy\player'))
             ? new moodle_url(\local_academy\player::url_for($cm)) : $cm->url;
-        $url = $this->acad_is_visitor() ? null : ($saleurl ?? $lessonurl);
+        $url = null;
+        if (!$restricted && !$this->acad_is_visitor()) {
+            $url = $saleurl ?? ($canopen ? $lessonurl : null);
+        }
         $name = $url
             ? html_writer::link($url, format_string($cm->name), ['class' => 'bthc__item-link'])
             : format_string($cm->name);
+        if ($restricted) {
+            $name .= html_writer::div(\core_availability\info::format_info($cm->availableinfo, $cm->get_course()),
+                'bthc__item-avail');
+        }
 
-        // Real access marker: Free on a free course, a lock on a paid course the
-        // viewer can't yet access, nothing once they're enrolled/covered.
+        // Real access marker: Free on a free course, a lock on a lesson the viewer
+        // can't open yet (or a restricted one), nothing once they can open it.
+        $lock = html_writer::span($this->acad_icon('lock'),
+            'bthc__lock', ['title' => get_string('acad_lockedlesson', 'theme_nit')]);
         $marker = '';
-        if ($salemarker !== '') {
+        if ($restricted) {
+            $marker = $lock;
+        } else if ($salemarker !== '') {
             $marker = $salemarker;
         } else if (!$nomarker) {
             if ($isfree) {
                 $marker = html_writer::span(get_string('acad_free', 'theme_nit'), 'bthc__free');
-            } else if (!$accessible) {
-                $marker = html_writer::span($this->acad_icon('lock'),
-                    'bthc__lock', ['title' => get_string('acad_lockedlesson', 'theme_nit')]);
+            } else if (!$accessible || !$canopen) {
+                $marker = $lock;
             }
         }
 
         return html_writer::div(
             html_writer::span($this->acad_cm_icon($cm), 'bthc__item-ico', ['aria-hidden' => 'true']) .
             html_writer::div($name, 'bthc__item-name') . $this->acad_watched_chip($cm) . $marker,
-            'bthc__item'
+            'bthc__item' . ($restricted ? ' bthc__item--restricted' : '')
         );
     }
 
@@ -1291,6 +1346,28 @@ class format_topics_renderer extends \format_topics\output\renderer {
             return [$chip, $previewurl];
         }
         return [$chip, $buyurl];
+    }
+
+    /**
+     * The free preview of a video lesson in a course the viewer cannot open yet (the
+     * teacher's "free minutes", local_nit_finance): its chip and the preview page.
+     *
+     * @param \cm_info $cm
+     * @return array [chip HTML, preview moodle_url] or ['', null] when there is none
+     */
+    protected function acad_preview_marker($cm): array {
+        global $USER;
+        if (!class_exists('\local_nit_finance\local\preview') || $this->acad_is_visitor()) {
+            return ['', null];
+        }
+        if ($this->acadsalestate === null || $this->acadsalestate['courseid'] !== (int) $cm->course) {
+            $this->acad_sale_marker($cm); // Loads the viewer's course state.
+        }
+        if (\local_nit_finance\local\preview::for_user((int) $USER->id, $cm, $this->acadsalestate) <= 0) {
+            return ['', null];
+        }
+        $url = \local_nit_finance\local\preview::url((int) $cm->id);
+        return [html_writer::link($url, get_string('previewchip', 'local_nit_finance'), ['class' => 'nitfin-chip nit-brand-18']), $url];
     }
 
     /** @var array|null watched % per video lesson for the viewer: [courseid, cmid => percent] */

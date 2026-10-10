@@ -55,6 +55,7 @@ class admin_order extends \admin_category {
         'local_nit_finance_cat',
         'local_nit_notifications_cat',
         'local_nit_reports',
+        'local_academysessions_monitor',
     ];
 
     /**

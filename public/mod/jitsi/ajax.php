@@ -39,6 +39,16 @@ if ($function === 'end_session') {
     exit;
 }
 
+// ── leave_session ──────────────────────────────────────────────────────────
+// A participant left the room (view.php, on hang-up or leaving the page): closes
+// their own attendance row. Only ever their own; nothing happens if they never joined.
+if ($function === 'leave_session') {
+    $sessionid = required_param('sessionid', PARAM_INT);
+    \local_academysessions\session_manager::record_leave($sessionid, (int) $USER->id);
+    echo json_encode(['status' => 'success']);
+    exit;
+}
+
 // ── end_room ───────────────────────────────────────────────────────────────
 // Locks a standalone Jitsi activity (no linked academy session) so no one
 // can rejoin after the teacher ends it.

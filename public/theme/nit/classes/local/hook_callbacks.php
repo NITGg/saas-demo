@@ -26,6 +26,32 @@ namespace theme_nit\local;
 class hook_callbacks {
 
     /**
+     * Whether this request is a page inside the course player's frame
+     * (/local/academy/player.php): it carries ?nitplayer=1, or it is the target of a
+     * redirect from such a page. Moodle's own redirects drop the parameter (the quiz
+     * "Attempt" form → attempt.php, "Submit all" → review.php, …), which used to
+     * render the next page with the whole site navbar INSIDE the frame. The browser
+     * still says the request is for an iframe (Sec-Fetch-Dest) and keeps the original
+     * referrer across the redirect, so those two together recognise it.
+     *
+     * @return bool
+     */
+    public static function in_player(): bool {
+        if (optional_param('nitplayer', 0, PARAM_BOOL)) {
+            return true;
+        }
+        if (($_SERVER['HTTP_SEC_FETCH_DEST'] ?? '') !== 'iframe') {
+            return false;
+        }
+        $referer = get_local_referer(false);
+        if ($referer === '') {
+            return false;
+        }
+        parse_str((string) parse_url($referer, PHP_URL_QUERY), $query);
+        return !empty($query['nitplayer']);
+    }
+
+    /**
      * Force a chrome-free ("embedded") page layout when a page is being viewed
      * inside the mobile app's in-app WebView.
      *
@@ -94,7 +120,7 @@ class hook_callbacks {
 
         // A lesson embedded inside the course player (/local/academy/player.php)
         // renders chrome-free — this request only, no session flag.
-        if (optional_param('nitplayer', 0, PARAM_BOOL) && $PAGE->cm !== null) {
+        if (self::in_player() && $PAGE->cm !== null) {
             $PAGE->set_pagelayout('embedded');
             $PAGE->add_body_class('nit-player-embed'); // light template chrome inside the frame
             return;
@@ -149,10 +175,14 @@ class hook_callbacks {
         // A lesson rendered inside the course player frame: every same-origin link
         // and form inside it must stay chrome-free (carry nitplayer=1), and a link
         // back to the course must leave the frame (the player breaks out itself).
-        if (optional_param('nitplayer', 0, PARAM_BOOL)) {
+        if (self::in_player()) {
             $hook->add_html('<style>body.nit-player-embed{background:var(--t-bg,#fff)!important}'
                 . 'body.nit-player-embed #page{padding:20px clamp(16px,3vw,36px) 32px;max-width:1100px;margin:0 auto}</style>'
-                . '<script>document.addEventListener("DOMContentLoaded",function(){'
+                // A page reached by a redirect lost ?nitplayer=1: put it back in the address,
+                // so the referrer of the next redirect (in_player()) still says "player".
+                . '<script>try{var nu=new URL(window.location.href);if(!nu.searchParams.has("nitplayer")){'
+                . 'nu.searchParams.set("nitplayer","1");history.replaceState(history.state,"",nu.toString());}}catch(e){}'
+                . 'document.addEventListener("DOMContentLoaded",function(){'
                 . 'var o=window.location.origin;'
                 . 'document.querySelectorAll("a[href]").forEach(function(a){try{var u=new URL(a.href,o);'
                 . 'if(u.origin!==o||u.hash&&u.pathname===window.location.pathname&&u.search===window.location.search){return;}'

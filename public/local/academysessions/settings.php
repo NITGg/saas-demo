@@ -84,5 +84,26 @@ if ($hassiteconfig) {
         'https://academy2026.nitg-eg.com/whiteboard'
     ));
 
+    // Live monitoring wall (monitor.php).
+    $settings->add(new admin_setting_heading('local_academysessions/monitor_heading',
+        get_string('monitor', 'local_academysessions'), ''));
+    $settings->add(new admin_setting_configtext('local_academysessions/monitor_grace',
+        get_string('monitor_gracesetting', 'local_academysessions'),
+        get_string('monitor_gracesetting_desc', 'local_academysessions'), 5, PARAM_INT));
+    $settings->add(new admin_setting_configtext('local_academysessions/monitor_refresh',
+        get_string('monitor_refreshsetting', 'local_academysessions'),
+        get_string('monitor_refreshsetting_desc', 'local_academysessions'), 20, PARAM_INT));
+
     $ADMIN->add('localplugins', $settings);
+}
+
+// The live monitoring wall, for site-wide supervisors (a category / course manager
+// opens it from the course "More" menu instead).
+if ($hassiteconfig || has_capability('local/academysessions:monitorlive', context_system::instance())) {
+    $ADMIN->add('localplugins', new admin_externalpage(
+        'local_academysessions_monitor',
+        get_string('monitor', 'local_academysessions'),
+        new moodle_url('/local/academysessions/monitor.php'),
+        'local/academysessions:monitorlive'
+    ));
 }

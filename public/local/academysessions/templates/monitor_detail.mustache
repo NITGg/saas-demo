@@ -1,0 +1,82 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_academysessions/monitor_detail
+
+    One lesson opened from the monitoring wall (\local_academysessions\monitor::detail()):
+    its state and everyone expected or seen in it. Shown in a modal by amd/src/monitor.js.
+
+    Example context (json):
+    {
+        "title": "Physics", "course": "Grade 10", "statuslabel": "Running", "colour": "success",
+        "type": "Group session", "provider": "Jitsi", "timerange": "10:00 AM – 10:50 AM",
+        "actualstarttext": "10:02 AM", "latetext": "", "elapsed": "12 min", "attendance": "1 / 1 in",
+        "hasalert": false, "alerts": [], "updated": "10:00:05 AM",
+        "people": [{"name": "Sara Ali", "role": "Teacher", "isteacher": true, "firstjoin": "10:02 AM",
+            "lastleave": "", "present": true, "state": "In the call", "statecolour": "success", "minutes": "12 min"}]
+    }
+}}
+<div class="nitmon nitmon-detail">
+    <p class="nitmon-detail-head">
+        <span class="nitmon-badge nitmon-badge-{{colour}}">{{statuslabel}}</span>
+        <span class="nitmon-meta">{{course}} · {{type}} · {{provider}}</span>
+    </p>
+    {{#hasalert}}
+    <ul class="nitmon-alerts" role="alert">
+        {{#alerts}}<li>{{#pix}} i/warning, core {{/pix}} {{text}}</li>{{/alerts}}
+    </ul>
+    {{/hasalert}}
+    <dl class="nitmon-facts nitmon-facts-wide">
+        <div><dt>{{#str}} monitor_time, local_academysessions {{/str}}</dt><dd><bdi dir="ltr">{{timerange}}</bdi></dd></div>
+        {{#actualstarttext}}
+        <div><dt>{{#str}} monitor_actualstart, local_academysessions {{/str}}</dt>
+            <dd><bdi dir="ltr">{{actualstarttext}}</bdi>{{#latetext}} <span class="nitmon-late">({{latetext}})</span>{{/latetext}}</dd></div>
+        {{/actualstarttext}}
+        {{#elapsed}}<div><dt>{{#str}} monitor_elapsed, local_academysessions {{/str}}</dt><dd>{{elapsed}}</dd></div>{{/elapsed}}
+        <div><dt>{{#str}} monitor_students, local_academysessions {{/str}}</dt><dd>{{attendance}}</dd></div>
+    </dl>
+
+    <div class="table-responsive">
+        <table class="table table-sm nitmon-people">
+            <caption class="visually-hidden">{{#str}} monitor_people, local_academysessions {{/str}}</caption>
+            <thead>
+                <tr>
+                    <th scope="col">{{#str}} name {{/str}}</th>
+                    <th scope="col">{{#str}} monitor_role, local_academysessions {{/str}}</th>
+                    <th scope="col">{{#str}} status {{/str}}</th>
+                    <th scope="col">{{#str}} monitor_firstjoin, local_academysessions {{/str}}</th>
+                    <th scope="col">{{#str}} monitor_lastleave, local_academysessions {{/str}}</th>
+                    <th scope="col">{{#str}} monitor_timein, local_academysessions {{/str}}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#people}}
+                <tr {{#isteacher}}class="nitmon-people-teacher"{{/isteacher}}>
+                    <th scope="row">{{name}}</th>
+                    <td>{{role}}</td>
+                    <td><span class="nitmon-badge nitmon-badge-{{statecolour}}">{{state}}</span></td>
+                    <td><bdi dir="ltr">{{firstjoin}}</bdi>{{^firstjoin}}—{{/firstjoin}}</td>
+                    <td><bdi dir="ltr">{{lastleave}}</bdi>{{^lastleave}}—{{/lastleave}}</td>
+                    <td>{{minutes}}</td>
+                </tr>
+                {{/people}}
+            </tbody>
+        </table>
+    </div>
+    <p class="nitmon-updated">{{#str}} monitor_updated, local_academysessions, {{updated}} {{/str}}</p>
+    <p class="nitmon-note">{{#str}} monitor_source, local_academysessions {{/str}}</p>
+</div>

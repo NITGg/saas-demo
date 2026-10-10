@@ -1,0 +1,125 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_academysessions/monitor_cards
+
+    The monitoring wall's moving part: the count per status, then one card per
+    lesson (\local_academysessions\monitor::wall()). Rendered by the page and again
+    by amd/src/monitor.js on every refresh.
+
+    Example context (json):
+    {
+        "updated": "10:00:05 AM", "total": 1, "truncated": false, "empty": false,
+        "summary": [{"status": "running", "label": "Running", "count": 1, "colour": "success", "active": false}],
+        "cards": [{
+            "key": "s3", "sessionid": 3, "hasdetail": true, "title": "Physics", "course": "Grade 10",
+            "type": "Group session", "isflex": false, "student": "", "provider": "Jitsi", "teacher": "Sara Ali",
+            "teacherin": true, "timerange": "10:00 AM – 10:50 AM", "actualstarttext": "10:02 AM",
+            "elapsed": "12 min", "startsin": "", "latetext": "", "attendance": "8 / 10 in",
+            "invited": 10, "present": 8, "joined": 9, "status": "running", "statuslabel": "Running",
+            "colour": "success", "hasalert": false, "alerts": []
+        }]
+    }
+}}
+<div class="nitmon-summary" role="list">
+    {{#summary}}
+    <span class="nitmon-chip nitmon-chip-{{colour}} {{#active}}nitmon-chip-active{{/active}}" role="listitem">
+        <span class="nitmon-chip-count">{{count}}</span> {{label}}
+    </span>
+    {{/summary}}
+    <span class="nitmon-updated">{{#str}} monitor_updated, local_academysessions, {{updated}} {{/str}}</span>
+</div>
+
+{{#empty}}
+<div class="nitmon-empty">
+    <p>{{#str}} monitor_empty, local_academysessions {{/str}}</p>
+</div>
+{{/empty}}
+
+<div class="nitmon-grid">
+    {{#cards}}
+    <article class="nitmon-card nitmon-card-{{colour}} {{#hasalert}}nitmon-card-alert{{/hasalert}}" data-key="{{key}}"
+             aria-labelledby="nitmon-title-{{key}}">
+        <header class="nitmon-card-head">
+            <span class="nitmon-badge nitmon-badge-{{colour}}">{{statuslabel}}</span>
+            <span class="nitmon-meta">{{type}} · {{provider}}</span>
+        </header>
+        <h3 class="nitmon-title" id="nitmon-title-{{key}}">{{title}}</h3>
+        <p class="nitmon-course">{{course}}</p>
+
+        {{#hasalert}}
+        <ul class="nitmon-alerts" role="alert">
+            {{#alerts}}<li>{{#pix}} i/warning, core {{/pix}} {{text}}</li>{{/alerts}}
+        </ul>
+        {{/hasalert}}
+
+        <dl class="nitmon-facts">
+            <div>
+                <dt>{{#str}} monitor_teacher, local_academysessions {{/str}}</dt>
+                <dd>
+                    <span class="nitmon-dot {{#teacherin}}nitmon-dot-in{{/teacherin}}" aria-hidden="true"></span>
+                    {{teacher}}
+                    <span class="visually-hidden">({{#teacherin}}{{#str}} monitor_person_present, local_academysessions {{/str}}{{/teacherin}}{{^teacherin}}{{#str}} monitor_teachernotin, local_academysessions {{/str}}{{/teacherin}})</span>
+                </dd>
+            </div>
+            {{#isflex}}
+            <div>
+                <dt>{{#str}} monitor_student, local_academysessions {{/str}}</dt>
+                <dd>{{student}}</dd>
+            </div>
+            {{/isflex}}
+            <div>
+                <dt>{{#str}} monitor_time, local_academysessions {{/str}}</dt>
+                <dd><bdi dir="ltr">{{timerange}}</bdi></dd>
+            </div>
+            {{#actualstarttext}}
+            <div>
+                <dt>{{#str}} monitor_actualstart, local_academysessions {{/str}}</dt>
+                <dd><bdi dir="ltr">{{actualstarttext}}</bdi>{{#latetext}} <span class="nitmon-late">({{latetext}})</span>{{/latetext}}</dd>
+            </div>
+            {{/actualstarttext}}
+            {{#elapsed}}
+            <div>
+                <dt>{{#str}} monitor_elapsed, local_academysessions {{/str}}</dt>
+                <dd>{{elapsed}}</dd>
+            </div>
+            {{/elapsed}}
+            {{#startsin}}
+            <div>
+                <dt>{{#str}} monitor_startsinlabel, local_academysessions {{/str}}</dt>
+                <dd>{{startsin}}</dd>
+            </div>
+            {{/startsin}}
+            <div>
+                <dt>{{#str}} monitor_students, local_academysessions {{/str}}</dt>
+                <dd>{{attendance}}</dd>
+            </div>
+        </dl>
+
+        {{#hasdetail}}
+        <button type="button" class="btn btn-outline-secondary btn-sm nitmon-open" data-action="detail"
+                data-sessionid="{{sessionid}}" aria-label="{{#str}} monitor_open, local_academysessions {{/str}}: {{title}}">
+            {{#pix}} i/fullscreen, core {{/pix}} {{#str}} monitor_open, local_academysessions {{/str}}
+        </button>
+        {{/hasdetail}}
+    </article>
+    {{/cards}}
+</div>
+
+{{#truncated}}
+<p class="nitmon-note">{{#str}} monitor_truncated, local_academysessions, {{total}} {{/str}}</p>
+{{/truncated}}

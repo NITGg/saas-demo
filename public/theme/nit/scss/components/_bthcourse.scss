@@ -662,6 +662,25 @@ a.bthc__item-link:hover {
 a.bthc__item-link:hover { color: var(--nit-brand-bthcourseopen); }
 // Make the whole row clickable through the name link.
 .bthc__item { position: relative; }
+// An activity held back by "Restrict access": its title, then the conditions.
+.bthc__item--restricted {
+    align-items: flex-start;
+    .bthc__item-name {
+        white-space: normal;
+        color: var(--nit-brand-textsecondary);
+    }
+    .bthc__lock { margin-top: 8px; }
+    .bthc__item-ico { opacity: .7; }
+}
+.bthc__item-avail {
+    margin-top: 4px;
+    font-size: 13px;
+    line-height: 18px;
+    color: var(--nit-brand-textsecondary);
+    // Moodle's availability text is a list of conditions (sometimes with links).
+    :where(ul) { margin: 2px 0 0; padding-inline-start: 18px; }
+    a { position: relative; z-index: 1; color: var(--nit-brand-bthcourseaccent); }
+}
 a.bthc__item-link::after {
     content: "";
     position: absolute;

@@ -317,6 +317,26 @@ echo <<<HTML
         // videoConferenceLeft fires on plain leave — teacher leaving without ending doesn't mark session.
         api.addEventListener('videoConferenceLeft', function() { onSessionLeft(false); });
 
+        // A student leaving (hang-up, or closing / leaving the page) closes their
+        // attendance row, so "in the call now" (live monitoring) and their time in the
+        // session are right. Coming back in reopens it (view.php → record_entry).
+        if (!CFG.isTeacher && CFG.sessionId) {
+            var _studentLeftSent = false;
+            var studentLeft = function() {
+                if (_studentLeftSent) { return; }
+                _studentLeftSent = true;
+                fetch(CFG.endUrl, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: 'function=leave_session&sesskey=' + encodeURIComponent(CFG.sesskey) + '&sessionid=' + CFG.sessionId,
+                    keepalive: true
+                }).catch(function() {});
+            };
+            api.addEventListener('videoConferenceLeft', studentLeft);
+            api.addEventListener('readyToClose', studentLeft);
+            window.addEventListener('pagehide', studentLeft);
+        }
+
         // Auto-submit password for everyone so no one gets a prompt
         // (Moodle already gates who can reach this page).
         if (CFG.roomPassword) {

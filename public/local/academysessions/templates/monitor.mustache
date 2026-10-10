@@ -1,0 +1,92 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_academysessions/monitor
+
+    The live monitoring wall: filters, then the cards (local_academysessions/monitor_cards,
+    re-rendered by amd/src/monitor.js on every refresh).
+
+    Example context (json):
+    {
+        "action": "https://example.com/local/academysessions/monitor.php",
+        "viewnow": true, "date": "2026-10-10", "q": "",
+        "courses": [{"value": 2, "label": "Physics", "selected": false}],
+        "teachers": [{"value": 5, "label": "Sara Ali", "selected": false}],
+        "providers": [{"value": "", "label": "All", "selected": true}],
+        "statuses": [{"value": "", "label": "All", "selected": true}],
+        "grace": 5, "refresh": 20,
+        "wall": {"cards": [], "summary": [], "empty": true, "truncated": false, "total": 0, "updated": "10:00:05 AM"}
+    }
+}}
+<div class="nitmon" data-region="local_academysessions-monitor">
+    <form class="nitmon-filters" method="get" action="{{action}}" role="search">
+        <div class="nitmon-field">
+            <label for="nitmon-view">{{#str}} monitor_view, local_academysessions {{/str}}</label>
+            <select class="form-select" id="nitmon-view" name="view" data-action="view">
+                <option value="now" {{#viewnow}}selected{{/viewnow}}>{{#str}} monitor_view_now, local_academysessions {{/str}}</option>
+                <option value="day" {{^viewnow}}selected{{/viewnow}}>{{#str}} monitor_view_day, local_academysessions {{/str}}</option>
+            </select>
+        </div>
+        <div class="nitmon-field" data-region="date" {{#viewnow}}hidden{{/viewnow}}>
+            <label for="nitmon-date">{{#str}} monitor_date, local_academysessions {{/str}}</label>
+            <input class="form-control" type="date" id="nitmon-date" name="date" value="{{date}}">
+        </div>
+        <div class="nitmon-field">
+            <label for="nitmon-course">{{#str}} course {{/str}}</label>
+            <select class="form-select" id="nitmon-course" name="courseid">
+                <option value="0">{{#str}} monitor_allcourses, local_academysessions {{/str}}</option>
+                {{#courses}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/courses}}
+            </select>
+        </div>
+        <div class="nitmon-field">
+            <label for="nitmon-teacher">{{#str}} monitor_teacher, local_academysessions {{/str}}</label>
+            <select class="form-select" id="nitmon-teacher" name="teacherid">
+                <option value="0">{{#str}} monitor_allteachers, local_academysessions {{/str}}</option>
+                {{#teachers}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/teachers}}
+            </select>
+        </div>
+        <div class="nitmon-field">
+            <label for="nitmon-provider">{{#str}} monitor_provider, local_academysessions {{/str}}</label>
+            <select class="form-select" id="nitmon-provider" name="provider">
+                {{#providers}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/providers}}
+            </select>
+        </div>
+        <div class="nitmon-field">
+            <label for="nitmon-status">{{#str}} status {{/str}}</label>
+            <select class="form-select" id="nitmon-status" name="status">
+                {{#statuses}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/statuses}}
+            </select>
+        </div>
+        <div class="nitmon-field nitmon-field-grow">
+            <label for="nitmon-q">{{#str}} search {{/str}}</label>
+            <input class="form-control" type="search" id="nitmon-q" name="q" value="{{q}}"
+                   placeholder="{{#str}} monitor_searchhint, local_academysessions {{/str}}">
+        </div>
+        <div class="nitmon-field nitmon-actions">
+            <button type="submit" class="btn btn-primary">{{#str}} monitor_apply, local_academysessions {{/str}}</button>
+            <a class="btn btn-outline-secondary" href="{{action}}">{{#str}} monitor_reset, local_academysessions {{/str}}</a>
+        </div>
+    </form>
+
+    <p class="nitmon-help">{{#str}} monitor_help, local_academysessions, { "grace": {{grace}}, "refresh": {{refresh}} } {{/str}}</p>
+
+    <div class="nitmon-error alert alert-warning" data-region="error" role="alert" hidden></div>
+
+    <div data-region="cards" aria-live="polite">
+        {{#wall}}{{> local_academysessions/monitor_cards }}{{/wall}}
+    </div>
+</div>

@@ -30,4 +30,15 @@ $capabilities = array(
             'manager' => CAP_ALLOW,
         ),
     ),
+    // The live monitoring wall (monitor.php): every lesson on now, who is in, what
+    // needs attention. In the system context = all courses; on a category or course =
+    // those courses. Managers only; teachers do not watch each other.
+    'local/academysessions:monitorlive' => array(
+        'riskbitmask' => RISK_PERSONAL,
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_COURSE,
+        'archetypes' => array(
+            'manager' => CAP_ALLOW,
+        ),
+    ),
 );

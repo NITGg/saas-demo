@@ -1,0 +1,239 @@
+/* local_academysessions — the live monitoring wall (monitor.php).
+   Colours come from the brand palette (--nit-brand-*), with Bootstrap fallbacks for
+   a theme without it; only neutral rgba(0,0,0,…) shadows are literal. Logical
+   properties keep RTL right. Status is always written out too, never colour only. */
+
+.nitmon {
+    --nitmon-success: var(--nit-brand-success, var(--bs-success, #198754));
+    --nitmon-warning: var(--nit-brand-warning, var(--bs-warning, #b7791f));
+    --nitmon-danger: var(--nit-brand-error, var(--bs-danger, #dc3545));
+    --nitmon-info: var(--nit-brand-info, var(--bs-info, #0d6efd));
+    --nitmon-secondary: var(--nit-brand-textsecondary, var(--bs-secondary-color, #6c757d));
+    --nitmon-surface: var(--nit-brand-surface, var(--bs-body-bg, #fff));
+    --nitmon-border: var(--nit-brand-border, var(--bs-border-color, #dee2e6));
+    --nitmon-text: var(--nit-brand-textprimary, var(--bs-body-color, #212529));
+    --nitmon-muted: var(--nit-brand-textsecondary, var(--bs-secondary-color, #6c757d));
+    color: var(--nitmon-text);
+}
+
+/* Filters. */
+.nitmon-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-end;
+    margin-block-end: 12px;
+}
+.nitmon-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 150px;
+}
+.nitmon-field label {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+}
+.nitmon-field-grow {
+    flex: 1 1 200px;
+}
+.nitmon-actions {
+    flex-direction: row;
+    gap: 8px;
+    min-width: 0;
+}
+.nitmon-help,
+.nitmon-note,
+.nitmon-updated {
+    color: var(--nitmon-muted);
+    font-size: 14px;
+}
+
+/* Count per status. */
+.nitmon-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin-block: 8px 16px;
+}
+.nitmon-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--nitmon-chip, var(--nitmon-border));
+    color: var(--nitmon-text);
+    background: var(--nitmon-surface);
+    font-size: 14px;
+}
+.nitmon-chip-count {
+    font-weight: 700;
+    color: var(--nitmon-chip, var(--nitmon-text));
+}
+.nitmon-chip-active {
+    box-shadow: 0 0 0 2px var(--nitmon-chip, var(--nitmon-border));
+}
+.nitmon-chip-success { --nitmon-chip: var(--nitmon-success); }
+.nitmon-chip-warning { --nitmon-chip: var(--nitmon-warning); }
+.nitmon-chip-danger { --nitmon-chip: var(--nitmon-danger); }
+.nitmon-chip-info { --nitmon-chip: var(--nitmon-info); }
+.nitmon-chip-secondary { --nitmon-chip: var(--nitmon-secondary); }
+.nitmon-summary .nitmon-updated {
+    margin-inline-start: auto;
+}
+
+/* Cards. */
+.nitmon-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr));
+    gap: 16px;
+}
+.nitmon-card {
+    --nitmon-accent: var(--nitmon-border);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 16px;
+    background: var(--nitmon-surface);
+    border: 1px solid var(--nitmon-border);
+    border-inline-start: 5px solid var(--nitmon-accent);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    min-width: 0;
+}
+.nitmon-card-success { --nitmon-accent: var(--nitmon-success); }
+.nitmon-card-warning { --nitmon-accent: var(--nitmon-warning); }
+.nitmon-card-danger { --nitmon-accent: var(--nitmon-danger); }
+.nitmon-card-info { --nitmon-accent: var(--nitmon-info); }
+.nitmon-card-secondary { --nitmon-accent: var(--nitmon-secondary); opacity: 0.85; }
+.nitmon-card-alert {
+    box-shadow: 0 0 0 2px var(--nitmon-danger), 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+.nitmon-card-head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+}
+.nitmon-badge {
+    --nitmon-b: var(--nitmon-secondary);
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--nitmon-b);
+    border: 1px solid var(--nitmon-b);
+    background: var(--nitmon-surface);
+}
+.nitmon-badge-success { --nitmon-b: var(--nitmon-success); }
+.nitmon-badge-warning { --nitmon-b: var(--nitmon-warning); }
+.nitmon-badge-danger { --nitmon-b: var(--nitmon-danger); }
+.nitmon-badge-info { --nitmon-b: var(--nitmon-info); }
+.nitmon-meta {
+    color: var(--nitmon-muted);
+    font-size: 13px;
+}
+.nitmon-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 4px 0 0;
+    overflow-wrap: anywhere;
+}
+.nitmon-course {
+    margin: 0;
+    color: var(--nitmon-muted);
+    font-size: 14px;
+    overflow-wrap: anywhere;
+}
+.nitmon-alerts {
+    list-style: none;
+    margin: 4px 0;
+    padding: 8px 10px;
+    border-radius: 8px;
+    color: var(--nitmon-danger);
+    border: 1px solid var(--nitmon-danger);
+    font-weight: 600;
+    font-size: 14px;
+}
+.nitmon-alerts .icon {
+    color: inherit;
+}
+.nitmon-facts {
+    display: grid;
+    gap: 4px;
+    margin: 4px 0 0;
+}
+.nitmon-facts > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 14px;
+}
+.nitmon-facts dt {
+    font-weight: 600;
+    color: var(--nitmon-muted);
+}
+.nitmon-facts dd {
+    margin: 0;
+    text-align: end;
+    overflow-wrap: anywhere;
+}
+.nitmon-facts-wide {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+    gap: 8px 24px;
+    margin-block-end: 16px;
+}
+.nitmon-late {
+    color: var(--nitmon-danger);
+    font-weight: 600;
+}
+.nitmon-dot {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--nitmon-secondary);
+    margin-inline-end: 4px;
+    vertical-align: middle;
+}
+.nitmon-dot-in {
+    background: var(--nitmon-success);
+}
+.nitmon-open {
+    align-self: flex-start;
+    margin-block-start: 8px;
+}
+.nitmon-empty {
+    padding: 32px 16px;
+    text-align: center;
+    color: var(--nitmon-muted);
+    border: 1px dashed var(--nitmon-border);
+    border-radius: 12px;
+}
+
+/* One lesson (modal). */
+.nitmon-detail-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+.nitmon-people-teacher th,
+.nitmon-people-teacher td {
+    font-weight: 600;
+}
+
+@media (max-width: 575.98px) {
+    .nitmon-field {
+        flex: 1 1 100%;
+    }
+    .nitmon-summary .nitmon-updated {
+        margin-inline-start: 0;
+        flex-basis: 100%;
+    }
+}
