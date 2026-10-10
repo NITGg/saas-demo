@@ -551,3 +551,6 @@ $string['help_card_teacher_dues_col_balance'] = 'رصيد محافظ المدر�
 
 // Privacy.
 $string['privacy:metadata'] = 'التقارير بتعرض بيانات متخزنة في plugins تانية، ومش بتخزّن بيانات شخصية بنفسها.';
+
+// Mobile API.
+$string['err_reportnotfound'] = 'التقرير ده مش متاح ليك.';

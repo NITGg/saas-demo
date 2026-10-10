@@ -376,7 +376,19 @@ if (!$service) {
     local_googleauth_fail('service_not_available', 404);
 }
 
-$token = \core_external\util::generate_token_for_current_user($service);
+// With the install's `deviceid` (new app builds), the token is that device's own
+// (local_nit_devices): the device limit can then sign one phone out on its own.
+$deviceid = class_exists('\local_nit_devices\hook_callbacks') ? \local_nit_devices\hook_callbacks::request_device_id() : '';
+if ($deviceid !== '') {
+    try {
+        $token = \local_nit_devices\manager::issue_token($user, $service, $deviceid,
+            optional_param('devicename', '', PARAM_TEXT), optional_param('platform', '', PARAM_ALPHANUMEXT));
+    } catch (\local_nit_devices\device_limit_exception $e) {
+        \local_nit_devices\hook_callbacks::refuse('devicelimit', $e->getMessage(), 200, ['maxdevices' => $e->max]);
+    }
+} else {
+    $token = \core_external\util::generate_token_for_current_user($service);
+}
 \core_external\util::log_token_request($token);
 
 // generate_token_for_current_user() REUSES the most recent existing external_tokens

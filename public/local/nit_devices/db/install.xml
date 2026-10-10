@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/nit_devices/db" VERSION="20261010" COMMENT="NIT devices: the devices each account signed in from"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
+>
+  <TABLES>
+    <TABLE NAME="local_nit_devices" COMMENT="One row per device (browser or app install) an account is registered on">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="kind" TYPE="char" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="web | mobile"/>
+        <FIELD NAME="deviceid" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false" COMMENT="browser cookie value, the app install id, or legacy-app"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" DEFAULT="" SEQUENCE="false" COMMENT="e.g. Chrome on Windows / the phone model"/>
+        <FIELD NAME="platform" TYPE="char" LENGTH="50" NOTNULL="true" DEFAULT="" SEQUENCE="false"/>
+        <FIELD NAME="sid" TYPE="char" LENGTH="128" NOTNULL="false" SEQUENCE="false" COMMENT="web: the Moodle session of the latest sign-in"/>
+        <FIELD NAME="tokenid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="mobile: external_tokens.id of this device"/>
+        <FIELD NAME="ip" TYPE="char" LENGTH="45" NOTNULL="true" DEFAULT="" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="lastseen" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userdevice" UNIQUE="true" FIELDS="userid, kind, deviceid"/>
+        <INDEX NAME="tokenid" UNIQUE="false" FIELDS="tokenid"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>

@@ -551,3 +551,6 @@ $string['help_card_teacher_dues_col_balance'] = 'The teachers\' wallet balances 
 
 // Privacy.
 $string['privacy:metadata'] = 'The reports show data stored by other plugins and store no personal data themselves.';
+
+// Mobile API.
+$string['err_reportnotfound'] = 'This report is not available to you.';

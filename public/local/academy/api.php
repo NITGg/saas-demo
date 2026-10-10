@@ -176,7 +176,13 @@ api::run(function (string $function) use ($USER, $userid, $token, $DB) {
             if (!$service) {
                 api::fail('servicenotavailable', get_string('servicenotavailable', 'webservice'));
             }
-            $tokenrec = \core_external\util::generate_token_for_current_user($service);
+            // With the install's `deviceid` (new app builds) the token is that device's own
+            // (local_nit_devices); a brand-new account has no devices, so no limit applies here.
+            $deviceid = class_exists('\local_nit_devices\hook_callbacks') ? \local_nit_devices\hook_callbacks::request_device_id() : '';
+            $tokenrec = $deviceid !== ''
+                ? \local_nit_devices\manager::issue_token($newuser, $service, $deviceid,
+                    optional_param('devicename', '', PARAM_TEXT), optional_param('platform', '', PARAM_ALPHANUMEXT))
+                : \core_external\util::generate_token_for_current_user($service);
             \core_external\util::log_token_request($tokenrec);
             return [
                 'userid'       => (int) $newuser->id,
