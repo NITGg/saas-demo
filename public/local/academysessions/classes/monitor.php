@@ -421,7 +421,7 @@ class monitor {
             if ($status === self::LATE) {
                 $alerts[] = self::str('alert_noteacher', (int) floor(($now - (int) $s->start_time) / MINSECS));
             } else if ($status === self::TEACHERLEFT) {
-                $alerts[] = self::str('alert_teacherleft', $lastleave ? self::time($lastleave) : '—');
+                $alerts[] = $lastleave ? self::str('alert_teacherleft', self::time($lastleave)) : self::str('alert_teacherout');
             } else if ($status === self::RUNNING && $inv && !$innow
                     && $now - max((int) $s->start_time, $firstjoin) > $grace * MINSECS) {
                 $alerts[] = self::str('alert_nostudents');

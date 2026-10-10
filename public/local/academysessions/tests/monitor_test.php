@@ -195,6 +195,69 @@ final class monitor_test extends \advanced_testcase {
         $this->assertArrayNotHasKey('l' . $late, $this->cards([], [(int) $this->getDataGenerator()->create_course()->id]));
     }
 
+    public function test_teacher_coming_back_and_students_who_never_came(): void {
+        global $DB;
+        $id = $this->session(-20 * MINSECS, ['teacher_first_join' => $this->now - 18 * MINSECS]);
+        // The teacher: in 18→10 min ago, out, back 5 min ago (still in).
+        $DB->insert_record('academy_session_presence', (object) ['sessionid' => $id, 'userid' => $this->teacher->id,
+            'joined_at' => $this->now - 18 * MINSECS, 'left_at' => $this->now - 10 * MINSECS]);
+        $DB->insert_record('academy_session_presence', (object) ['sessionid' => $id, 'userid' => $this->teacher->id,
+            'joined_at' => $this->now - 5 * MINSECS, 'left_at' => null]);
+        $DB->set_field('academy_live_sessions', 'teacher_joined_at', $this->now - 5 * MINSECS, ['id' => $id]);
+        // One student came, the other never did.
+        $DB->insert_record('academy_session_presence', (object) ['sessionid' => $id, 'userid' => $this->student->id,
+            'joined_at' => $this->now - 15 * MINSECS, 'left_at' => null]);
+
+        $card = $this->cards()['s' . $id];
+        $this->assertSame(monitor::RUNNING, $card['status']);
+        $this->assertSame(get_string('monitor_teachervisits', 'local_academysessions', ['count' => 2, 'minutes' => 13]),
+            $card['teachervisits']);
+        $this->assertSame(1, $card['present']);
+        $this->assertSame(1, $card['joined']);
+        $this->assertSame(1, $card['neverjoined']);
+
+        $teacher = monitor::detail($id, null, $this->now)['people'][0];
+        $this->assertSame(2, $teacher['visits']);
+        $this->assertTrue($teacher['present']);
+    }
+
+    public function test_teacher_out_of_the_call_is_not_the_lesson_ending(): void {
+        global $DB;
+        $id = $this->session(-20 * MINSECS, ['teacher_first_join' => $this->now - 18 * MINSECS,
+            'teacher_last_leave' => $this->now - 3 * MINSECS]);
+        $card = $this->cards()['s' . $id];
+        $this->assertSame(monitor::TEACHERLEFT, $card['status']);
+        $this->assertSame('', $card['endtext']);
+
+        session_manager::end_session($id, 'teacher', (int) $this->teacher->id);
+        $DB->set_field('academy_live_sessions', 'ended_at', $this->now, ['id' => $id]); // On the test's clock.
+        $card = $this->cards()['s' . $id];
+        $this->assertSame(monitor::ENDED, $card['status']);
+        $this->assertStringContainsString(get_string('monitor_end_teacher', 'local_academysessions'), $card['endtext']);
+        // Ended about 30 minutes before its planned end (started 20 min ago, 50 min long).
+        $this->assertStringContainsString(get_string('monitor_endedearly', 'local_academysessions', 30), $card['endtext']);
+    }
+
+    public function test_only_site_admins_get_the_join_button(): void {
+        global $DB;
+        $jitsi = $this->getDataGenerator()->create_module('jitsi', ['course' => $this->course->id]);
+        $id = $this->session(-2 * MINSECS);
+        $DB->set_field('academy_live_sessions', 'jitsiid', $jitsi->id, ['id' => $id]);
+
+        $this->setAdminUser();
+        $this->assertStringContainsString('/mod/jitsi/view.php?id=' . $jitsi->cmid, $this->cards()['s' . $id]['joinurl']);
+
+        $manager = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->role_assign('manager', $manager->id, \context_course::instance($this->course->id)->id);
+        $this->setUser($manager);
+        $this->assertSame('', $this->cards([], [(int) $this->course->id])['s' . $id]['joinurl']);
+
+        // Not into an ended lesson either.
+        $this->setAdminUser();
+        session_manager::end_session($id, 'admin', (int) get_admin()->id);
+        $this->assertSame('', $this->cards()['s' . $id]['joinurl']);
+    }
+
     public function test_detail_lists_everyone_and_respects_scope(): void {
         $id = $this->session(-10 * MINSECS, ['teacher_joined_at' => $this->now - 9 * MINSECS,
             'teacher_first_join' => $this->now - 9 * MINSECS]);

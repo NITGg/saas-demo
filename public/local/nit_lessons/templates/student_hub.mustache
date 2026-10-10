@@ -25,7 +25,7 @@
     Example context (json):
     {
         "sesskey": "abc", "actionurl": "#", "packagesurl": "#", "hasflex": true, "hasstats": true,
-        "stats": [{"key": "flex", "label": "Flex available", "value": "4", "sub": "Flex 10", "url": "#"}],
+        "stats": [{"key": "flex", "label": "Flex available", "value": "4", "sub": "Flex 10"}],
         "tabgroups": [{"label": "Lessons", "active": true,
             "tabs": [{"key": "book", "label": "Book a lesson", "url": "#", "active": true, "count": 0}]}],
         "isbook": true, "search": "", "hasteachers": false, "teachers": []
@@ -36,14 +36,14 @@
         <h1 class="nitfin__title">{{#str}}studenthub, local_nit_lessons{{/str}}</h1>
 
         {{#hasstats}}
-        {{! Flex left, wallet balance and (teachers) earnings — each opens its tab. }}
+        {{! One info bar: Flex left, wallet balance and (teachers) earnings. }}
         <div class="nitlx-stats">
             {{#stats}}
-            <a class="nitlx-statcard nitlx-statcard--{{key}}" href="{{url}}">
-                <span class="nitlx-statcard__label">{{label}}</span>
-                <span class="nitlx-statcard__value" dir="auto">{{value}}</span>
-                <span class="nitlx-statcard__sub">{{sub}}</span>
-            </a>
+            <div class="nitlx-stat-item nitlx-stat-item--{{key}}">
+                <span class="nitlx-stat-item__label">{{label}}</span>
+                <span class="nitlx-stat-item__value" dir="auto">{{value}}</span>
+                <span class="nitlx-stat-item__sub">{{sub}}</span>
+            </div>
             {{/stats}}
         </div>
         {{/hasstats}}

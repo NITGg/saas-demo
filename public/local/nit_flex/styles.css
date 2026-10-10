@@ -250,62 +250,71 @@
 }
 
 /* "My lessons & Flex": the summary bar and the grouped tabs. */
+/* One info bar (no links): each figure in its own segment, divided by thin lines. */
 .nitlx-stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 12px;
+    display: flex;
+    flex-wrap: wrap;
     margin-bottom: 20px;
+    padding: 18px 8px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, var(--nit-brand-primary),
+        color-mix(in srgb, var(--nit-brand-primary) 70%, var(--nit-brand-textprimary)));
+    color: var(--nit-brand-onprimary);
 }
-.nitlx a.nitlx-statcard {
+.nitlx-stat-item {
+    flex: 1 1 180px;
     display: flex;
     flex-direction: column;
     gap: 4px;
     min-width: 0;
-    padding: 18px 20px;
-    border-radius: 18px;
-    background: linear-gradient(135deg, var(--nit-brand-primary),
-        color-mix(in srgb, var(--nit-brand-primary) 70%, var(--nit-brand-textprimary)));
-    color: var(--nit-brand-onprimary) !important;
-    text-decoration: none !important;
-    transition: transform .2s ease, box-shadow .2s ease;
+    padding: 4px 20px;
+    border-inline-start: 1px solid color-mix(in srgb, var(--nit-brand-onprimary) 28%, transparent);
 }
-.nitlx a.nitlx-statcard:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 24px -12px color-mix(in srgb, var(--nit-brand-primary) 70%, transparent);
+.nitlx-stat-item:first-child {
+    border-inline-start: 0;
 }
-/* Money cards: the same family, a lighter surface so the Flex card leads. */
-.nitlx a.nitlx-statcard--wallet,
-.nitlx a.nitlx-statcard--earnings {
-    background: var(--nit-brand-surface);
-    border: 1px solid var(--nit-brand-borderprimary);
-    color: var(--nit-brand-textprimary) !important;
-}
-.nitlx-statcard__label {
+.nitlx-stat-item__label {
     font-size: 14px;
     font-weight: 700;
     opacity: .9;
 }
-.nitlx-statcard__value {
+.nitlx-stat-item__value {
     font-size: 30px;
     font-weight: 800;
     line-height: 1.15;
     overflow-wrap: anywhere;
 }
-.nitlx-statcard--wallet .nitlx-statcard__value,
-.nitlx-statcard--earnings .nitlx-statcard__value {
-    color: var(--nit-brand-primary);
-}
-.nitlx-statcard__sub {
+.nitlx-stat-item__sub {
     font-size: 13px;
     opacity: .85;
 }
+.nitlx-stat-item__sub:empty {
+    display: none;
+}
+@media (max-width: 575px) {
+    /* Stacked: the dividers run across. */
+    .nitlx-stat-item {
+        flex-basis: 100%;
+        padding: 12px 16px;
+        border-inline-start: 0;
+        border-top: 1px solid color-mix(in srgb, var(--nit-brand-onprimary) 28%, transparent);
+    }
+    .nitlx-stat-item:first-child {
+        border-top: 0;
+    }
+}
 
-/* Tabs: one box per group (a small title + its tabs as a segmented control). */
+/* Tabs: one box per group (a small title + its tabs as a segmented control), two per row. */
 .nitlx-tabs {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
     margin-bottom: 24px;
+}
+@media (max-width: 575px) {
+    .nitlx-tabs {
+        grid-template-columns: minmax(0, 1fr);
+    }
 }
 .nitlx-tabgroup {
     display: flex;
@@ -778,4 +787,8 @@
     font-family: inherit;
     letter-spacing: normal;
     text-transform: none;
+}
+.nitlx-lesson__norec {
+    color: var(--nit-brand-textsecondary);
+    opacity: .8;
 }

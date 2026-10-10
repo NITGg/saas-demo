@@ -141,14 +141,14 @@ final class hub {
     }
 
     /**
-     * The summary bar above the tabs: the Flex left (and the package), the wallet
-     * balance and, for teachers, the earnings that can be withdrawn — each one opens
-     * its tab.
+     * The info bar above the tabs (information only): the Flex left (and the
+     * package), the wallet balance and, for teachers, the earnings that can be
+     * withdrawn.
      *
      * @param int $userid
      * @param string[] $tabs the user's tabs
      * @param array|null $active the active Flex package (purchase::active())
-     * @return array[] [{key, label, value, sub, url}]
+     * @return array[] [{key, label, value, sub}]
      */
     private static function stats(int $userid, array $tabs, ?array $active): array {
         global $DB;
@@ -164,20 +164,18 @@ final class hub {
                 }
             }
             $stats[] = ['key' => 'flex', 'label' => get_string('flexavailable', 'local_nit_lessons'),
-                'value' => (string) ($active ? $active['remaining_flex'] : 0), 'sub' => $sub,
-                'url' => self::url('packages')->out(false)];
+                'value' => (string) ($active ? $active['remaining_flex'] : 0), 'sub' => $sub];
         }
         if (in_array('wallet', $tabs, true) && class_exists('\local_nit_finance\local\wallets')) {
             $stats[] = ['key' => 'wallet', 'label' => get_string('walletbalance', 'local_nit_flex'),
                 'value' => money::format(\local_nit_finance\local\wallets::balance(
-                    \local_nit_finance\local\wallets::STUDENT, $userid)),
-                'sub' => get_string('tab_wallet', 'local_nit_lessons'), 'url' => self::url('wallet')->out(false)];
+                    \local_nit_finance\local\wallets::STUDENT, $userid)), 'sub' => ''];
         }
         if (in_array('earnings', $tabs, true)) {
             $summary = \local_nit_finance\api\wallet::teacher($userid);
-            $stats[] = ['key' => 'earnings', 'label' => get_string('earn_available', 'local_nit_finance'),
+            $stats[] = ['key' => 'earnings', 'label' => get_string('tab_earnings', 'local_nit_lessons'),
                 'value' => money::format((int) $summary['available_balance_minor']),
-                'sub' => get_string('tab_earnings', 'local_nit_lessons'), 'url' => self::url('earnings')->out(false)];
+                'sub' => get_string('earn_available', 'local_nit_finance')];
         }
         return $stats;
     }

@@ -110,6 +110,9 @@ final class lesson_view {
             $card['recordinglabel'] = get_string($recordings > 1 ? 'watchrecordings' : 'watchrecording',
                 'local_nit_lessons', $recordings);
         }
+        // A finished lesson without one says so (a recording exists only once the room
+        // was recorded and the video reached Vimeo — mod/jitsi/record_notify.php).
+        $card['norecording'] = $recordings === 0 && $lesson['status'] === 'completed';
         $card['hasactions'] = !empty($card['actions']) || !empty($card['joinurl']) || $recordings > 0;
         return $card;
     }

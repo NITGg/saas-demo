@@ -86,7 +86,29 @@ final class presence_test extends \advanced_testcase {
         [, $cm, , , $sessionid] = $this->linked_room();
 
         presence::set($cm, (int) get_admin()->id, true);
-        $this->assertNull($DB->get_field('academy_live_sessions', 'teacher_first_join', ['id' => $sessionid]));
+        $session = $DB->get_record('academy_live_sessions', ['id' => $sessionid]);
+        $this->assertNull($session->teacher_first_join);
+        // Nor does it let the students in: the gate stays closed.
+        $this->assertNull($session->teacher_joined_at);
+        // The admin is recorded as being in the call (a stretch), then out.
+        $this->assertSame(1, $DB->count_records_select('academy_session_presence',
+            'sessionid = ? AND userid = ? AND left_at IS NULL', [$sessionid, get_admin()->id]));
+        presence::set($cm, (int) get_admin()->id, false);
+        $this->assertSame(0, $DB->count_records_select('academy_session_presence',
+            'sessionid = ? AND userid = ? AND left_at IS NULL', [$sessionid, get_admin()->id]));
+    }
+
+    public function test_teacher_leaving_and_coming_back_is_kept(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [, $cm, $teacher, , $sessionid] = $this->linked_room();
+
+        presence::set($cm, (int) $teacher->id, true);
+        presence::set($cm, (int) $teacher->id, false);
+        $this->assertGreaterThan(0, (int) $DB->get_field('academy_live_sessions', 'teacher_last_leave', ['id' => $sessionid]));
+        presence::set($cm, (int) $teacher->id, true);
+        $this->assertSame(2, $DB->count_records('academy_session_presence',
+            ['sessionid' => $sessionid, 'userid' => $teacher->id]));
     }
 
     public function test_set_present_on_standalone_room_stores_nothing(): void {

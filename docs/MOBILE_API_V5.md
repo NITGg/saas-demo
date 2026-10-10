@@ -274,6 +274,24 @@ web room page:
 - **App action:** don't join the room when `jwt` is empty; handle `waitingforteacher` and
   `jitsinotconfigured` if the app uses `api_token.php`.
 
+**Leaving and coming back, how a session ended (10/10):**
+- **New fields on session rows** (`get_teacher_sessions`, `get_student_sessions`, `start_session`; returned as
+  stored, so they are strings or `null` like the other columns):
+
+  | Field | Meaning |
+  |---|---|
+  | `teacher_first_join` | when the session's teacher first came into the call (lateness is measured from it) |
+  | `teacher_last_leave` | when the teacher last left the call. The session goes on; this is not the end |
+  | `ended_at` | when the session was ended |
+  | `ended_by` | user id who ended it; `null` = the system |
+  | `end_reason` | `teacher` (its teacher), `admin` (someone else), `schedule` (its time ran out), `lesson` (its private lesson was completed or an absence was reported); `null` for sessions ended before 10/10 |
+
+- **`leave_session` → `duration_seconds`** is now the time actually spent in the call. Each leave and rejoin is
+  kept, and time spent out between them does not count. Before, it was "last leave − first join".
+- **`set_teacher_present`**: only the session's own teacher opens or closes the student gate. A site admin who
+  joins is recorded as being in the call, but the students still wait for the teacher.
+- **App action:** none required. Show `end_reason` / `ended_at` if useful.
+
 ### 3.6 Messaging: "Prevent messaging between students"
 
 New admin setting (Site administration → Messaging → Messaging settings, off by default). When it is on,

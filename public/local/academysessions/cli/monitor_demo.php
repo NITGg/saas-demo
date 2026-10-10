@@ -20,8 +20,11 @@
  *
  *   php monitor_demo.php --create         five live sessions titled "ZZ demo …", one per state
  *                                         (running, teacher late, waiting, upcoming, teacher left)
- *   php monitor_demo.php --studentleaves  the student leaves the running one (watch the card update)
  *   php monitor_demo.php --delete         removes every "ZZ demo …" session
+ *   On "ZZ demo running" (watch its card update):
+ *     --studentleaves / --studentreturns  the student leaves / comes back
+ *     --teacherleaves / --teacherreturns  the teacher leaves the call / comes back
+ *     --end                               the teacher ends the lesson
  *
  * Uses the test teacher of local/nit_lessons/cli/seed_demo.php, the test student of
  * local/nit_finance/cli/seed_test_accounts.php, and the lessons course. Open the wall
@@ -38,10 +41,11 @@ require_once($CFG->libdir . '/clilib.php');
 
 use local_academysessions\session_manager;
 
-[$options] = cli_get_params(['create' => false, 'studentleaves' => false, 'delete' => false, 'help' => false],
-    ['h' => 'help']);
-if ($options['help'] || (!$options['create'] && !$options['studentleaves'] && !$options['delete'])) {
-    cli_writeln('Demo lessons for the live monitoring wall. --create | --studentleaves | --delete');
+[$options] = cli_get_params(['create' => false, 'delete' => false, 'studentleaves' => false, 'studentreturns' => false,
+    'teacherleaves' => false, 'teacherreturns' => false, 'end' => false, 'help' => false], ['h' => 'help']);
+if ($options['help'] || !array_filter($options)) {
+    cli_writeln('Demo lessons for the live monitoring wall: --create | --delete, and on "ZZ demo running": '
+        . '--studentleaves | --studentreturns | --teacherleaves | --teacherreturns | --end');
     exit(0);
 }
 
@@ -66,13 +70,36 @@ if (!$teacher || !$student || !$courseid) {
     cli_error('Run local/nit_lessons/cli/seed_demo.php and local/nit_finance/cli/seed_test_accounts.php first.');
 }
 
-if ($options['studentleaves']) {
-    $id = $DB->get_field('academy_live_sessions', 'id', ['title' => 'ZZ demo running']);
+$actions = ['studentleaves', 'studentreturns', 'teacherleaves', 'teacherreturns', 'end'];
+$action = current(array_filter($actions, fn($a) => !empty($options[$a])));
+if ($action) {
+    $id = (int) $DB->get_field('academy_live_sessions', 'id', ['title' => 'ZZ demo running']);
     if (!$id) {
         cli_error('No "ZZ demo running" session: run --create first.');
     }
-    session_manager::record_leave((int) $id, (int) $student);
-    cli_writeln("The student left session $id.");
+    $now = time();
+    switch ($action) {
+        case 'studentleaves':
+            session_manager::record_leave($id, (int) $student);
+            break;
+        case 'studentreturns':
+            session_manager::record_attendance($id, (int) $student, true);
+            break;
+        case 'teacherleaves':
+            // What mod_jitsi\local\presence::set() does when the teacher leaves the call.
+            $DB->update_record('academy_live_sessions', (object) ['id' => $id, 'teacher_joined_at' => null,
+                'teacher_last_leave' => $now]);
+            session_manager::record_leave($id, (int) $teacher, $now);
+            break;
+        case 'teacherreturns':
+            $DB->set_field('academy_live_sessions', 'teacher_joined_at', $now, ['id' => $id]);
+            session_manager::record_attendance($id, (int) $teacher, true);
+            break;
+        case 'end':
+            session_manager::end_session($id, 'teacher', (int) $teacher);
+            break;
+    }
+    cli_writeln("Done: $action (session $id).");
     exit(0);
 }
 
@@ -90,8 +117,14 @@ $running = $make('ZZ demo running', -12 * MINSECS, ['status' => 'live', 'teacher
     'teacher_first_join' => $now - 4 * MINSECS]);
 session_manager::record_attendance($running, (int) $teacher);
 session_manager::record_attendance($running, (int) $student);
+// The teacher came in 4 minutes ago, the student 3.
+foreach ([$teacher => 4, $student => 3] as $uid => $ago) {
+    $DB->set_field('academy_session_presence', 'joined_at', $now - $ago * MINSECS, ['sessionid' => $running, 'userid' => $uid]);
+    $DB->set_field('academy_session_attendance', 'joined_at', $now - $ago * MINSECS, ['sessionid' => $running, 'userid' => $uid]);
+}
 $make('ZZ demo late teacher', -15 * MINSECS, ['status' => 'live']);
 $make('ZZ demo waiting', -2 * MINSECS, ['status' => 'live']);
 $make('ZZ demo upcoming', 20 * MINSECS);
-$make('ZZ demo teacher left', -25 * MINSECS, ['status' => 'live', 'teacher_first_join' => $now - 24 * MINSECS]);
+$make('ZZ demo teacher left', -25 * MINSECS, ['status' => 'live', 'teacher_first_join' => $now - 24 * MINSECS,
+    'teacher_last_leave' => $now - 6 * MINSECS]);
 cli_writeln('Created 5 demo sessions. Open /local/academysessions/monitor.php as an admin or the test manager.');
