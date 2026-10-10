@@ -34,8 +34,7 @@ $PAGE->set_url(new moodle_url('/local/nit_lessons/join.php', ['id' => $id]));
 $record = lesson::get_record(['id' => $id]);
 $userid = (int) $USER->id;
 $isteacher = $record && (int) $record->get('teacherid') === $userid;
-$back = $isteacher ? new moodle_url('/local/nit_lessons/my_lessons.php')
-    : new moodle_url('/local/nit_lessons/student.php', ['tab' => 'lessons']);
+$back = new moodle_url('/local/nit_lessons/student.php', ['tab' => $isteacher ? 'teaching' : 'lessons']);
 if (!$record || (!$isteacher && (int) $record->get('studentid') !== $userid)) {
     throw new moodle_exception('err_forbidden', 'local_nit_lessons');
 }

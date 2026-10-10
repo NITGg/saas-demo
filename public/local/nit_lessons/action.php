@@ -40,7 +40,8 @@ $PAGE->set_url(new moodle_url('/local/nit_lessons/action.php'));
 $do = required_param('do', PARAM_ALPHAEXT);
 $back = optional_param('back', 'hub', PARAM_ALPHA);
 $return = $back === 'teacher'
-    ? new moodle_url('/local/nit_lessons/my_lessons.php', ['status' => optional_param('status', '', PARAM_ALPHAEXT)])
+    ? new moodle_url('/local/nit_lessons/student.php', ['tab' => 'teaching',
+        'status' => optional_param('status', '', PARAM_ALPHAEXT)])
     : new moodle_url('/local/nit_lessons/student.php', ['tab' => 'lessons']);
 
 $userid = (int) $USER->id;

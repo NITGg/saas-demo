@@ -50,6 +50,7 @@
     {{#hasactions}}
     <div class="nitlx-lesson__actions">
         {{#joinurl}}<a class="nitfin-btn nitfin-btn--small nitlx-join" href="{{joinurl}}" target="_blank" rel="noopener">{{#str}}act_join, local_nit_lessons{{/str}}</a>{{/joinurl}}
+        {{#recordingurl}}<a class="nitfin-btn nitfin-btn--small nitfin-btn--outline nitlx-recbtn" href="{{recordingurl}}">{{#pix}}i/play, core{{/pix}} {{recordinglabel}}</a>{{/recordingurl}}
         {{#actions}}
         <button type="button" class="nitlx-actbtn nitlx-actbtn--{{style}}" data-act="{{do}}" data-value="{{value}}"
                 data-need="{{need}}" data-lesson="{{id}}" data-confirm="{{confirm}}" data-title="{{label}}">{{label}}</button>

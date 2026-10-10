@@ -103,8 +103,43 @@ final class lesson_view {
         if ($needsslots) {
             $card['slots'] = json_encode(self::slots_data((int) $lesson['teacherid'], (int) $lesson['id']));
         }
-        $card['hasactions'] = !empty($card['actions']) || !empty($card['joinurl']);
+        // The lesson's recordings, to watch again later (local/nit_lessons/recording.php).
+        $recordings = count(self::recordings($lesson, $role));
+        if ($recordings > 0) {
+            $card['recordingurl'] = (new \moodle_url('/local/nit_lessons/recording.php', ['id' => $lesson['id']]))->out(false);
+            $card['recordinglabel'] = get_string($recordings > 1 ? 'watchrecordings' : 'watchrecording',
+                'local_nit_lessons', $recordings);
+        }
+        $card['hasactions'] = !empty($card['actions']) || !empty($card['joinurl']) || $recordings > 0;
         return $card;
+    }
+
+    /**
+     * The recordings of a lesson's meeting room that this side may watch: the teacher
+     * always, the student once the lesson is over (the room's own rule,
+     * local_academysessions\recordings::visible_to_students()).
+     *
+     * @param array $lesson a formatted lesson (needs id, cmid)
+     * @param string $role 'student' or 'teacher'
+     * @return array[] local_academysessions\recordings::export() rows, newest first
+     */
+    public static function recordings(array $lesson, string $role): array {
+        global $DB;
+        if (!class_exists('\local_academysessions\recordings')) {
+            return [];
+        }
+        $sessionid = (int) $DB->get_field('nit_lesson', 'sessionid', ['id' => $lesson['id']]);
+        $cmid = (int) ($lesson['cmid'] ?? 0);
+        if ($cmid <= 0 && $sessionid <= 0) {
+            return [];
+        }
+        if ($role !== 'teacher') {
+            $session = $sessionid > 0 ? $DB->get_record('academy_live_sessions', ['id' => $sessionid]) : null;
+            if (!\local_academysessions\recordings::visible_to_students($session ?: null)) {
+                return [];
+            }
+        }
+        return \local_academysessions\recordings::list_for($cmid, $sessionid);
     }
 
     /**

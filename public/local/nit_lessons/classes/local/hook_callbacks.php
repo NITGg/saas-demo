@@ -49,7 +49,7 @@ class hook_callbacks {
             'local_nit_lessons_hub');
         if ((new teacher_service())->is_teacher((int) $USER->id)) {
             $primary->add(get_string('mylessons', 'local_nit_lessons'),
-                new \moodle_url('/local/nit_lessons/my_lessons.php'), \navigation_node::TYPE_CUSTOM, null,
+                new \moodle_url('/local/nit_lessons/student.php', ['tab' => 'teaching']), \navigation_node::TYPE_CUSTOM, null,
                 'local_nit_lessons_mylessons');
             $primary->add(get_string('teacherprofile', 'local_nit_lessons'),
                 new \moodle_url('/local/academy/profile.php', null, 'lessons'), \navigation_node::TYPE_CUSTOM, null,

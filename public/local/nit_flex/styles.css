@@ -249,102 +249,127 @@
     resize: vertical;
 }
 
-/* "My lessons & Flex": Flex bar and tabs. */
-.nitlx-flexbar {
+/* "My lessons & Flex": the summary bar and the grouped tabs. */
+.nitlx-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.nitlx a.nitlx-statcard {
     display: flex;
-    align-items: center;
-    gap: 24px;
-    margin-bottom: 24px;
-    padding: 20px 28px;
-    border-radius: 20px;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    padding: 18px 20px;
+    border-radius: 18px;
     background: linear-gradient(135deg, var(--nit-brand-primary),
         color-mix(in srgb, var(--nit-brand-primary) 70%, var(--nit-brand-textprimary)));
-    color: var(--nit-brand-onprimary);
-}
-.nitlx-flexbar__count {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-width: 96px;
-}
-.nitlx-flexbar__num {
-    font-size: 44px;
-    font-weight: 700;
-    line-height: 1;
-}
-.nitlx-flexbar__label {
-    font-size: 14px;
-    opacity: .9;
-}
-.nitlx-flexbar__info {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    gap: 2px;
-}
-.nitlx-flexbar__info strong {
-    font-size: 18px;
-}
-.nitlx-flexbar__info span {
-    font-size: 14px;
-    opacity: .9;
-}
-.nitlx a.nitfin-btn.nitlx-flexbar__btn {
-    border-color: var(--nit-brand-onprimary) !important;
-    background: var(--nit-brand-onprimary) !important;
-    color: var(--nit-brand-primary) !important;
-}
-.nitlx a.nitfin-btn.nitlx-flexbar__btn:hover {
-    background: transparent !important;
     color: var(--nit-brand-onprimary) !important;
+    text-decoration: none !important;
+    transition: transform .2s ease, box-shadow .2s ease;
 }
+.nitlx a.nitlx-statcard:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px -12px color-mix(in srgb, var(--nit-brand-primary) 70%, transparent);
+}
+/* Money cards: the same family, a lighter surface so the Flex card leads. */
+.nitlx a.nitlx-statcard--wallet,
+.nitlx a.nitlx-statcard--earnings {
+    background: var(--nit-brand-surface);
+    border: 1px solid var(--nit-brand-borderprimary);
+    color: var(--nit-brand-textprimary) !important;
+}
+.nitlx-statcard__label {
+    font-size: 14px;
+    font-weight: 700;
+    opacity: .9;
+}
+.nitlx-statcard__value {
+    font-size: 30px;
+    font-weight: 800;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+}
+.nitlx-statcard--wallet .nitlx-statcard__value,
+.nitlx-statcard--earnings .nitlx-statcard__value {
+    color: var(--nit-brand-primary);
+}
+.nitlx-statcard__sub {
+    font-size: 13px;
+    opacity: .85;
+}
+
+/* Tabs: one box per group (a small title + its tabs as a segmented control). */
 .nitlx-tabs {
-    display: flex;
-    gap: 8px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 10px;
     margin-bottom: 24px;
-    padding: 6px;
-    overflow-x: auto;
+}
+.nitlx-tabgroup {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    padding: 8px 8px 8px;
     border-radius: 16px;
     background: var(--nit-brand-surface);
     border: 1px solid var(--nit-brand-borderprimary);
+    transition: border-color .2s ease, box-shadow .2s ease;
+}
+.nitlx-tabgroup.is-active {
+    border-color: color-mix(in srgb, var(--nit-brand-primary) 55%, var(--nit-brand-borderprimary));
+    box-shadow: 0 6px 18px -10px color-mix(in srgb, var(--nit-brand-primary) 60%, transparent);
+}
+.nitlx-tabgroup__label {
+    padding-inline: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--nit-brand-textsecondary);
+}
+.nitlx-tabgroup__tabs {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--nit-brand-primary) 6%, var(--nit-brand-surface));
 }
 .nitlx a.nitlx-tab {
-    flex: 1 0 auto;
-    padding: 10px 18px;
-    border-radius: 12px;
+    flex: 1 1 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 0;
+    padding: 9px 10px;
+    border-radius: 9px;
     color: var(--nit-brand-textsecondary);
+    font-size: 14px;
     font-weight: 700;
+    line-height: 1.3;
     text-align: center;
     text-decoration: none;
-    white-space: nowrap;
     transition: background-color .2s ease, color .2s ease;
 }
 .nitlx a.nitlx-tab:hover {
     color: var(--nit-brand-primary);
-    background: color-mix(in srgb, var(--nit-brand-primary) 8%, transparent);
+    background: var(--nit-brand-surface);
 }
 .nitlx a.nitlx-tab.is-active {
     background: var(--nit-brand-primary);
     color: var(--nit-brand-onprimary);
+    box-shadow: 0 4px 10px -4px color-mix(in srgb, var(--nit-brand-primary) 70%, transparent);
 }
-/* The hub's tabs come in pairs (to buy / mine): wrap instead of scrolling, with a
-   thin divider where a new pair starts. */
-.nitlx-tabs {
-    flex-wrap: wrap;
-    overflow-x: visible;
-}
-.nitlx a.nitlx-tab--group {
-    position: relative;
-    margin-inline-start: 9px;
-}
-.nitlx a.nitlx-tab--group::before {
-    content: "";
-    position: absolute;
-    inset-inline-start: -9px;
-    top: 22%;
-    bottom: 22%;
-    width: 1px;
-    background: var(--nit-brand-borderprimary);
+/* Requests waiting for the teacher. */
+.nitlx-tab__count {
+    min-width: 20px;
+    padding: 0 6px;
+    border-radius: 9999px;
+    background: var(--nit-brand-error);
+    color: #fff;
+    font-size: 12px;
+    line-height: 20px;
 }
 /* A plugin page drawn as a hub tab (Flex packages, wallet, earnings): no second
    frame or title — the hub has them. */
@@ -354,6 +379,48 @@
 }
 .nitlx-embed .nitfin__wrap > .nitfin__title {
     display: none;
+}
+
+/* The recordings of a lesson (local/nit_lessons/recording.php). */
+.nitlx a.nitlx-backlink {
+    display: inline-block;
+    margin-bottom: 12px;
+    color: var(--nit-brand-primary);
+    font-weight: 700;
+}
+.nitlx-recordings {
+    display: grid;
+    gap: 20px;
+}
+.nitlx-recording {
+    padding: 0;
+    overflow: hidden;
+}
+.nitlx-recording__player {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    background: #000;
+}
+.nitlx-recording__player iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+.nitlx-recording__meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 14px 18px;
+}
+.nitlx-recording__meta span {
+    color: var(--nit-brand-textsecondary);
+    font-size: 14px;
+}
+.nitlx a.nitlx-recbtn .icon {
+    margin: 0;
 }
 .nitlx-toolbar {
     display: flex;

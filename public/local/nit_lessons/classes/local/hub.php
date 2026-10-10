@@ -33,18 +33,31 @@ use local_nit_lessons\service\teacher_service;
 final class hub {
 
     /**
-     * The tabs, in order, in pairs: book / my lessons, Flex packages to buy / my Flex
-     * ("packages" — the key older links use), subscriptions to buy / mine, then the
-     * wallet and (teachers) the earnings that used to be pages of their own.
+     * The tabs, in order, by group (see GROUPS): book / my lessons / (teachers) the
+     * students' requests, Flex packages to buy / my Flex ("packages" — the key older
+     * links use), subscriptions to buy / mine, then the wallet and (teachers) the
+     * earnings that used to be pages of their own.
      */
-    const TABS = ['book', 'lessons', 'flexavailable', 'packages', 'subavailable', 'mysubs', 'wallet', 'earnings'];
+    const TABS = ['book', 'lessons', 'teaching', 'flexavailable', 'packages', 'subavailable', 'mysubs', 'wallet',
+        'earnings'];
+
+    /** The tab bar's groups, in order: group key => its tabs. */
+    const GROUPS = [
+        'lessons' => ['book', 'lessons', 'teaching'],
+        'flex' => ['flexavailable', 'packages'],
+        'subs' => ['subavailable', 'mysubs'],
+        'money' => ['wallet', 'earnings'],
+    ];
 
     /** The tabs that need Flex (local_nit_flex switched on). */
-    const FLEX_TABS = ['book', 'lessons', 'flexavailable', 'packages'];
+    const FLEX_TABS = ['book', 'lessons', 'teaching', 'flexavailable', 'packages'];
+
+    /** Lesson states waiting for the teacher's answer (the count on the requests tab). */
+    const TEACHER_TODO = ['pending', 'waiting_teacher'];
 
     /**
-     * The tabs this user has: no Flex tabs while Flex is switched off, and "My
-     * earnings" for teachers only.
+     * The tabs this user has: no Flex tabs while Flex is switched off, the students'
+     * requests for live-lesson teachers and "My earnings" for teachers only.
      *
      * @param int $userid
      * @return string[]
@@ -54,6 +67,9 @@ final class hub {
         return array_values(array_filter(self::TABS, static function (string $key) use ($userid, $flexon): bool {
             if (!$flexon && in_array($key, self::FLEX_TABS, true)) {
                 return false;
+            }
+            if ($key === 'teaching') {
+                return (new teacher_service())->is_teacher($userid);
             }
             if ($key === 'earnings') {
                 return class_exists('\local_nit_finance\local\earnings_page')
@@ -67,10 +83,11 @@ final class hub {
      * The address of a tab.
      *
      * @param string $tab
+     * @param array $params more query parameters
      * @return \moodle_url
      */
-    public static function url(string $tab): \moodle_url {
-        return new \moodle_url('/local/nit_lessons/student.php', ['tab' => $tab]);
+    public static function url(string $tab, array $params = []): \moodle_url {
+        return new \moodle_url('/local/nit_lessons/student.php', ['tab' => $tab] + $params);
     }
 
     /**
@@ -82,37 +99,125 @@ final class hub {
      * @return array
      */
     public static function context(int $userid, string $tab, array $params = []): array {
-        global $DB;
-        $flexon = in_array('packages', self::tabs($userid), true);
+        $tabs = self::tabs($userid);
+        $flexon = in_array('packages', $tabs, true);
         $active = $flexon ? purchase::active($userid) : null;
         $ctx = [
             'sesskey' => sesskey(),
-            'back' => 'hub',
+            // Where a lesson card's action comes back to (action.php): the requests tab or "My lessons".
+            'back' => $tab === 'teaching' ? 'teacher' : 'hub',
             'status' => (string) ($params['status'] ?? ''),
             'actionurl' => (new \moodle_url('/local/nit_lessons/action.php'))->out(false),
             'packagesurl' => self::url('flexavailable')->out(false),
-            'showflexbar' => $flexon,
-            'flex' => $active ? $active['remaining_flex'] : 0,
             'hasflex' => $active && $active['remaining_flex'] > 0,
-            'package' => $active ? format_string((string) $DB->get_field('nit_package', 'name', ['id' => $active['packageid']]))
-                : '',
-            'expires' => $active && $active['expires_at'] > 0
-                ? userdate($active['expires_at'], get_string('strftimedatefullshort', 'langconfig')) : '',
-            'reserved' => $active ? $active['reserved_flex'] : 0,
-            'tabs' => [],
+            'stats' => self::stats($userid, $tabs, $active),
+            'tabgroups' => [],
         ];
-        foreach (self::tabs($userid) as $key) {
-            $ctx['tabs'][] = [
-                'key' => $key,
-                'label' => get_string('tab_' . $key, 'local_nit_lessons'),
-                'url' => self::url($key)->out(false),
-                'active' => $key === $tab,
-                // A divider before each pair after the first.
-                'groupstart' => $ctx['tabs'] && in_array($key, ['flexavailable', 'subavailable', 'wallet'], true),
-            ];
+        $ctx['hasstats'] = !empty($ctx['stats']);
+
+        $todo = in_array('teaching', $tabs, true) ? self::teacher_todo($userid) : 0;
+        foreach (self::GROUPS as $group => $keys) {
+            $items = [];
+            foreach (array_intersect($keys, $tabs) as $key) {
+                $items[] = [
+                    'key' => $key,
+                    'label' => get_string('tab_' . $key, 'local_nit_lessons'),
+                    'url' => self::url($key)->out(false),
+                    'active' => $key === $tab,
+                    'count' => $key === 'teaching' && $todo > 0 ? $todo : 0,
+                ];
+            }
+            if ($items) {
+                $ctx['tabgroups'][] = [
+                    'label' => get_string('tabgroup_' . ($group === 'money' && count($items) > 1 ? 'moneyteacher' : $group),
+                        'local_nit_lessons'),
+                    'tabs' => $items,
+                    'active' => in_array($tab, $keys, true),
+                ];
+            }
         }
         $ctx['is' . $tab] = true;
         return array_merge($ctx, call_user_func([self::class, 'tab_' . $tab], $userid, $params));
+    }
+
+    /**
+     * The summary bar above the tabs: the Flex left (and the package), the wallet
+     * balance and, for teachers, the earnings that can be withdrawn — each one opens
+     * its tab.
+     *
+     * @param int $userid
+     * @param string[] $tabs the user's tabs
+     * @param array|null $active the active Flex package (purchase::active())
+     * @return array[] [{key, label, value, sub, url}]
+     */
+    private static function stats(int $userid, array $tabs, ?array $active): array {
+        global $DB;
+        $stats = [];
+        if (in_array('packages', $tabs, true)) {
+            $sub = get_string('nopackage', 'local_nit_lessons');
+            if ($active) {
+                $sub = format_string((string) $DB->get_field('nit_package', 'name', ['id' => $active['packageid']]))
+                    . ' · ' . get_string('flexbooked', 'local_nit_lessons', $active['reserved_flex']);
+                if ($active['expires_at'] > 0) {
+                    $sub .= ' · ' . get_string('expireson', 'local_nit_flex',
+                        userdate($active['expires_at'], get_string('strftimedatefullshort', 'langconfig')));
+                }
+            }
+            $stats[] = ['key' => 'flex', 'label' => get_string('flexavailable', 'local_nit_lessons'),
+                'value' => (string) ($active ? $active['remaining_flex'] : 0), 'sub' => $sub,
+                'url' => self::url('packages')->out(false)];
+        }
+        if (in_array('wallet', $tabs, true) && class_exists('\local_nit_finance\local\wallets')) {
+            $stats[] = ['key' => 'wallet', 'label' => get_string('walletbalance', 'local_nit_flex'),
+                'value' => money::format(\local_nit_finance\local\wallets::balance(
+                    \local_nit_finance\local\wallets::STUDENT, $userid)),
+                'sub' => get_string('tab_wallet', 'local_nit_lessons'), 'url' => self::url('wallet')->out(false)];
+        }
+        if (in_array('earnings', $tabs, true)) {
+            $summary = \local_nit_finance\api\wallet::teacher($userid);
+            $stats[] = ['key' => 'earnings', 'label' => get_string('earn_available', 'local_nit_finance'),
+                'value' => money::format((int) $summary['available_balance_minor']),
+                'sub' => get_string('tab_earnings', 'local_nit_lessons'), 'url' => self::url('earnings')->out(false)];
+        }
+        return $stats;
+    }
+
+    /**
+     * How many of a teacher's lessons wait for their answer.
+     *
+     * @param int $userid
+     * @return int
+     */
+    public static function teacher_todo(int $userid): int {
+        $n = 0;
+        foreach (self::TEACHER_TODO as $status) {
+            $n += count(lessons::my_lessons($userid, 'teacher', $status));
+        }
+        return $n;
+    }
+
+    /**
+     * Tab: the students' requests and the booked lessons of a teacher (what used to
+     * be "My live lessons", local/nit_lessons/my_lessons.php).
+     *
+     * @param int $userid
+     * @param array $params status
+     * @return array
+     */
+    private static function tab_teaching(int $userid, array $params): array {
+        $status = (string) ($params['status'] ?? '');
+        $teachers = new teacher_service();
+        $cards = [];
+        foreach (lessons::my_lessons($userid, 'teacher', $status) as $lesson) {
+            $cards[] = lesson_view::card($lesson, 'teacher');
+        }
+        return [
+            'filter' => lesson_view::filter($status),
+            'lessons' => $cards,
+            'haslessons' => !empty($cards),
+            'notbookable' => !$teachers->bookable($userid),
+            'profileurl' => (new \moodle_url('/local/academy/profile.php', null, 'lessons'))->out(false),
+        ];
     }
 
     /**

@@ -332,7 +332,7 @@ class monitor {
         foreach ($DB->get_recordset_select('academy_session_attendance', "sessionid $in", $params, '',
                 'id, sessionid, userid, left_at') as $r) {
             if (empty($invited[(int) $r->sessionid][(int) $r->userid])) {
-                // continue; BROKEN ON PURPOSE
+                continue; // the teacher, or an admin dropping in: not a student.
             }
             $joined[(int) $r->sessionid] = ($joined[(int) $r->sessionid] ?? 0) + 1;
             if (empty($r->left_at)) {

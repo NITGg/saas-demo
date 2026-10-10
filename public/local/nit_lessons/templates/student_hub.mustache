@@ -17,15 +17,17 @@
 {{!
     @template local_nit_lessons/student_hub
 
-    "My lessons & Flex" (local/nit_lessons/student.php): Flex balance and the tabs (hub::TABS, classes/local/hub.php);
-    the Flex packages, wallet and earnings tabs embed their plugins' pages (embedhtml).
+    "My lessons & Flex" (local/nit_lessons/student.php): a summary bar (Flex, wallet, earnings)
+    and the grouped tabs (hub::GROUPS, classes/local/hub.php); the Flex packages, wallet and
+    earnings tabs embed their plugins' pages (embedhtml).
     Colours from Brand Colors → Bassthalk; styles in local/nit_flex/styles.css.
 
     Example context (json):
     {
-        "sesskey": "abc", "actionurl": "#", "packagesurl": "#", "flex": 4, "hasflex": true,
-        "package": "Flex 10", "expires": "5/11/26", "reserved": 1, "showflexbar": true,
-        "tabs": [{"key": "book", "label": "Book a lesson", "url": "#", "active": true}],
+        "sesskey": "abc", "actionurl": "#", "packagesurl": "#", "hasflex": true, "hasstats": true,
+        "stats": [{"key": "flex", "label": "Flex available", "value": "4", "sub": "Flex 10", "url": "#"}],
+        "tabgroups": [{"label": "Lessons", "active": true,
+            "tabs": [{"key": "book", "label": "Book a lesson", "url": "#", "active": true, "count": 0}]}],
         "isbook": true, "search": "", "hasteachers": false, "teachers": []
     }
 }}
@@ -33,28 +35,49 @@
     <div class="nitfin__wrap">
         <h1 class="nitfin__title">{{#str}}studenthub, local_nit_lessons{{/str}}</h1>
 
-        {{#showflexbar}}
-        <div class="nitlx-flexbar">
-            <div class="nitlx-flexbar__count">
-                <span class="nitlx-flexbar__num">{{flex}}</span>
-                <span class="nitlx-flexbar__label">{{#str}}flexavailable, local_nit_lessons{{/str}}</span>
-            </div>
-            <div class="nitlx-flexbar__info">
-                {{#package}}
-                <strong>{{package}}</strong>
-                <span>{{#str}}flexbooked, local_nit_lessons, {{reserved}}{{/str}}{{#expires}} · {{#str}}expireson, local_nit_flex, {{expires}}{{/str}}{{/expires}}</span>
-                {{/package}}
-                {{^package}}<span>{{#str}}nopackage, local_nit_lessons{{/str}}</span>{{/package}}
-            </div>
-            <a class="nitfin-btn nitfin-btn--small nitlx-flexbar__btn" href="{{packagesurl}}">{{#str}}tab_flexavailable, local_nit_lessons{{/str}}</a>
+        {{#hasstats}}
+        {{! Flex left, wallet balance and (teachers) earnings — each opens its tab. }}
+        <div class="nitlx-stats">
+            {{#stats}}
+            <a class="nitlx-statcard nitlx-statcard--{{key}}" href="{{url}}">
+                <span class="nitlx-statcard__label">{{label}}</span>
+                <span class="nitlx-statcard__value" dir="auto">{{value}}</span>
+                <span class="nitlx-statcard__sub">{{sub}}</span>
+            </a>
+            {{/stats}}
         </div>
-        {{/showflexbar}}
+        {{/hasstats}}
 
         <nav class="nitlx-tabs" aria-label="{{#str}}studenthub, local_nit_lessons{{/str}}">
-            {{#tabs}}
-            <a class="nitlx-tab{{#groupstart}} nitlx-tab--group{{/groupstart}}{{#active}} is-active{{/active}}" href="{{url}}" {{#active}}aria-current="page"{{/active}}>{{label}}</a>
-            {{/tabs}}
+            {{#tabgroups}}
+            <div class="nitlx-tabgroup{{#active}} is-active{{/active}}">
+                <span class="nitlx-tabgroup__label">{{label}}</span>
+                <div class="nitlx-tabgroup__tabs">
+                    {{#tabs}}
+                    <a class="nitlx-tab{{#active}} is-active{{/active}}" href="{{url}}" {{#active}}aria-current="page"{{/active}}>{{label}}{{#count}} <span class="nitlx-tab__count">{{count}}</span>{{/count}}</a>
+                    {{/tabs}}
+                </div>
+            </div>
+            {{/tabgroups}}
         </nav>
+
+        {{#isteaching}}
+        <section class="nitlx-panel">
+            {{#notbookable}}
+            <p class="nitfin-note nitlx-note">{{#str}}notbookable, local_nit_lessons{{/str}}
+                <a href="{{profileurl}}">{{#str}}teacherprofile, local_nit_lessons{{/str}}</a></p>
+            {{/notbookable}}
+            <form class="nitlx-toolbar" method="get" action="">
+                <input type="hidden" name="tab" value="teaching">
+                <label class="visually-hidden" for="nitlx-tstatus">{{#str}}status{{/str}}</label>
+                <select class="nitfin-redeem__input" id="nitlx-tstatus" name="status" onchange="this.form.submit()">
+                    {{#filter}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/filter}}
+                </select>
+            </form>
+            {{#haslessons}}<div class="nitlx-lessons">{{#lessons}}{{> local_nit_lessons/lesson_card}}{{/lessons}}</div>{{/haslessons}}
+            {{^haslessons}}<p class="nitfin-empty">{{#str}}nolessons_teacher, local_nit_lessons{{/str}}</p>{{/haslessons}}
+        </section>
+        {{/isteaching}}
 
         {{#isbook}}
         <section class="nitlx-panel">

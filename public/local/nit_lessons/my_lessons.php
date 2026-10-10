@@ -49,6 +49,12 @@ if (!$teachers->is_teacher($userid)) {
     exit;
 }
 
+// Shown as the "طلبات الطلاب" tab of the hub (local/nit_lessons/student.php?tab=teaching);
+// links to this page (notifications, saved menus) land there.
+if (file_exists(__DIR__ . '/student.php')) {
+    redirect(\local_nit_lessons\local\hub::url('teaching', $status !== '' ? ['status' => $status] : []));
+}
+
 $cards = [];
 foreach (lessons::my_lessons($userid, 'teacher', $status) as $lesson) {
     $cards[] = lesson_view::card($lesson, 'teacher');

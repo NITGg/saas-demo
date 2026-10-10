@@ -3059,7 +3059,7 @@ function theme_nit_navmenu_default(string $menu): array {
         $add(theme_nit_ml_string('myearnings', 'local_nit_finance'), '/local/nit_lessons/student.php?tab=earnings', 'teacher');
         $add(theme_nit_ml_string('availablepackages', 'local_nit_flex'), '/local/nit_lessons/student.php?tab=flexavailable');
         $add(theme_nit_ml_string('studenthub', 'local_nit_lessons'), '/local/nit_lessons/student.php');
-        $add(theme_nit_ml_string('mylessons', 'local_nit_lessons'), '/local/nit_lessons/my_lessons.php', 'teacher');
+        $add(theme_nit_ml_string('mylessons', 'local_nit_lessons'), '/local/nit_lessons/student.php?tab=teaching', 'teacher');
         $add(theme_nit_ml_string('teacherprofile', 'local_nit_lessons'), '/local/academy/profile.php#lessons', 'teacher');
         $add(theme_nit_ml_string('managelessons', 'local_nit_lessons'), '/local/nit_lessons/manage_lessons.php', 'admin');
         $add(theme_nit_ml_string('managepackages', 'local_nit_flex'), '/local/nit_flex/manage_packages.php', 'admin');
