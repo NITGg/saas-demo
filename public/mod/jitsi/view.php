@@ -221,7 +221,11 @@ echo '</div>'; // #jitsi-activity-container
 
 // Security settings stored on the activity.
 $room_password  = !empty($jitsi->roompassword)  ? $jitsi->roompassword  : '';
-$lobby_enabled  = !empty($jitsi->lobby_enabled);
+// No Jitsi lobby in a room linked to a session: Moodle already lets in only its teacher,
+// its invited students (once the teacher is in) and site admins. With the lobby on, the
+// first host turned it on and everyone after them (an admin, or the teacher after an
+// admin) had to knock and wait to be let in. Standalone rooms keep their own setting.
+$lobby_enabled  = !empty($jitsi->lobby_enabled) && !$session;
 
 $js_config = json_encode([
     'isTeacher'       => (bool)$is_teacher,
@@ -347,8 +351,8 @@ echo <<<HTML
             });
         }
 
-        // Teacher: set password on first join and enable lobby if configured.
-        // JWT moderator role automatically bypasses the lobby on rejoin.
+        // Host: set the password on join and the lobby (standalone rooms only, see above).
+        // Note: a JWT moderator does NOT skip a lobby on this server; they knock like anyone.
         // Tell the backend whether the teacher is currently in the call, so the student
         // entry gate in view.php only opens while the teacher is present.
         function setTeacherPresent(present) {
@@ -368,6 +372,9 @@ echo <<<HTML
                 }
                 if (CFG.lobbyEnabled) {
                     api.executeCommand('toggleLobby', true);
+                } else if (CFG.sessionId) {
+                    // A lesson room: switch off a lobby an earlier host may have turned on.
+                    api.executeCommand('toggleLobby', false);
                 }
                 // Auto-start the recording a few seconds after the host joins (like the
                 // old academy). Uses the Jitsi API — Jibri records the file, then

@@ -18,79 +18,91 @@
     @template local_academysessions/monitor_detail
 
     One lesson opened from the monitoring wall (\local_academysessions\monitor::detail()):
-    its state and everyone expected or seen in it. Shown in a modal by amd/src/monitor.js.
+    four facts, then everyone in it on a shared timeline: each bar is one person's
+    stretches in the call across the lesson's time, with a "now" line through all rows.
+    Shown in a modal by amd/src/monitor.js.
 
     Example context (json):
     {
-        "title": "Physics", "course": "Grade 10", "statuslabel": "Running", "colour": "success",
-        "type": "Group session", "provider": "Jitsi", "timerange": "10:00 AM – 10:50 AM",
-        "actualstarttext": "10:02 AM", "latetext": "", "elapsed": "12 min", "attendance": "1 / 1 in",
-        "hasalert": false, "alerts": [], "updated": "10:00:05 AM",
-        "people": [{"name": "Sara Ali", "role": "Teacher", "isteacher": true, "firstjoin": "10:02 AM",
-            "lastleave": "", "present": true, "state": "In the call", "statecolour": "success", "minutes": "12 min"}]
+        "statuslabel": "Running", "colour": "success", "course": "Grade 10", "type": "Group session", "provider": "Jitsi",
+        "hasalert": false, "alerts": [], "timerange": "10:00 AM – 10:50 AM", "actualstarttext": "10:02 AM",
+        "latetext": "", "elapsed": "12 min", "attendance": "1 / 1 in now", "studentsline": "Came: 1 · Never came: 0",
+        "endtext": "", "durationtext": "", "joinurl": "", "updated": "10:12:05 AM",
+        "axis": {"from": "10:00 AM", "to": "10:50 AM", "hasnow": true, "now": 24, "planstart": 0, "plansize": 100},
+        "teacherrow": [{"name": "Sara Ali", "role": "Teacher", "stateclass": "in", "state": "In the call",
+            "summary": "1 time · 10 min", "firstjoin": "10:02 AM", "lastleave": "", "stretches": "10:02 AM – now",
+            "segments": [{"start": 4, "size": 20, "open": true, "label": "10:02 AM – now"}]}],
+        "students": [], "studentcount": 0, "others": [], "hasothers": false
     }
 }}
 <div class="nitmon nitmon-detail">
-    <p class="nitmon-detail-head">
+    <div class="nitmon-detail-head">
         <span class="nitmon-badge nitmon-badge-{{colour}}">{{statuslabel}}</span>
         <span class="nitmon-meta">{{course}} · {{type}} · {{provider}}</span>
-    </p>
+        {{#joinurl}}
+        <a class="btn btn-primary btn-sm nitmon-detail-join" href="{{joinurl}}" target="_blank" rel="noopener"
+           title="{{#str}} monitor_joinnote, local_academysessions {{/str}}">
+            {{#pix}} i/externallink, core {{/pix}} {{#str}} monitor_join, local_academysessions {{/str}}
+        </a>
+        {{/joinurl}}
+    </div>
+
     {{#hasalert}}
     <ul class="nitmon-alerts" role="alert">
         {{#alerts}}<li>{{#pix}} i/warning, core {{/pix}} {{text}}</li>{{/alerts}}
     </ul>
     {{/hasalert}}
-    <dl class="nitmon-facts nitmon-facts-wide">
-        <div><dt>{{#str}} monitor_time, local_academysessions {{/str}}</dt><dd><bdi dir="ltr">{{timerange}}</bdi></dd></div>
-        {{#actualstarttext}}
-        <div><dt>{{#str}} monitor_actualstart, local_academysessions {{/str}}</dt>
-            <dd><bdi dir="ltr">{{actualstarttext}}</bdi>{{#latetext}} <span class="nitmon-late">({{latetext}})</span>{{/latetext}}</dd></div>
-        {{/actualstarttext}}
-        {{#elapsed}}<div><dt>{{#str}} monitor_elapsed, local_academysessions {{/str}}</dt><dd>{{elapsed}}</dd></div>{{/elapsed}}
-        {{#teachervisits}}<div><dt>{{#str}} monitor_teacher, local_academysessions {{/str}}</dt><dd>{{teachervisits}}</dd></div>{{/teachervisits}}
-        {{#teacherlastleave}}<div><dt>{{#str}} monitor_teacherlastleave, local_academysessions {{/str}}</dt><dd><bdi dir="ltr">{{teacherlastleave}}</bdi></dd></div>{{/teacherlastleave}}
-        <div><dt>{{#str}} monitor_students, local_academysessions {{/str}}</dt>
-            <dd>{{attendance}}{{#studentsline}}<span class="nitmon-sub">{{studentsline}}</span>{{/studentsline}}</dd></div>
-        {{#endtext}}<div><dt>{{#str}} monitor_ending, local_academysessions {{/str}}</dt>
-            <dd>{{endtext}}{{#durationtext}}<span class="nitmon-sub">{{durationtext}}</span>{{/durationtext}}</dd></div>{{/endtext}}
-    </dl>
-    {{#joinurl}}
-    <p><a class="btn btn-primary btn-sm" href="{{joinurl}}" target="_blank" rel="noopener">
-        {{#pix}} i/externallink, core {{/pix}} {{#str}} monitor_join, local_academysessions {{/str}}</a>
-        <span class="nitmon-note">{{#str}} monitor_joinnote, local_academysessions {{/str}}</span></p>
-    {{/joinurl}}
 
-    <div class="table-responsive">
-        <table class="table table-sm nitmon-people">
-            <caption class="visually-hidden">{{#str}} monitor_people, local_academysessions {{/str}}</caption>
-            <thead>
-                <tr>
-                    <th scope="col">{{#str}} name {{/str}}</th>
-                    <th scope="col">{{#str}} monitor_role, local_academysessions {{/str}}</th>
-                    <th scope="col">{{#str}} status {{/str}}</th>
-                    <th scope="col">{{#str}} monitor_firstjoin, local_academysessions {{/str}}</th>
-                    <th scope="col">{{#str}} monitor_lastleave, local_academysessions {{/str}}</th>
-                    <th scope="col">{{#str}} monitor_timein, local_academysessions {{/str}}</th>
-                    <th scope="col">{{#str}} monitor_visits, local_academysessions {{/str}}</th>
-                    <th scope="col">{{#str}} monitor_stretches, local_academysessions {{/str}}</th>
-                </tr>
-            </thead>
-            <tbody>
-                {{#people}}
-                <tr {{#isteacher}}class="nitmon-people-teacher"{{/isteacher}}>
-                    <th scope="row">{{name}}</th>
-                    <td>{{role}}</td>
-                    <td><span class="nitmon-badge nitmon-badge-{{statecolour}}">{{state}}</span></td>
-                    <td><bdi dir="ltr">{{firstjoin}}</bdi>{{^firstjoin}}—{{/firstjoin}}</td>
-                    <td><bdi dir="ltr">{{lastleave}}</bdi>{{^lastleave}}—{{/lastleave}}</td>
-                    <td>{{minutes}}</td>
-                    <td>{{visits}}</td>
-                    <td class="nitmon-stretches"><bdi dir="ltr">{{stretches}}</bdi>{{^stretches}}—{{/stretches}}</td>
-                </tr>
-                {{/people}}
-            </tbody>
-        </table>
-    </div>
-    <p class="nitmon-updated">{{#str}} monitor_updated, local_academysessions, {{updated}} {{/str}}</p>
-    <p class="nitmon-note">{{#str}} monitor_source, local_academysessions {{/str}}</p>
+    <dl class="nitmon-tiles">
+        <div class="nitmon-tile">
+            <dt>{{#str}} monitor_time, local_academysessions {{/str}}</dt>
+            <dd><bdi dir="ltr">{{timerange}}</bdi></dd>
+        </div>
+        <div class="nitmon-tile">
+            <dt>{{#str}} monitor_actualstart, local_academysessions {{/str}}</dt>
+            <dd>{{#actualstarttext}}<bdi dir="ltr">{{actualstarttext}}</bdi>{{/actualstarttext}}{{^actualstarttext}}—{{/actualstarttext}}
+                {{#latetext}}<span class="nitmon-sub nitmon-late">{{latetext}}</span>{{/latetext}}
+                {{#elapsed}}<span class="nitmon-sub">{{#str}} monitor_elapsed, local_academysessions {{/str}} {{elapsed}}</span>{{/elapsed}}</dd>
+        </div>
+        <div class="nitmon-tile">
+            <dt>{{#str}} monitor_students, local_academysessions {{/str}}</dt>
+            <dd>{{attendance}}{{#studentsline}}<span class="nitmon-sub">{{studentsline}}</span>{{/studentsline}}</dd>
+        </div>
+        {{#endtext}}
+        <div class="nitmon-tile">
+            <dt>{{#str}} monitor_ending, local_academysessions {{/str}}</dt>
+            <dd>{{endtext}}{{#durationtext}}<span class="nitmon-sub">{{durationtext}}</span>{{/durationtext}}</dd>
+        </div>
+        {{/endtext}}
+    </dl>
+
+    <section class="nitmon-timeline" aria-label="{{#str}} monitor_people, local_academysessions {{/str}}">
+        {{#axis}}
+        <div class="nitmon-axis" aria-hidden="true">
+            <span class="nitmon-axis-spacer"></span>
+            <div class="nitmon-axis-scale">
+                <bdi dir="ltr" class="nitmon-axis-from">{{from}}</bdi>
+                {{#hasnow}}<span class="nitmon-axis-now" style="inset-inline-start: {{now}}%">{{#str}} monitor_stillin, local_academysessions {{/str}}</span>{{/hasnow}}
+                <bdi dir="ltr" class="nitmon-axis-to">{{to}}</bdi>
+            </div>
+            <span class="nitmon-axis-spacer nitmon-axis-spacer-end"></span>
+        </div>
+        {{/axis}}
+
+        <h4 class="nitmon-group">{{#str}} monitor_teacher, local_academysessions {{/str}}</h4>
+        <ul class="nitmon-people">{{#teacherrow}}{{> local_academysessions/monitor_person }}{{/teacherrow}}</ul>
+
+        <h4 class="nitmon-group">{{#str}} monitor_students, local_academysessions {{/str}} <span class="nitmon-count">{{studentcount}}</span></h4>
+        <ul class="nitmon-people">{{#students}}{{> local_academysessions/monitor_person }}{{/students}}</ul>
+
+        {{#hasothers}}
+        <h4 class="nitmon-group">{{#str}} monitor_others, local_academysessions {{/str}}</h4>
+        <ul class="nitmon-people">{{#others}}{{> local_academysessions/monitor_person }}{{/others}}</ul>
+        {{/hasothers}}
+    </section>
+
+    <p class="nitmon-foot">
+        <span>{{#str}} monitor_updated, local_academysessions, {{updated}} {{/str}}</span>
+        <span>{{#str}} monitor_source, local_academysessions {{/str}}</span>
+    </p>
 </div>
