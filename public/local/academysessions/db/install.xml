@@ -16,6 +16,10 @@
         <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="scheduled" SEQUENCE="false"/>
         <FIELD NAME="teacher_joined_at" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Unix time the teacher last entered the Jitsi call; null = not present (students wait)"/>
         <FIELD NAME="teacher_first_join" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Unix time the session's teacher first entered the call; never changed afterwards (lateness reports)"/>
+        <FIELD NAME="teacher_last_leave" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Unix time the session's teacher last left the call (the session itself goes on)"/>
+        <FIELD NAME="ended_at" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Unix time the session was ended"/>
+        <FIELD NAME="ended_by" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="User who ended it; null = the system (its time ran out)"/>
+        <FIELD NAME="end_reason" TYPE="char" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="teacher, admin, schedule or lesson"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
       </FIELDS>
@@ -42,6 +46,23 @@
       </KEYS>
       <INDEXES>
         <INDEX NAME="session_user_unique" UNIQUE="true" FIELDS="sessionid, userid"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="academy_session_presence" COMMENT="Each stretch a user spent in a session's call: one row per join, closed on leave">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="sessionid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="joined_at" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="left_at" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="null = still in the call"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="sessionid_fk" TYPE="foreign" FIELDS="sessionid" REFTABLE="academy_live_sessions" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="session_user_idx" UNIQUE="false" FIELDS="sessionid, userid"/>
       </INDEXES>
     </TABLE>
 

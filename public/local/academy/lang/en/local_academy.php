@@ -153,3 +153,6 @@ $string['reg_passwordmismatch'] = 'The two passwords do not match.';
 $string['registration_heading'] = 'Student registration';
 $string['registration_enabled'] = 'Allow students to create an account';
 $string['registration_enabled_desc'] = 'Opens the registration page (/local/academy/register.php) and the mobile app registration. New accounts are active at once and sign in with their email. Independent of Moodle\'s "Self registration" setting.';
+$string['studentmessaging'] = 'Prevent messaging between students';
+$string['studentmessaging_desc'] = 'Students cannot message each other or send each other contact requests, on the site and in the app. Students can still message their teachers, and teachers, managers and admins can message anyone. "Staff" here means anyone with the moodle/site:messageanyuser capability (teachers, non-editing teachers, managers). Group conversations, which a teacher turns on per course group, are not affected.';
+$string['studentmessaging_blocked'] = 'You cannot send messages to other students.';

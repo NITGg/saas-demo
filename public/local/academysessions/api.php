@@ -73,8 +73,9 @@ api::run(function (string $function) use ($userid) {
         // End a session: status → ended, open attendance rows closed (managesessions).
         case 'end_session':
             $sessionid = required_param('sessionid', PARAM_INT);
-            sessions::require_session_owner(sessions::require_session($sessionid));
-            session_manager::end_session($sessionid);
+            $session = sessions::require_session($sessionid);
+            sessions::require_session_owner($session);
+            session_manager::end_session($sessionid, (int) $session->teacherid === $userid ? 'teacher' : 'admin', $userid);
             return ['sessionid' => $sessionid, 'status' => 'ended'];
 
         case 'get_attendance':

@@ -204,9 +204,21 @@
 .nitmon-dot-in {
     background: var(--nitmon-success);
 }
-.nitmon-open {
-    align-self: flex-start;
-    margin-block-start: 8px;
+.nitmon-sub {
+    display: block;
+    color: var(--nitmon-muted);
+    font-size: 13px;
+}
+.nitmon-actions-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-block-start: auto;
+    padding-block-start: 8px;
+}
+.nitmon-stretches {
+    min-width: 160px;
+    font-size: 13px;
 }
 .nitmon-empty {
     padding: 32px 16px;

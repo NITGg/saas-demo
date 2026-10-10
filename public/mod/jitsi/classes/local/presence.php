@@ -43,15 +43,19 @@ class presence {
     }
 
     /**
-     * Mark the teacher as present in (or gone from) the room. Stamps
-     * academy_live_sessions.teacher_joined_at (the student entry gate: set while the
-     * teacher is in the call, cleared when they leave), the session teacher's first
-     * join (teacher_first_join, never changed afterwards: what lateness is measured
-     * from) and their attendance row.
-     * Standalone rooms (no linked session) have no gate: nothing is stored.
+     * A moderator came into (or left) the room.
+     *
+     * For the session's own teacher it also moves the student entry gate
+     * (academy_live_sessions.teacher_joined_at: set while the teacher is in the call,
+     * cleared when they leave), stamps their first join (teacher_first_join, never
+     * changed afterwards: what lateness is measured from) and their last leave. A site
+     * admin dropping in is only recorded as being in the call: it neither lets the
+     * students in nor counts as the teacher arriving.
+     * Every join / leave opens / closes a stretch in academy_session_presence, so
+     * leaving and coming back is kept. Standalone rooms (no linked session): nothing stored.
      *
      * @param \stdClass|\cm_info $cm the jitsi course module
-     * @param int $userid the teacher
+     * @param int $userid the moderator
      * @param bool $present true = joined, false = left
      * @return \stdClass|null the linked session after the change; null for a standalone room
      */
@@ -64,24 +68,29 @@ class presence {
         }
 
         $now = time();
-        $session->teacher_joined_at = $present ? $now : null;
-        $DB->set_field('academy_live_sessions', 'teacher_joined_at',
-            $session->teacher_joined_at, ['id' => $session->id]);
-
-        // The session teacher's first entry, kept for lateness reports. Only stamped while
-        // still empty (in SQL, so two racing "joined" pings cannot overwrite it); a site
-        // admin dropping in for support does not count as the teacher arriving.
-        if ($present && (int) $session->teacherid === $userid) {
-            $DB->execute('UPDATE {academy_live_sessions} SET teacher_first_join = :now
-                           WHERE id = :id AND teacher_first_join IS NULL',
-                ['now' => $now, 'id' => $session->id]);
-            $session->teacher_first_join = $DB->get_field('academy_live_sessions', 'teacher_first_join',
-                ['id' => $session->id]);
+        if ((int) $session->teacherid === $userid) {
+            $session->teacher_joined_at = $present ? $now : null;
+            $DB->set_field('academy_live_sessions', 'teacher_joined_at',
+                $session->teacher_joined_at, ['id' => $session->id]);
+            if ($present) {
+                // Only stamped while still empty (in SQL, so two racing "joined" pings
+                // cannot overwrite it).
+                $DB->execute('UPDATE {academy_live_sessions} SET teacher_first_join = :now
+                               WHERE id = :id AND teacher_first_join IS NULL',
+                    ['now' => $now, 'id' => $session->id]);
+                $session->teacher_first_join = $DB->get_field('academy_live_sessions', 'teacher_first_join',
+                    ['id' => $session->id]);
+            } else {
+                $session->teacher_last_leave = $now;
+                $DB->set_field('academy_live_sessions', 'teacher_last_leave', $now, ['id' => $session->id]);
+            }
         }
 
-        // The teacher's attendance row (first join; a rejoin after a leave reopens it).
+        // Their attendance row and presence stretch (a rejoin after a leave reopens them).
         if ($present) {
             \local_academysessions\session_manager::record_attendance((int) $session->id, $userid, true);
+        } else {
+            \local_academysessions\session_manager::record_leave((int) $session->id, $userid, $now);
         }
 
         return $session;

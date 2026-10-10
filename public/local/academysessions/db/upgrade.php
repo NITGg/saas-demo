@@ -103,5 +103,45 @@ function xmldb_local_academysessions_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026101000, 'local', 'academysessions');
     }
 
+    if ($oldversion < 2026101100) {
+        // How a session ended (when, by whom, why) and when its teacher last left the call.
+        $table = new xmldb_table('academy_live_sessions');
+        $fields = [
+            new xmldb_field('teacher_last_leave', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'teacher_first_join'),
+            new xmldb_field('ended_at', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'teacher_last_leave'),
+            new xmldb_field('ended_by', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'ended_at'),
+            new xmldb_field('end_reason', XMLDB_TYPE_CHAR, '20', null, null, null, null, 'ended_by'),
+        ];
+        foreach ($fields as $field) {
+            if (!$dbman->field_exists($table, $field)) {
+                $dbman->add_field($table, $field);
+            }
+        }
+
+        // Every stretch a user spent in the call (leave / rejoin), not just first in / last out.
+        $table = new xmldb_table('academy_session_presence');
+        if (!$dbman->table_exists($table)) {
+            $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+            $table->add_field('sessionid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('joined_at', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('left_at', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+            $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+            $table->add_key('sessionid_fk', XMLDB_KEY_FOREIGN, ['sessionid'], 'academy_live_sessions', ['id']);
+            $table->add_index('session_user_idx', XMLDB_INDEX_NOTUNIQUE, ['sessionid', 'userid']);
+            $dbman->create_table($table);
+
+            // Existing attendance becomes one stretch each (first in → last out).
+            $DB->execute('INSERT INTO {academy_session_presence} (sessionid, userid, joined_at, left_at)
+                          SELECT sessionid, userid, joined_at, left_at FROM {academy_session_attendance}');
+        }
+
+        // Sessions already ended: when (their last change, the best we know). How is unknown.
+        $DB->execute("UPDATE {academy_live_sessions} SET ended_at = timemodified
+                       WHERE status = 'ended' AND ended_at IS NULL");
+
+        upgrade_plugin_savepoint(true, 2026101100, 'local', 'academysessions');
+    }
+
     return true;
 }

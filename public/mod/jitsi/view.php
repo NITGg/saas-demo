@@ -244,7 +244,9 @@ $js_config = json_encode([
     // Auto-start the recording when the host joins (Jibri records -> finalize.sh ->
     // Vimeo). Per-academy toggle: theme_nit/jitsi_autorecord (default ON), so an
     // academy can turn it off site-wide.
-    'autoRecord'        => (get_config('theme_nit', 'jitsi_autorecord') !== '0'),
+    // Only the lesson's own teacher starts it: a site admin dropping in must not.
+    'autoRecord'        => (get_config('theme_nit', 'jitsi_autorecord') !== '0')
+        && (!$session || (int) $session->teacherid === (int) $USER->id),
 ]);
 
 echo <<<HTML

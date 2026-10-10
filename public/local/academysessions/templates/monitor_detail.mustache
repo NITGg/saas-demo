@@ -47,8 +47,18 @@
             <dd><bdi dir="ltr">{{actualstarttext}}</bdi>{{#latetext}} <span class="nitmon-late">({{latetext}})</span>{{/latetext}}</dd></div>
         {{/actualstarttext}}
         {{#elapsed}}<div><dt>{{#str}} monitor_elapsed, local_academysessions {{/str}}</dt><dd>{{elapsed}}</dd></div>{{/elapsed}}
-        <div><dt>{{#str}} monitor_students, local_academysessions {{/str}}</dt><dd>{{attendance}}</dd></div>
+        {{#teachervisits}}<div><dt>{{#str}} monitor_teacher, local_academysessions {{/str}}</dt><dd>{{teachervisits}}</dd></div>{{/teachervisits}}
+        {{#teacherlastleave}}<div><dt>{{#str}} monitor_teacherlastleave, local_academysessions {{/str}}</dt><dd><bdi dir="ltr">{{teacherlastleave}}</bdi></dd></div>{{/teacherlastleave}}
+        <div><dt>{{#str}} monitor_students, local_academysessions {{/str}}</dt>
+            <dd>{{attendance}}{{#studentsline}}<span class="nitmon-sub">{{studentsline}}</span>{{/studentsline}}</dd></div>
+        {{#endtext}}<div><dt>{{#str}} monitor_ending, local_academysessions {{/str}}</dt>
+            <dd>{{endtext}}{{#durationtext}}<span class="nitmon-sub">{{durationtext}}</span>{{/durationtext}}</dd></div>{{/endtext}}
     </dl>
+    {{#joinurl}}
+    <p><a class="btn btn-primary btn-sm" href="{{joinurl}}" target="_blank" rel="noopener">
+        {{#pix}} i/externallink, core {{/pix}} {{#str}} monitor_join, local_academysessions {{/str}}</a>
+        <span class="nitmon-note">{{#str}} monitor_joinnote, local_academysessions {{/str}}</span></p>
+    {{/joinurl}}
 
     <div class="table-responsive">
         <table class="table table-sm nitmon-people">
@@ -61,6 +71,8 @@
                     <th scope="col">{{#str}} monitor_firstjoin, local_academysessions {{/str}}</th>
                     <th scope="col">{{#str}} monitor_lastleave, local_academysessions {{/str}}</th>
                     <th scope="col">{{#str}} monitor_timein, local_academysessions {{/str}}</th>
+                    <th scope="col">{{#str}} monitor_visits, local_academysessions {{/str}}</th>
+                    <th scope="col">{{#str}} monitor_stretches, local_academysessions {{/str}}</th>
                 </tr>
             </thead>
             <tbody>
@@ -72,6 +84,8 @@
                     <td><bdi dir="ltr">{{firstjoin}}</bdi>{{^firstjoin}}—{{/firstjoin}}</td>
                     <td><bdi dir="ltr">{{lastleave}}</bdi>{{^lastleave}}—{{/lastleave}}</td>
                     <td>{{minutes}}</td>
+                    <td>{{visits}}</td>
+                    <td class="nitmon-stretches"><bdi dir="ltr">{{stretches}}</bdi>{{^stretches}}—{{/stretches}}</td>
                 </tr>
                 {{/people}}
             </tbody>

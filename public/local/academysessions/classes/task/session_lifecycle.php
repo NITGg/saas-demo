@@ -29,7 +29,7 @@ class session_lifecycle extends \core\task\scheduled_task {
             array('now' => $now)
         );
         foreach ($live as $session) {
-            \local_academysessions\session_manager::end_session($session->id);
+            \local_academysessions\session_manager::end_session($session->id, 'schedule');
             mtrace("Session {$session->id} '{$session->title}' has ended.");
         }
     }

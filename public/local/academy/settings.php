@@ -56,6 +56,14 @@ if ($hassiteconfig) {
     }
     $ADMIN->add('localplugins', $academic);
 
+    // "Prevent messaging between students" sits on core's Messaging settings page,
+    // next to "Allow site-wide messaging" (see \local_academy\local\student_messaging).
+    $messagespage = $ADMIN->locate('messages');
+    if ($messagespage instanceof admin_settingpage) {
+        $messagespage->add(new admin_setting_configcheckbox('local_academy/' . \local_academy\local\student_messaging::CONFIG,
+            get_string('studentmessaging', 'local_academy'), get_string('studentmessaging_desc', 'local_academy'), 0));
+    }
+
     // "Site pages manager": the content of the Bassthalk-style pages that are
     // not HTML blocks (the footer), one tab each. The settings belong to theme_nit.
     if (class_exists('\theme_nit\local\sitepages_settings')) {

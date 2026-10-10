@@ -112,8 +112,11 @@ class jitsi_room implements room_interface {
      * @return void
      */
     public function end_for_lesson(lesson $lesson): void {
+        global $USER;
         if ((int) $lesson->get('sessionid') > 0 && class_exists('\local_academysessions\session_manager')) {
-            \local_academysessions\session_manager::end_session((int) $lesson->get('sessionid'));
+            // Closed with its Flex lesson (completed, or an absence reported), by the current user.
+            \local_academysessions\session_manager::end_session((int) $lesson->get('sessionid'), 'lesson',
+                (int) ($USER->id ?? 0));
         }
     }
 

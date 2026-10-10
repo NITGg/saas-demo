@@ -74,8 +74,15 @@
                     <span class="nitmon-dot {{#teacherin}}nitmon-dot-in{{/teacherin}}" aria-hidden="true"></span>
                     {{teacher}}
                     <span class="visually-hidden">({{#teacherin}}{{#str}} monitor_person_present, local_academysessions {{/str}}{{/teacherin}}{{^teacherin}}{{#str}} monitor_teachernotin, local_academysessions {{/str}}{{/teacherin}})</span>
+                    {{#teachervisits}}<span class="nitmon-sub">{{teachervisits}}</span>{{/teachervisits}}
                 </dd>
             </div>
+            {{#teacherlastleave}}
+            <div>
+                <dt>{{#str}} monitor_teacherlastleave, local_academysessions {{/str}}</dt>
+                <dd><bdi dir="ltr">{{teacherlastleave}}</bdi></dd>
+            </div>
+            {{/teacherlastleave}}
             {{#isflex}}
             <div>
                 <dt>{{#str}} monitor_student, local_academysessions {{/str}}</dt>
@@ -106,16 +113,36 @@
             {{/startsin}}
             <div>
                 <dt>{{#str}} monitor_students, local_academysessions {{/str}}</dt>
-                <dd>{{attendance}}</dd>
+                <dd>{{attendance}}{{#studentsline}}<span class="nitmon-sub">{{studentsline}}</span>{{/studentsline}}</dd>
             </div>
+            {{#presentnames}}
+            <div>
+                <dt>{{#str}} monitor_innow, local_academysessions {{/str}}</dt>
+                <dd>{{presentnames}}</dd>
+            </div>
+            {{/presentnames}}
+            {{#endtext}}
+            <div>
+                <dt>{{#str}} monitor_ending, local_academysessions {{/str}}</dt>
+                <dd>{{endtext}}{{#durationtext}}<span class="nitmon-sub">{{durationtext}}</span>{{/durationtext}}</dd>
+            </div>
+            {{/endtext}}
         </dl>
 
-        {{#hasdetail}}
-        <button type="button" class="btn btn-outline-secondary btn-sm nitmon-open" data-action="detail"
-                data-sessionid="{{sessionid}}" aria-label="{{#str}} monitor_open, local_academysessions {{/str}}: {{title}}">
-            {{#pix}} i/fullscreen, core {{/pix}} {{#str}} monitor_open, local_academysessions {{/str}}
-        </button>
-        {{/hasdetail}}
+        <div class="nitmon-actions-row">
+            {{#hasdetail}}
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-action="detail"
+                    data-sessionid="{{sessionid}}" aria-label="{{#str}} monitor_open, local_academysessions {{/str}}: {{title}}">
+                {{#pix}} i/fullscreen, core {{/pix}} {{#str}} monitor_open, local_academysessions {{/str}}
+            </button>
+            {{/hasdetail}}
+            {{#joinurl}}
+            <a class="btn btn-primary btn-sm" href="{{joinurl}}" target="_blank" rel="noopener"
+               aria-label="{{#str}} monitor_join, local_academysessions {{/str}}: {{title}}">
+                {{#pix}} i/externallink, core {{/pix}} {{#str}} monitor_join, local_academysessions {{/str}}
+            </a>
+            {{/joinurl}}
+        </div>
     </article>
     {{/cards}}
 </div>

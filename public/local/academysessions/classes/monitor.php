@@ -191,7 +191,8 @@ class monitor {
     }
 
     /**
-     * One lesson in detail: its card and everyone expected or seen in it.
+     * One lesson in detail: its card and everyone expected or seen in it, with each
+     * person's stretches in the call (every leave and rejoin).
      *
      * @param int $sessionid
      * @param int[]|null $courseids course_scope()
@@ -206,48 +207,61 @@ class monitor {
             return null;
         }
         $card = self::cards_for([$session], $now, self::grace_minutes())[0];
-
-        $invited = $DB->get_fieldset_select('academy_session_students', 'userid', 'sessionid = ?', [$sessionid]);
-        $att = [];
-        foreach ($DB->get_records('academy_session_attendance', ['sessionid' => $sessionid]) as $a) {
-            $att[(int) $a->userid] = $a;
-        }
-        $ids = array_unique(array_merge([(int) $session->teacherid], array_map('intval', $invited), array_keys($att)));
-        $names = self::names($ids);
         $over = in_array($card['status'], [self::ENDED, self::CANCELLED], true);
+        $until = self::until($session, $now);
 
-        $people = [];
-        $row = function(int $userid, string $role) use ($att, $names, $now, $over, $session) {
-            $a = $att[$userid] ?? null;
+        $invited = array_map('intval', $DB->get_fieldset_select('academy_session_students', 'userid',
+            'sessionid = ?', [$sessionid]));
+        $stretches = [];
+        foreach ($DB->get_records('academy_session_presence', ['sessionid' => $sessionid], 'joined_at, id') as $p) {
+            $stretches[(int) $p->userid][] = $p;
+        }
+        $teacherid = (int) $session->teacherid;
+        $ids = array_unique(array_merge([$teacherid], $invited, array_keys($stretches)));
+        $names = self::names($ids);
+
+        $row = function(int $userid, string $role) use ($stretches, $names, $until, $over, $session, $teacherid) {
+            $mine = $stretches[$userid] ?? [];
+            $open = !$over && $mine && empty(end($mine)->left_at);
             if ($role === 'teacher') {
-                $present = !$over && !empty($session->teacher_joined_at);
-            } else {
-                $present = !$over && $a && empty($a->left_at);
+                $open = !$over && !empty($session->teacher_joined_at);
+            }
+            $seconds = 0;
+            $parts = [];
+            foreach ($mine as $p) {
+                $to = $p->left_at ? (int) $p->left_at : $until;
+                $seconds += max(0, $to - (int) $p->joined_at);
+                $parts[] = self::time((int) $p->joined_at) . ' – '
+                    . ($p->left_at ? self::time((int) $p->left_at) : self::str('stillin'));
             }
             // The teacher's first join is the session's teacher_first_join (what lateness uses).
-            $first = $role === 'teacher' && !empty($session->teacher_first_join)
-                ? (int) $session->teacher_first_join : ($a ? (int) $a->joined_at : 0);
-            $last = $a && !empty($a->left_at) ? (int) $a->left_at : 0;
-            $minutes = $first ? (int) floor((($present || !$last ? min($now, self::end_time($session)) : $last) - $first) / MINSECS) : 0;
+            $first = $userid === $teacherid && !empty($session->teacher_first_join)
+                ? (int) $session->teacher_first_join : ($mine ? (int) $mine[0]->joined_at : 0);
+            $last = 0;
+            foreach ($mine as $p) {
+                $last = max($last, (int) $p->left_at);
+            }
             return [
                 'name' => $names[$userid] ?? '—',
                 'role' => self::str('role_' . $role),
                 'isteacher' => $role === 'teacher',
                 'joined' => (bool) $first,
                 'firstjoin' => $first ? self::time($first) : '',
-                'lastleave' => $last ? self::time($last) : '',
-                'present' => $present,
-                'state' => $present ? self::str('person_present') : ($first ? self::str('person_left') : self::str('person_never')),
-                'statecolour' => $present ? 'success' : ($first ? 'warning' : 'secondary'),
-                'minutes' => $first ? self::str('minutes', max(0, $minutes)) : '—',
+                'lastleave' => !$open && $last ? self::time($last) : '',
+                'present' => $open,
+                'state' => $open ? self::str('person_present') : ($first ? self::str('person_left') : self::str('person_never')),
+                'statecolour' => $open ? 'success' : ($first ? 'warning' : 'secondary'),
+                'visits' => count($mine),
+                'minutes' => $mine ? self::str('minutes', (int) floor($seconds / MINSECS)) : '—',
+                'stretches' => implode(self::str('listsep'), $parts),
             ];
         };
-        $people[] = $row((int) $session->teacherid, 'teacher');
+        $people = [$row($teacherid, 'teacher')];
         foreach ($invited as $uid) {
-            $people[] = $row((int) $uid, 'student');
+            $people[] = $row($uid, 'student');
         }
-        foreach (array_keys($att) as $uid) {
-            if ($uid !== (int) $session->teacherid && !in_array($uid, array_map('intval', $invited), true)) {
+        foreach (array_keys($stretches) as $uid) {
+            if ($uid !== $teacherid && !in_array($uid, $invited, true)) {
                 $people[] = $row($uid, 'other');
             }
         }
@@ -309,7 +323,7 @@ class monitor {
     }
 
     /**
-     * Build the cards of some sessions (with their attendance and Flex links).
+     * Build the cards of some sessions (with their presence stretches and Flex links).
      *
      * @param \stdClass[] $sessions academy_live_sessions rows
      * @param int $now
@@ -328,16 +342,11 @@ class monitor {
         foreach ($DB->get_recordset_select('academy_session_students', "sessionid $in", $params, '', 'id, sessionid, userid') as $r) {
             $invited[(int) $r->sessionid][(int) $r->userid] = true;
         }
-        $present = $joined = [];
-        foreach ($DB->get_recordset_select('academy_session_attendance', "sessionid $in", $params, '',
-                'id, sessionid, userid, left_at') as $r) {
-            if (empty($invited[(int) $r->sessionid][(int) $r->userid])) {
-                continue; // the teacher, or an admin dropping in: not a student.
-            }
-            $joined[(int) $r->sessionid] = ($joined[(int) $r->sessionid] ?? 0) + 1;
-            if (empty($r->left_at)) {
-                $present[(int) $r->sessionid] = ($present[(int) $r->sessionid] ?? 0) + 1;
-            }
+        // Stretches in the call, per session and user.
+        $stretches = [];
+        foreach ($DB->get_recordset_select('academy_session_presence', "sessionid $in", $params, 'joined_at, id',
+                'id, sessionid, userid, joined_at, left_at') as $r) {
+            $stretches[(int) $r->sessionid][(int) $r->userid][] = $r;
         }
         $flex = [];
         if ($DB->get_manager()->table_exists('nit_lesson')) {
@@ -347,14 +356,21 @@ class monitor {
         }
         $courses = $DB->get_records_list('course', 'id', array_unique(array_map(fn($s) => (int) $s->courseid, $sessions)),
             '', 'id, fullname');
-        $names = self::names(array_merge(array_map(fn($s) => (int) $s->teacherid, $sessions),
-            array_map(fn($l) => (int) $l->studentid, $flex)));
+        $cmids = mobile_service::jitsi_cmids(array_map(fn($s) => (int) ($s->jitsiid ?? 0), $sessions));
+        $userids = array_merge(array_map(fn($s) => (int) $s->teacherid, $sessions),
+            array_map(fn($s) => (int) ($s->ended_by ?? 0), $sessions),
+            array_map(fn($l) => (int) $l->studentid, $flex));
+        foreach ($invited as $users) {
+            $userids = array_merge($userids, array_keys($users));
+        }
+        $names = self::names($userids);
+        $canjoin = is_siteadmin();
 
         $cards = [];
         foreach ($sessions as $s) {
             $sid = (int) $s->id;
             $end = self::end_time($s);
-            $inv = count($invited[$sid] ?? []);
+            $teacherid = (int) $s->teacherid;
             $teacherin = !empty($s->teacher_joined_at);
             $firstjoin = (int) ($s->teacher_first_join ?? 0);
 
@@ -374,21 +390,66 @@ class monitor {
                 $status = self::LATE;
             }
             $live = !in_array($status, [self::ENDED, self::CANCELLED], true);
-            $presentnow = $live ? ($present[$sid] ?? 0) : 0;
+            $until = self::until($s, $now);
+
+            // Students: in now / came at some point / never came.
+            $inv = array_keys($invited[$sid] ?? []);
+            $innow = $came = [];
+            foreach ($inv as $uid) {
+                $mine = $stretches[$sid][$uid] ?? [];
+                if ($mine) {
+                    $came[] = $uid;
+                    if ($live && empty(end($mine)->left_at)) {
+                        $innow[] = $uid;
+                    }
+                }
+            }
+            $innames = array_map(fn($uid) => $names[$uid] ?? '—', $innow);
+            $presentnames = implode(self::str('listsep'), array_slice($innames, 0, 3))
+                . (count($innames) > 3 ? ' ' . self::str('andmore', count($innames) - 3) : '');
+
+            // The teacher: how many times in, time in the call, last leave.
+            $tstretches = $stretches[$sid][$teacherid] ?? [];
+            $tseconds = 0;
+            foreach ($tstretches as $p) {
+                $tseconds += max(0, ($p->left_at ? (int) $p->left_at : $until) - (int) $p->joined_at);
+            }
+            $lastleave = !$teacherin && !empty($s->teacher_last_leave) ? (int) $s->teacher_last_leave : 0;
             $late = $firstjoin > (int) $s->start_time ? (int) floor(($firstjoin - (int) $s->start_time) / MINSECS) : 0;
 
             $alerts = [];
             if ($status === self::LATE) {
                 $alerts[] = self::str('alert_noteacher', (int) floor(($now - (int) $s->start_time) / MINSECS));
             } else if ($status === self::TEACHERLEFT) {
-                $alerts[] = self::str('alert_teacherleft');
-            } else if ($status === self::RUNNING && $inv && !$presentnow
+                $alerts[] = self::str('alert_teacherleft', $lastleave ? self::time($lastleave) : '—');
+            } else if ($status === self::RUNNING && $inv && !$innow
                     && $now - max((int) $s->start_time, $firstjoin) > $grace * MINSECS) {
                 $alerts[] = self::str('alert_nostudents');
             }
 
+            // How it ended: when, why, who; the actual length against the planned one.
+            $endtext = $durationtext = '';
+            if ($status === self::ENDED) {
+                // Still "live" past its end: the scheduled task has not closed it yet.
+                $endedat = !empty($s->ended_at) ? (int) $s->ended_at : ($s->status === 'ended' ? 0 : $end);
+                $reason = $s->end_reason ?? ($s->status === 'ended' ? 'unknown' : 'pending');
+                $by = !empty($s->ended_by) ? ($names[(int) $s->ended_by] ?? '—') : '';
+                $endtext = self::str('end_' . $reason, $by);
+                if ($endedat) {
+                    $endtext = self::str('endedat', ['time' => self::time($endedat), 'how' => $endtext]);
+                    if ($endedat < $end - MINSECS) {
+                        $endtext .= ' ' . self::str('endedearly', (int) floor(($end - $endedat) / MINSECS));
+                    }
+                }
+                if ($firstjoin) {
+                    $durationtext = self::str('actualduration', [
+                        'actual' => max(0, (int) floor((($endedat ?: $end) - $firstjoin) / MINSECS)),
+                        'planned' => (int) $s->duration]);
+                }
+            }
+
             $l = $flex[$sid] ?? null;
-            $actualstart = $firstjoin ?: 0;
+            $cmid = $cmids[(int) ($s->jitsiid ?? 0)] ?? 0;
             $cards[] = self::card([
                 'key' => 's' . $sid,
                 'sessionid' => $sid,
@@ -397,20 +458,43 @@ class monitor {
                 'type' => self::str($l ? 'type_flex' : 'type_group'),
                 'student' => $l ? ($names[(int) $l->studentid] ?? '') : '',
                 'provider' => self::str($s->jitsiid ? 'provider_jitsi' : 'provider_link'),
-                'teacher' => $names[(int) $s->teacherid] ?? '—',
+                'teacher' => $names[$teacherid] ?? '—',
                 'teacherin' => $teacherin && $live,
+                'teachervisits' => $tstretches ? self::str('teachervisits', ['count' => count($tstretches),
+                    'minutes' => (int) floor($tseconds / MINSECS)]) : '',
+                'teacherlastleave' => $live && $lastleave ? self::time($lastleave) : '',
                 'start' => (int) $s->start_time,
                 'end' => $end,
-                'actualstart' => $actualstart,
+                'actualstart' => $firstjoin,
                 'latemin' => $late > $grace ? $late : 0,
-                'invited' => $inv,
-                'present' => $presentnow,
-                'joined' => $joined[$sid] ?? 0,
+                'invited' => count($inv),
+                'present' => count($innow),
+                'joined' => count($came),
+                'neverjoined' => count($inv) - count($came),
+                'presentnames' => $presentnames,
                 'status' => $status,
                 'alerts' => $alerts,
+                'endtext' => $endtext,
+                'durationtext' => $durationtext,
+                'joinurl' => $canjoin && $cmid && $live
+                    ? (new \moodle_url('/mod/jitsi/view.php', ['id' => $cmid]))->out(false) : '',
             ], $now);
         }
         return $cards;
+    }
+
+    /**
+     * Until when an open stretch counts: now, or the end of an ended session.
+     *
+     * @param \stdClass $s
+     * @param int $now
+     * @return int
+     */
+    private static function until(\stdClass $s, int $now): int {
+        if (!empty($s->ended_at)) {
+            return min($now, (int) $s->ended_at);
+        }
+        return min($now, self::end_time($s));
     }
 
     /**
@@ -508,6 +592,8 @@ class monitor {
      * @return array
      */
     private static function card(array $c, int $now): array {
+        $c += ['teachervisits' => '', 'teacherlastleave' => '', 'neverjoined' => 0, 'presentnames' => '',
+            'endtext' => '', 'durationtext' => '', 'joinurl' => ''];
         // "Running for" counts from when the teacher came in; before that the alert says how late.
         $live = !in_array($c['status'], [self::ENDED, self::CANCELLED, self::UPCOMING, self::NOTSTARTED], true)
             && $c['actualstart'];
@@ -523,6 +609,8 @@ class monitor {
             ? self::str('startsin', max(1, (int) ceil(($c['start'] - $now) / MINSECS))) : '';
         $c['latetext'] = $c['latemin'] ? self::str('teacherwaslate', $c['latemin']) : '';
         $c['attendance'] = self::str('attendance_count', ['present' => $c['present'], 'invited' => $c['invited']]);
+        $c['studentsline'] = $c['invited'] && $c['status'] !== self::UPCOMING
+            ? self::str('students_line', ['joined' => $c['joined'], 'never' => $c['neverjoined']]) : '';
         $c['hasdetail'] = $c['sessionid'] > 0;
         $c['isflex'] = $c['student'] !== '';
         return $c;

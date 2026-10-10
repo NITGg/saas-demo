@@ -21,6 +21,7 @@ video-progress protocol has one new step, and payment messages arrive in the buy
 | 7 | Device limit | New sign-in `POST /local/nit_devices/token.php` (+ `deviceid`); optional `deviceid` on Google sign-in and `register_student`; new errorcodes `devicelimit`, `appupdaterequired`; new `/local/nit_devices/api.php` → `get_my_devices` | **Yes**: send a per-install `deviceid` and handle the two errors (§4) |
 | 8 | Teacher reports API | New endpoint `/local/nit_reports/api.php`: `get_reports`, `get_report` (the 5 teacher reports as cards + table) | Yes, for the new teacher "Reports" screen (§5) |
 | 9 | Live-session rooms (Jitsi) | `mod_jitsi_get_session_info` (`jwt` empty until `available`), `/mod/jitsi/api_token.php` (new errorcodes `waitingforteacher`, `jitsinotconfigured`), `join_session` (attendance after the teacher arrives) | **Check**: don't join with an empty `jwt` (§3.5) |
+| 10 | Messaging between students | When the admin turns on "Prevent messaging between students": `core_message_send_instant_messages` (per-message error), `send_messages_to_conversation` / `create_contact_request` (errorcode `studentmessaging_blocked`), `canmessage = false` between two students | **Check**: hide the message box when `canmessage` is `false` (§3.6) |
 
 ---
 
@@ -272,6 +273,26 @@ web room page:
 - `set_teacher_present` / `end_room` already used the session-teacher rule. No change.
 - **App action:** don't join the room when `jwt` is empty; handle `waitingforteacher` and
   `jitsinotconfigured` if the app uses `api_token.php`.
+
+### 3.6 Messaging: "Prevent messaging between students"
+
+New admin setting (Site administration → Messaging → Messaging settings, off by default). When it is on,
+two students can't message each other. A teacher (anyone with `moodle/site:messageanyuser`, at the site
+level or in a course), a manager or an admin can still message anyone and be messaged by anyone. It applies
+to the core `core_message_*` web services the app already calls:
+- `core_message_send_instant_messages`: a message to another student comes back with `msgid = -1`,
+  `errormessage` = "You cannot send messages to other students." (in the user's language) and
+  `cantsendtouser` = the recipient's id. The other messages in the same call are sent as usual, in the same
+  order.
+- `core_message_send_messages_to_conversation` (an individual conversation with another student) and
+  `core_message_create_contact_request` (to another student): a WS exception with errorcode
+  `studentmessaging_blocked`.
+- `core_message_get_member_info`, `get_conversation`, `get_conversations`, `get_conversation_between_users`,
+  `get_conversation_members`, `message_search_users`, `get_user_contacts`, `get_contact_requests`: another
+  student comes back with `canmessage = false`, `requirescontact = false`, `canmessageevenifblocked = false`.
+- Group conversations (course-group messaging) are not affected.
+- **App action:** when `canmessage` is `false`, hide the message box and show "You can't message this user"
+  (the web drawer already does this). Show `errormessage` / the exception message if a send fails.
 
 ---
 

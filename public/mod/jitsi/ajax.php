@@ -33,7 +33,8 @@ if ($function === 'end_session') {
         \local_academysessions\mobile_service::require_session_owner($session);
     }
 
-    \local_academysessions\session_manager::end_session($sessionid);
+    \local_academysessions\session_manager::end_session($sessionid,
+        (int) $session->teacherid === (int) $USER->id ? 'teacher' : 'admin', (int) $USER->id);
 
     echo json_encode(['status' => 'success']);
     exit;
