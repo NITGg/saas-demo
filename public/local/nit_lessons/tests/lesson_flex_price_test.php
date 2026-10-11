@@ -54,7 +54,6 @@ final class lesson_flex_price_test extends \advanced_testcase {
     protected function setUp(): void {
         parent::setUp();
         $this->resetAfterTest();
-        set_debugging(DEBUG_NORMAL); // TMPVERIFY
         $gen = $this->getDataGenerator();
         $this->sid = (int) $gen->create_user()->id;
         $this->tid = (int) $gen->create_user()->id;

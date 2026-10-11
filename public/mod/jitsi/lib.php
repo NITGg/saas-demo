@@ -119,7 +119,6 @@ function jitsi_delete_instance($id) {
     if (!$DB->get_record('jitsi', ['id' => $id])) {
         return false;
     }
-    $DB->delete_records('jitsi_admission', ['jitsiid' => $id]);
     $DB->delete_records('jitsi_presence', ['jitsiid' => $id]);
     $DB->delete_records('jitsi', ['id' => $id]);
     return true;

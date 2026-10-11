@@ -25,7 +25,7 @@ class mod_jitsi_mod_form extends moodleform_mod {
         $mform->setType('roompassword', PARAM_TEXT);
         $mform->addHelpButton('roompassword', 'roompassword', 'jitsi');
 
-        // Waiting room: a host lets each student in (kept by Moodle, see classes/local/admission.php).
+        // Waiting room: the Jitsi lobby; students knock and the teacher admits them in the meeting.
         $mform->addElement('advcheckbox', 'lobby_enabled', get_string('lobby_enabled', 'jitsi'));
         $mform->addHelpButton('lobby_enabled', 'lobby_enabled', 'jitsi');
         $mform->setDefault('lobby_enabled', 1);

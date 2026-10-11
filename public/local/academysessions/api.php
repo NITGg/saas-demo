@@ -44,18 +44,6 @@ function academysessions_jitsi_cm(int $cmid): stdClass {
     return $cm;
 }
 
-/**
- * Only a host of the room (mod_jitsi presence::is_moderator) may go on.
- *
- * @param stdClass $cm
- * @param int $userid
- */
-function academysessions_require_host(stdClass $cm, int $userid): void {
-    if (!\mod_jitsi\local\presence::is_moderator($cm, $userid)) {
-        throw new required_capability_exception(context_module::instance($cm->id), 'mod/jitsi:moderate', 'nopermissions', '');
-    }
-}
-
 api::run(function (string $function) use ($userid) {
     switch ($function) {
         // ── Teacher ───────────────────────────────────────────────────────────────
@@ -186,35 +174,6 @@ api::run(function (string $function) use ($userid) {
                 \mod_jitsi\local\roomlog::left((int) $cm->instance, $userid);
             }
             return ['cmid' => (int) $cm->id, 'present' => $present];
-
-        // A course room's waiting room, for its hosts: who is asking to come in.
-        case 'get_room_admissions':
-            $cm = academysessions_jitsi_cm(required_param('cmid', PARAM_INT));
-            academysessions_require_host($cm, $userid);
-            return \mod_jitsi\local\admission::waiting((int) $cm->instance);
-
-        // Let one student in or turn them away (userid + admit=1/0), or everyone (all=1).
-        // Returns who is still waiting.
-        case 'decide_room_admission':
-            api::require_post();
-            $cm = academysessions_jitsi_cm(required_param('cmid', PARAM_INT));
-            academysessions_require_host($cm, $userid);
-            $admit = required_param('admit', PARAM_BOOL);
-            if (optional_param('all', 0, PARAM_BOOL)) {
-                foreach (\mod_jitsi\local\admission::waiting((int) $cm->instance) as $w) {
-                    \mod_jitsi\local\admission::decide((int) $cm->instance, $w['userid'], $admit, $userid);
-                }
-            } else {
-                \mod_jitsi\local\admission::decide((int) $cm->instance, required_param('userid', PARAM_INT), $admit, $userid);
-            }
-            return \mod_jitsi\local\admission::waiting((int) $cm->instance);
-
-        // A student turned away asks again (mod_jitsi_get_session_info then says "waiting").
-        case 'ask_room_admission':
-            api::require_post();
-            $cm = academysessions_jitsi_cm(required_param('cmid', PARAM_INT));
-            return ['cmid' => (int) $cm->id,
-                'state' => \mod_jitsi\local\admission::request((int) $cm->instance, $userid, (int) $cm->id)];
 
         // ── Recordings (Vimeo) ────────────────────────────────────────────────────
 

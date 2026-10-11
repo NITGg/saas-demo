@@ -57,10 +57,6 @@ class access {
     const ENDED = 'sessionended';
     /** @var string the teacher is not in the call yet. */
     const WAITING = 'waitingforteacher';
-    /** @var string course room: waiting for a host to let the student in. */
-    const WAITING_APPROVAL = 'waitingforapproval';
-    /** @var string course room: a host turned the student away. */
-    const DENIED = 'admissiondenied';
 
     /**
      * Decide whether a user may enter a room.
@@ -95,18 +91,12 @@ class access {
             if (!$cm->available && !$moderator) {
                 return $result(self::UNAVAILABLE);
             }
-            // Course room with a waiting room: a student needs a host's OK (hosts never wait).
-            if (!$moderator) {
-                $jitsi = $DB->get_record('jitsi', ['id' => $cm->instance], 'id, lobby_enabled');
-                if ($jitsi && admission::required($jitsi, null)) {
-                    $state = admission::state((int) $jitsi->id, $userid, (int) $cm->id, $now);
-                    if ($state === admission::DENIED) {
-                        return $result(self::DENIED);
-                    }
-                    if ($state !== admission::ADMITTED) {
-                        return $result(self::WAITING_APPROVAL);
-                    }
-                }
+            // Course room with a waiting room: the room's Jitsi lobby holds a student until a
+            // host lets them in (inside the meeting). A host turns the lobby on when they join,
+            // so a student only gets a key while a host is in the call; before that they wait
+            // here, like a lesson room's students wait for the teacher.
+            if (!$moderator && self::waiting_room($cm) && !roomlog::host_in((int) $cm->instance, $now)) {
+                return $result(self::WAITING);
             }
             return $result(self::OK);
         }
@@ -179,17 +169,38 @@ class access {
     }
 
     /**
-     * A student held in a course room's waiting room asks to come in (the hosts see the
-     * request). Nothing happens for any other decision, or when already waiting.
+     * Whether a room uses a waiting room (Jitsi lobby): a course room (not linked to a live
+     * session) with its "students wait for the teacher" setting on. Lesson rooms do not:
+     * Moodle already lets in only the session's teacher, its invited students and admins.
      *
-     * @param \cm_info|\stdClass $cm the room
-     * @param \stdClass $decision a check() result
-     * @param int $userid
+     * @param \cm_info|\stdClass $cm the room (->instance)
+     * @return bool
      */
-    public static function request_entry($cm, \stdClass $decision, int $userid): void {
-        if ($decision->code === self::WAITING_APPROVAL) {
-            admission::request((int) $cm->instance, $userid, (int) $cm->id);
+    public static function waiting_room($cm): bool {
+        global $DB;
+        if (presence::linked_session($cm)) {
+            return false;
         }
+        return (bool) $DB->get_field('jitsi', 'lobby_enabled', ['id' => $cm->instance]);
+    }
+
+    /**
+     * The names of a room's hosts, as Jitsi shows them: the people a host's page lets
+     * straight out of the lobby (everyone else waits for the teacher's answer). The room's
+     * teachers first (jitsi_teacher_names()), then every site admin.
+     *
+     * @param \cm_info|\stdClass $cm
+     * @param \stdClass|null $session
+     * @return string[]
+     */
+    public static function host_names($cm, ?\stdClass $session): array {
+        global $CFG;
+        require_once($CFG->dirroot . '/mod/jitsi/lib.php');
+        $names = jitsi_teacher_names($cm, $session);
+        foreach (get_admins() as $admin) {
+            $names[] = fullname($admin);
+        }
+        return array_values(array_unique($names));
     }
 
     /**

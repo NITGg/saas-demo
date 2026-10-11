@@ -53,13 +53,6 @@ if (!jitsi_feature_enabled()) {
 // the session's teacher (site admins too, for support); students wait outside until
 // the teacher is in the call.
 $decision   = \mod_jitsi\local\access::check($cm, (int) $USER->id);
-// Turned away from a course room's waiting room: "Ask again" puts the request back.
-if ($decision->code === \mod_jitsi\local\access::DENIED && optional_param('askagain', 0, PARAM_BOOL) && confirm_sesskey()) {
-    \mod_jitsi\local\admission::request((int) $cm->instance, (int) $USER->id, (int) $cm->id);
-    redirect(new moodle_url('/mod/jitsi/view.php', ['id' => $cm->id]));
-}
-// Held in a course room's waiting room: the hosts now see the request.
-\mod_jitsi\local\access::request_entry($cm, $decision, (int) $USER->id);
 $is_teacher = $decision->moderator;
 $session    = $decision->session;
 
@@ -83,17 +76,6 @@ if (!$decision->allowed) {
             echo html_writer::tag('div',
                 $OUTPUT->notification($decision->message, 'info'), ['id' => 'jitsi-waiting']);
             echo html_writer::script('setTimeout(function(){ location.reload(); }, 5000);');
-            break;
-        case \mod_jitsi\local\access::WAITING_APPROVAL:
-            // Same: the page reloads and the student is in as soon as a host lets them in.
-            echo html_writer::tag('div',
-                $OUTPUT->notification($decision->message, 'info'), ['id' => 'jitsi-waiting']);
-            echo html_writer::script('setTimeout(function(){ location.reload(); }, 5000);');
-            break;
-        case \mod_jitsi\local\access::DENIED:
-            echo $OUTPUT->notification($decision->message, 'warning');
-            echo $OUTPUT->single_button(new moodle_url('/mod/jitsi/view.php',
-                ['id' => $cm->id, 'askagain' => 1, 'sesskey' => sesskey()]), get_string('askagain', 'jitsi'), 'post');
             break;
         case \mod_jitsi\local\access::ENDED:
             echo $OUTPUT->notification($decision->message, 'info');
@@ -177,8 +159,6 @@ if ($isolate_students) {
 }
 $toolbar         = $is_teacher ? $toolbar_teacher : $toolbar_student;
 $teacher_names   = jitsi_teacher_names($cm, $session);
-// A course room whose students wait for a host: the host gets the requests panel.
-$admission_on    = \mod_jitsi\local\admission::required($jitsi, $session ?: null);
 
 // Jitsi is now on HTTPS (mkcert cert, port 8443 → container 443).
 // External API requires HTTPS — this is now satisfied.
@@ -230,18 +210,6 @@ if ($is_teacher) {
 }
 echo '</div>';
 
-// ── Host: students asking to come in (course room waiting room) ──────────
-// Filled and refreshed by the script below (ajax.php admissions); hidden while empty.
-if ($is_teacher && $admission_on) {
-    echo '<div id="jitsi-admissions" role="region" aria-live="polite" aria-label="' . s(get_string('admissions', 'jitsi')) . '" '
-        . 'style="display:none;margin:0 0 10px;padding:10px 12px;border:2px solid #f0ad4e;border-radius:10px;background:#fff8ec;">'
-        . '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:6px;">'
-        . '<strong>' . get_string('admissions', 'jitsi') . ' (<span data-admit-count>0</span>)</strong>'
-        . '<button type="button" class="btn btn-success btn-sm" data-admit-all style="margin-inline-start:auto;">'
-        . get_string('admitall', 'jitsi') . '</button></div>'
-        . '<ul data-admit-list style="list-style:none;margin:0;padding:0;"></ul></div>';
-}
-
 // ── Jitsi External API container ─────────────────────────────────────────
 echo '<div id="panel-video" style="position:relative;width:100%;height:620px;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.15);">';
 echo '<div id="jitsi-container" style="width:100%;height:100%;"></div>';
@@ -270,9 +238,10 @@ echo '</div>'; // #jitsi-activity-container
 
 // Security settings stored on the activity.
 $room_password  = !empty($jitsi->roompassword)  ? $jitsi->roompassword  : '';
-// The Jitsi lobby is never used now: the waiting room is kept by Moodle (a student only
-// gets a key once a host lets them in), so hosts never have to knock.
-$lobby_enabled  = false;
+// Course room with "students wait for the teacher": a host turns the Jitsi lobby on when
+// they join, students knock and the teacher lets them in from inside the meeting. Hosts'
+// pages let other hosts out of the lobby at once. Lesson rooms: no lobby.
+$lobby_enabled  = \mod_jitsi\local\access::waiting_room($cm);
 
 $js_config = json_encode([
     'isTeacher'       => (bool)$is_teacher,
@@ -290,18 +259,13 @@ $js_config = json_encode([
     'jwt'             => $jitsi_jwt,
     'roomPassword'    => $room_password,
     'lobbyEnabled'    => $lobby_enabled,
-    // A host (teacher or admin) lets anyone who knocks in a Jitsi lobby straight in. Only
-    // people Moodle gave a key for this room can reach it (students only once let in).
+    // A host's page lets these straight out of the lobby (other hosts never wait); a
+    // student's knock is left to the teacher, who answers it inside the meeting.
     'autoAdmit'       => (bool) $is_teacher,
+    'hostNames'       => \mod_jitsi\local\access::host_names($cm, $session ?: null),
     'isolateStudents' => (bool) $isolate_students,
     'teacherNames'    => $teacher_names,
-    'admissions'      => (bool) ($is_teacher && $admission_on),
     'presenceUrl'     => (new moodle_url('/mod/jitsi/ajax.php'))->out(false),
-    'str'             => [
-        'admit' => get_string('admit', 'jitsi'),
-        'deny' => get_string('deny', 'jitsi'),
-        'waitingfor' => get_string('waitingformin', 'jitsi', '__N__'),
-    ],
     'cmid'              => (int)$cm->id,
     'teacherPresentUrl' => $CFG->wwwroot . '/mod/jitsi/teacher_present.php',
     // Auto-start the recording when the host joins (Jibri records -> finalize.sh ->
@@ -340,6 +304,15 @@ echo <<<HTML
                 startWithAudioMuted: true,
                 startWithVideoMuted: true,
                 prejoinPageEnabled: false,
+                // Straight into the call (no "Join meeting" screen); a student held by the
+                // lobby knocks at once. The name comes from Moodle's key and can't be changed
+                // (a host's page recognises other hosts by it).
+                prejoinConfig: { enabled: false },
+                readOnlyName: true,
+                lobby: { autoKnock: true },
+                // A student's screen keeps the teacher on it (see below), not the latest
+                // screen share.
+                autoPinLatestScreenShare: !CFG.isolateStudents,
                 disableDeepLinking: true,
                 disableInviteFunctions: !CFG.isTeacher,
                 enableClosePage: false,
@@ -411,25 +384,32 @@ echo <<<HTML
         // gives its teacher, its invited students and admins, so nobody asks anybody.
         if (CFG.autoAdmit) {
             api.addEventListener('knockingParticipant', function(e) {
-                if (e && e.participant && e.participant.id) {
-                    api.executeCommand('answerKnockingParticipant', e.participant.id, true);
+                var p = e && e.participant;
+                if (!p || !p.id) {
+                    return;
+                }
+                // Another host (by name; names come from Moodle's key and can't be edited, see
+                // readOnlyName), or anyone in a room that should have no lobby: straight in.
+                // A student in a course room's waiting room: Jitsi shows the host the request
+                // with Admit / Reject, inside the meeting.
+                if (!CFG.lobbyEnabled || CFG.hostNames.indexOf(p.name) !== -1) {
+                    api.executeCommand('answerKnockingParticipant', p.id, true);
                 }
             });
         }
 
-        // Student in a lesson room: the teacher only. Keep the teacher pinned on the main
-        // video (by name, else the first host), tile view off and the filmstrip hidden;
-        // while the teacher is out of the call, cover the video so the main view never
-        // shows another student. NOTE: this is enforced in this page (and the app), not by
-        // the Jitsi server; see docs/CAMERA-PRIVACY-STUDY.md.
+        // Student: the teacher only, in every room. Keep the teacher pinned on the main
+        // video (their camera, or their screen while they share it), tile view off and the
+        // filmstrip hidden, so the student never shows (and, with lastN 1, never receives)
+        // another student's camera or screen. While no teacher is in the call, cover the
+        // video. NOTE: enforced in this page (and the app), not by the Jitsi server; see
+        // docs/CAMERA-PRIVACY-STUDY.md.
         if (CFG.isolateStudents) {
-            var myId = null, hosts = {};
+            var myId = null, hosts = {}, sharing = [];
             var away = document.getElementById('jitsi-teacher-away');
-            var keepTeacherOnly = function() {
-                var people = (api.getParticipantsInfo && api.getParticipantsInfo()) || [];
+            var pickTeacher = function(people) {
                 var teacher = null;
-                // The teacher names come in order (the course's teachers first): pin the
-                // first of them who is in the call, else any host.
+                // By name in order (the course's teachers first), else anyone who is a host.
                 CFG.teacherNames.forEach(function(name) {
                     people.forEach(function(p) {
                         if (!teacher && p.participantId !== myId && p.displayName === name) {
@@ -442,17 +422,39 @@ echo <<<HTML
                         teacher = p.participantId;
                     }
                 });
+                return teacher;
+            };
+            var keepTeacherOnly = function() {
+                var teacher = pickTeacher((api.getParticipantsInfo && api.getParticipantsInfo()) || []);
                 if (teacher) {
-                    api.pinParticipant(teacher);
+                    api.pinParticipant(teacher, sharing.indexOf(teacher) !== -1 ? 'desktop' : 'camera');
                 }
                 if (away) {
                     away.style.display = teacher ? 'none' : 'flex';
                 }
                 api.executeCommand('setTileView', false);
             };
+            // Who is a host comes from the room's roles (moderator), not only from names.
+            var refreshHosts = function() {
+                if (!api.getRoomsInfo) {
+                    keepTeacherOnly();
+                    return;
+                }
+                api.getRoomsInfo().then(function(info) {
+                    (info.rooms || []).forEach(function(room) {
+                        (room.participants || []).forEach(function(p) {
+                            var id = p.id || (p.jid ? String(p.jid).split('/').pop() : null);
+                            if (id && p.role === 'moderator') {
+                                hosts[id] = true;
+                            }
+                        });
+                    });
+                    keepTeacherOnly();
+                }).catch(keepTeacherOnly);
+            };
             api.addEventListener('videoConferenceJoined', function(e) {
                 myId = e.id;
-                keepTeacherOnly();
+                refreshHosts();
             });
             api.addEventListener('participantRoleChanged', function(e) {
                 if (e.role === 'moderator') {
@@ -460,8 +462,15 @@ echo <<<HTML
                 }
                 keepTeacherOnly();
             });
-            ['participantJoined', 'participantLeft', 'displayNameChange', 'dominantSpeakerChanged'].forEach(function(ev) {
-                api.addEventListener(ev, keepTeacherOnly);
+            ['participantJoined', 'participantLeft', 'displayNameChange'].forEach(function(ev) {
+                api.addEventListener(ev, refreshHosts);
+            });
+            api.addEventListener('dominantSpeakerChanged', keepTeacherOnly);
+            // Someone started / stopped sharing a screen: back to the teacher at once (their
+            // screen if it is theirs), never another student's share.
+            api.addEventListener('contentSharingParticipantsChanged', function(e) {
+                sharing = (e && e.data) || [];
+                keepTeacherOnly();
             });
             api.addEventListener('tileViewChanged', function(e) {
                 if (e.enabled) {
@@ -473,6 +482,8 @@ echo <<<HTML
                     api.executeCommand('toggleFilmStrip');
                 }
             });
+            // A safety net for anything that moved the main video without an event.
+            setInterval(keepTeacherOnly, 3000);
         }
 
         // The room's attendance log (attendance.php): everyone's every stretch in the call.
@@ -493,58 +504,6 @@ echo <<<HTML
         api.addEventListener('videoConferenceLeft', leftCall);
         api.addEventListener('readyToClose', leftCall);
         window.addEventListener('pagehide', leftCall);
-
-        // Host of a course room with a waiting room: who is asking to come in, refreshed
-        // every few seconds, with Let in / Turn away and Let everyone in.
-        if (CFG.admissions) {
-            var box = document.getElementById('jitsi-admissions');
-            var list = box.querySelector('[data-admit-list]');
-            var post = function(params) {
-                var body = new URLSearchParams(Object.assign({sesskey: CFG.sesskey, cmid: CFG.cmid}, params));
-                return fetch(CFG.presenceUrl, {method: 'POST', body: body, credentials: 'same-origin'})
-                    .then(function(r) { return r.json(); });
-            };
-            var draw = function(data) {
-                var people = (data && data.waiting) || [];
-                box.style.display = people.length ? 'block' : 'none';
-                box.querySelector('[data-admit-count]').textContent = people.length;
-                list.textContent = '';
-                people.forEach(function(p) {
-                    var li = document.createElement('li');
-                    li.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:4px 0;';
-                    var name = document.createElement('span');
-                    name.textContent = p.name;
-                    name.style.fontWeight = '600';
-                    var since = document.createElement('small');
-                    since.className = 'text-muted';
-                    since.textContent = CFG.str.waitingfor.replace('__N__', p.waitingfor);
-                    var yes = document.createElement('button');
-                    yes.type = 'button';
-                    yes.className = 'btn btn-success btn-sm';
-                    yes.style.marginInlineStart = 'auto';
-                    yes.textContent = CFG.str.admit;
-                    yes.addEventListener('click', function() { decide(p.userid, 1); });
-                    var no = document.createElement('button');
-                    no.type = 'button';
-                    no.className = 'btn btn-outline-danger btn-sm';
-                    no.textContent = CFG.str.deny;
-                    no.addEventListener('click', function() { decide(p.userid, 0); });
-                    li.append(name, since, yes, no);
-                    list.appendChild(li);
-                });
-            };
-            var refreshAdmissions = function() {
-                post({'function': 'admissions'}).then(draw).catch(function() {});
-            };
-            var decide = function(userid, admit) {
-                post({'function': 'admission_decide', userid: userid, admit: admit}).then(draw).catch(function() {});
-            };
-            box.querySelector('[data-admit-all]').addEventListener('click', function() {
-                post({'function': 'admission_decide', all: 1, admit: 1}).then(draw).catch(function() {});
-            });
-            refreshAdmissions();
-            setInterval(refreshAdmissions, 4000);
-        }
 
         // Auto-submit password for everyone so no one gets a prompt
         // (Moodle already gates who can reach this page).

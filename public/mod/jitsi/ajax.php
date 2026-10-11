@@ -87,29 +87,6 @@ if ($function === 'room_presence') {
     exit;
 }
 
-// ── admissions / admission_decide ──────────────────────────────────────────
-// A course room's waiting room, for its hosts: who is asking to come in; let one in or
-// turn them away (userid + admit), or let everyone in (all=1). Both return the list.
-if ($function === 'admissions' || $function === 'admission_decide') {
-    $cmid = required_param('cmid', PARAM_INT);
-    $cm = get_coursemodule_from_id('jitsi', $cmid, 0, false, MUST_EXIST);
-    if (!\mod_jitsi\local\presence::is_moderator($cm, (int) $USER->id)) {
-        throw new required_capability_exception(context_module::instance($cm->id), 'mod/jitsi:moderate', 'nopermissions', '');
-    }
-    if ($function === 'admission_decide') {
-        $admit = required_param('admit', PARAM_BOOL);
-        if (optional_param('all', 0, PARAM_BOOL)) {
-            foreach (\mod_jitsi\local\admission::waiting((int) $cm->instance) as $w) {
-                \mod_jitsi\local\admission::decide((int) $cm->instance, $w['userid'], $admit, (int) $USER->id);
-            }
-        } else {
-            \mod_jitsi\local\admission::decide((int) $cm->instance, required_param('userid', PARAM_INT), $admit, (int) $USER->id);
-        }
-    }
-    echo json_encode(['status' => 'success', 'waiting' => \mod_jitsi\local\admission::waiting((int) $cm->instance)]);
-    exit;
-}
-
 // ── Recording endpoints (Bunny/MinIO) removed for the SaaS ──────────────────
 // Session recording moves to VdoCipher (local_vdocipher) in a later phase. Until
 // then these return an empty result so any lingering client poll is harmless.

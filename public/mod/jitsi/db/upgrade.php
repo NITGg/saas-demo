@@ -77,5 +77,15 @@ function xmldb_jitsi_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026101200, 'jitsi');
     }
 
+    if ($oldversion < 2026101300) {
+        // The waiting room is Jitsi's own lobby again (the teacher admits students inside the
+        // meeting, hosts let each other in), so Moodle's request table goes.
+        $table = new xmldb_table('jitsi_admission');
+        if ($dbman->table_exists($table)) {
+            $dbman->drop_table($table);
+        }
+        upgrade_mod_savepoint(true, 2026101300, 'jitsi');
+    }
+
     return true;
 }

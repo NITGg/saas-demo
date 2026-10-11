@@ -12,7 +12,7 @@
         <FIELD NAME="intro" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="introformat" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="roompassword" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="Optional Jitsi room password set by the teacher."/>
-        <FIELD NAME="lobby_enabled" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="1 = waiting room: a host lets each student in (kept by Moodle, jitsi_admission); hosts never wait."/>
+        <FIELD NAME="lobby_enabled" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="1 = waiting room: the Jitsi lobby, students knock and the teacher admits them in the meeting; hosts never wait."/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
       </FIELDS>
       <KEYS>
@@ -20,25 +20,6 @@
       </KEYS>
       <INDEXES>
         <INDEX NAME="course" UNIQUE="false" FIELDS="course"/>
-      </INDEXES>
-    </TABLE>
-    <TABLE NAME="jitsi_admission" COMMENT="Waiting room of a course room: a student's request and a host's answer">
-      <FIELDS>
-        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
-        <FIELD NAME="jitsiid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
-        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
-        <FIELD NAME="status" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="waiting" SEQUENCE="false" COMMENT="waiting, admitted or denied"/>
-        <FIELD NAME="timerequested" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
-        <FIELD NAME="timedecided" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
-        <FIELD NAME="decidedby" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
-      </FIELDS>
-      <KEYS>
-        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
-        <KEY NAME="jitsiid_fk" TYPE="foreign" FIELDS="jitsiid" REFTABLE="jitsi" REFFIELDS="id"/>
-      </KEYS>
-      <INDEXES>
-        <INDEX NAME="jitsi_user_unique" UNIQUE="true" FIELDS="jitsiid, userid"/>
-        <INDEX NAME="jitsi_status_idx" UNIQUE="false" FIELDS="jitsiid, status"/>
       </INDEXES>
     </TABLE>
     <TABLE NAME="jitsi_presence" COMMENT="Every stretch someone spent in a room's call (the room's attendance log)">

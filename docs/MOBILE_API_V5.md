@@ -301,37 +301,40 @@ rooms and course Jitsi activities:**
   | Field | Meaning |
   |---|---|
   | `isolate_students` | `true` for every student (non-host). They must see **the teacher only** |
-  | `auto_admit` | `true` for a host (teacher, manager, admin). **Let anyone who knocks in** at once |
-  | `access_code` | `ok`, or why the student is not in yet: `waitingforteacher`, `waitingforapproval`, `admissiondenied`, `sessionnotavailable`, `sessionended`, `notallowed`, `unavailable` |
+  | `auto_admit` | `true` for a host (teacher, manager, admin). See the waiting room below |
+  | `lobby` | `true` for a course room with a waiting room (below). `false` for lesson rooms |
+  | `host_names` | display names of the room's hosts (its teachers, then every site admin) |
+  | `access_code` | `ok`, or why the user is not in yet: `waitingforteacher`, `sessionnotavailable`, `sessionended`, `notallowed`, `unavailable` |
   | `teacher_name` | the (first) teacher's display name, to pin |
-  | `teacher_names` | all the teachers' display names in order (course teachers first, then admins / managers); pin the first one in the call |
+  | `teacher_names` | the teachers' display names in order (course teachers first, then admins / managers); pin the first one in the call |
 
 - **App action (Jitsi Meet SDK), when `isolate_students` is true.** These are what the web page does:
   - config `channelLastN: 1`
   - `disableTileView: true`
   - `filmstrip: {disabled: true, disableStageFilmstrip: true}`
+  - `autoPinLatestScreenShare: false`
   - remove the tile-view button
-  - pin the first participant whose display name is in `teacher_names` (else the first moderator), and keep
-    re-pinning on participant joined / left / role changed
+  - pin the first participant in `teacher_names` who is in the call; else any moderator (from the room roles)
+  - pin their **screen share** while they share it, otherwise their camera
+  - re-pin on: participant joined / left / role changed, content-sharing changed, and every few seconds
   - while no teacher is in the call, cover the video with a "the teacher is not in the call" notice
-- **App action, when `auto_admit` is true:** on the SDK's knocking-participant event, approve them. Never turn the
-  Jitsi lobby on (the waiting room is Moodle's now, below).
 
-**Course rooms: waiting room kept by Moodle (11/10).** A course Jitsi activity has "Students wait for the teacher to
-let them in" (on by default). A student gets **no JWT** until a host lets them in. Teachers, managers and admins go
-straight in.
-- **Student:** call `mod_jitsi_get_session_info` as usual. That call also puts the request in.
-  - While waiting: `available=false`, `access_code=waitingforapproval`. Poll every 5 s.
-  - When let in: `available=true` with the JWT.
-  - If turned away: `access_code=admissiondenied`. Show "Ask again", which calls
-    `POST /local/academysessions/api.php?function=ask_room_admission&cmid=…`.
-- **Host** (`/local/academysessions/api.php`, token):
-  - `get_room_admissions(cmid)`: who is waiting. Returns `[{userid, name, waitingfor (min)}]`.
-  - `POST decide_room_admission(cmid, userid, admit=1|0)`: let one student in, or turn them away.
-  - `POST decide_room_admission(cmid, all=1, admit=1)`: let everyone in.
-  - Both return the list of who is still waiting. Only hosts may call them (`nopermissions` otherwise).
-- `/mod/jitsi/api_token.php` gives 403 `waitingforapproval` / `admissiondenied` in the same cases.
-- A let-in lasts 6 hours, or until a host ends the room.
+**Course rooms: the waiting room is Jitsi's own lobby (11/10).** A course Jitsi activity has "Students wait for the
+teacher to let them in" (on by default). The teacher answers the student **inside the meeting** (Jitsi's "wants to
+join" notification with Admit / Reject).
+- **Student:** gets a JWT only **while a host is in the call** (until then `available=false`,
+  `access_code=waitingforteacher`; poll every 5 s). With the JWT they join, land in the lobby and knock.
+  - The SDK shows its knocking screen.
+  - Turn auto-knock on and make the name read-only (`readOnlyName: true`).
+- **Host, when `lobby` is true:**
+  - on conference joined, turn the lobby on;
+  - on a knocking participant whose name is in `host_names`, admit them at once (hosts never wait for each other);
+  - leave everyone else to the SDK's built-in admit / reject prompt.
+- **Host, when `lobby` is false** (lesson rooms): turn the lobby off on join, and admit every knocker.
+- **"A host is in the call"** is what the room's attendance log says. So the app **must** call `room_presence`
+  (below) on joined / left. Otherwise students wait for a teacher who is on the app.
+- Removed: Moodle's own request list (`get_room_admissions`, `decide_room_admission`, `ask_room_admission`, codes
+  `waitingforapproval` / `admissiondenied`). They existed for a few hours on 11/10 and were never released to the app.
 
 **The room's attendance log (11/10).** Every time anyone is in a room's call is recorded, and the room's hosts see
 it on the web page "Attendance log" (activity menu, or `/mod/jitsi/attendance.php?id=<cmid>`, with a CSV download).

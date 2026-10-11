@@ -39,17 +39,9 @@ $string['security_header']       = 'Security Options';
 $string['roompassword']          = 'Room password';
 $string['roompassword_help']     = 'If set, participants must enter this password to join the session. Leave blank for no password.';
 $string['lobby_enabled']         = 'Students wait for the teacher to let them in';
-$string['lobby_enabled_help']    = 'When on, a student who opens the room waits until a teacher of the course (or an admin) lets them in from the room page. Teachers and admins go straight in. Applies to rooms of a course, not to scheduled live sessions.';
+$string['lobby_enabled_help']    = 'When on, students can open the room only while a teacher of the course (or an admin) is in it, and then wait in the meeting\'s waiting room until the teacher lets them in from inside the meeting. Teachers and admins go straight in. Applies to rooms of a course, not to scheduled live sessions.';
 
-// Waiting room (kept by Moodle) and the room's attendance log.
-$string['waitingforapproval'] = 'Waiting for the teacher to let you in. You will go in as soon as they do.';
-$string['admissiondenied'] = 'The teacher did not let you in.';
-$string['askagain'] = 'Ask again';
-$string['admissions'] = 'Asking to come in';
-$string['admit'] = 'Let in';
-$string['deny'] = 'Turn away';
-$string['admitall'] = 'Let everyone in';
-$string['waitingformin'] = 'waiting {$a} min';
+// The room's attendance log.
 $string['attendancelog'] = 'Attendance log';
 $string['log_day'] = 'Day';
 $string['log_download'] = 'Download CSV';

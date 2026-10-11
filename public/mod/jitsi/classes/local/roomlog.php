@@ -72,6 +72,25 @@ class roomlog {
         }
     }
 
+    /** @var int an open host stretch older than this is not trusted (a crashed browser never says "left"). */
+    const HOST_STALE = 6 * HOURSECS;
+
+    /**
+     * Whether a host (teacher, manager, admin) is in the room's call now: a course room
+     * with a waiting room only lets students in while one is, so someone can let them in.
+     *
+     * @param int $jitsiid
+     * @param int|null $now
+     * @return bool
+     */
+    public static function host_in(int $jitsiid, ?int $now = null): bool {
+        global $DB;
+        $now = $now ?? time();
+        return $DB->record_exists_select('jitsi_presence',
+            'jitsiid = :j AND host = 1 AND left_at IS NULL AND joined_at > :since',
+            ['j' => $jitsiid, 'since' => $now - self::HOST_STALE]);
+    }
+
     /**
      * Close every open stretch of a room (the room was ended).
      *
