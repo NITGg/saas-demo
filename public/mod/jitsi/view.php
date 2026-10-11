@@ -69,13 +69,17 @@ if ($decision->code === \mod_jitsi\local\access::NOT_ALLOWED) {
     exit;
 }
 
-// Closed for now (waiting for the teacher, not open yet, ended, unavailable): the page
-// keeps its tabs (recordings, whiteboard...) and the video tab says why there is no call.
-$closed = !$decision->allowed;
-
 // Opening the activity only shows the room; the call starts after "Join" (join=1), so
 // someone browsing the course never lands in the meeting (nor starts its recording).
-$joining = !$closed && optional_param('join', 0, PARAM_BOOL);
+$wantsjoin = optional_param('join', 0, PARAM_BOOL);
+
+// Closed for now (waiting for the teacher, not open yet, ended, unavailable): the page
+// keeps its tabs (recordings, whiteboard...) and the video tab says why there is no call.
+// A student waiting for the teacher still gets the "Join" step, like the teacher; the
+// wait shows once they press it.
+$closed = !$decision->allowed
+    && !($decision->code === \mod_jitsi\local\access::WAITING && !$wantsjoin);
+$joining = $decision->allowed && $wantsjoin;
 
 // A student who joined: open their attendance row.
 if ($joining) {
@@ -83,7 +87,7 @@ if ($joining) {
 }
 
 // Completion tracking.
-if (!$closed) {
+if ($decision->allowed) {
     $completion = new completion_info($course);
     $completion->set_module_viewed($cm);
 }
@@ -219,7 +223,8 @@ echo '</div>';
 echo '<div id="panel-video" style="position:relative;width:100%;height:' . ($joining ? '620px' : '360px')
     . ';border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.15);">';
 if ($closed) {
-    echo jitsi_closed_html($decision, $cm);
+    echo jitsi_closed_html($decision, $cm, $wantsjoin,
+        \mod_jitsi\local\access::waiting_room($cm));
 } else if (!$joining) {
     echo jitsi_prejoin_html($cm, $is_teacher && $autorecord);
 }

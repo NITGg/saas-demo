@@ -55,8 +55,16 @@ final class room_page_test extends \advanced_testcase {
             'message' => get_string('waitingforteacher', 'jitsi')];
         $html = jitsi_closed_html($waiting, $cm);
         $this->assertStringContainsString('data-code="waitingforteacher"', $html);
-        $this->assertStringContainsString(get_string('waitingforteacher', 'jitsi'), $html);
+        $this->assertStringContainsString(get_string('waiting_title', 'jitsi'), $html);
         $this->assertStringNotContainsString('join=1', $html);
+        // Opened the activity: the "Join" button comes when the teacher arrives.
+        $this->assertStringContainsString(get_string('waiting_next_button', 'jitsi'), $html);
+        $this->assertStringNotContainsString(get_string('waiting_next_admit', 'jitsi'), $html);
+        // Pressed "Join" in a room with a waiting room: in automatically, then the teacher admits.
+        $html = jitsi_closed_html($waiting, $cm, true, true);
+        $this->assertStringContainsString(get_string('waiting_title_join', 'jitsi'), $html);
+        $this->assertStringContainsString(get_string('waiting_next_join', 'jitsi'), $html);
+        $this->assertStringContainsString(get_string('waiting_next_admit', 'jitsi'), $html);
 
         // A Moodle restriction shows its own text (or "ended" when it has none).
         $hidden = (object) ['code' => \mod_jitsi\local\access::UNAVAILABLE, 'message' => 'x'];

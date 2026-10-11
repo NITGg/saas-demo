@@ -87,15 +87,34 @@ function jitsi_show_recordings_tab(bool $ishost, $session): bool {
  * not open yet, ended, or hidden by a Moodle restriction): why there is no call. The rest
  * of the page (recordings, whiteboard...) stays as usual.
  *
+ * Waiting for the teacher also says what comes next: straight into the call when they had
+ * pressed "Join" (join=1), else the "Join" step appears; in a room with a waiting room the
+ * teacher then lets them in.
+ *
  * @param stdClass $decision \mod_jitsi\local\access::check() result (not allowed)
  * @param cm_info|stdClass $cm
+ * @param bool $wantsjoin the user pressed "Join" (join=1)
+ * @param bool $waitingroom the room uses a waiting room (access::waiting_room())
  * @return string HTML
  */
-function jitsi_closed_html(stdClass $decision, $cm): string {
-    $message = $decision->code === \mod_jitsi\local\access::UNAVAILABLE
-        ? ($cm->availableinfo ?: get_string('sessionended', 'jitsi'))
-        : $decision->message;
-    return html_writer::div(html_writer::div($message, '', ['style' => 'max-width:520px;font-size:18px;']),
+function jitsi_closed_html(stdClass $decision, $cm, bool $wantsjoin = false, bool $waitingroom = false): string {
+    $next = '';
+    if ($decision->code === \mod_jitsi\local\access::UNAVAILABLE) {
+        $message = $cm->availableinfo ?: get_string('sessionended', 'jitsi');
+    } else if ($decision->code === \mod_jitsi\local\access::WAITING) {
+        $message = get_string($wantsjoin ? 'waiting_title_join' : 'waiting_title', 'jitsi');
+        $next = get_string($wantsjoin ? 'waiting_next_join' : 'waiting_next_button', 'jitsi');
+        if ($waitingroom) {
+            $next .= ' ' . get_string('waiting_next_admit', 'jitsi');
+        }
+    } else {
+        $message = $decision->message;
+    }
+    $body = html_writer::div($message, '', ['style' => 'font-size:18px;']);
+    if ($next !== '') {
+        $body .= html_writer::div($next, '', ['style' => 'margin-top:10px;opacity:.85;']);
+    }
+    return html_writer::div(html_writer::div($body, '', ['style' => 'max-width:520px;']),
         '', ['id' => 'jitsi-closed', 'data-code' => $decision->code,
             'style' => 'height:100%;display:flex;align-items:center;justify-content:center;text-align:center;'
             . 'padding:24px;background:#1b1f24;color:#fff;']);

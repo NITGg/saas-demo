@@ -68,3 +68,9 @@ $string['prejoin_title'] = 'The session room is ready';
 $string['prejoin_text'] = 'You enter the room, and your camera and microphone are used, only after you press "Join the session".';
 $string['prejoin_autorecord'] = 'The session recording starts automatically when you join.';
 $string['waitingadmit'] = 'You asked to join. Waiting for the teacher to let you in…';
+// The video tab while a student waits for the teacher (view.php).
+$string['waiting_title'] = 'The teacher has not started the session yet.';
+$string['waiting_next_join'] = 'You will go in automatically when they join.';
+$string['waiting_next_button'] = 'The "Join the session" button appears here when they join.';
+$string['waiting_next_admit'] = 'Then the teacher lets you in.';
+$string['waiting_title_join'] = 'The teacher is not in the session right now.';
