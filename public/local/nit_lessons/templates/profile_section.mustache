@@ -22,7 +22,7 @@
 
     Example context (json):
     {
-        "marker": "nitlx_profile", "available": true, "headline": "Physics teacher", "lessonflex": 2, "maxlessonflex": 10,
+        "marker": "nitlx_profile", "available": true, "headline": "Physics teacher", "lessonflex": 2,
         "subjects": [{"options": [{"value": "Physics", "label": "Physics", "selected": true}]}],
         "blankoptions": [{"value": "Physics", "label": "Physics"}], "hassubjectoptions": true,
         "hours": [{"start": "16:00", "end": "20:00", "days": [{"value": 0, "label": "Sunday", "selected": true}]}],
@@ -48,9 +48,9 @@
         </div>
         <div class="full">
             <label class="nit-prof-lbl" for="nitlx-lessonflex">{{#str}}lessonflex, local_nit_lessons{{/str}}</label>
-            <p class="nitlx-prof-hint">{{#str}}lessonflex_help, local_nit_lessons, {{maxlessonflex}}{{/str}}</p>
+            <p class="nitlx-prof-hint">{{#str}}lessonflex_help, local_nit_lessons{{/str}}</p>
             <input class="nit-prof-field nitlx-prof-num" type="number" id="nitlx-lessonflex" name="nitlx_lessonflex"
-                   value="{{lessonflex}}" min="1" max="{{maxlessonflex}}" step="1" inputmode="numeric" dir="ltr" required>
+                   value="{{lessonflex}}" min="1" step="1" inputmode="numeric" dir="ltr" required>
         </div>
 
         <div class="full">

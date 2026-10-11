@@ -57,6 +57,10 @@ class access {
     const ENDED = 'sessionended';
     /** @var string the teacher is not in the call yet. */
     const WAITING = 'waitingforteacher';
+    /** @var string course room: waiting for a host to let the student in. */
+    const WAITING_APPROVAL = 'waitingforapproval';
+    /** @var string course room: a host turned the student away. */
+    const DENIED = 'admissiondenied';
 
     /**
      * Decide whether a user may enter a room.
@@ -90,6 +94,19 @@ class access {
         if (!$session) {
             if (!$cm->available && !$moderator) {
                 return $result(self::UNAVAILABLE);
+            }
+            // Course room with a waiting room: a student needs a host's OK (hosts never wait).
+            if (!$moderator) {
+                $jitsi = $DB->get_record('jitsi', ['id' => $cm->instance], 'id, lobby_enabled');
+                if ($jitsi && admission::required($jitsi, null)) {
+                    $state = admission::state((int) $jitsi->id, $userid, (int) $cm->id, $now);
+                    if ($state === admission::DENIED) {
+                        return $result(self::DENIED);
+                    }
+                    if ($state !== admission::ADMITTED) {
+                        return $result(self::WAITING_APPROVAL);
+                    }
+                }
             }
             return $result(self::OK);
         }
@@ -158,6 +175,20 @@ class access {
     public static function record_entry(\stdClass $decision, int $userid): void {
         if ($decision->allowed && !$decision->moderator && $decision->session) {
             \local_academysessions\session_manager::record_attendance((int) $decision->session->id, $userid, true);
+        }
+    }
+
+    /**
+     * A student held in a course room's waiting room asks to come in (the hosts see the
+     * request). Nothing happens for any other decision, or when already waiting.
+     *
+     * @param \cm_info|\stdClass $cm the room
+     * @param \stdClass $decision a check() result
+     * @param int $userid
+     */
+    public static function request_entry($cm, \stdClass $decision, int $userid): void {
+        if ($decision->code === self::WAITING_APPROVAL) {
+            admission::request((int) $cm->instance, $userid, (int) $cm->id);
         }
     }
 

@@ -23,7 +23,7 @@ sets how many Flex one live lesson costs (§3.7). The
 | 8 | Teacher reports API | New endpoint `/local/nit_reports/api.php`: `get_reports`, `get_report` (the 5 teacher reports as cards + table) | Yes, for the new teacher "Reports" screen (§5) |
 | 9 | Live-session rooms (Jitsi) | `mod_jitsi_get_session_info` (`jwt` empty until `available`), `/mod/jitsi/api_token.php` (new errorcodes `waitingforteacher`, `jitsinotconfigured`), `join_session` (attendance after the teacher arrives) | **Check**: don't join with an empty `jwt` (§3.5) |
 | 10 | Messaging between students | When the admin turns on "Prevent messaging between students": `core_message_send_instant_messages` (per-message error), `send_messages_to_conversation` / `create_contact_request` (errorcode `studentmessaging_blocked`), `canmessage = false` between two students | **Check**: hide the message box when `canmessage` is `false` (§3.6) |
-| 11 | Flex price per live lesson | `/local/nit_lessons/api.php`: `get_teachers` (+`lesson_flex`), `get_teacher_profile` (+`lesson_flex`, `max_lesson_flex`), `update_teacher_profile` (+optional `lesson_flex`), every lesson (+`flex_count`), `request_lesson` (new errorcode `notenoughflex`), `admin_get_settings` / `admin_update_settings` (+`max_lesson_flex`) | **Yes**: show the price, a "Flex per lesson" box for teachers, handle `notenoughflex` (§3.7) |
+| 11 | Flex price per live lesson | `/local/nit_lessons/api.php`: `get_teachers` (+`lesson_flex`), `get_teacher_profile` (+`lesson_flex`), `update_teacher_profile` (+optional `lesson_flex`), every lesson (+`flex_count`), `request_lesson` (new errorcode `notenoughflex`) | **Yes**: show the price, a "Flex per lesson" box for teachers, handle `notenoughflex` (§3.7) |
 
 ---
 
@@ -294,25 +294,50 @@ web room page:
   joins is recorded as being in the call, but the students still wait for the teacher.
 - **App action:** none required. Show `end_reason` / `ended_at` if useful.
 
-**In the call: students see the teacher only, hosts never wait for each other (10/10):**
-- **`mod_jitsi_get_session_info` has 3 new fields:**
+**In the call: students see the teacher only, hosts never wait (10–11/10). Applies to every room: lesson
+rooms and course Jitsi activities:**
+- **`mod_jitsi_get_session_info` has new fields:**
 
   | Field | Meaning |
   |---|---|
-  | `isolate_students` | `true` for a student in a lesson room. They must see **the teacher only** |
-  | `auto_admit` | `true` for a host (teacher or admin) of a lesson room. **Let anyone who knocks in** at once |
-  | `teacher_name` | the session teacher's display name (to find and pin them); `""` for a standalone room |
+  | `isolate_students` | `true` for every student (non-host). They must see **the teacher only** |
+  | `auto_admit` | `true` for a host (teacher, manager, admin). **Let anyone who knocks in** at once |
+  | `access_code` | `ok`, or why the student is not in yet: `waitingforteacher`, `waitingforapproval`, `admissiondenied`, `sessionnotavailable`, `sessionended`, `notallowed`, `unavailable` |
+  | `teacher_name` | the (first) teacher's display name, to pin |
+  | `teacher_names` | all the teachers' display names in order (course teachers first, then admins / managers); pin the first one in the call |
 
 - **App action (Jitsi Meet SDK), when `isolate_students` is true.** These are what the web page does:
   - config `channelLastN: 1`
   - `disableTileView: true`
   - `filmstrip: {disabled: true, disableStageFilmstrip: true}`
   - remove the tile-view button
-  - pin the participant whose display name is `teacher_name` (else the first moderator), and keep re-pinning on
-    participant joined / left / role changed
+  - pin the first participant whose display name is in `teacher_names` (else the first moderator), and keep
+    re-pinning on participant joined / left / role changed
   - while no teacher is in the call, cover the video with a "the teacher is not in the call" notice
 - **App action, when `auto_admit` is true:** on the SDK's knocking-participant event, approve them. Never turn the
-  lobby on in a lesson room.
+  Jitsi lobby on (the waiting room is Moodle's now, below).
+
+**Course rooms: waiting room kept by Moodle (11/10).** A course Jitsi activity has "Students wait for the teacher to
+let them in" (on by default). A student gets **no JWT** until a host lets them in. Teachers, managers and admins go
+straight in.
+- **Student:** call `mod_jitsi_get_session_info` as usual. That call also puts the request in.
+  - While waiting: `available=false`, `access_code=waitingforapproval`. Poll every 5 s.
+  - When let in: `available=true` with the JWT.
+  - If turned away: `access_code=admissiondenied`. Show "Ask again", which calls
+    `POST /local/academysessions/api.php?function=ask_room_admission&cmid=…`.
+- **Host** (`/local/academysessions/api.php`, token):
+  - `get_room_admissions(cmid)`: who is waiting. Returns `[{userid, name, waitingfor (min)}]`.
+  - `POST decide_room_admission(cmid, userid, admit=1|0)`: let one student in, or turn them away.
+  - `POST decide_room_admission(cmid, all=1, admit=1)`: let everyone in.
+  - Both return the list of who is still waiting. Only hosts may call them (`nopermissions` otherwise).
+- `/mod/jitsi/api_token.php` gives 403 `waitingforapproval` / `admissiondenied` in the same cases.
+- A let-in lasts 6 hours, or until a host ends the room.
+
+**The room's attendance log (11/10).** Every time anyone is in a room's call is recorded, and the room's hosts see
+it on the web page "Attendance log" (activity menu, or `/mod/jitsi/attendance.php?id=<cmid>`, with a CSV download).
+- **App action:** call `POST /local/academysessions/api.php?function=room_presence&cmid=…&present=1` when the
+  conference is joined, and `present=0` when it is left.
+- Joining is only recorded while the room lets the user in.
 - ⚠️ **This is enforced in the clients (web page and app), not by the Jitsi server.** A student with a modified
   client could still request other students' video. Server-side isolation is planned
   (`docs/CAMERA-PRIVACY-STUDY.md`).
@@ -340,8 +365,8 @@ to the core `core_message_*` web services the app already calls:
 ### 3.7 Live lessons: the teacher sets the Flex price of a lesson
 
 A lesson used to cost exactly 1 Flex. Now each teacher sets **how many Flex one lesson with them costs**
-(Profile → Teacher profile on the web, or `update_teacher_profile`), from 1 up to the admin's
-`max_lesson_flex` (default 10). A teacher who never set it costs 1 Flex, so nothing changes for them.
+(Profile → Teacher profile on the web, or `update_teacher_profile`): any whole number, 1 or more, with
+no maximum. A teacher who never set it costs 1 Flex, so nothing changes for them.
 
 - The price is fixed on the lesson **when the student requests it** (`flex_count`). If the teacher changes
   their price later, lessons already requested keep their old price.
@@ -365,22 +390,18 @@ teacher's `lesson_flex`. The message names the price; send the student to the pa
 `noflex`. (`noflex` still means no Flex at all.) If the student spends Flex between the request and the
 teacher accepting, the accept fails with `noflex`, as before.
 
-**`get_teacher_profile`** — two new fields:
+**`get_teacher_profile`** — one new field:
 ```json
-{"available":true,"headline":"مدرس فيزياء","lesson_flex":3,"max_lesson_flex":10,"subjects":[…],"hours":[…], …}
+{"available":true,"headline":"مدرس فيزياء","lesson_flex":3,"subjects":[…],"hours":[…], …}
 ```
 
 **`update_teacher_profile`** — one new optional param:
 
 | Param | Type | Req | Description |
 |---|---|---|---|
-| lesson_flex | int | no | Flex per lesson, 1 … `max_lesson_flex`. **Leave it out to keep the saved price** |
+| lesson_flex | int | no | Flex per lesson, 1 or more (no maximum). **Leave it out to keep the saved price** |
 
-New errorcode **`badlessonflex`** (outside 1 … `max_lesson_flex`); the message names the maximum.
-
-**Admin settings** (`admin_get_settings` / `admin_update_settings`): new key `max_lesson_flex` (int,
-default 10) — the most Flex a teacher can ask for one lesson. Lowering it does not change prices already
-saved; a teacher above the new maximum must pick a valid value the next time they save their profile.
+New errorcode **`badlessonflex`**: `lesson_flex` is less than 1.
 
 ---
 

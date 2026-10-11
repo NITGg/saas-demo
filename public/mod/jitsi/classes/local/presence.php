@@ -118,6 +118,10 @@ class presence {
     public static function end_room(int $cmid): int {
         $now = time();
         set_config('ended_' . $cmid, $now, 'mod_jitsi');
+        $cm = get_coursemodule_from_id('jitsi', $cmid, 0, false, IGNORE_MISSING);
+        if ($cm) {
+            roomlog::close_all((int) $cm->instance, $now);
+        }
         return $now;
     }
 

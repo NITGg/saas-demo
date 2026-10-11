@@ -29,6 +29,44 @@ function jitsi_room_name($jitsi, $cm): string {
 }
 
 /**
+ * Activity "More" menu: the room's attendance log, for its hosts.
+ *
+ * @param settings_navigation $settingsnav
+ * @param navigation_node $jitsinode
+ */
+function jitsi_extend_settings_navigation(settings_navigation $settingsnav, navigation_node $jitsinode) {
+    global $USER;
+    $cm = $settingsnav->get_page()->cm;
+    if (!$cm || !\mod_jitsi\local\presence::is_moderator($cm, (int) $USER->id)) {
+        return;
+    }
+    $jitsinode->add(get_string('attendancelog', 'jitsi'), new moodle_url('/mod/jitsi/attendance.php', ['id' => $cm->id]),
+        navigation_node::TYPE_SETTING, null, 'jitsi_attendancelog', new pix_icon('i/report', ''));
+}
+
+/**
+ * The names of a room's teachers, to pin on a student's screen: the session's teacher
+ * for a lesson room; for a course room, the users who host it (mod/jitsi:moderate).
+ *
+ * @param cm_info|stdClass $cm
+ * @param stdClass|null $session the linked live session
+ * @return string[]
+ */
+function jitsi_teacher_names($cm, $session): array {
+    if ($session) {
+        $teacher = core_user::get_user((int) $session->teacherid);
+        return $teacher ? [fullname($teacher)] : [];
+    }
+    $fields = 'u.id, ' . \core_user\fields::for_name()->get_sql('u', false, '', '', false)->selects;
+    $users = get_users_by_capability(context_module::instance($cm->id), 'mod/jitsi:moderate', $fields);
+    // The course's own teachers (enrolled) first, then admins / managers: a student's
+    // screen pins the first of these who is in the call.
+    $coursecontext = context_course::instance($cm->course);
+    usort($users, fn($a, $b) => (int) is_enrolled($coursecontext, $b) <=> (int) is_enrolled($coursecontext, $a));
+    return array_values(array_unique(array_map('fullname', $users)));
+}
+
+/**
  * The Jitsi live-session activity is a Professional-tier feature. Returns true when
  * the academy's licence includes 'jitsi' (local_license already defines this feature
  * and grants it to the professional tier; has_feature() is true when enforcement is
@@ -81,6 +119,8 @@ function jitsi_delete_instance($id) {
     if (!$DB->get_record('jitsi', ['id' => $id])) {
         return false;
     }
+    $DB->delete_records('jitsi_admission', ['jitsiid' => $id]);
+    $DB->delete_records('jitsi_presence', ['jitsiid' => $id]);
     $DB->delete_records('jitsi', ['id' => $id]);
     return true;
 }

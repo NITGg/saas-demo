@@ -57,5 +57,16 @@ function xmldb_local_nit_lessons_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026101000, 'local', 'nit_lessons');
     }
 
+    if ($oldversion < 2026101100) {
+        // No maximum on the Flex price of a lesson: drop the max_lesson_flex setting and widen both
+        // columns (they were 4 digits).
+        unset_config('max_lesson_flex', 'local_nit_lessons');
+        $field = new xmldb_field('lesson_flex', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '1', 'headline');
+        $dbman->change_field_precision(new xmldb_table('nit_teacher_profile'), $field);
+        $field = new xmldb_field('flex_count', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '1', 'flex_state');
+        $dbman->change_field_precision(new xmldb_table('nit_lesson'), $field);
+        upgrade_plugin_savepoint(true, 2026101100, 'local', 'nit_lessons');
+    }
+
     return true;
 }

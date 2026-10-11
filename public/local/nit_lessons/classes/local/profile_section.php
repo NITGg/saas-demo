@@ -66,10 +66,10 @@ class profile_section {
             $hours[] = ['dayofweek' => (int) $day, 'starttime' => (string) ($starts[$i] ?? ''),
                 'endtime' => (string) ($ends[$i] ?? '')];
         }
-        // Flex per lesson: an empty or missing box keeps the saved price; anything else must be 1 … max.
+        // Flex per lesson: an empty or missing box keeps the saved price; anything else must be a whole number ≥ 1.
         $lessonflex = trim(optional_param('nitlx_lessonflex', '', PARAM_RAW_TRIMMED));
-        if ($lessonflex !== '' && !preg_match('/^\d{1,4}$/', $lessonflex)) {
-            return get_string('err_badlessonflex', 'local_nit_lessons', teacher_service::max_lesson_flex());
+        if ($lessonflex !== '' && !preg_match('/^\d{1,18}$/', $lessonflex)) {
+            return get_string('err_badlessonflex', 'local_nit_lessons');
         }
         try {
             (new teacher_service())->save($userid, (bool) optional_param('nitlx_available', 0, PARAM_BOOL),
@@ -116,7 +116,6 @@ class profile_section {
             'available' => $profile['available'],
             'headline' => $profile['headline'],
             'lessonflex' => $profile['lesson_flex'],
-            'maxlessonflex' => teacher_service::max_lesson_flex(),
             'subjects' => $subjects,
             'blankoptions' => $select(''),
             'hassubjectoptions' => !empty($options),

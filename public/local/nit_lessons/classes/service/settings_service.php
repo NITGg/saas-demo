@@ -33,10 +33,7 @@ class settings_service extends service {
     /** @var string This plugin's component. */
     const COMPONENT = 'local_nit_lessons';
 
-    /**
-     * @var array<string,int> Setting key => default (minutes; a course id for lessons_courseid; the most
-     * Flex a teacher may ask for one lesson for max_lesson_flex).
-     */
+    /** @var array<string,int> Setting key => default (minutes; a course id for lessons_courseid). */
     const DEFAULTS = [
         'min_booking_minutes'      => 60,
         'cancel_deadline_minutes'  => 120,
@@ -45,7 +42,6 @@ class settings_service extends service {
         'complete_allowed_minutes' => 45,
         'absence_report_minutes'   => 15,
         'lessons_courseid'         => 0,
-        'max_lesson_flex'          => 10,
     ];
 
     /**

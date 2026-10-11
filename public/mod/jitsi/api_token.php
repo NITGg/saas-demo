@@ -18,7 +18,8 @@
  * Error response:
  * { "error": "message", "errorcode": "<code>" }   (HTTP 401 / 403 / 404 / 503)
  * 403 codes: nopermissions, notallowed, sessionnotavailable, sessionended,
- * waitingforteacher (poll again; the teacher is not in the call yet).
+ * waitingforteacher (poll again; the teacher is not in the call yet),
+ * waitingforapproval (poll again; a host has not let you in yet), admissiondenied.
  * 503 jitsinotconfigured: the site has no Jitsi JWT secret.
  *
  * The token is validated by \local_academy\token_auth (expiry, IP restriction,
@@ -92,6 +93,8 @@ if (!has_capability('mod/jitsi:view', $context)) {
 // the window opens, after it closes, or while the teacher is not in the call.
 $cminfo   = get_fast_modinfo($course, (int) $USER->id)->get_cm($cm->id);
 $decision = \mod_jitsi\local\access::check($cminfo, (int) $USER->id);
+// Held in a course room's waiting room: the hosts now see the request.
+\mod_jitsi\local\access::request_entry($cm, $decision, (int) $USER->id);
 if (!$decision->allowed) {
     $code = $decision->code === \mod_jitsi\local\access::UNAVAILABLE ? 'nopermissions' : $decision->code;
     api_error($decision->message, 403, $code);

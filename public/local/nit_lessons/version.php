@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_nit_lessons';
-$plugin->version   = 2026101000;        // Teacher sets the Flex price of a lesson (lesson_flex, flex_count).
+$plugin->version   = 2026101100;        // No maximum on the Flex price of a lesson (max_lesson_flex removed).
 $plugin->requires  = 2024100700;
 $plugin->supported = [405, 502];
 $plugin->maturity  = MATURITY_ALPHA;

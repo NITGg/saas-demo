@@ -54,6 +54,7 @@ final class lesson_flex_price_test extends \advanced_testcase {
     protected function setUp(): void {
         parent::setUp();
         $this->resetAfterTest();
+        set_debugging(DEBUG_NORMAL); // TMPVERIFY
         $gen = $this->getDataGenerator();
         $this->sid = (int) $gen->create_user()->id;
         $this->tid = (int) $gen->create_user()->id;
@@ -100,11 +101,11 @@ final class lesson_flex_price_test extends \advanced_testcase {
     }
 
     /**
-     * The price is saved, kept when not sent, and limited to 1 … max_lesson_flex.
+     * The price is saved, kept when not sent, must be 1 or more, and has no maximum.
      *
      * @return void
      */
-    public function test_teacher_sets_price_within_limits(): void {
+    public function test_teacher_sets_price(): void {
         $service = new teacher_service();
         $this->assertSame(3, $service->profile($this->tid)['lesson_flex']);
         $this->assertSame(3, $service->lesson_flex($this->tid));
@@ -113,8 +114,7 @@ final class lesson_flex_price_test extends \advanced_testcase {
         $service->save($this->tid, true, 'Updated', ['Physics'], []);
         $this->assertSame(3, $service->lesson_flex($this->tid));
 
-        set_config('max_lesson_flex', 4, 'local_nit_lessons');
-        foreach ([0, -1, 5] as $bad) {
+        foreach ([0, -1] as $bad) {
             try {
                 $service->save($this->tid, true, '', ['Physics'], [], $bad);
                 $this->fail("price $bad should be refused");
@@ -122,8 +122,9 @@ final class lesson_flex_price_test extends \advanced_testcase {
                 $this->assertSame('err_badlessonflex', $e->errorcode);
             }
         }
-        $service->save($this->tid, true, '', ['Physics'], [], 4);
-        $this->assertSame(4, $service->lesson_flex($this->tid));
+        // No maximum: a big price is kept as it is (beyond the old 4-digit column, too).
+        $service->save($this->tid, true, '', ['Physics'], [], 50000);
+        $this->assertSame(50000, $service->lesson_flex($this->tid));
 
         // A teacher who never saved a profile costs 1 Flex.
         $this->assertSame(1, $service->lesson_flex((int) $this->getDataGenerator()->create_user()->id));
@@ -249,16 +250,21 @@ final class lesson_flex_price_test extends \advanced_testcase {
         $this->assertNull(profile_section::save($this->tid));
         $this->assertSame(4, (new teacher_service())->lesson_flex($this->tid));
 
-        $_POST = ['nitlx_lessonflex' => 'abc'] + $post;
-        $this->assertSame(get_string('err_badlessonflex', 'local_nit_lessons', 10), profile_section::save($this->tid));
-        $_POST = ['nitlx_lessonflex' => '99'] + $post;
-        $this->assertSame(get_string('err_badlessonflex', 'local_nit_lessons', 10), profile_section::save($this->tid));
+        foreach (['abc', '0', '-2', '1.5'] as $bad) {
+            $_POST = ['nitlx_lessonflex' => $bad] + $post;
+            $this->assertSame(get_string('err_badlessonflex', 'local_nit_lessons'), profile_section::save($this->tid), $bad);
+        }
         $this->assertSame(4, (new teacher_service())->lesson_flex($this->tid));
+
+        // No maximum.
+        $_POST = ['nitlx_lessonflex' => '99'] + $post;
+        $this->assertNull(profile_section::save($this->tid));
+        $this->assertSame(99, (new teacher_service())->lesson_flex($this->tid));
 
         $this->setUser($this->tid);
         $html = profile_section::render($this->tid);
-        $this->assertStringContainsString('name="nitlx_lessonflex"', $html);
-        $this->assertMatchesRegularExpression('/name="nitlx_lessonflex"\s+value="4"/', $html);
+        $this->assertMatchesRegularExpression('/name="nitlx_lessonflex"\s+value="99" min="1" step="1"/', $html);
+        $this->assertStringNotContainsString('max=', $html);
         $_POST = [];
     }
 
@@ -273,7 +279,7 @@ final class lesson_flex_price_test extends \advanced_testcase {
 
         $profile = mobile_api::update_teacher_profile($this->tid, true, '', ['Physics'], [], 2);
         $this->assertSame(2, $profile['lesson_flex']);
-        $this->assertSame(10, $profile['max_lesson_flex']);
+        $this->assertArrayNotHasKey('max_lesson_flex', $profile);
         $profile = mobile_api::update_teacher_profile($this->tid, true, '', ['Physics'], []);
         $this->assertSame(2, $profile['lesson_flex']);
 

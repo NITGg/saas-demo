@@ -190,6 +190,11 @@ class session_manager {
         }
         $DB->update_record('academy_live_sessions', $session);
 
+        // Everyone still in the room is out (the room's own attendance log too).
+        if (!empty($session->jitsiid) && class_exists('\mod_jitsi\local\roomlog')) {
+            \mod_jitsi\local\roomlog::close_all((int) $session->jitsiid, $now);
+        }
+
         $attendances = $DB->get_records('academy_session_attendance', array('sessionid' => $sessionid));
         foreach ($attendances as $att) {
             if (empty($att->left_at)) {

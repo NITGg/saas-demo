@@ -156,15 +156,6 @@ class teacher_service extends service {
     }
 
     /**
-     * The most Flex a teacher may ask for one lesson (admin setting, at least 1).
-     *
-     * @return int
-     */
-    public static function max_lesson_flex(): int {
-        return max(1, (new settings_service())->get('max_lesson_flex'));
-    }
-
-    /**
      * Save a teacher's booking profile (replaces subjects and hours).
      *
      * @param int $userid
@@ -172,14 +163,14 @@ class teacher_service extends service {
      * @param string $headline
      * @param string[] $subjects
      * @param array $hours [{dayofweek, starttime, endtime}]
-     * @param int|null $lessonflex Flex one lesson costs, 1 … max_lesson_flex(); null keeps the saved price
+     * @param int|null $lessonflex Flex one lesson costs, 1 or more; null keeps the saved price
      * @return void
      */
     public function save(int $userid, bool $available, string $headline, array $subjects, array $hours,
             ?int $lessonflex = null): void {
         global $DB;
-        if ($lessonflex !== null && ($lessonflex < 1 || $lessonflex > self::max_lesson_flex())) {
-            throw new lesson_exception('err_badlessonflex', self::max_lesson_flex());
+        if ($lessonflex !== null && $lessonflex < 1) {
+            throw new lesson_exception('err_badlessonflex');
         }
         $options = self::subject_options($userid);
         $clean = [];

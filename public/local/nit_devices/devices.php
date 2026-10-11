@@ -7,11 +7,14 @@
 // (at your option) any later version.
 
 /**
- * An account's devices. Whoever has local/nit_devices:manage finds any account
- * here and removes one device or all of them (reset); a student sees their own
- * list only (removing would let an account be passed around).
+ * The device limit's ONE page (Site administration → Plugins → Local plugins →
+ * Device limit): its settings, every account's devices, and the video protection
+ * check. Whoever has local/nit_devices:manage sees the devices and removes one
+ * device or all of them (reset); the settings and the video check are for site
+ * admins. A student opening it sees their own devices only (read only: removing
+ * would let an account be passed around).
  *
- *   /local/nit_devices/devices.php              search (managers) / my devices
+ *   /local/nit_devices/devices.php              the page (managers) / my devices
  *   /local/nit_devices/devices.php?id=<userid>  that account's devices
  *
  * @package    local_nit_devices
@@ -41,12 +44,23 @@ $url = new moodle_url('/local/nit_devices/devices.php', $userid ? ['id' => $user
 $PAGE->set_context($system);
 $PAGE->set_url($url);
 if ($canmanage) {
-    admin_externalpage_setup('local_nit_devices_devices', '', null, $url);
+    admin_externalpage_setup('local_nit_devices', '', null, $url);
 } else {
     $PAGE->set_pagelayout('standard');
 }
-$PAGE->set_title(get_string('devices', 'local_nit_devices'));
-$PAGE->set_heading(get_string('devices', 'local_nit_devices'));
+$PAGE->set_title(get_string($canmanage ? 'pluginname' : 'devices', 'local_nit_devices'));
+$PAGE->set_heading(get_string($canmanage ? 'pluginname' : 'devices', 'local_nit_devices'));
+
+// The settings section (site admins).
+$cansettings = !$userid && has_capability('moodle/site:config', $system);
+if ($cansettings) {
+    $settingsform = new \local_nit_devices\form\settings_form(new moodle_url($url, [], 'settings'));
+    $settingsform->set_data(\local_nit_devices\form\settings_form::current());
+    if ($data = $settingsform->get_data()) {
+        \local_nit_devices\form\settings_form::save($data);
+        redirect($url, get_string('changessaved'), null, \core\output\notification::NOTIFY_SUCCESS);
+    }
+}
 
 // Remove one device / all of them (managers only).
 if ($action !== '' && $userid) {
@@ -73,18 +87,23 @@ if (!$userid) {
     $max = manager::max_devices();
     $dateformat = get_string('strftimedatetimeshort', 'langconfig');
 
-    echo $OUTPUT->heading(get_string('devices', 'local_nit_devices'));
+    echo $OUTPUT->heading(get_string('pluginname', 'local_nit_devices'));
 
-    // The rule in force, with the way to its settings.
+    // The rule in force.
     $rule = manager::enabled()
         ? get_string('limitinfo', 'local_nit_devices', (object) ['max' => $max,
             'policy' => get_string(manager::policy() === manager::POLICY_REPLACE ? 'policyreplace' : 'policyblock', 'local_nit_devices')])
-        : get_string('limitoff', 'local_nit_devices');
-    if (has_capability('moodle/site:config', $system)) {
-        $rule .= ' ' . html_writer::link(new moodle_url('/admin/settings.php', ['section' => 'local_nit_devices']),
-            get_string('settings'));
-    }
+        : get_string('limitoffhere', 'local_nit_devices');
     echo $OUTPUT->notification($rule, manager::enabled() ? 'info' : 'warning', false);
+
+    // 1) Settings.
+    if ($cansettings) {
+        echo $OUTPUT->heading(get_string('settings'), 3, 'mt-4', 'settings');
+        $settingsform->display();
+    }
+
+    // 2) Every account's devices.
+    echo $OUTPUT->heading(get_string('devices', 'local_nit_devices'), 3, 'mt-4', 'devices');
 
     // Totals.
     $totals = $DB->get_record_sql(
@@ -109,7 +128,7 @@ if (!$userid) {
     echo html_writer::end_div();
 
     // Filters: search any account (also those without devices) / only full accounts.
-    echo html_writer::start_tag('form', ['method' => 'get', 'action' => $url->out_omit_querystring(),
+    echo html_writer::start_tag('form', ['method' => 'get', 'action' => $url->out_omit_querystring() . '#devices',
         'class' => 'd-flex flex-wrap align-items-center gap-2 mb-3']);
     echo html_writer::empty_tag('input', ['type' => 'search', 'name' => 'q', 'value' => $query, 'class' => 'form-control w-auto flex-grow-1',
         'placeholder' => get_string('searchplaceholder', 'local_nit_devices'), 'aria-label' => get_string('searchuser', 'local_nit_devices')]);
@@ -177,7 +196,33 @@ if (!$userid) {
             ];
         }
         echo html_writer::table($table);
-        echo $OUTPUT->paging_bar($count, $page, $perpage, new moodle_url($url, ['q' => $query, 'full' => (int) $onlyfull]));
+        echo $OUTPUT->paging_bar($count, $page, $perpage, new moodle_url($url, ['q' => $query, 'full' => (int) $onlyfull], 'devices'));
+    }
+
+    // 3) Video protection check (site admins).
+    if ($cansettings) {
+        echo $OUTPUT->heading(get_string('videocheck', 'local_nit_devices'), 3, 'mt-4', 'videos');
+        echo html_writer::tag('p', get_string('videocheck_desc', 'local_nit_devices'));
+        $courses = \local_nit_devices\video_check::paid_courses_on_vimeo();
+        if (!$courses) {
+            echo $OUTPUT->notification(get_string('videocheck_none', 'local_nit_devices'), \core\output\notification::NOTIFY_SUCCESS);
+        } else {
+            echo $OUTPUT->notification(get_string('videocheck_found', 'local_nit_devices', count($courses)),
+                \core\output\notification::NOTIFY_WARNING);
+            $table = new html_table();
+            $table->head = [get_string('videocheck_course', 'local_nit_devices'), get_string('videocheck_vimeo', 'local_nit_devices'),
+                get_string('videocheck_vdocipher', 'local_nit_devices')];
+            foreach ($courses as $row) {
+                $course = get_course($row['courseid']);
+                $table->data[] = [
+                    html_writer::link(new moodle_url('/course/view.php', ['id' => $course->id]),
+                        format_string($course->fullname, true, ['context' => context_course::instance($course->id)])),
+                    $row['vimeo'],
+                    $row['vdocipher'],
+                ];
+            }
+            echo html_writer::table($table);
+        }
     }
     echo $OUTPUT->footer();
     die;
@@ -241,7 +286,7 @@ if (!$devices) {
 }
 if ($canmanage) {
     echo html_writer::tag('p', html_writer::link(new moodle_url('/local/nit_devices/devices.php'),
-        get_string('searchuser', 'local_nit_devices')), ['class' => 'mt-3']);
+        get_string('backtooverview', 'local_nit_devices')), ['class' => 'mt-3']);
 }
 
 echo $OUTPUT->footer();

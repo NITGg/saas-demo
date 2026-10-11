@@ -89,3 +89,5 @@ $string['nodevicesyet'] = 'مفيش حساب سجّل دخول من ساعة م�
 $string['exempt'] = 'بدون حد';
 $string['full'] = 'مليان';
 $string['details'] = 'التفاصيل';
+$string['limitoffhere'] = 'حد الأجهزة مقفول: مفيش أجهزة بتتحسب. افتحه من الإعدادات اللي تحت.';
+$string['backtooverview'] = 'رجوع لحد الأجهزة';

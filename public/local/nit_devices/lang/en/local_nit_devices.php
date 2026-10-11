@@ -89,3 +89,5 @@ $string['nodevicesyet'] = 'No account has signed in since the device limit was s
 $string['exempt'] = 'No limit';
 $string['full'] = 'Full';
 $string['details'] = 'Details';
+$string['limitoffhere'] = 'The device limit is switched off: no device is counted. Switch it on in the settings below.';
+$string['backtooverview'] = 'Back to Device limit';

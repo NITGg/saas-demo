@@ -229,12 +229,22 @@ final class access_test extends \advanced_testcase {
         $this->assertSame(fullname($this->teacher), $r['teacher_name']);
     }
 
-    public function test_ws_standalone_room_is_neither_isolated_nor_auto_admitting(): void {
+    public function test_ws_course_room_student_sees_the_course_teachers_only(): void {
         $jitsi = $this->getDataGenerator()->create_module('jitsi', ['course' => $this->course->id]);
         $this->setUser($this->stranger);
         $r = get_session_info::execute((int) $jitsi->cmid);
-        $this->assertFalse($r['isolate_students']);
+        $this->assertTrue($r['isolate_students']);
         $this->assertFalse($r['auto_admit']);
-        $this->assertSame('', $r['teacher_name']);
+        // Any of the course's teachers may be the one to pin.
+        $names = $r['teacher_names'];
+        sort($names);
+        $expected = [fullname($this->teacher), fullname($this->otherteacher)];
+        sort($expected);
+        $this->assertSame($expected, $names);
+
+        $this->setUser($this->teacher);
+        $r = get_session_info::execute((int) $jitsi->cmid);
+        $this->assertTrue($r['auto_admit']);
+        $this->assertFalse($r['isolate_students']);
     }
 }
