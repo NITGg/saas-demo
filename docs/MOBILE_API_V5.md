@@ -294,6 +294,11 @@ web room page:
   joins is recorded as being in the call, but the students still wait for the teacher.
 - **App action:** none required. Show `end_reason` / `ended_at` if useful.
 
+> **Step-by-step guide for the app:** [`apis/jitsi-rooms-mobile-guide.md`](apis/jitsi-rooms-mobile-guide.md)
+> (with answers to the app team's questions). **New 11/10:** while in the call, repeat `room_presence(present=1)` every
+> 60 s (heartbeat). A stretch silent for 3 min is closed by the server at the last heartbeat.
+> Recommended: open the room's web page in a WebView (everything below then works as on the website).
+
 **In the call: students see the teacher only, hosts never wait (10–11/10). Applies to every room: lesson
 rooms and course Jitsi activities:**
 - **`mod_jitsi_get_session_info` has new fields:**

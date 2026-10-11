@@ -29,6 +29,7 @@
         <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="host" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1 = a host of the room (teacher, manager, admin)"/>
         <FIELD NAME="joined_at" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="last_seen" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="last heartbeat from the client; a stretch silent for 3 min is closed here"/>
         <FIELD NAME="left_at" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="null = still in the call"/>
       </FIELDS>
       <KEYS>

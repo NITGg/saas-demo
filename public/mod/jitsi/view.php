@@ -91,8 +91,14 @@ if (!$decision->allowed) {
     exit;
 }
 
-// A student let in: open their attendance row.
-\mod_jitsi\local\access::record_entry($decision, (int) $USER->id);
+// Opening the activity only shows the room; the call starts after "Join" (join=1), so
+// someone browsing the course never lands in the meeting (nor starts its recording).
+$joining = optional_param('join', 0, PARAM_BOOL);
+
+// A student who joined: open their attendance row.
+if ($joining) {
+    \mod_jitsi\local\access::record_entry($decision, (int) $USER->id);
+}
 
 // Completion tracking.
 $completion = new completion_info($course);
@@ -176,13 +182,24 @@ $sesskey      = sesskey();
 $session_id   = $session ? (int)$session->id : 0;
 $end_ajax_url = (new moodle_url('/mod/jitsi/ajax.php'))->out(false);
 
+// Auto-start the recording when the host joins (Jibri records -> finalize.sh ->
+// Vimeo). Per-academy toggle: theme_nit/jitsi_autorecord (default ON), so an
+// academy can turn it off site-wide.
+// Only the lesson's own teacher starts it: a site admin dropping in must not.
+$autorecord = (get_config('theme_nit', 'jitsi_autorecord') !== '0')
+    && (!$session || (int) $session->teacherid === (int) $USER->id);
+
+$show_recs = jitsi_show_recordings_tab($is_teacher, $session);
+
 // -------------------------------------------------------------------------
 // Output.
 // -------------------------------------------------------------------------
 echo $OUTPUT->header();
 
-// Load Jitsi External API as a static <script> tag.
-echo '<script src="' . s($jitsi_scheme . '://' . $jitsi_host . '/external_api.js') . '"></script>' . "\n";
+// Load Jitsi External API as a static <script> tag (only once the user joins).
+if ($joining) {
+    echo '<script src="' . s($jitsi_scheme . '://' . $jitsi_host . '/external_api.js') . '"></script>' . "\n";
+}
 
 // NOTE: no explicit $OUTPUT->heading() here — the theme's activity header
 // (full_header) already renders the activity name; echoing it again showed the
@@ -200,6 +217,10 @@ echo '<button id="tab-video" onclick="jitsiSwitchTab(\'video\')" class="btn btn-
      . get_string('tab_video', 'jitsi') . '</button>';
 echo '<button id="tab-whiteboard" onclick="jitsiSwitchTab(\'whiteboard\')" class="btn btn-outline-secondary btn-sm" style="border-radius:16px;">'
      . get_string('tab_whiteboard', 'jitsi') . '</button>';
+if ($show_recs) {
+    echo '<button id="tab-recordings" onclick="jitsiSwitchTab(\'recordings\')" class="btn btn-outline-secondary btn-sm" style="border-radius:16px;">'
+         . get_string('recordings', 'jitsi') . '</button>';
+}
 if ($is_teacher) {
     echo '<a class="btn btn-outline-secondary btn-sm" style="border-radius:16px;" target="_blank" href="'
         . (new moodle_url('/mod/jitsi/attendance.php', ['id' => $cm->id]))->out() . '">'
@@ -210,9 +231,13 @@ if ($is_teacher) {
 }
 echo '</div>';
 
-// ── Jitsi External API container ─────────────────────────────────────────
-echo '<div id="panel-video" style="position:relative;width:100%;height:620px;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.15);">';
-echo '<div id="jitsi-container" style="width:100%;height:100%;"></div>';
+// ── Jitsi External API container (or the "Join" step before it) ───────────
+echo '<div id="panel-video" style="position:relative;width:100%;height:' . ($joining ? '620px' : '360px')
+    . ';border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.15);">';
+if (!$joining) {
+    echo jitsi_prejoin_html($cm, $is_teacher && $autorecord);
+}
+echo '<div id="jitsi-container" style="width:100%;height:100%;' . ($joining ? '' : 'display:none;') . '"></div>';
 if ($isolate_students) {
     // Covers the video while the teacher is not in the call, so a student never sees
     // another student on the main video (it would show whoever is speaking).
@@ -224,8 +249,16 @@ echo '</div>';
 
 // ── Whiteboard panel ─────────────────────────────────────────────────────
 echo '<div id="panel-whiteboard" style="display:none;width:100%;height:620px;border-radius:8px;overflow:hidden;border:1px solid #e0e0e0;">';
-echo '<iframe src="' . s($wb_url) . '" style="width:100%;height:100%;border:none;" allow="clipboard-read;clipboard-write"></iframe>';
+// Loaded the first time the tab opens (data-src), not with every visit to the page.
+echo '<iframe data-src="' . s($wb_url) . '" style="width:100%;height:100%;border:none;" allow="clipboard-read;clipboard-write"></iframe>';
 echo '</div>';
+
+// ── Recordings panel ─────────────────────────────────────────────────────
+if ($show_recs) {
+    echo '<div id="panel-recordings" style="display:none;">';
+    jitsi_print_recordings($session, $context, $is_teacher, $cm->id, false);
+    echo '</div>';
+}
 
 // ── Post-call panel (hidden until call ends) ──────────────────────────────
 echo '<div id="panel-ended" style="display:none;padding:30px;text-align:center;background:#f8f9fa;border-radius:8px;">';
@@ -268,14 +301,33 @@ $js_config = json_encode([
     'presenceUrl'     => (new moodle_url('/mod/jitsi/ajax.php'))->out(false),
     'cmid'              => (int)$cm->id,
     'teacherPresentUrl' => $CFG->wwwroot . '/mod/jitsi/teacher_present.php',
-    // Auto-start the recording when the host joins (Jibri records -> finalize.sh ->
-    // Vimeo). Per-academy toggle: theme_nit/jitsi_autorecord (default ON), so an
-    // academy can turn it off site-wide.
-    // Only the lesson's own teacher starts it: a site admin dropping in must not.
-    'autoRecord'        => (get_config('theme_nit', 'jitsi_autorecord') !== '0')
-        && (!$session || (int) $session->teacherid === (int) $USER->id),
+    'autoRecord'        => $autorecord,
 ]);
 
+// Tab switcher (also before joining: the recordings / whiteboard tabs work without the call).
+echo <<<HTML
+<script>
+window.jitsiSwitchTab = function(tab) {
+    ['video', 'whiteboard', 'recordings'].forEach(function(name) {
+        var panel = document.getElementById('panel-' + name);
+        var button = document.getElementById('tab-' + name);
+        if (!panel || !button) {
+            return;
+        }
+        panel.style.display = name === tab ? 'block' : 'none';
+        button.className = name === tab ? 'btn btn-primary btn-sm' : 'btn btn-outline-secondary btn-sm';
+        button.style.borderRadius = '16px';
+    });
+    var frame = tab === 'whiteboard' && document.querySelector('#panel-whiteboard iframe[data-src]');
+    if (frame) {
+        frame.src = frame.getAttribute('data-src');
+        frame.removeAttribute('data-src');
+    }
+};
+</script>
+HTML;
+
+if ($joining) {
 echo <<<HTML
 <script>
 (function() {
@@ -498,6 +550,11 @@ echo <<<HTML
         };
         var _inCall = false;
         api.addEventListener('videoConferenceJoined', function() { _inCall = true; roomPresence(true); });
+        // Heartbeat: the same "joined" every minute while in the call. If it stops (browser
+        // crashed, connection lost) the server closes the stretch at the last one.
+        setInterval(function() {
+            if (_inCall) { roomPresence(true); }
+        }, 60000);
         var leftCall = function() {
             if (_inCall) { _inCall = false; roomPresence(false); }
         };
@@ -578,6 +635,8 @@ echo <<<HTML
         document.getElementById('jitsi-tabs').style.display = 'none';
         document.getElementById('panel-video').style.display = 'none';
         document.getElementById('panel-whiteboard').style.display = 'none';
+        var recPanel = document.getElementById('panel-recordings');
+        if (recPanel) { recPanel.style.display = 'none'; }
         document.getElementById('panel-ended').style.display = 'block';
 
         if (teacherEndedForAll && CFG.isTeacher && !_sessionEndCalled) {
@@ -660,45 +719,9 @@ echo <<<HTML
             });
     }
 
-    /* ── tab switcher ───────────────────────────────────────────────── */
-    window.jitsiSwitchTab = function(tab) {
-        var vp = document.getElementById('panel-video');
-        var wp = document.getElementById('panel-whiteboard');
-        var tv = document.getElementById('tab-video');
-        var tw = document.getElementById('tab-whiteboard');
-        if (tab === 'video') {
-            vp.style.display = 'block'; wp.style.display = 'none';
-            tv.className = 'btn btn-primary btn-sm'; tv.style.borderRadius = '16px';
-            tw.className = 'btn btn-outline-secondary btn-sm'; tw.style.borderRadius = '16px';
-        } else {
-            vp.style.display = 'none'; wp.style.display = 'block';
-            tv.className = 'btn btn-outline-secondary btn-sm'; tv.style.borderRadius = '16px';
-            tw.className = 'btn btn-primary btn-sm'; tw.style.borderRadius = '16px';
-        }
-    };
 })();
 </script>
 HTML;
-
-// Show recordings below the conference:
-// - If there's a linked session: teacher always sees them; students see after session window ends.
-// - If standalone (no session): always show if any recordings exist.
-if ($session) {
-    $show_recs = $is_teacher;
-    if (!$is_teacher) {
-        $now        = time();
-        $open_until = $session->start_time + ($session->duration * 60);
-        $show_recs  = ($now > $open_until);
-    }
-    if ($show_recs) {
-        jitsi_print_recordings($session, $context, $is_teacher, $cm->id);
-    }
-} else {
-    // Standalone room — show recordings if any exist for this cmid.
-    $has_recs = $DB->record_exists('academy_session_recordings', ['cmid' => $cm->id]);
-    if ($has_recs) {
-        jitsi_print_recordings(null, $context, $is_teacher, $cm->id);
-    }
 }
 
 echo $OUTPUT->footer();
@@ -706,7 +729,7 @@ echo $OUTPUT->footer();
 // -------------------------------------------------------------------------
 // Helper: render this activity's recordings, played from VdoCipher.
 // -------------------------------------------------------------------------
-function jitsi_print_recordings($session, $context, $is_teacher, $cmid = null) {
+function jitsi_print_recordings($session, $context, $is_teacher, $cmid = null, $heading = true) {
     global $DB, $OUTPUT, $USER, $cm;
 
     $cmid = $cmid ?: ($cm->id ?? 0);
@@ -725,8 +748,10 @@ function jitsi_print_recordings($session, $context, $is_teacher, $cmid = null) {
         "($where) AND vimeo_videoid IS NOT NULL AND vimeo_videoid <> ''",
         $params, 'timecreated DESC');
 
-    echo '<div class="jitsi-recordings" style="margin-top:24px;">';
-    echo $OUTPUT->heading(get_string('recordings', 'jitsi'), 4);
+    echo '<div class="jitsi-recordings" style="margin-top:' . ($heading ? '24px' : '0') . ';">';
+    if ($heading) {
+        echo $OUTPUT->heading(get_string('recordings', 'jitsi'), 4);
+    }
 
     if (!$rows) {
         echo '<p class="text-muted">' . get_string('norecordings', 'jitsi') . '</p></div>';

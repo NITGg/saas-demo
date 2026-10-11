@@ -43,4 +43,5 @@ $payload = $record->get('status') === lesson::STATUS_IN_PROGRESS
 if (!$payload || empty($payload['join_url'])) {
     redirect($back, get_string('err_roomnotready', 'local_nit_lessons'), null, \core\output\notification::NOTIFY_WARNING);
 }
-redirect(new moodle_url($payload['join_url']));
+// The lesson card's "Join" is the user's choice already: straight into the call (join=1).
+redirect(new moodle_url($payload['join_url'], ['join' => 1]));

@@ -67,6 +67,45 @@ function jitsi_teacher_names($cm, $session): array {
 }
 
 /**
+ * Does the room page show its "Session recordings" tab? The host always; a student of a
+ * linked session once it is over (local_academysessions\recordings::visible_to_students()),
+ * of a standalone room always.
+ *
+ * @param bool $ishost
+ * @param stdClass|null $session the linked live session
+ * @return bool
+ */
+function jitsi_show_recordings_tab(bool $ishost, $session): bool {
+    if ($ishost || !class_exists('\local_academysessions\recordings')) {
+        return true;
+    }
+    return \local_academysessions\recordings::visible_to_students($session ?: null);
+}
+
+/**
+ * The step before the call (view.php without join=1): opening the activity only shows the
+ * room, so someone browsing the course never lands in the meeting or starts its recording.
+ *
+ * @param cm_info|stdClass $cm
+ * @param bool $autorecord the recording starts when this user joins
+ * @return string HTML
+ */
+function jitsi_prejoin_html($cm, bool $autorecord): string {
+    $text = get_string('prejoin_text', 'jitsi');
+    if ($autorecord) {
+        $text .= ' ' . get_string('prejoin_autorecord', 'jitsi');
+    }
+    return html_writer::div(
+        html_writer::div(get_string('prejoin_title', 'jitsi'), '', ['style' => 'font-size:20px;font-weight:600;'])
+        . html_writer::div($text, '', ['style' => 'max-width:480px;opacity:.85;'])
+        . html_writer::link(new moodle_url('/mod/jitsi/view.php', ['id' => $cm->id, 'join' => 1]),
+            get_string('joinsession', 'jitsi'),
+            ['class' => 'btn btn-primary btn-lg', 'style' => 'border-radius:24px;padding:10px 36px;']),
+        '', ['id' => 'jitsi-prejoin', 'style' => 'height:100%;display:flex;flex-direction:column;align-items:center;'
+            . 'justify-content:center;gap:16px;text-align:center;padding:24px;background:#1b1f24;color:#fff;']);
+}
+
+/**
  * The Jitsi live-session activity is a Professional-tier feature. Returns true when
  * the academy's licence includes 'jitsi' (local_license already defines this feature
  * and grants it to the professional tier; has_feature() is true when enforcement is

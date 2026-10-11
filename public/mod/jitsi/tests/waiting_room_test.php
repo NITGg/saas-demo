@@ -86,10 +86,49 @@ final class waiting_room_test extends \advanced_testcase {
         $this->assertSame(access::WAITING, $this->check($this->student)->code);
     }
 
-    public function test_a_host_stretch_left_open_for_hours_does_not_count(): void {
-        roomlog::joined((int) $this->jitsi->id, (int) $this->teacher->id, true, time() - roomlog::HOST_STALE - 60);
-        $this->assertFalse(roomlog::host_in((int) $this->jitsi->id));
+    public function test_a_host_whose_heartbeat_stopped_does_not_count(): void {
+        $id = (int) $this->jitsi->id;
+        $t = time();
+        // Joined 10 minutes ago, heartbeats until 4 minutes ago, then nothing (app killed).
+        roomlog::joined($id, (int) $this->teacher->id, true, $t - 600);
+        roomlog::joined($id, (int) $this->teacher->id, true, $t - 240);
+        $this->assertFalse(roomlog::host_in($id, $t));
         $this->assertSame(access::WAITING, $this->check($this->student)->code);
+
+        // A fresh heartbeat brings them back.
+        roomlog::joined($id, (int) $this->teacher->id, true, $t);
+        $this->assertTrue(roomlog::host_in($id, $t));
+    }
+
+    public function test_stretches_without_heartbeat_are_closed_at_the_last_one(): void {
+        global $DB;
+        $id = (int) $this->jitsi->id;
+        $t = time();
+        roomlog::joined($id, (int) $this->student->id, false, $t - 900);
+        roomlog::joined($id, (int) $this->student->id, false, $t - 300);   // Last heartbeat.
+        roomlog::joined($id, (int) $this->teacher->id, true, $t - 60);     // Still beating.
+
+        $this->assertSame(1, roomlog::close_stale($t));
+        $this->assertEquals($t - 300, $DB->get_field('jitsi_presence', 'left_at', ['jitsiid' => $id, 'userid' => $this->student->id]));
+        $this->assertNull($DB->get_field('jitsi_presence', 'left_at', ['jitsiid' => $id, 'userid' => $this->teacher->id]));
+        // One stretch per person: the heartbeats did not open new ones.
+        $this->assertSame(1, $DB->count_records('jitsi_presence', ['jitsiid' => $id, 'userid' => $this->student->id]));
+    }
+
+    public function test_a_lesson_teacher_gone_silent_closes_the_student_gate(): void {
+        global $DB;
+        $jitsi = $this->getDataGenerator()->create_module('jitsi', ['course' => $this->course->id]);
+        $sid = (int) \local_academysessions\session_manager::create_session($this->course->id, $this->teacher->id, 'Live',
+            time() - 600, [$this->student->id], '', 50, null, $jitsi->id);
+        \local_academysessions\session_manager::start_session($sid);
+        presence::set(get_coursemodule_from_id('jitsi', $jitsi->cmid), (int) $this->teacher->id, true);
+        $t = time();
+        roomlog::joined((int) $jitsi->id, (int) $this->teacher->id, true, $t - 400);
+
+        roomlog::close_stale($t);
+        $session = $DB->get_record('academy_live_sessions', ['id' => $sid]);
+        $this->assertNull($session->teacher_joined_at);
+        $this->assertEquals($t - 400, $session->teacher_last_leave);
     }
 
     public function test_a_student_in_the_call_does_not_open_the_room(): void {

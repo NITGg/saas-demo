@@ -43,6 +43,7 @@ $string['lobby_enabled_help']    = 'When on, students can open the room only whi
 
 // The room's attendance log.
 $string['attendancelog'] = 'Attendance log';
+$string['task_closestalepresence'] = 'Close room attendance of people who left without saying so';
 $string['log_day'] = 'Day';
 $string['log_download'] = 'Download CSV';
 $string['log_empty'] = 'Nobody has been in this room yet.';
@@ -60,3 +61,9 @@ $string['log_minutes'] = 'Minutes';
 $string['log_inside'] = 'In the call';
 $string['log_stillin'] = 'still in';
 $string['log_summary'] = 'First in {$a->first} · {$a->visits}× · {$a->minutes} min';
+
+// The step before entering the room (view.php without join=1).
+$string['joinsession'] = 'Join the session';
+$string['prejoin_title'] = 'The session room is ready';
+$string['prejoin_text'] = 'You enter the room, and your camera and microphone are used, only after you press "Join the session".';
+$string['prejoin_autorecord'] = 'The session recording starts automatically when you join.';

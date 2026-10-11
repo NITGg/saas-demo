@@ -43,6 +43,7 @@ $string['lobby_enabled_help']    = 'عند التفعيل، لا يستطيع ا
 
 // سجل حضور الغرفة.
 $string['attendancelog'] = 'سجل الحضور';
+$string['task_closestalepresence'] = 'إغلاق حضور من غادر الغرفة دون إشعار';
 $string['log_day'] = 'اليوم';
 $string['log_download'] = 'تنزيل CSV';
 $string['log_empty'] = 'لم يدخل أحد هذه الغرفة بعد.';
@@ -60,3 +61,9 @@ $string['log_minutes'] = 'الدقائق';
 $string['log_inside'] = 'في الحصة';
 $string['log_stillin'] = 'ما زال بالداخل';
 $string['log_summary'] = 'أول دخول {$a->first} · دخل {$a->visits} مرة · {$a->minutes} دقيقة';
+
+// خطوة ما قبل دخول الغرفة (view.php بدون join=1).
+$string['joinsession'] = 'انضم إلى الجلسة';
+$string['prejoin_title'] = 'غرفة الجلسة جاهزة';
+$string['prejoin_text'] = 'لن تدخل الغرفة ولن تُستخدم الكاميرا أو الميكروفون إلا بعد الضغط على "انضم إلى الجلسة".';
+$string['prejoin_autorecord'] = 'يبدأ تسجيل الجلسة تلقائياً بعد دخولك.';

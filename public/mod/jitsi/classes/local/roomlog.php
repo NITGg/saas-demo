@@ -23,9 +23,12 @@ defined('MOODLE_INTERNAL') || die();
  * left), for every room (course rooms and lesson rooms), shown on the room's
  * "Attendance log" page (attendance.php).
  *
- * The web page reports "joined" when Jitsi says the user is in the conference and
- * "left" on hang-up / leaving the page; the app does the same through the API. A
- * stretch still open when the next "joined" comes is kept (a second tab / repeated ping).
+ * The web page and the app report "joined" when Jitsi says the user is in the
+ * conference, then the same call again every HEARTBEAT seconds while they stay, and
+ * "left" on hang-up / leaving the page. A stretch whose heartbeat stops (app killed,
+ * signal lost, browser crashed) is closed by the close_stale_presence task at its last
+ * heartbeat, so it never stays open for ever. A "joined" while a stretch is open is
+ * that heartbeat (a second tab / repeated ping does not open another stretch).
  *
  * @package    mod_jitsi
  * @copyright  2026 NIT
@@ -33,8 +36,14 @@ defined('MOODLE_INTERNAL') || die();
  */
 class roomlog {
 
+    /** @var int seconds between two heartbeats from a client in the call. */
+    const HEARTBEAT = 60;
+    /** @var int an open stretch with no heartbeat for this long is gone (3 heartbeats missed). */
+    const STALE_AFTER = 180;
+
     /**
-     * Someone came into the call (idempotent while their stretch is open).
+     * Someone came into the call, or is still in it (heartbeat): opens a stretch, or
+     * keeps the open one alive.
      *
      * @param int $jitsiid
      * @param int $userid
@@ -43,15 +52,19 @@ class roomlog {
      */
     public static function joined(int $jitsiid, int $userid, bool $host, ?int $now = null): void {
         global $DB;
-        if ($DB->record_exists_select('jitsi_presence', 'jitsiid = :j AND userid = :u AND left_at IS NULL',
-                ['j' => $jitsiid, 'u' => $userid])) {
+        $now = $now ?? time();
+        $open = $DB->get_records_select('jitsi_presence', 'jitsiid = :j AND userid = :u AND left_at IS NULL',
+            ['j' => $jitsiid, 'u' => $userid], 'id DESC', 'id', 0, 1);
+        if ($open) {
+            $DB->set_field('jitsi_presence', 'last_seen', $now, ['id' => reset($open)->id]);
             return;
         }
         $DB->insert_record('jitsi_presence', (object) [
             'jitsiid' => $jitsiid,
             'userid' => $userid,
             'host' => $host ? 1 : 0,
-            'joined_at' => $now ?? time(),
+            'joined_at' => $now,
+            'last_seen' => $now,
             'left_at' => null,
         ]);
     }
@@ -68,16 +81,15 @@ class roomlog {
         $now = $now ?? time();
         foreach ($DB->get_records_select('jitsi_presence', 'jitsiid = :j AND userid = :u AND left_at IS NULL',
                 ['j' => $jitsiid, 'u' => $userid]) as $p) {
-            $DB->set_field('jitsi_presence', 'left_at', max($now, (int) $p->joined_at), ['id' => $p->id]);
+            $at = max($now, (int) $p->joined_at);
+            $DB->update_record('jitsi_presence', (object) ['id' => $p->id, 'left_at' => $at, 'last_seen' => $at]);
         }
     }
 
-    /** @var int an open host stretch older than this is not trusted (a crashed browser never says "left"). */
-    const HOST_STALE = 6 * HOURSECS;
-
     /**
-     * Whether a host (teacher, manager, admin) is in the room's call now: a course room
-     * with a waiting room only lets students in while one is, so someone can let them in.
+     * Whether a host (teacher, manager, admin) is in the room's call now (an open stretch
+     * with a recent heartbeat): a course room with a waiting room only lets students in
+     * while one is, so someone can let them in.
      *
      * @param int $jitsiid
      * @param int|null $now
@@ -87,8 +99,37 @@ class roomlog {
         global $DB;
         $now = $now ?? time();
         return $DB->record_exists_select('jitsi_presence',
-            'jitsiid = :j AND host = 1 AND left_at IS NULL AND joined_at > :since',
-            ['j' => $jitsiid, 'since' => $now - self::HOST_STALE]);
+            'jitsiid = :j AND host = 1 AND left_at IS NULL AND last_seen > :since',
+            ['j' => $jitsiid, 'since' => $now - self::STALE_AFTER]);
+    }
+
+    /**
+     * Close the stretches whose heartbeat stopped, at their last heartbeat, and tell the
+     * live session they belong to (the teacher's gate, attendance) that those people left.
+     *
+     * @param int|null $now
+     * @return int how many stretches were closed
+     */
+    public static function close_stale(?int $now = null): int {
+        global $DB;
+        $now = $now ?? time();
+        $stale = $DB->get_records_select('jitsi_presence', 'left_at IS NULL AND last_seen < :since',
+            ['since' => $now - self::STALE_AFTER]);
+        foreach ($stale as $p) {
+            $at = max((int) $p->last_seen, (int) $p->joined_at);
+            $DB->set_field('jitsi_presence', 'left_at', $at, ['id' => $p->id]);
+            $session = $DB->get_record('academy_live_sessions', ['jitsiid' => $p->jitsiid]);
+            if (!$session || $session->status === 'ended' || !class_exists('\local_academysessions\session_manager')) {
+                continue;
+            }
+            if ((int) $session->teacherid === (int) $p->userid && !empty($session->teacher_joined_at)) {
+                // The teacher is gone: close the student gate, as their "left" would have.
+                $DB->update_record('academy_live_sessions', (object) ['id' => $session->id,
+                    'teacher_joined_at' => null, 'teacher_last_leave' => $at]);
+            }
+            \local_academysessions\session_manager::record_leave((int) $session->id, (int) $p->userid, $at);
+        }
+        return count($stale);
     }
 
     /**

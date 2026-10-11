@@ -87,5 +87,17 @@ function xmldb_jitsi_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2026101300, 'jitsi');
     }
 
+    if ($oldversion < 2026101400) {
+        // Heartbeat: clients repeat "joined" every minute while in the call; a stretch that
+        // goes quiet (app killed, signal lost) is closed at its last heartbeat by a task.
+        $table = new xmldb_table('jitsi_presence');
+        $field = new xmldb_field('last_seen', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'joined_at');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        $DB->execute('UPDATE {jitsi_presence} SET last_seen = COALESCE(left_at, joined_at)');
+        upgrade_mod_savepoint(true, 2026101400, 'jitsi');
+    }
+
     return true;
 }
