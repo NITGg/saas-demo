@@ -1,8 +1,10 @@
 
 // ── NIT academies: the recording shows the teacher only ─────────────────────
 // Runs in Jibri's window only (Jibri opens the meeting with config.iAmRecorder=true in
-// the URL) and only in NIT academy rooms (nit_<slug>_<cmid>_<hash>). Everyone else's
-// screen, and the old academy's rooms (academy_jitsi_*), are untouched.
+// the URL) and only in NIT academy course rooms (nit_<slug>_<cmid>_<8-char hash>).
+// Everyone else's screen, the old academy's rooms (academy_jitsi_*) and private lesson
+// rooms (a 12-char hash, see mod/jitsi/lib.php jitsi_room_name(): one teacher and one
+// student, recorded as they are, screen shares included) are untouched.
 // In the recording: no thumbnails, no tile view, no notifications, and the main video is
 // the teacher (the room's moderator), or the teacher's screen while they share it. The
 // audio is everyone's.
@@ -16,7 +18,8 @@
     try {
         var hash = String(window.location.hash || '');
         var room = String(window.location.pathname.split('/').pop() || '').toLowerCase();
-        if (hash.indexOf('config.iAmRecorder=true') === -1 || room.indexOf('nit_') !== 0) {
+        if (hash.indexOf('config.iAmRecorder=true') === -1 || room.indexOf('nit_') !== 0
+                || room.split('_').pop().length >= 12) {
             return;
         }
         config.filmstrip = Object.assign({}, config.filmstrip, { disabled: true, disableStageFilmstrip: true });

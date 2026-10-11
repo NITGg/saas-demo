@@ -60,6 +60,11 @@ $PAGE->set_url('/mod/jitsi/view.php', ['id' => $cm->id]);
 $PAGE->set_context($context);
 $PAGE->set_title(format_string($jitsi->name));
 $PAGE->set_heading(format_string($course->fullname));
+// A lesson room is reached from its lesson card; the lessons course behind it (one room
+// per lesson) is not a course to browse, so no course index of every lesson room.
+if (jitsi_is_lesson_room($cm)) {
+    $PAGE->set_show_course_index(false);
+}
 
 if ($decision->code === \mod_jitsi\local\access::NOT_ALLOWED) {
     echo $OUTPUT->header();

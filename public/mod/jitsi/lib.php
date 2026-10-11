@@ -7,8 +7,14 @@ defined('MOODLE_INTERNAL') || die();
  * and cm/jitsi ids repeat across academies — so two tenants could land in the SAME
  * room. Salt the hash with this site's wwwroot so rooms are unique per academy.
  *
+ * A lesson room (jitsi_is_lesson_room()) gets a 12-character hash instead of 8: the one
+ * thing the Jitsi server sees that tells it apart. The recorder script on the server
+ * (server/jitsi/recorder-teacher-only.js) keeps a course room's recording on the teacher
+ * only, and records a lesson (one teacher, one student) as it is, screen shares included.
+ * The Jibri finalize script accepts any hash length.
+ *
  * @param stdClass $jitsi the jitsi instance row (needs ->id)
- * @param cm_info|stdClass $cm the course module (needs ->id)
+ * @param cm_info|stdClass $cm the course module (needs ->id, ->course)
  * @return string
  */
 function jitsi_room_name($jitsi, $cm): string {
@@ -24,8 +30,20 @@ function jitsi_room_name($jitsi, $cm): string {
         $slug = explode('.', $host)[0];
     }
     $slug = preg_replace('/[^a-z0-9-]/', '', strtolower($slug)) ?: 'academy';
-    $hash = substr(md5($host . '|' . $jitsi->id . '|' . $cm->id), 0, 8);
+    $hash = substr(md5($host . '|' . $jitsi->id . '|' . $cm->id), 0, jitsi_is_lesson_room($cm) ? 12 : 8);
     return 'nit_' . $slug . '_' . $cm->id . '_' . $hash;
+}
+
+/**
+ * Is this room a private lesson's (local_nit_lessons)? Those rooms live in the lessons
+ * course (local_nit_lessons/lessons_courseid), one per lesson, opened from the lesson card.
+ *
+ * @param cm_info|stdClass $cm the course module (needs ->course)
+ * @return bool
+ */
+function jitsi_is_lesson_room($cm): bool {
+    $courseid = (int) get_config('local_nit_lessons', 'lessons_courseid');
+    return $courseid > 0 && (int) $cm->course === $courseid;
 }
 
 /**

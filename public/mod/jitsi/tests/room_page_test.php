@@ -31,6 +31,8 @@ require_once($CFG->dirroot . '/mod/jitsi/lib.php');
  * @covers     ::jitsi_prejoin_html
  * @covers     ::jitsi_show_recordings_tab
  * @covers     ::jitsi_closed_html
+ * @covers     ::jitsi_room_name
+ * @covers     ::jitsi_is_lesson_room
  */
 final class room_page_test extends \advanced_testcase {
 
@@ -72,6 +74,25 @@ final class room_page_test extends \advanced_testcase {
         $this->assertStringContainsString('Available until 1 Jan', jitsi_closed_html($hidden, $cm));
         $cm->availableinfo = '';
         $this->assertStringContainsString(get_string('sessionended', 'jitsi'), jitsi_closed_html($hidden, $cm));
+    }
+
+    public function test_lesson_room_name_tells_the_recorder(): void {
+        $this->resetAfterTest();
+        set_config('lessons_courseid', 25, 'local_nit_lessons');
+        $jitsi = (object) ['id' => 7];
+        $lesson = (object) ['id' => 69, 'course' => 25];
+        $courseroom = (object) ['id' => 70, 'course' => 4];
+
+        $this->assertTrue(jitsi_is_lesson_room($lesson));
+        $this->assertFalse(jitsi_is_lesson_room($courseroom));
+        // nit_<slug>_<cmid>_<hash>: 12 hex for a lesson, 8 for a course room (the server's
+        // recorder script keeps only a course room's recording on the teacher).
+        $this->assertMatchesRegularExpression('/^nit_[a-z0-9-]+_69_[a-f0-9]{12}$/', jitsi_room_name($jitsi, $lesson));
+        $this->assertMatchesRegularExpression('/^nit_[a-z0-9-]+_70_[a-f0-9]{8}$/', jitsi_room_name($jitsi, $courseroom));
+
+        // No lessons course set: every room is a course room.
+        set_config('lessons_courseid', 0, 'local_nit_lessons');
+        $this->assertFalse(jitsi_is_lesson_room($lesson));
     }
 
     public function test_recordings_tab_visibility(): void {
