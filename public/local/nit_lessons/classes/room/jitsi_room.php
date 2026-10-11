@@ -88,8 +88,8 @@ class jitsi_room implements room_interface {
             'cmidnumber' => '',
             'name' => \core_text::substr($title, 0, 255),
             'introeditor' => ['text' => '', 'format' => FORMAT_HTML, 'itemid' => 0],
-            // No Jitsi lobby: Moodle already lets in only the teacher, the student (once the
-            // teacher is in) and site admins; a lobby made each of them knock (mod_jitsi view.php).
+            // The activity's own waiting-room setting stays off: a lesson room always has one
+            // (mod_jitsi access::waiting_room()), the student asks and the teacher lets them in.
             'lobby_enabled' => 0,
         ];
         $created = self::create_module_elevated($moduleinfo);

@@ -170,14 +170,19 @@ class access {
 
     /**
      * Whether a room uses a waiting room (Jitsi lobby): a course room (not linked to a live
-     * session) with its "students wait for the teacher" setting on. Lesson rooms do not:
+     * session) with its "students wait for the teacher" setting on, and every private lesson
+     * room (the student asks and the teacher lets them in). Other live-session rooms do not:
      * Moodle already lets in only the session's teacher, its invited students and admins.
      *
-     * @param \cm_info|\stdClass $cm the room (->instance)
+     * @param \cm_info|\stdClass $cm the room (->instance, ->course)
      * @return bool
      */
     public static function waiting_room($cm): bool {
-        global $DB;
+        global $CFG, $DB;
+        require_once($CFG->dirroot . '/mod/jitsi/lib.php');
+        if (jitsi_is_lesson_room($cm)) {
+            return true;
+        }
         if (presence::linked_session($cm)) {
             return false;
         }

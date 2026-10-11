@@ -9,7 +9,7 @@ defined('MOODLE_INTERNAL') || die();
  *
  * A lesson room (jitsi_is_lesson_room()) gets a 12-character hash instead of 8: the one
  * thing the Jitsi server sees that tells it apart. The recorder script on the server
- * (server/jitsi/recorder-teacher-only.js) keeps a course room's recording on the teacher
+ * (server/jitsi/nit-rooms.js) keeps a course room's recording on the teacher
  * only, and records a lesson (one teacher, one student) as it is, screen shares included.
  * The Jibri finalize script accepts any hash length.
  *
@@ -32,6 +32,58 @@ function jitsi_room_name($jitsi, $cm): string {
     $slug = preg_replace('/[^a-z0-9-]/', '', strtolower($slug)) ?: 'academy';
     $hash = substr(md5($host . '|' . $jitsi->id . '|' . $cm->id), 0, jitsi_is_lesson_room($cm) ? 12 : 8);
     return 'nit_' . $slug . '_' . $cm->id . '_' . $hash;
+}
+
+/**
+ * One branded Jitsi icon (branding/icons/<Jitsi icon name>.svg), or null.
+ *
+ * @param string $name Jitsi's icon name, e.g. IconMic
+ * @return string|null the file path
+ */
+function jitsi_branding_icon_file(string $name): ?string {
+    if (!preg_match('/^Icon[A-Za-z0-9]+$/', $name)) {
+        return null;
+    }
+    $file = __DIR__ . '/branding/icons/' . $name . '.svg';
+    return is_readable($file) ? $file : null;
+}
+
+/**
+ * The academy's Jitsi branding (branding.php): Jitsi's dynamic-branding JSON. The colours
+ * are the site's (the blue of its header and buttons, its navy), the logo is the site's,
+ * every icon in branding/icons replaces Jitsi's icon of the same name.
+ *
+ * @param moodle_url|null $logo the site's logo
+ * @return array
+ */
+function jitsi_branding_data(?moodle_url $logo): array {
+    global $CFG;
+    $icons = [];
+    foreach (glob(__DIR__ . '/branding/icons/Icon*.svg') ?: [] as $file) {
+        $name = basename($file, '.svg');
+        $icons[$name] = (new moodle_url('/mod/jitsi/branding.php', ['icon' => $name]))->out(false);
+    }
+    $data = [
+        'backgroundColor' => '#0E335D',
+        'avatarBackgrounds' => ['#0080FF', '#0861C5', '#0E335D', '#0694FF'],
+        'logoClickUrl' => $CFG->wwwroot,
+        'customIcons' => $icons,
+        'customTheme' => [
+            'palette' => [
+                'action01' => '#0080FF',
+                'action01Hover' => '#0694FF',
+                'action01Active' => '#0861C5',
+                'focus01' => '#60FEFF',
+                'link01' => '#60FEFF',
+                'link01Hover' => '#B5ECFF',
+                'link01Active' => '#0694FF',
+            ],
+        ],
+    ];
+    if ($logo) {
+        $data['logoImageUrl'] = $logo->out(false);
+    }
+    return $data;
 }
 
 /**

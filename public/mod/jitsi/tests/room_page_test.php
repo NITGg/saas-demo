@@ -33,6 +33,7 @@ require_once($CFG->dirroot . '/mod/jitsi/lib.php');
  * @covers     ::jitsi_closed_html
  * @covers     ::jitsi_room_name
  * @covers     ::jitsi_is_lesson_room
+ * @covers     \mod_jitsi\local\access::waiting_room
  */
 final class room_page_test extends \advanced_testcase {
 
@@ -93,6 +94,27 @@ final class room_page_test extends \advanced_testcase {
         // No lessons course set: every room is a course room.
         set_config('lessons_courseid', 0, 'local_nit_lessons');
         $this->assertFalse(jitsi_is_lesson_room($lesson));
+    }
+
+    public function test_lesson_rooms_have_a_waiting_room(): void {
+        $this->resetAfterTest();
+        $gen = $this->getDataGenerator();
+        $teacher = $gen->create_user();
+        $student = $gen->create_user();
+        // A live session's room: in the lessons course (a private lesson) and elsewhere.
+        $room = function(int $courseid) use ($gen, $teacher, $student): \cm_info {
+            $jitsi = $gen->create_module('jitsi', ['course' => $courseid, 'lobby_enabled' => 0]);
+            \local_academysessions\session_manager::create_session($courseid, $teacher->id, 'Live', time(),
+                [$student->id], '', 60, null, $jitsi->id);
+            return get_fast_modinfo($courseid)->get_cm($jitsi->cmid);
+        };
+        $lessons = $gen->create_course();
+        set_config('lessons_courseid', $lessons->id, 'local_nit_lessons');
+
+        // The student asks, the teacher lets them in (the activity's own setting is off).
+        $this->assertTrue(\mod_jitsi\local\access::waiting_room($room((int) $lessons->id)));
+        // Other live sessions: Moodle's gate only, no lobby.
+        $this->assertFalse(\mod_jitsi\local\access::waiting_room($room((int) $gen->create_course()->id)));
     }
 
     public function test_recordings_tab_visibility(): void {
