@@ -30,6 +30,7 @@ require_once($CFG->dirroot . '/mod/jitsi/lib.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     ::jitsi_prejoin_html
  * @covers     ::jitsi_show_recordings_tab
+ * @covers     ::jitsi_closed_html
  */
 final class room_page_test extends \advanced_testcase {
 
@@ -46,6 +47,23 @@ final class room_page_test extends \advanced_testcase {
     public function test_prejoin_warns_the_host_about_the_recording(): void {
         $html = jitsi_prejoin_html((object) ['id' => 42], true);
         $this->assertStringContainsString(get_string('prejoin_autorecord', 'jitsi'), $html);
+    }
+
+    public function test_closed_room_says_why(): void {
+        $cm = (object) ['id' => 42, 'availableinfo' => ''];
+        $waiting = (object) ['code' => \mod_jitsi\local\access::WAITING,
+            'message' => get_string('waitingforteacher', 'jitsi')];
+        $html = jitsi_closed_html($waiting, $cm);
+        $this->assertStringContainsString('data-code="waitingforteacher"', $html);
+        $this->assertStringContainsString(get_string('waitingforteacher', 'jitsi'), $html);
+        $this->assertStringNotContainsString('join=1', $html);
+
+        // A Moodle restriction shows its own text (or "ended" when it has none).
+        $hidden = (object) ['code' => \mod_jitsi\local\access::UNAVAILABLE, 'message' => 'x'];
+        $cm->availableinfo = 'Available until 1 Jan';
+        $this->assertStringContainsString('Available until 1 Jan', jitsi_closed_html($hidden, $cm));
+        $cm->availableinfo = '';
+        $this->assertStringContainsString(get_string('sessionended', 'jitsi'), jitsi_closed_html($hidden, $cm));
     }
 
     public function test_recordings_tab_visibility(): void {

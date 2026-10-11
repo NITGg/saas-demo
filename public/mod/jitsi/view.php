@@ -61,39 +61,21 @@ $PAGE->set_context($context);
 $PAGE->set_title(format_string($jitsi->name));
 $PAGE->set_heading(format_string($course->fullname));
 
-if (!$decision->allowed) {
+if ($decision->code === \mod_jitsi\local\access::NOT_ALLOWED) {
     echo $OUTPUT->header();
     echo $OUTPUT->heading(format_string($jitsi->name));
-    switch ($decision->code) {
-        case \mod_jitsi\local\access::UNAVAILABLE:
-            // Moodle availability ("available until" passed etc.).
-            echo $OUTPUT->notification($cm->availableinfo ?: get_string('sessionended', 'jitsi'), 'warning');
-            jitsi_print_recordings($session, $context, $is_teacher, $cm->id);
-            break;
-        case \mod_jitsi\local\access::WAITING:
-            // The waiting page reloads, so the student drops into the room the moment
-            // the teacher arrives (teacher_present.php stamps teacher_joined_at).
-            echo html_writer::tag('div',
-                $OUTPUT->notification($decision->message, 'info'), ['id' => 'jitsi-waiting']);
-            echo html_writer::script('setTimeout(function(){ location.reload(); }, 5000);');
-            break;
-        case \mod_jitsi\local\access::ENDED:
-            echo $OUTPUT->notification($decision->message, 'info');
-            jitsi_print_recordings($session, $context, $is_teacher, $cm->id);
-            break;
-        case \mod_jitsi\local\access::NOT_ALLOWED:
-            echo $OUTPUT->notification($decision->message, 'warning');
-            break;
-        default:
-            echo $OUTPUT->notification($decision->message, 'info');
-    }
+    echo $OUTPUT->notification($decision->message, 'warning');
     echo $OUTPUT->footer();
     exit;
 }
 
+// Closed for now (waiting for the teacher, not open yet, ended, unavailable): the page
+// keeps its tabs (recordings, whiteboard...) and the video tab says why there is no call.
+$closed = !$decision->allowed;
+
 // Opening the activity only shows the room; the call starts after "Join" (join=1), so
 // someone browsing the course never lands in the meeting (nor starts its recording).
-$joining = optional_param('join', 0, PARAM_BOOL);
+$joining = !$closed && optional_param('join', 0, PARAM_BOOL);
 
 // A student who joined: open their attendance row.
 if ($joining) {
@@ -101,8 +83,10 @@ if ($joining) {
 }
 
 // Completion tracking.
-$completion = new completion_info($course);
-$completion->set_module_viewed($cm);
+if (!$closed) {
+    $completion = new completion_info($course);
+    $completion->set_module_viewed($cm);
+}
 
 // -------------------------------------------------------------------------
 // Build Jitsi configuration.
@@ -116,10 +100,11 @@ $jitsi_room = jitsi_room_name($jitsi, $cm);
 $display_name = fullname($USER);
 $user_email   = $USER->email;
 
-// JWT token — tells Jitsi who is moderator.
-$jitsi_jwt = \local_academysessions\jitsi_jwt::generate(
+// JWT token — tells Jitsi who is moderator. Only for someone joining the call (the key
+// is the way into the room: never for a student still waiting outside).
+$jitsi_jwt = $joining ? \local_academysessions\jitsi_jwt::generate(
     $jitsi_room, $display_name, $user_email, $is_teacher
-);
+) : '';
 
 // Map Moodle lang codes to Jitsi / i18n codes.
 $lang_map = [
@@ -222,9 +207,8 @@ if ($show_recs) {
          . get_string('recordings', 'jitsi') . '</button>';
 }
 if ($is_teacher) {
-    echo '<a class="btn btn-outline-secondary btn-sm" style="border-radius:16px;" target="_blank" href="'
-        . (new moodle_url('/mod/jitsi/attendance.php', ['id' => $cm->id]))->out() . '">'
-        . get_string('attendancelog', 'jitsi') . '</a>';
+    echo '<button id="tab-attendance" onclick="jitsiSwitchTab(\'attendance\')" class="btn btn-outline-secondary btn-sm" style="border-radius:16px;">'
+        . get_string('attendancelog', 'jitsi') . '</button>';
     echo '<span class="badge badge-info ml-auto" style="align-self:center;font-size:12px;">'
          . get_string('youarehost', 'jitsi') . '</span>';
     // Recording (Jibri) is not wired in this phase — no Stop Recording button.
@@ -234,7 +218,9 @@ echo '</div>';
 // ── Jitsi External API container (or the "Join" step before it) ───────────
 echo '<div id="panel-video" style="position:relative;width:100%;height:' . ($joining ? '620px' : '360px')
     . ';border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.15);">';
-if (!$joining) {
+if ($closed) {
+    echo jitsi_closed_html($decision, $cm);
+} else if (!$joining) {
     echo jitsi_prejoin_html($cm, $is_teacher && $autorecord);
 }
 echo '<div id="jitsi-container" style="width:100%;height:100%;' . ($joining ? '' : 'display:none;') . '"></div>';
@@ -257,6 +243,16 @@ echo '</div>';
 if ($show_recs) {
     echo '<div id="panel-recordings" style="display:none;">';
     jitsi_print_recordings($session, $context, $is_teacher, $cm->id, false);
+    echo '</div>';
+}
+
+// ── Attendance log panel (the room's hosts) ──────────────────────────────
+// attendance.php in the embedded layout (nitplayer=1), (re)loaded each time the tab opens,
+// so changing the day or downloading the CSV happens inside it and never leaves the call.
+if ($is_teacher) {
+    $attendance_url = new moodle_url('/mod/jitsi/attendance.php', ['id' => $cm->id, 'nitplayer' => 1]);
+    echo '<div id="panel-attendance" style="display:none;width:100%;height:620px;border-radius:8px;overflow:hidden;border:1px solid #e0e0e0;">';
+    echo '<iframe data-reload="' . s($attendance_url->out(false)) . '" style="width:100%;height:100%;border:none;"></iframe>';
     echo '</div>';
 }
 
@@ -297,6 +293,8 @@ $js_config = json_encode([
     'autoAdmit'       => (bool) $is_teacher,
     'hostNames'       => \mod_jitsi\local\access::host_names($cm, $session ?: null),
     'isolateStudents' => (bool) $isolate_students,
+    'awayText'        => get_string('teacheraway', 'jitsi'),
+    'awayKnock'       => get_string('waitingadmit', 'jitsi'),
     'teacherNames'    => $teacher_names,
     'presenceUrl'     => (new moodle_url('/mod/jitsi/ajax.php'))->out(false),
     'cmid'              => (int)$cm->id,
@@ -308,7 +306,7 @@ $js_config = json_encode([
 echo <<<HTML
 <script>
 window.jitsiSwitchTab = function(tab) {
-    ['video', 'whiteboard', 'recordings'].forEach(function(name) {
+    ['video', 'whiteboard', 'recordings', 'attendance'].forEach(function(name) {
         var panel = document.getElementById('panel-' + name);
         var button = document.getElementById('tab-' + name);
         if (!panel || !button) {
@@ -323,9 +321,31 @@ window.jitsiSwitchTab = function(tab) {
         frame.src = frame.getAttribute('data-src');
         frame.removeAttribute('data-src');
     }
+    // The attendance log: fresh each time it opens.
+    var log = tab === 'attendance' && document.querySelector('#panel-attendance iframe');
+    if (log) {
+        log.src = log.getAttribute('data-reload');
+    }
 };
 </script>
 HTML;
+
+// Waiting for the teacher: check again every few seconds, so the student goes on the
+// moment the teacher arrives (into the call if they had pressed "Join"). Not while they
+// are on another tab (a reload would stop the recording they are watching).
+if ($closed && $decision->code === \mod_jitsi\local\access::WAITING) {
+    echo html_writer::script("(function() {
+        var check = function() {
+            var video = document.getElementById('panel-video');
+            if (video && video.style.display !== 'none') {
+                location.reload();
+            } else {
+                setTimeout(check, 5000);
+            }
+        };
+        setTimeout(check, 5000);
+    })();");
+}
 
 if ($joining) {
 echo <<<HTML
@@ -477,6 +497,18 @@ echo <<<HTML
                 return teacher;
             };
             var keepTeacherOnly = function() {
+                // Not in the call yet: still connecting, or knocking in the waiting room
+                // (the teacher has to let them in), so not "the teacher is away".
+                if (!myId) {
+                    if (away) {
+                        away.textContent = CFG.awayKnock;
+                        away.style.display = CFG.lobbyEnabled ? 'flex' : 'none';
+                    }
+                    return;
+                }
+                if (away) {
+                    away.textContent = CFG.awayText;
+                }
                 var teacher = pickTeacher((api.getParticipantsInfo && api.getParticipantsInfo()) || []);
                 if (teacher) {
                     api.pinParticipant(teacher, sharing.indexOf(teacher) !== -1 ? 'desktop' : 'camera');

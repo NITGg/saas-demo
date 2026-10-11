@@ -83,6 +83,25 @@ function jitsi_show_recordings_tab(bool $ishost, $session): bool {
 }
 
 /**
+ * The video tab of a room that is closed for this user right now (waiting for the teacher,
+ * not open yet, ended, or hidden by a Moodle restriction): why there is no call. The rest
+ * of the page (recordings, whiteboard...) stays as usual.
+ *
+ * @param stdClass $decision \mod_jitsi\local\access::check() result (not allowed)
+ * @param cm_info|stdClass $cm
+ * @return string HTML
+ */
+function jitsi_closed_html(stdClass $decision, $cm): string {
+    $message = $decision->code === \mod_jitsi\local\access::UNAVAILABLE
+        ? ($cm->availableinfo ?: get_string('sessionended', 'jitsi'))
+        : $decision->message;
+    return html_writer::div(html_writer::div($message, '', ['style' => 'max-width:520px;font-size:18px;']),
+        '', ['id' => 'jitsi-closed', 'data-code' => $decision->code,
+            'style' => 'height:100%;display:flex;align-items:center;justify-content:center;text-align:center;'
+            . 'padding:24px;background:#1b1f24;color:#fff;']);
+}
+
+/**
  * The step before the call (view.php without join=1): opening the activity only shows the
  * room, so someone browsing the course never lands in the meeting or starts its recording.
  *

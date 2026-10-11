@@ -67,3 +67,4 @@ $string['joinsession'] = 'Join the session';
 $string['prejoin_title'] = 'The session room is ready';
 $string['prejoin_text'] = 'You enter the room, and your camera and microphone are used, only after you press "Join the session".';
 $string['prejoin_autorecord'] = 'The session recording starts automatically when you join.';
+$string['waitingadmit'] = 'You asked to join. Waiting for the teacher to let you in…';
