@@ -24,6 +24,7 @@ sets how many Flex one live lesson costs (§3.7). The
 | 9 | Live-session rooms (Jitsi) | `mod_jitsi_get_session_info` (`jwt` empty until `available`), `/mod/jitsi/api_token.php` (new errorcodes `waitingforteacher`, `jitsinotconfigured`), `join_session` (attendance after the teacher arrives) | **Check**: don't join with an empty `jwt` (§3.5) |
 | 10 | Messaging between students | When the admin turns on "Prevent messaging between students": `core_message_send_instant_messages` (per-message error), `send_messages_to_conversation` / `create_contact_request` (errorcode `studentmessaging_blocked`), `canmessage = false` between two students | **Check**: hide the message box when `canmessage` is `false` (§3.6) |
 | 11 | Flex price per live lesson | `/local/nit_lessons/api.php`: `get_teachers` (+`lesson_flex`), `get_teacher_profile` (+`lesson_flex`), `update_teacher_profile` (+optional `lesson_flex`), every lesson (+`flex_count`), `request_lesson` (new errorcode `notenoughflex`) | **Yes**: show the price, a "Flex per lesson" box for teachers, handle `notenoughflex` (§3.7) |
+| 12 | Push Notifications (Firebase FCM) | Direct Firebase Cloud Messaging (HTTP v1) replaced Airnotifier. FCM token registered via `core_user_add_user_device` | **Yes**: Add Firebase to mobile app and register FCM token on login (§6) |
 
 ---
 
@@ -576,3 +577,85 @@ One report: its filters, number cards, columns and one page of rows.
 | `nopermissions` | the user has no reports (a student) | hide the Reports screen |
 | `reportnotfound` | `report` is unknown, a site-only report, or not available to this user | go back to the list |
 | `missingparam` | `report` not sent | app bug |
+
+---
+
+## 6. Push notifications (Firebase Cloud Messaging — FCM)
+
+The backend now delivers all push notifications directly via **Firebase Cloud Messaging (HTTP v1)** through the `message_fcm` plugin (Airnotifier is retired and disabled).
+
+> **Complete integration guide for the app team:** [`apis/firebase-push-notifications-mobile-guide.md`](apis/firebase-push-notifications-mobile-guide.md)
+
+### 6.1 Setup in the Mobile App
+1. Add Firebase to the project:
+   - **Android**: Add `google-services.json` to `android/app/`.
+   - **iOS**: Add `GoogleService-Info.plist` to `ios/Runner/` (or iOS project root).
+2. Install the Firebase Messaging package (e.g. `firebase_messaging` in Flutter / React Native).
+3. Request notification permissions from the user.
+4. Retrieve the **FCM Registration Token**: `FirebaseMessaging.instance.getToken()`.
+
+### 6.2 Registering the Device Token on Login
+
+Immediately after the user successfully logs in (or whenever the FCM token refreshes via `onTokenRefresh`), call the standard Moodle Web Service function:
+
+**`POST /webservice/rest/server.php?wstoken=<user_token>&wsfunction=core_user_add_user_device&moodlewsrestformat=json`**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `appid` | string | yes | App Package Name / Bundle ID, e.g. `com.bassthalk.app` |
+| `name` | string | yes | Device display name, e.g. `Samsung Galaxy S23` or `iPhone 15 Pro` |
+| `model` | string | yes | Device hardware model, e.g. `SM-S911B` or `iPhone16,1` |
+| `platform` | string | yes | Operating system: `Android` or `iOS` |
+| `version` | string | yes | OS version string, e.g. `14` or `17.4` |
+| `pushid` | string | yes | **The FCM Registration Token** obtained from Firebase Messaging |
+| `uuid` | string | yes | Unique device/install UUID (matches the install `deviceid` from §4) |
+
+**Success response:**
+```json
+[]
+```
+*(Empty array of warnings indicates success).*
+
+### 6.3 Removing the Device on Logout
+
+When the user logs out from the app, call:
+
+**`POST /webservice/rest/server.php?wstoken=<user_token>&wsfunction=core_user_remove_user_device&moodlewsrestformat=json`**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `uuid` | string | yes | The unique device/install UUID |
+| `appid` | string | no | Optional. The app id / package name |
+
+**Success response:**
+```json
+{
+  "removed": true,
+  "warnings": []
+}
+```
+
+### 6.4 Notification Payload Format (What the app receives)
+
+Notifications sent by the server arrive with both standard visible notification fields and custom metadata in `data`:
+
+```json
+{
+  "notification": {
+    "title": "إشعار جديد",
+    "body": "تمت إضافة واجب جديد في كورس الفيزياء."
+  },
+  "data": {
+    "notification_id": "1845",
+    "eventtype": "assign_notification",
+    "component": "mod_assign",
+    "contexturl": "http://localhost:8082/mod/assign/view.php?id=45",
+    "timecreated": "1728659100",
+    "userfromid": "3",
+    "userfromname": "أحمد محمود"
+  }
+}
+```
+
+- **Android channel:** `moodle_notifications` (priority: `HIGH`, click_action: `FLUTTER_NOTIFICATION_CLICK`).
+- **iOS APNs:** High priority (`10`), sound: `default`, badge: `1`.

@@ -1,6 +1,9 @@
 # ===== Moodle: secrets & environment (CRITICAL) =====
 # config.php holds DB credentials + environment paths. config-dist.php is the template.
 /config.php
+# Firebase Service Account credentials — never commit
+/firebase-service-account.json
+*firebase*.json
 # Moodle data directory (uploads, cache, sessions) — never commit
 moodledata/
 
