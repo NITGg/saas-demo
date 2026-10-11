@@ -29,61 +29,66 @@ use local_nit_flex\service\purchase_service;
  */
 final class flex {
     /**
-     * Reserve one Flex from the student's active package (US-FN-1-2).
+     * Reserve a lesson's Flex from the student's active package (US-FN-1-2).
      *
      * @param int $studentid
      * @param int $lessonid
      * @param int $performedby
      * @param string $reason
+     * @param int $count how many Flex the lesson costs
      * @return int purchase id the Flex was reserved from
      */
-    public static function reserve(int $studentid, int $lessonid, int $performedby, string $reason = ''): int {
-        return (new flex_service())->reserve($studentid, $lessonid, $performedby, $reason);
+    public static function reserve(int $studentid, int $lessonid, int $performedby, string $reason = '',
+            int $count = 1): int {
+        return (new flex_service())->reserve($studentid, $lessonid, $performedby, $reason, $count);
     }
 
     /**
-     * Permanently consume a reserved Flex.
+     * Permanently consume a lesson's reserved Flex.
      *
      * @param int $studentid
      * @param int $purchaseid
      * @param int $lessonid
      * @param int $performedby
      * @param string $reason
+     * @param int $count how many Flex the lesson reserved
      * @return void
      */
     public static function consume(int $studentid, int $purchaseid, int $lessonid, int $performedby,
-            string $reason = ''): void {
-        (new flex_service())->consume($studentid, $purchaseid, $lessonid, $performedby, $reason);
+            string $reason = '', int $count = 1): void {
+        (new flex_service())->consume($studentid, $purchaseid, $lessonid, $performedby, $reason, $count);
     }
 
     /**
-     * Return a reserved Flex to the student's balance (US-FN-1-3).
+     * Return a lesson's reserved Flex to the student's balance (US-FN-1-3).
      *
      * @param int $studentid
      * @param int $purchaseid
      * @param int $lessonid
      * @param int $performedby
      * @param string $reason
+     * @param int $count how many Flex the lesson reserved
      * @return void
      */
     public static function return_flex(int $studentid, int $purchaseid, int $lessonid, int $performedby,
-            string $reason = ''): void {
-        (new flex_service())->return_flex($studentid, $purchaseid, $lessonid, $performedby, $reason);
+            string $reason = '', int $count = 1): void {
+        (new flex_service())->return_flex($studentid, $purchaseid, $lessonid, $performedby, $reason, $count);
     }
 
     /**
-     * Reverse a consumed Flex (admin reversal, US-FN-1-5).
+     * Reverse a lesson's consumed Flex (admin reversal, US-FN-1-5).
      *
      * @param int $studentid
      * @param int $purchaseid
      * @param int $lessonid
      * @param int $performedby
      * @param string $reason
+     * @param int $count how many Flex the lesson consumed
      * @return void
      */
     public static function reverse_consumed(int $studentid, int $purchaseid, int $lessonid, int $performedby,
-            string $reason = ''): void {
-        (new flex_service())->reverse_consumed($studentid, $purchaseid, $lessonid, $performedby, $reason);
+            string $reason = '', int $count = 1): void {
+        (new flex_service())->reverse_consumed($studentid, $purchaseid, $lessonid, $performedby, $reason, $count);
     }
 
     /**

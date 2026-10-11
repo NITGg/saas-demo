@@ -22,7 +22,7 @@
 
     Example context (json):
     {
-        "marker": "nitlx_profile", "available": true, "headline": "Physics teacher",
+        "marker": "nitlx_profile", "available": true, "headline": "Physics teacher", "lessonflex": 2, "maxlessonflex": 10,
         "subjects": [{"options": [{"value": "Physics", "label": "Physics", "selected": true}]}],
         "blankoptions": [{"value": "Physics", "label": "Physics"}], "hassubjectoptions": true,
         "hours": [{"start": "16:00", "end": "20:00", "days": [{"value": 0, "label": "Sunday", "selected": true}]}],
@@ -45,6 +45,12 @@
             <div class="nit-prof-lbl">{{#str}}headline, local_nit_lessons{{/str}}</div>
             <input class="nit-prof-field" type="text" name="nitlx_headline" value="{{headline}}" maxlength="255"
                    placeholder="{{#str}}headline_ph, local_nit_lessons{{/str}}">
+        </div>
+        <div class="full">
+            <label class="nit-prof-lbl" for="nitlx-lessonflex">{{#str}}lessonflex, local_nit_lessons{{/str}}</label>
+            <p class="nitlx-prof-hint">{{#str}}lessonflex_help, local_nit_lessons, {{maxlessonflex}}{{/str}}</p>
+            <input class="nit-prof-field nitlx-prof-num" type="number" id="nitlx-lessonflex" name="nitlx_lessonflex"
+                   value="{{lessonflex}}" min="1" max="{{maxlessonflex}}" step="1" inputmode="numeric" dir="ltr" required>
         </div>
 
         <div class="full">
@@ -105,6 +111,8 @@
   .nitlx-prof-hd{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
   .nitlx-prof-intro, .nitlx-prof-hint{ margin:0; font-size:13px; color:var(--t-muted,#8A8A82); line-height:1.7; }
   .nitlx-prof-hint{ margin-bottom:8px; }
+  .nitlx-prof-num{ max-width:160px; }
+  .nitlx-prof label.nit-prof-lbl{ display:block; }
   .nitlx-prof-switch{ display:flex; align-items:center; gap:10px; font-size:14px; font-weight:600; cursor:pointer; margin:0; }
   .nitlx-prof-switch input{ width:18px; height:18px; accent-color:var(--nit-brand-primary,#0E7C66); }
   .nitlx-prof-rows{ display:flex; flex-direction:column; gap:10px; }

@@ -40,8 +40,8 @@ class manager {
     /** @var string sign the oldest device out to make room */
     public const POLICY_REPLACE = 'replace';
 
-    /** @var array<int, bool> per-request cache of "is a teacher somewhere" */
-    private static array $teachers = [];
+    /** @var array<int, bool> per-request cache of "is a manager somewhere" */
+    private static array $managers = [];
 
     /**
      * Is the device limit switched on?
@@ -82,8 +82,9 @@ class manager {
     }
 
     /**
-     * Is the limit enforced for this account? Not for site admins, holders of
-     * local/nit_devices:exempt (managers) or anyone teaching a course.
+     * Is the limit enforced for this account? Everyone (students and teachers)
+     * except site admins and managers: a manager role anywhere (site, category or
+     * course), or local/nit_devices:exempt in the system context.
      *
      * @param int $userid
      * @return bool
@@ -95,26 +96,26 @@ class manager {
         if (has_capability('local/nit_devices:exempt', \context_system::instance(), $userid)) {
             return false;
         }
-        return !self::is_teacher($userid);
+        return !self::is_manager($userid);
     }
 
     /**
-     * Does the user hold a teacher role (editing or not) anywhere?
+     * Does the user hold a manager role anywhere (site, category or course)?
      *
      * @param int $userid
      * @return bool
      */
-    private static function is_teacher(int $userid): bool {
+    private static function is_manager(int $userid): bool {
         global $DB;
-        if (!isset(self::$teachers[$userid])) {
-            self::$teachers[$userid] = $DB->record_exists_sql(
+        if (!isset(self::$managers[$userid])) {
+            self::$managers[$userid] = $DB->record_exists_sql(
                 "SELECT 1
                    FROM {role_assignments} ra
                    JOIN {role} r ON r.id = ra.roleid
-                  WHERE ra.userid = :userid AND r.archetype IN ('editingteacher', 'teacher')",
+                  WHERE ra.userid = :userid AND r.archetype = 'manager'",
                 ['userid' => $userid]);
         }
-        return self::$teachers[$userid];
+        return self::$managers[$userid];
     }
 
     /**
@@ -147,6 +148,9 @@ class manager {
         }
         $now = time();
         $fields = array_intersect_key($info, array_flip(['name', 'platform', 'sid', 'tokenid']));
+        // A sign-in that does not send the name / platform keeps the ones already known.
+        $fields = array_filter($fields, static fn($value, $key) => !in_array($key, ['name', 'platform'], true) || $value !== '',
+            ARRAY_FILTER_USE_BOTH);
         $fields['ip'] = (string) getremoteaddr('');
         $fields['lastseen'] = $now;
         if (isset($fields['name'])) {
@@ -303,6 +307,6 @@ class manager {
      * Forget the per-request caches (tests).
      */
     public static function reset_caches(): void {
-        self::$teachers = [];
+        self::$managers = [];
     }
 }

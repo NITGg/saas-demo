@@ -1,0 +1,181 @@
+// -----------------------------------------------------------------------------
+// Messaging: the chat drawer (navbar chat icon) and /message/index.php share
+// core's `.message-app`. Core colours it from SCSS variables mixed with our
+// $body-bg, which gives a flat grey panel (#757b83) with near-black "received"
+// bubbles, and its section cards / rows take the brand Surface — a dark panel
+// on the light templates.
+//
+// Put the whole app on the active template's structure tokens (--t-*, the same
+// ones the navbar uses): light on light templates, dark on t4. Sent bubbles take
+// the brand primary so "mine" vs "theirs" reads at a glance. Colours only — the
+// layout (and the RTL-flipped bubble tails) stays core's.
+// -----------------------------------------------------------------------------
+.message-app {
+    background-color: var(--t-bg, #FFFFFF);
+    color: var(--t-ink, #16191D);
+
+    // Header: search field, settings gear, "Contacts" link.
+    .header-container,
+    .footer-container {
+        background-color: var(--t-bg, #FFFFFF);
+    }
+
+    .header-container [data-region="view-overview"] {
+        padding: 0.75rem !important;
+        border-bottom-color: var(--t-border, #EDEDE9) !important;
+    }
+
+    // The drawer's own close (×) sits flush in the corner in core; give it room
+    // and a round hit area.
+    .closewidget {
+        padding: 0.5rem 0.75rem 0 !important;
+
+        a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            color: var(--t-muted, #6E7781) !important;
+
+            &:hover,
+            &:focus {
+                background-color: var(--t-surface, #FAFAF8);
+                color: var(--t-ink, #16191D) !important;
+            }
+        }
+    }
+
+    .simplesearchform .form-control {
+        background-color: var(--t-field, #FBFBF9);
+        color: var(--t-ink, #16191D);
+        border-color: var(--t-border2, #DCDCD7);
+        // The input-group squares the joined edge; the search button beside it
+        // is transparent, so round the field fully.
+        border-radius: 999px !important;
+        padding-inline-start: 1rem;
+
+        &:focus {
+            border-color: var(--nit-brand-primary);
+            box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--nit-brand-primary) 20%, transparent);
+        }
+    }
+
+    .simplesearchform .btn-submit {
+        color: var(--t-muted, #6E7781);
+        background: transparent;
+        border-color: transparent;
+    }
+
+    a,
+    .btn-link {
+        color: var(--t-muted, #6E7781);
+
+        &:hover,
+        &:focus {
+            color: var(--nit-brand-primary);
+        }
+    }
+
+    // Starred / Group / Private sections and their rows.
+    .section.card {
+        background-color: var(--t-bg, #FFFFFF);
+        color: var(--t-ink, #16191D);
+    }
+
+    .section .card-header {
+        background-color: var(--t-bg, #FFFFFF);
+        border-bottom: 1px solid var(--t-line, #F1F1ED);
+
+        .btn {
+            color: var(--t-ink, #16191D);
+            font-weight: 600;
+            padding-block: 0.75rem !important;
+        }
+    }
+
+    .list-group-item {
+        background-color: var(--t-bg, #FFFFFF) !important;
+        color: var(--t-ink, #16191D) !important;
+        border-bottom: 1px solid var(--t-line, #F1F1ED);
+
+        &:hover,
+        &:focus {
+            background-color: var(--t-surface, #FAFAF8) !important;
+            color: var(--t-ink, #16191D) !important;
+        }
+
+        .text-muted,
+        .last-message {
+            color: var(--t-muted, #6E7781) !important;
+        }
+    }
+
+    // Conversation: bubbles and day separators.
+    .message.send {
+        background-color: var(--nit-brand-primary);
+        color: #FFFFFF;
+
+        .time {
+            color: color-mix(in srgb, #FFFFFF 80%, transparent);
+        }
+
+        .tail {
+            border-bottom-color: var(--nit-brand-primary);
+        }
+    }
+
+    .message.received {
+        background-color: var(--t-surface, #FAFAF8);
+        color: var(--t-ink, #16191D);
+        border: 1px solid var(--t-border, #EDEDE9);
+
+        .time {
+            color: var(--t-muted, #6E7781);
+        }
+
+        .tail {
+            border-bottom-color: var(--t-surface, #FAFAF8);
+        }
+    }
+
+    .message {
+        border-radius: 14px;
+    }
+
+    .day {
+        color: var(--t-muted, #6E7781);
+    }
+
+    // Core's `bg-light` (e.g. on the message box) is the brand Surface in this
+    // theme — a dark slab on the light templates.
+    .bg-light {
+        background-color: var(--t-surface, #FAFAF8) !important;
+    }
+
+    // The message box at the bottom of a conversation.
+    [data-region="content-messages-footer-container"] .form-control,
+    [data-region="send-message-txt"] {
+        background-color: var(--t-field, #FBFBF9) !important;
+        color: var(--t-ink, #16191D);
+        border-color: var(--t-border2, #DCDCD7);
+        border-radius: 14px;
+    }
+
+    .border-top,
+    .border-bottom {
+        border-color: var(--t-border, #EDEDE9) !important;
+    }
+
+    .bg-white {
+        background-color: var(--t-bg, #FFFFFF) !important;
+    }
+}
+
+// The drawer panel itself: a clean edge and lift instead of a bare grey slab.
+.drawer[data-region="right-hand-drawer"] {
+    background-color: var(--t-bg, #FFFFFF) !important;
+    border-inline-color: var(--t-border, #EDEDE9);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+}

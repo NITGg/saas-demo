@@ -53,6 +53,14 @@ $string['set_complete_allowed_minutes'] = 'الإنهاء بعد (دقيقة)';
 $string['set_complete_allowed_minutes_desc'] = 'عدد الدقائق بعد البدء قبل أن يستطيع المدرس إنهاء الحصة.';
 $string['set_absence_report_minutes'] = 'الإبلاغ عن الغياب بعد (دقيقة)';
 $string['set_absence_report_minutes_desc'] = 'عدد الدقائق بعد موعد البدء قبل أن يستطيع أي طرف الإبلاغ عن غياب الآخر.';
+$string['set_max_lesson_flex'] = 'أقصى عدد فلكس للحصة';
+$string['set_max_lesson_flex_desc'] = 'أعلى سعر بالفلكس يستطيع المدرس تحديده للحصة الواحدة من ملفه.';
+$string['lessonflex'] = 'عدد الفلكس للحصة';
+$string['lessonflex_help'] = 'عدد الفلكس الذي يدفعه الطالب في الحصة الواحدة معك (من 1 إلى {$a}). الحصص المحجوزة بالفعل تبقى بسعرها وقت الحجز.';
+$string['flexperlesson'] = '{$a} فلكس للحصة';
+$string['lessonflexcost'] = 'السعر: {$a} فلكس';
+$string['err_badlessonflex'] = 'عدد الفلكس للحصة يجب أن يكون رقمًا صحيحًا من 1 إلى {$a}.';
+$string['err_notenoughflex'] = 'الحصة مع هذا المدرس بـ {$a} فلكس ورصيدك لا يكفي. اشترِ باقة أولًا.';
 
 // Tabs and hub.
 $string['tab_book'] = 'احجز حصة';

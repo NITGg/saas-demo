@@ -16,6 +16,7 @@ $string['privacy:metadata'] = 'لا يخزّن هذا المكوّن أي بيا
 $string['notallowed']      = 'أنت غير مسجّل في هذه الجلسة.';
 $string['sessionopening']  = 'ستُفتح الجلسة خلال {$a} دقيقة.';
 $string['waitingforteacher'] = 'في انتظار انضمام المعلم لبدء الجلسة. سيتم إدخالك تلقائياً عند انضمامه.';
+$string['teacheraway'] = 'المعلم ليس في الحصة الآن. ستراه هنا عند عودته.';
 $string['sessionended']    = 'انتهت هذه الجلسة.';
 $string['roomunavailable'] = 'هذه الغرفة غير متاحة لك.';
 $string['youarehost']      = 'أنت المضيف';

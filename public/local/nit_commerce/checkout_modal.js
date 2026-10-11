@@ -11,6 +11,11 @@
  *   NitCheckout.open({ itemType:'course', itemId:10, name:'...', subtitle:'',
  *                      proceed: function(code){ location = checkoutUrl + '&coupon_code=' + code; } });
  *
+ * Optional wallet payment: pass item.wallet = { balance: <EGP>, payurl: '/local/nit_finance/walletpay.php',
+ * fields: {type:'course', id:10}, topupurl: '...' } — the modal shows the balance and a "Pay from my wallet"
+ * button (enabled when the balance covers the total) that POSTs fields + sesskey + coupon_code to payurl.
+ * item.online === false hides the gateway button.
+ *
  * DESIGN: this is the T1 "Order summary" panel from the academy app screens — a LIGHT card
  * (brand accent only). The card / billing form in that mock is Kashier's hosted page, not ours,
  * so we never render or collect card data here; Proceed hands off to Kashier. The price/coupon/offer
@@ -107,6 +112,25 @@
     totalRow.appendChild(els.final);
     body.appendChild(totalRow);
 
+    // ── Pay from the student wallet (only when the page passes item.wallet).
+    els.wallet = el('div', 'display:none; margin-top:20px; padding:14px; border:1px solid ' + C.border + '; border-radius:10px; background:' + C.surface + ';');
+    var wRow = el('div', 'display:flex; justify-content:space-between; font-size:14px; color:' + C.muted + ';');
+    wRow.appendChild(el('span', '', S('co_wallet_balance')));
+    els.walletBalance = el('span', 'color:' + C.ink + '; font-weight:600;', '—');
+    wRow.appendChild(els.walletBalance);
+    els.wallet.appendChild(wRow);
+    els.walletPay = el('button', 'cursor:pointer; font-family:inherit; width:100%; margin-top:12px; font-size:15px; font-weight:600; background:' + C.accent + '; border:0; color:' + C.on + '; padding:13px; border-radius:10px;', S('co_wallet_pay'));
+    els.walletPay.type = 'button';
+    els.wallet.appendChild(els.walletPay);
+    els.walletLow = el('div', 'display:none; font-size:13px; color:' + C.danger + '; margin-top:10px; text-align:center;');
+    els.walletLow.appendChild(el('span', '', S('co_wallet_low') + ' '));
+    els.walletTopup = el('a', 'color:' + C.accent + '; font-weight:600;', S('co_wallet_topup'));
+    els.walletLow.appendChild(els.walletTopup);
+    els.wallet.appendChild(els.walletLow);
+    body.appendChild(els.wallet);
+    els.orOnline = el('div', 'display:none; font-size:12px; color:' + C.faint + '; text-align:center; margin-top:16px;', S('co_or_online'));
+    body.appendChild(els.orOnline);
+
     // ── Pay & enrol (brand accent), then trust notes.
     els.proceed = el('button', 'cursor:pointer; font-family:inherit; width:100%; margin-top:20px; font-size:15px; font-weight:600; background:' + C.accent + '; border:0; color:' + C.on + '; padding:15px; border-radius:10px; box-shadow:0 12px 26px color-mix(in srgb, var(--nit-brand-primary, #0E7C66) 24%, transparent);', S('co_proceed'));
     els.proceed.type = 'button';
@@ -115,8 +139,8 @@
     els.error = el('div', 'display:none; color:' + C.danger + '; font-size:13px; margin-top:12px; text-align:center;', ' ');
     body.appendChild(els.error);
 
-    var secure = el('div', 'font-size:12px; color:' + C.faint + '; text-align:center; margin-top:14px; line-height:1.6;', S('co_secure'));
-    body.appendChild(secure);
+    els.secure = el('div', 'font-size:12px; color:' + C.faint + '; text-align:center; margin-top:14px; line-height:1.6;', S('co_secure'));
+    body.appendChild(els.secure);
 
     var actions = el('div', 'margin-top:14px; text-align:center;');
     els.cancel = el('button', 'background:transparent; border:0; color:' + C.muted + '; font-family:inherit; font-size:13px; font-weight:600; cursor:pointer; padding:4px 8px;', S('co_cancel'));
@@ -141,6 +165,39 @@
       try { current.proceed(els.coupon.value.trim()); }
       catch (e) { els.proceed.disabled = false; els.error.textContent = String(e && e.message || e); els.error.style.display = ''; }
     });
+    // Wallet: post the item + coupon to the page's wallet endpoint (it charges and redirects).
+    els.walletPay.addEventListener('click', function () {
+      if (!current || !current.wallet || els.walletPay.disabled) { return; }
+      els.walletPay.disabled = true;
+      var form = document.createElement('form');
+      form.method = 'post';
+      form.action = current.wallet.payurl;
+      var fields = Object.assign({}, current.wallet.fields || {}, { sesskey: cfg.sesskey, coupon_code: els.coupon.value.trim() });
+      Object.keys(fields).forEach(function (k) {
+        var input = document.createElement('input');
+        input.type = 'hidden'; input.name = k; input.value = fields[k];
+        form.appendChild(input);
+      });
+      document.body.appendChild(form);
+      form.submit();
+    });
+  }
+
+  // Enable the wallet button only when the balance covers the total.
+  function paintWallet(total) {
+    var w = current && current.wallet;
+    els.wallet.style.display = w ? '' : 'none';
+    els.orOnline.style.display = (w && current.online !== false) ? '' : 'none';
+    if (!w) { return; }
+    var balance = Number(w.balance || 0);
+    els.walletBalance.textContent = money(balance) + ' ' + cur();
+    var enough = balance + 0.001 >= Number(total || 0);
+    els.walletPay.disabled = !enough;
+    els.walletPay.style.opacity = enough ? '1' : '.5';
+    els.walletPay.style.cursor = enough ? 'pointer' : 'not-allowed';
+    els.walletLow.style.display = enough ? 'none' : '';
+    els.walletTopup.href = w.topupurl || '#';
+    els.walletTopup.style.display = w.topupurl ? '' : 'none';
   }
 
   function row(label, valueEl) {
@@ -167,6 +224,7 @@
         els.final.innerHTML = '';
         els.final.appendChild(document.createTextNode(money(d.final != null ? d.final : (current.price || 0)) + ' '));
         els.final.appendChild(el('span', 'font-size:13px; color:' + C.faint + '; font-weight:500;', cur()));
+        paintWallet(d.final != null ? d.final : (current.price || 0));
         // Offer line (auto-applied), with its name if present.
         var offerDisc = Number(d.offer_discount || 0);
         if (offerDisc > 0) {
@@ -210,6 +268,10 @@
       els.final.appendChild(el('span', 'font-size:13px; color:' + C.faint + '; font-weight:500;', cur()));
       els.discountRow.style.display = 'none';
       els.offerRow.style.display = 'none';
+      // item.online === false: the wallet is the only way to pay (no gateway available).
+      els.proceed.style.display = item.online === false ? 'none' : '';
+      els.secure.style.display = item.online === false ? 'none' : '';
+      paintWallet(item.price || 0);
       modal.style.display = 'flex';
       preview(''); // Auto-apply any offer + fetch the true base.
     },

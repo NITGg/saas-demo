@@ -7,7 +7,8 @@ This file lists **only** what changed after [`MOBILE_API_V4.md`](MOBILE_API_V4.m
 **Summary:** one new endpoint, **Static pages & articles (CMS)** (§1). The **reports system** (§2) is web
 only, with no mobile endpoints. There are also **app-visible changes to existing calls** (§3): the
 legal/about links now point to the CMS pages, the purchase check needs an active enrolment, the
-video-progress protocol has one new step, and payment messages arrive in the buyer's language. The
+video-progress protocol has one new step, payment messages arrive in the buyer's language, and a teacher
+sets how many Flex one live lesson costs (§3.7). The
 **device limit** (§4) brings a new sign-in endpoint with a per-install `deviceid`.
 
 | # | Area | Affects | App change needed |
@@ -22,6 +23,7 @@ video-progress protocol has one new step, and payment messages arrive in the buy
 | 8 | Teacher reports API | New endpoint `/local/nit_reports/api.php`: `get_reports`, `get_report` (the 5 teacher reports as cards + table) | Yes, for the new teacher "Reports" screen (§5) |
 | 9 | Live-session rooms (Jitsi) | `mod_jitsi_get_session_info` (`jwt` empty until `available`), `/mod/jitsi/api_token.php` (new errorcodes `waitingforteacher`, `jitsinotconfigured`), `join_session` (attendance after the teacher arrives) | **Check**: don't join with an empty `jwt` (§3.5) |
 | 10 | Messaging between students | When the admin turns on "Prevent messaging between students": `core_message_send_instant_messages` (per-message error), `send_messages_to_conversation` / `create_contact_request` (errorcode `studentmessaging_blocked`), `canmessage = false` between two students | **Check**: hide the message box when `canmessage` is `false` (§3.6) |
+| 11 | Flex price per live lesson | `/local/nit_lessons/api.php`: `get_teachers` (+`lesson_flex`), `get_teacher_profile` (+`lesson_flex`, `max_lesson_flex`), `update_teacher_profile` (+optional `lesson_flex`), every lesson (+`flex_count`), `request_lesson` (new errorcode `notenoughflex`), `admin_get_settings` / `admin_update_settings` (+`max_lesson_flex`) | **Yes**: show the price, a "Flex per lesson" box for teachers, handle `notenoughflex` (§3.7) |
 
 ---
 
@@ -292,6 +294,29 @@ web room page:
   joins is recorded as being in the call, but the students still wait for the teacher.
 - **App action:** none required. Show `end_reason` / `ended_at` if useful.
 
+**In the call: students see the teacher only, hosts never wait for each other (10/10):**
+- **`mod_jitsi_get_session_info` has 3 new fields:**
+
+  | Field | Meaning |
+  |---|---|
+  | `isolate_students` | `true` for a student in a lesson room. They must see **the teacher only** |
+  | `auto_admit` | `true` for a host (teacher or admin) of a lesson room. **Let anyone who knocks in** at once |
+  | `teacher_name` | the session teacher's display name (to find and pin them); `""` for a standalone room |
+
+- **App action (Jitsi Meet SDK), when `isolate_students` is true.** These are what the web page does:
+  - config `channelLastN: 1`
+  - `disableTileView: true`
+  - `filmstrip: {disabled: true, disableStageFilmstrip: true}`
+  - remove the tile-view button
+  - pin the participant whose display name is `teacher_name` (else the first moderator), and keep re-pinning on
+    participant joined / left / role changed
+  - while no teacher is in the call, cover the video with a "the teacher is not in the call" notice
+- **App action, when `auto_admit` is true:** on the SDK's knocking-participant event, approve them. Never turn the
+  lobby on in a lesson room.
+- ⚠️ **This is enforced in the clients (web page and app), not by the Jitsi server.** A student with a modified
+  client could still request other students' video. Server-side isolation is planned
+  (`docs/CAMERA-PRIVACY-STUDY.md`).
+
 ### 3.6 Messaging: "Prevent messaging between students"
 
 New admin setting (Site administration → Messaging → Messaging settings, off by default). When it is on,
@@ -312,6 +337,51 @@ to the core `core_message_*` web services the app already calls:
 - **App action:** when `canmessage` is `false`, hide the message box and show "You can't message this user"
   (the web drawer already does this). Show `errormessage` / the exception message if a send fails.
 
+### 3.7 Live lessons: the teacher sets the Flex price of a lesson
+
+A lesson used to cost exactly 1 Flex. Now each teacher sets **how many Flex one lesson with them costs**
+(Profile → Teacher profile on the web, or `update_teacher_profile`), from 1 up to the admin's
+`max_lesson_flex` (default 10). A teacher who never set it costs 1 Flex, so nothing changes for them.
+
+- The price is fixed on the lesson **when the student requests it** (`flex_count`). If the teacher changes
+  their price later, lessons already requested keep their old price.
+- Everything that moved 1 Flex now moves `flex_count`: the teacher accepting reserves `flex_count`, a
+  completed lesson / late cancel / student absent uses `flex_count`, an early cancel / teacher cancel /
+  teacher absent / admin reversal returns `flex_count`. The teacher's earning is its percent of
+  `flex_count` × the value of one Flex of the student's package.
+
+**`get_teachers`** — each teacher has `lesson_flex` (int, ≥ 1):
+```json
+{"id":22,"fullname":"مدرس الحصص","headline":"مدرس فيزياء","lesson_flex":3,"subjects":[…],"picture_url":"…"}
+```
+Show it ("3 Flex per lesson"). Disable "Request a lesson" when the student's `remaining_flex` (from
+`get_my_flex`) is less than `lesson_flex`.
+
+**Every lesson** (`get_my_lessons`, `get_lesson`, and the result of every lesson action) has
+`flex_count` (int, ≥ 1): the Flex this lesson costs.
+
+**`request_lesson`** — new errorcode **`notenoughflex`**: the student has Flex, but fewer than the
+teacher's `lesson_flex`. The message names the price; send the student to the packages screen, as for
+`noflex`. (`noflex` still means no Flex at all.) If the student spends Flex between the request and the
+teacher accepting, the accept fails with `noflex`, as before.
+
+**`get_teacher_profile`** — two new fields:
+```json
+{"available":true,"headline":"مدرس فيزياء","lesson_flex":3,"max_lesson_flex":10,"subjects":[…],"hours":[…], …}
+```
+
+**`update_teacher_profile`** — one new optional param:
+
+| Param | Type | Req | Description |
+|---|---|---|---|
+| lesson_flex | int | no | Flex per lesson, 1 … `max_lesson_flex`. **Leave it out to keep the saved price** |
+
+New errorcode **`badlessonflex`** (outside 1 … `max_lesson_flex`); the message names the maximum.
+
+**Admin settings** (`admin_get_settings` / `admin_update_settings`): new key `max_lesson_flex` (int,
+default 10) — the most Flex a teacher can ask for one lesson. Lowering it does not change prices already
+saved; a teacher above the new maximum must pick a valid value the next time they save their profile.
+
 ---
 
 ## 4. Device limit — `local_nit_devices` (new)
@@ -320,7 +390,7 @@ An account may be used on a set number of devices (an admin setting, e.g. 2). **
 count together.** A device stays registered until an admin removes it, so signing out does not free its
 place. When one device too many signs in, the admin's policy decides: **refuse it** (`devicelimit`) or
 **sign the oldest device out** (its token is deleted: its next call answers HTTP 401 `invalidtoken`, as
-for any dead token). Site admins, managers and teachers have no limit. While the admin keeps the limit
+for any dead token). Students and teachers are limited; site admins and managers have no limit. While the admin keeps the limit
 switched off, nothing below changes anything.
 
 **Why the app must change:** `/login/token.php` gives every phone of an account the **same** token, so
@@ -379,7 +449,7 @@ For an optional "My devices" screen (read only: removing a device is done by sup
             {"id":3,"kind":"web","name":"Chrome — Windows","platform":"Windows","current":false,
              "firstseen":1791620563,"lastseen":1791620563}]}}
 ```
-- `limited` false: this account has no limit (teacher, manager, admin) or the limit is off.
+- `limited` false: this account has no limit (site admin or manager) or the limit is off.
 - `policy`: `block` (refuse a new device) or `replace` (sign the oldest out).
 - `current`: the device making this call. `kind`: `web` or `mobile`. Times are Unix seconds.
 

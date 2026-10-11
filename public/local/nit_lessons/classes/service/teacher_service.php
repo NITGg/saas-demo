@@ -62,12 +62,6 @@ class teacher_service extends service {
     }
 
     /**
-     * A teacher's booking profile.
-     *
-     * @param int $userid
-     * @return array{available:bool, headline:string, subjects:string[], hours:array}
-     */
-    /**
      * The site's subject list (Live lesson settings → Subjects, one per line,
      * {mlang} allowed), as stored values.
      *
@@ -127,6 +121,12 @@ class teacher_service extends service {
         return implode("\n", array_map(fn($s) => '{mlang ar}' . $s[0] . '{mlang}{mlang en}' . $s[1] . '{mlang}', $subjects));
     }
 
+    /**
+     * A teacher's booking profile.
+     *
+     * @param int $userid
+     * @return array{available:bool, headline:string, lesson_flex:int, subjects:string[], hours:array}
+     */
     public function profile(int $userid): array {
         global $DB;
         $row = $DB->get_record('nit_teacher_profile', ['userid' => $userid]);
@@ -138,9 +138,30 @@ class teacher_service extends service {
         return [
             'available' => $row ? (bool) $row->available : false,
             'headline' => $row ? (string) $row->headline : '',
+            'lesson_flex' => $row ? max(1, (int) $row->lesson_flex) : 1,
             'subjects' => array_values($subjects),
             'hours' => $hours,
         ];
+    }
+
+    /**
+     * How many Flex one lesson with this teacher costs (1 until they set it).
+     *
+     * @param int $teacherid
+     * @return int
+     */
+    public function lesson_flex(int $teacherid): int {
+        global $DB;
+        return max(1, (int) $DB->get_field('nit_teacher_profile', 'lesson_flex', ['userid' => $teacherid]));
+    }
+
+    /**
+     * The most Flex a teacher may ask for one lesson (admin setting, at least 1).
+     *
+     * @return int
+     */
+    public static function max_lesson_flex(): int {
+        return max(1, (new settings_service())->get('max_lesson_flex'));
     }
 
     /**
@@ -151,10 +172,15 @@ class teacher_service extends service {
      * @param string $headline
      * @param string[] $subjects
      * @param array $hours [{dayofweek, starttime, endtime}]
+     * @param int|null $lessonflex Flex one lesson costs, 1 … max_lesson_flex(); null keeps the saved price
      * @return void
      */
-    public function save(int $userid, bool $available, string $headline, array $subjects, array $hours): void {
+    public function save(int $userid, bool $available, string $headline, array $subjects, array $hours,
+            ?int $lessonflex = null): void {
         global $DB;
+        if ($lessonflex !== null && ($lessonflex < 1 || $lessonflex > self::max_lesson_flex())) {
+            throw new lesson_exception('err_badlessonflex', self::max_lesson_flex());
+        }
         $options = self::subject_options($userid);
         $clean = [];
         foreach ($subjects as $subject) {
@@ -192,6 +218,9 @@ class teacher_service extends service {
             'headline' => \core_text::substr(trim($headline), 0, 255),
             'timemodified' => time(),
         ];
+        if ($lessonflex !== null) {
+            $record->lesson_flex = $lessonflex;
+        }
         if ($row) {
             $record->id = $row->id;
             $DB->update_record('nit_teacher_profile', $record);
@@ -227,7 +256,7 @@ class teacher_service extends service {
         }
         $fields = \core_user\fields::for_userpic()->get_sql('u', false, '', '', false)->selects;
         $rows = $DB->get_records_sql(
-            "SELECT $fields, tp.headline
+            "SELECT $fields, tp.headline, tp.lesson_flex
                FROM {nit_teacher_profile} tp
                JOIN {user} u ON u.id = tp.userid AND u.deleted = 0 AND u.suspended = 0
               WHERE tp.available = 1
@@ -243,6 +272,7 @@ class teacher_service extends service {
                 'id' => (int) $u->id,
                 'fullname' => fullname($u),
                 'headline' => (string) $u->headline,
+                'lesson_flex' => max(1, (int) $u->lesson_flex),
                 'subjects' => $this->profile((int) $u->id)['subjects'],
                 'user' => $u,
             ];

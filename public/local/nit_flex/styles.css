@@ -472,6 +472,12 @@
     font-size: 14px;
     color: var(--nit-brand-textsecondary);
 }
+.nitlx-teacher__flex {
+    margin: 0 0 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--nit-brand-primary);
+}
 .nitlx button.nitlx-teacher__btn {
     grid-column: 1 / -1;
 }

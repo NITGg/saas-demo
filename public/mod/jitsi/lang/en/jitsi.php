@@ -16,6 +16,7 @@ $string['privacy:metadata'] = 'The Jitsi Session module does not store any perso
 $string['notallowed']      = 'You are not enrolled in this session.';
 $string['sessionopening']  = 'The session will open in {$a} minute(s).';
 $string['waitingforteacher'] = 'Waiting for the teacher to start the meeting.';
+$string['teacheraway'] = 'The teacher is not in the call right now. You will see them here when they are back.';
 $string['sessionended']    = 'This session has ended.';
 $string['roomunavailable'] = 'This room is not available to you.';
 $string['youarehost']      = 'You are the host';

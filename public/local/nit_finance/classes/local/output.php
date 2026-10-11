@@ -45,6 +45,37 @@ final class output {
     }
 
     /**
+     * The "pay from my wallet" option of the shared checkout dialog (local_nit_commerce
+     * checkout_modal.js, item.wallet) for a whole course, or null when the wallet
+     * cannot pay for it (guest, course priced in another currency).
+     *
+     * @param int $userid
+     * @param int $courseid
+     * @param string $return local page to come back to when the payment fails
+     * @return array|null
+     */
+    public static function course_wallet_option(int $userid, int $courseid, string $return = ''): ?array {
+        if ($userid <= 0 || isguestuser($userid) || !wallet_checkout::course_payable($userid, $courseid)) {
+            return null;
+        }
+        return [
+            'balance' => wallets::balance(wallets::STUDENT, $userid) / 100,
+            'payurl' => (new moodle_url('/local/nit_finance/walletpay.php'))->out(false),
+            'fields' => ['type' => 'course', 'id' => $courseid, 'returnurl' => $return],
+            'topupurl' => (new moodle_url('/local/nit_finance/wallet.php', [], 'topup'))->out(false),
+        ];
+    }
+
+    /**
+     * The checkout dialog strings for the wallet option.
+     *
+     * @return string[] keys of local_nit_commerce strings
+     */
+    public static function wallet_modal_strings(): array {
+        return ['co_wallet_pay', 'co_wallet_balance', 'co_wallet_low', 'co_wallet_topup', 'co_or_online'];
+    }
+
+    /**
      * The "have a code?" form.
      *
      * @param moodle_url $action where the form posts (handles action=redeem)

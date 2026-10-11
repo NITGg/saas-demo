@@ -65,37 +65,119 @@ if ($action !== '' && $userid) {
 
 echo $OUTPUT->header();
 
-// No account chosen yet: the search (managers).
+// No account chosen: the overview of every account's devices (managers).
 if (!$userid) {
+    $onlyfull = optional_param('full', 0, PARAM_BOOL);
+    $page = optional_param('page', 0, PARAM_INT);
+    $perpage = 30;
+    $max = manager::max_devices();
+    $dateformat = get_string('strftimedatetimeshort', 'langconfig');
+
     echo $OUTPUT->heading(get_string('devices', 'local_nit_devices'));
-    echo html_writer::start_tag('form', ['method' => 'get', 'action' => $url->out_omit_querystring(), 'class' => 'd-flex mb-3']);
-    echo html_writer::empty_tag('input', ['type' => 'search', 'name' => 'q', 'value' => $query, 'class' => 'form-control me-2',
+
+    // The rule in force, with the way to its settings.
+    $rule = manager::enabled()
+        ? get_string('limitinfo', 'local_nit_devices', (object) ['max' => $max,
+            'policy' => get_string(manager::policy() === manager::POLICY_REPLACE ? 'policyreplace' : 'policyblock', 'local_nit_devices')])
+        : get_string('limitoff', 'local_nit_devices');
+    if (has_capability('moodle/site:config', $system)) {
+        $rule .= ' ' . html_writer::link(new moodle_url('/admin/settings.php', ['section' => 'local_nit_devices']),
+            get_string('settings'));
+    }
+    echo $OUTPUT->notification($rule, manager::enabled() ? 'info' : 'warning', false);
+
+    // Totals.
+    $totals = $DB->get_record_sql(
+        "SELECT COUNT(1) AS devices, COUNT(DISTINCT userid) AS accounts,
+                COALESCE(SUM(CASE WHEN kind = :web THEN 1 ELSE 0 END), 0) AS web
+           FROM {local_nit_devices}", ['web' => manager::WEB]);
+    $fullaccounts = $DB->get_fieldset_sql(
+        "SELECT userid FROM {local_nit_devices} GROUP BY userid HAVING COUNT(1) >= :max", ['max' => $max]);
+    $fullcount = count(array_filter($fullaccounts, static fn($id) => manager::applies_to((int) $id)));
+    $tiles = [
+        get_string('stat_accounts', 'local_nit_devices') => (int) $totals->accounts,
+        get_string('stat_devices', 'local_nit_devices') => (int) $totals->devices,
+        get_string('kind_web', 'local_nit_devices') => (int) $totals->web,
+        get_string('kind_mobile', 'local_nit_devices') => (int) $totals->devices - (int) $totals->web,
+        get_string('stat_full', 'local_nit_devices') => $fullcount,
+    ];
+    echo html_writer::start_div('d-flex flex-wrap gap-2 mb-3');
+    foreach ($tiles as $label => $value) {
+        echo html_writer::div(html_writer::div($value, 'fs-3 fw-bold') . html_writer::div($label, 'small text-muted'),
+            'border rounded px-3 py-2 text-center', ['style' => 'min-width:120px']);
+    }
+    echo html_writer::end_div();
+
+    // Filters: search any account (also those without devices) / only full accounts.
+    echo html_writer::start_tag('form', ['method' => 'get', 'action' => $url->out_omit_querystring(),
+        'class' => 'd-flex flex-wrap align-items-center gap-2 mb-3']);
+    echo html_writer::empty_tag('input', ['type' => 'search', 'name' => 'q', 'value' => $query, 'class' => 'form-control w-auto flex-grow-1',
         'placeholder' => get_string('searchplaceholder', 'local_nit_devices'), 'aria-label' => get_string('searchuser', 'local_nit_devices')]);
+    echo html_writer::tag('label', html_writer::checkbox('full', 1, $onlyfull, '', ['class' => 'form-check-input me-1'])
+        . get_string('onlyfull', 'local_nit_devices'), ['class' => 'form-check-label']);
     echo html_writer::tag('button', get_string('search'), ['type' => 'submit', 'class' => 'btn btn-primary']);
     echo html_writer::end_tag('form');
 
+    // One row per account: its devices summed up.
+    $params = ['guest' => $CFG->siteguest, 'web' => manager::WEB, 'mobile' => manager::MOBILE];
+    $where = 'u.deleted = 0 AND u.id <> :guest';
     if ($query !== '') {
         $like = '%' . $DB->sql_like_escape($query) . '%';
-        $users = $DB->get_records_select('user',
-            'deleted = 0 AND id <> :guest AND (' . $DB->sql_like('email', ':q1', false) . ' OR '
-                . $DB->sql_like('username', ':q2', false) . ' OR '
-                . $DB->sql_like($DB->sql_fullname(), ':q3', false) . ' OR ' . $DB->sql_like('phone1', ':q4', false) . ')',
-            ['guest' => $CFG->siteguest, 'q1' => $like, 'q2' => $like, 'q3' => $like, 'q4' => $like],
-            'lastname, firstname', '*', 0, 25);
-        if (!$users) {
-            echo $OUTPUT->notification(get_string('nousersfound', 'local_nit_devices'), 'info');
-        } else {
-            $table = new html_table();
-            $table->head = [get_string('fullname'), get_string('email'), get_string('devices', 'local_nit_devices')];
-            foreach ($users as $user) {
-                $table->data[] = [
-                    html_writer::link(new moodle_url($url, ['id' => $user->id]), fullname($user)),
-                    s($user->email),
-                    $DB->count_records('local_nit_devices', ['userid' => $user->id]),
-                ];
+        $where .= ' AND (' . $DB->sql_like('u.email', ':q1', false) . ' OR ' . $DB->sql_like('u.username', ':q2', false)
+            . ' OR ' . $DB->sql_like($DB->sql_fullname('u.firstname', 'u.lastname'), ':q3', false)
+            . ' OR ' . $DB->sql_like('u.phone1', ':q4', false) . ')';
+        $params += ['q1' => $like, 'q2' => $like, 'q3' => $like, 'q4' => $like];
+    }
+    if ($onlyfull) {
+        $where .= ' AND d.total >= :max';
+        $params['max'] = $max;
+    }
+    // A search also finds accounts with no device yet; the plain overview lists accounts with devices.
+    $join = $query !== '' && !$onlyfull ? 'LEFT JOIN' : 'JOIN';
+    $namefields = \core_user\fields::for_name()->get_sql('u', false, '', '', false)->selects;
+    $from = "FROM {user} u
+        $join (SELECT userid, COUNT(1) AS total,
+                      SUM(CASE WHEN kind = :web THEN 1 ELSE 0 END) AS web,
+                      SUM(CASE WHEN kind = :mobile THEN 1 ELSE 0 END) AS mobile,
+                      MIN(timecreated) AS firstseen, MAX(lastseen) AS lastseen
+                 FROM {local_nit_devices} GROUP BY userid) d ON d.userid = u.id
+        WHERE $where";
+    $count = $DB->count_records_sql("SELECT COUNT(1) $from", $params);
+    $rows = $DB->get_records_sql("SELECT u.id, u.email, $namefields, d.total, d.web, d.mobile, d.firstseen, d.lastseen
+        $from ORDER BY d.lastseen DESC, u.lastname, u.firstname", $params, $page * $perpage, $perpage);
+
+    if (!$rows) {
+        echo $OUTPUT->notification(get_string($query !== '' ? 'nousersfound' : 'nodevicesyet', 'local_nit_devices'), 'info');
+    } else {
+        $table = new html_table();
+        $table->head = [get_string('fullname'), get_string('email'), get_string('devices', 'local_nit_devices'),
+            get_string('kind_web', 'local_nit_devices'), get_string('kind_mobile', 'local_nit_devices'),
+            get_string('firstseen', 'local_nit_devices'), get_string('lastseen', 'local_nit_devices'), ''];
+        foreach ($rows as $row) {
+            $total = (int) $row->total;
+            if (!manager::applies_to((int) $row->id)) {
+                $status = html_writer::span(get_string('exempt', 'local_nit_devices'), 'badge bg-secondary');
+                $devices = $total . ' ' . $status;
+            } else {
+                $devices = $total . ' / ' . $max;
+                if ($total >= $max) {
+                    $devices .= ' ' . html_writer::span(get_string('full', 'local_nit_devices'), 'badge bg-danger');
+                }
             }
-            echo html_writer::table($table);
+            $details = new moodle_url('/local/nit_devices/devices.php', ['id' => $row->id]);
+            $table->data[] = [
+                html_writer::link($details, fullname($row)),
+                s($row->email),
+                $devices,
+                (int) $row->web,
+                (int) $row->mobile,
+                $row->firstseen ? userdate($row->firstseen, $dateformat) : '-',
+                $row->lastseen ? userdate($row->lastseen, $dateformat) : '-',
+                html_writer::link($details, get_string('details', 'local_nit_devices')),
+            ];
         }
+        echo html_writer::table($table);
+        echo $OUTPUT->paging_bar($count, $page, $perpage, new moodle_url($url, ['q' => $query, 'full' => (int) $onlyfull]));
     }
     echo $OUTPUT->footer();
     die;

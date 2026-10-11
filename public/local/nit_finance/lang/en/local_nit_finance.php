@@ -278,3 +278,12 @@ $string['previewdur_two'] = '2 minutes';
 $string['previewdur_few'] = '{$a} minutes';
 $string['previewdur_many'] = '{$a} minutes';
 $string['previewdur_clock'] = '{$a} minutes';
+
+// Paying for a whole course or a subscription from the wallet.
+$string['itemtype_subscription'] = 'Subscription';
+$string['err_notforsale_course'] = 'This course is not for sale.';
+$string['err_walletcurrency'] = 'This course is priced in a currency other than EGP, so it cannot be paid from the wallet.';
+$string['err_subactive'] = 'You already have an active subscription.';
+$string['subbought'] = 'Done! Your subscription is active.';
+$string['paysubwithwallet'] = 'Pay from my wallet';
+$string['walletbalanceis'] = 'Your wallet balance: {$a}';

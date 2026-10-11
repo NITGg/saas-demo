@@ -101,7 +101,13 @@ class get_session_info extends external_api {
             }
         }
 
+        $session = $decision->session;
         return [
+            // What the app must do in the call (the web page does the same, view.php):
+            // a student of a lesson room sees the teacher only; a host lets knockers in.
+            'isolate_students' => (bool) ($session && !$is_teacher),
+            'auto_admit'    => (bool) ($session && $is_teacher),
+            'teacher_name'  => $session && ($teacher = \core_user::get_user((int) $session->teacherid)) ? fullname($teacher) : '',
             'cmid'          => $cm->id,
             'name'          => format_string($jitsi->name),
             'available'     => $available,
@@ -118,6 +124,10 @@ class get_session_info extends external_api {
 
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
+            'isolate_students' => new external_value(PARAM_BOOL, 'Student of a lesson room: show the teacher only '
+                . '(no tile view / filmstrip, pin the teacher, lastN 1)'),
+            'auto_admit'     => new external_value(PARAM_BOOL, 'Host of a lesson room: admit anyone who knocks'),
+            'teacher_name'   => new external_value(PARAM_TEXT, 'The session teacher\'s display name (to pin); empty for a standalone room'),
             'cmid'           => new external_value(PARAM_INT,  'Course module ID'),
             'name'           => new external_value(PARAM_TEXT, 'Activity name'),
             'available'      => new external_value(PARAM_BOOL, 'Whether session is accessible'),

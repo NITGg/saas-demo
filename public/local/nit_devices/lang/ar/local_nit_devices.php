@@ -21,7 +21,7 @@ $string['nit_devices:manage'] = 'عرض وحذف أجهزة أي حساب';
 $string['nit_devices:exempt'] = 'بدون حد للأجهزة';
 
 $string['enabled'] = 'تحديد عدد الأجهزة لكل حساب';
-$string['enabled_desc'] = 'كل حساب يُستخدم على عدد محدد من الأجهزة (المتصفحات والتطبيق مع بعض). مدير الموقع والمديرين والمدرسين بدون حد.';
+$string['enabled_desc'] = 'كل حساب يُستخدم على عدد محدد من الأجهزة (المتصفحات والتطبيق مع بعض). الطلاب والمدرسين عليهم الحد. مدير الموقع والمديرين بس بدون حد.';
 $string['maxdevices'] = 'عدد الأجهزة لكل حساب';
 $string['maxdevices_desc'] = 'المتصفحات والتطبيق بيتحسبوا مع بعض. الجهاز يفضل مسجّل لحد ما يتشال من صفحة "الأجهزة" (تسجيل الخروج ما بيفضّيش مكانه).';
 $string['policy'] = 'لما جهاز زيادة عن الحد يسجّل دخول';
@@ -62,7 +62,7 @@ $string['searchplaceholder'] = 'الاسم أو الإيميل أو اسم ال�
 $string['nousersfound'] = 'مفيش حساب بالبيانات دي.';
 $string['limitinfo'] = 'لحد {$a->max} أجهزة (المتصفحات والتطبيق مع بعض). لو جه جهاز زيادة: {$a->policy}.';
 $string['limitoff'] = 'حد الأجهزة مقفول (إدارة الموقع ← الإضافات ← الإضافات المحلية ← حد الأجهزة).';
-$string['exemptinfo'] = 'الحساب ده بدون حد للأجهزة (مدير أو مدرس).';
+$string['exemptinfo'] = 'الحساب ده بدون حد للأجهزة (مدير الموقع أو مدير).';
 
 $string['videocheck'] = 'فحص حماية الفيديوهات';
 $string['videocheck_desc'] = 'دروس VdoCipher بس هي المحمية بـ DRM (Widevine / FairPlay) وعليها العلامة المائية باسم الطالب. دروس Vimeo أسهل في التحميل وتسجيل الشاشة. الكورسات المدفوعة دي لسه فيها دروس Vimeo، انقلها لـ VdoCipher.';
@@ -80,3 +80,12 @@ $string['privacy:metadata:platform'] = 'نظام التشغيل.';
 $string['privacy:metadata:ip'] = 'عنوان IP لآخر استخدام.';
 $string['privacy:metadata:timecreated'] = 'أول مرة الجهاز اتستخدم.';
 $string['privacy:metadata:lastseen'] = 'آخر مرة الجهاز اتستخدم.';
+
+$string['stat_accounts'] = 'حسابات ليها أجهزة';
+$string['stat_devices'] = 'الأجهزة';
+$string['stat_full'] = 'حسابات وصلت للحد';
+$string['onlyfull'] = 'الحسابات اللي وصلت للحد بس';
+$string['nodevicesyet'] = 'مفيش حساب سجّل دخول من ساعة ما حد الأجهزة اتفتح.';
+$string['exempt'] = 'بدون حد';
+$string['full'] = 'مليان';
+$string['details'] = 'التفاصيل';

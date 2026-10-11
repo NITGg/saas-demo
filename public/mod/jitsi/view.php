@@ -151,7 +151,14 @@ $toolbar_student = [
     'tileview', 'videoquality',
     'fullscreen', 'hangup',
 ];
+// A student in a lesson room sees the teacher only (not the other students): no tile
+// view, no filmstrip, the teacher pinned on the main video (see the script below).
+$isolate_students = $session && !$is_teacher;
+if ($isolate_students) {
+    $toolbar_student = array_values(array_diff($toolbar_student, ['tileview']));
+}
 $toolbar         = $is_teacher ? $toolbar_teacher : $toolbar_student;
+$teacher_name    = $session ? fullname(core_user::get_user((int) $session->teacherid) ?: (object) ['firstname' => '', 'lastname' => '']) : '';
 
 // Jitsi is now on HTTPS (mkcert cert, port 8443 → container 443).
 // External API requires HTTPS — this is now satisfied.
@@ -201,8 +208,15 @@ if ($is_teacher) {
 echo '</div>';
 
 // ── Jitsi External API container ─────────────────────────────────────────
-echo '<div id="panel-video" style="width:100%;height:620px;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.15);">';
+echo '<div id="panel-video" style="position:relative;width:100%;height:620px;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.15);">';
 echo '<div id="jitsi-container" style="width:100%;height:100%;"></div>';
+if ($isolate_students) {
+    // Covers the video while the teacher is not in the call, so a student never sees
+    // another student on the main video (it would show whoever is speaking).
+    echo '<div id="jitsi-teacher-away" style="display:none;position:absolute;inset:0 0 72px 0;align-items:center;'
+        . 'justify-content:center;text-align:center;padding:24px;background:#1b1f24;color:#fff;font-size:18px;">'
+        . get_string('teacheraway', 'jitsi') . '</div>';
+}
 echo '</div>';
 
 // ── Whiteboard panel ─────────────────────────────────────────────────────
@@ -243,6 +257,11 @@ $js_config = json_encode([
     'jwt'             => $jitsi_jwt,
     'roomPassword'    => $room_password,
     'lobbyEnabled'    => $lobby_enabled,
+    // Lesson room host (teacher or admin): let anyone who knocks straight in. Only people
+    // Moodle gave a key for this room (its teacher, invited students, admins) can reach it.
+    'autoAdmit'       => (bool) ($session && $is_teacher),
+    'isolateStudents' => (bool) $isolate_students,
+    'teacherName'     => $teacher_name,
     'cmid'              => (int)$cm->id,
     'teacherPresentUrl' => $CFG->wwwroot . '/mod/jitsi/teacher_present.php',
     // Auto-start the recording when the host joins (Jibri records -> finalize.sh ->
@@ -294,7 +313,11 @@ echo <<<HTML
                 disableProfile: false,
                 enableNoisyMicDetection: true,
                 enableNoAudioDetection: true,
-                channelLastN: -1,
+                // A student in a lesson room receives one video (the pinned teacher) and
+                // has no filmstrip / tile view to show other students; the host sees all.
+                channelLastN: CFG.isolateStudents ? 1 : -1,
+                disableTileView: CFG.isolateStudents,
+                filmstrip: CFG.isolateStudents ? { disabled: true, disableStageFilmstrip: true } : {},
                 startWithAudioMuted: true,
                 startWithVideoMuted: false,
                 disableSelfViewSettings: false,
@@ -341,6 +364,71 @@ echo <<<HTML
             api.addEventListener('videoConferenceLeft', studentLeft);
             api.addEventListener('readyToClose', studentLeft);
             window.addEventListener('pagehide', studentLeft);
+        }
+
+        // Lesson room host (teacher or admin): whoever knocks (a lobby someone turned on,
+        // e.g. from the app) is let in at once. Reaching this room needs a key Moodle only
+        // gives its teacher, its invited students and admins, so nobody asks anybody.
+        if (CFG.autoAdmit) {
+            api.addEventListener('knockingParticipant', function(e) {
+                if (e && e.participant && e.participant.id) {
+                    api.executeCommand('answerKnockingParticipant', e.participant.id, true);
+                }
+            });
+        }
+
+        // Student in a lesson room: the teacher only. Keep the teacher pinned on the main
+        // video (by name, else the first host), tile view off and the filmstrip hidden;
+        // while the teacher is out of the call, cover the video so the main view never
+        // shows another student. NOTE: this is enforced in this page (and the app), not by
+        // the Jitsi server; see docs/CAMERA-PRIVACY-STUDY.md.
+        if (CFG.isolateStudents) {
+            var myId = null, hosts = {};
+            var away = document.getElementById('jitsi-teacher-away');
+            var keepTeacherOnly = function() {
+                var people = (api.getParticipantsInfo && api.getParticipantsInfo()) || [];
+                var teacher = null;
+                people.forEach(function(p) {
+                    if (!teacher && p.participantId !== myId && p.displayName === CFG.teacherName) {
+                        teacher = p.participantId;
+                    }
+                });
+                people.forEach(function(p) {
+                    if (!teacher && p.participantId !== myId && hosts[p.participantId]) {
+                        teacher = p.participantId;
+                    }
+                });
+                if (teacher) {
+                    api.pinParticipant(teacher);
+                }
+                if (away) {
+                    away.style.display = teacher ? 'none' : 'flex';
+                }
+                api.executeCommand('setTileView', false);
+            };
+            api.addEventListener('videoConferenceJoined', function(e) {
+                myId = e.id;
+                keepTeacherOnly();
+            });
+            api.addEventListener('participantRoleChanged', function(e) {
+                if (e.role === 'moderator') {
+                    hosts[e.id] = true;
+                }
+                keepTeacherOnly();
+            });
+            ['participantJoined', 'participantLeft', 'displayNameChange', 'dominantSpeakerChanged'].forEach(function(ev) {
+                api.addEventListener(ev, keepTeacherOnly);
+            });
+            api.addEventListener('tileViewChanged', function(e) {
+                if (e.enabled) {
+                    api.executeCommand('setTileView', false);
+                }
+            });
+            api.addEventListener('filmstripDisplayChanged', function(e) {
+                if (e.visible) {
+                    api.executeCommand('toggleFilmStrip');
+                }
+            });
         }
 
         // Auto-submit password for everyone so no one gets a prompt

@@ -30,10 +30,12 @@ use local_nit_flex\exception\flex_exception;
  *   reserved_flex  = held for confirmed lessons
  *   consumed_flex  = permanently spent
  *
- *   reserve : remaining -1, reserved +1   (ledger -1 on remaining)
- *   consume : reserved  -1, consumed +1   (ledger  0 — remaining lowered at reserve)
- *   return  : reserved  -1, remaining +1  (ledger +1)
- *   reverse : consumed  -1, remaining +1  (ledger +1)
+ *   reserve : remaining -n, reserved +n   (ledger -n on remaining)
+ *   consume : reserved  -n, consumed +n   (ledger  0 — remaining lowered at reserve)
+ *   return  : reserved  -n, remaining +n  (ledger +n)
+ *   reverse : consumed  -n, remaining +n  (ledger +n)
+ *
+ * n is the lesson's Flex count — the teacher's price per lesson, 1 by default.
  *
  * @package    local_nit_flex
  * @copyright  2026 NIT
@@ -41,48 +43,50 @@ use local_nit_flex\exception\flex_exception;
  */
 class flex_service extends service {
     /**
-     * Reserve one Flex from the student's active package when a lesson is confirmed (US-FN-1-2).
+     * Reserve a lesson's Flex from the student's active package when it is confirmed (US-FN-1-2).
      *
      * @param int $studentid
      * @param int $lessonid
      * @param int $performedby
      * @param string $reason
+     * @param int $count how many Flex the lesson costs
      * @return int the purchase id the Flex was reserved from
      */
-    public function reserve(int $studentid, int $lessonid, int $performedby, string $reason = ''): int {
+    public function reserve(int $studentid, int $lessonid, int $performedby, string $reason = '', int $count = 1): int {
+        $count = max(1, $count);
         $purchase = (new purchase_service())->active_entity($studentid);
-        if (!$purchase || (int) $purchase->get('remaining_flex') < 1) {
+        if (!$purchase || (int) $purchase->get('remaining_flex') < $count) {
             throw new flex_exception('err_noflex');
         }
         $before = (int) $purchase->get('remaining_flex');
-        $after  = $before - 1;
+        $after  = $before - $count;
         $purchase->set('remaining_flex', $after);
-        $purchase->set('reserved_flex', (int) $purchase->get('reserved_flex') + 1);
+        $purchase->set('reserved_flex', (int) $purchase->get('reserved_flex') + $count);
         $purchase->update();
 
-        $this->log($studentid, (int) $purchase->get('id'), $lessonid, flex_tx::TYPE_RESERVE, -1,
+        $this->log($studentid, (int) $purchase->get('id'), $lessonid, flex_tx::TYPE_RESERVE, -$count,
             $before, $after, $performedby, $reason);
         return (int) $purchase->get('id');
     }
 
     /**
-     * Permanently consume a reserved Flex (completed / late student cancel / student absent).
+     * Permanently consume a lesson's reserved Flex (completed / late student cancel / student absent).
      *
      * @param int $studentid
      * @param int $purchaseid
      * @param int $lessonid
      * @param int $performedby
      * @param string $reason
+     * @param int $count how many Flex the lesson reserved
      * @return void
      */
     public function consume(int $studentid, int $purchaseid, int $lessonid, int $performedby,
-            string $reason = ''): void {
+            string $reason = '', int $count = 1): void {
+        $count = max(1, $count);
         $purchase = $this->purchase_or_fail($purchaseid);
         $remaining = (int) $purchase->get('remaining_flex');
-        if ((int) $purchase->get('reserved_flex') > 0) {
-            $purchase->set('reserved_flex', (int) $purchase->get('reserved_flex') - 1);
-        }
-        $purchase->set('consumed_flex', (int) $purchase->get('consumed_flex') + 1);
+        $purchase->set('reserved_flex', max(0, (int) $purchase->get('reserved_flex') - $count));
+        $purchase->set('consumed_flex', (int) $purchase->get('consumed_flex') + $count);
         $purchase->update();
 
         $this->log($studentid, $purchaseid, $lessonid, flex_tx::TYPE_CONSUME, 0,
@@ -90,54 +94,54 @@ class flex_service extends service {
     }
 
     /**
-     * Return a reserved Flex to the student's balance (US-FN-1-3).
+     * Return a lesson's reserved Flex to the student's balance (US-FN-1-3).
      *
      * @param int $studentid
      * @param int $purchaseid
      * @param int $lessonid
      * @param int $performedby
      * @param string $reason
+     * @param int $count how many Flex the lesson reserved
      * @return void
      */
     public function return_flex(int $studentid, int $purchaseid, int $lessonid, int $performedby,
-            string $reason = ''): void {
+            string $reason = '', int $count = 1): void {
+        $count = max(1, $count);
         $purchase = $this->purchase_or_fail($purchaseid);
         $before = (int) $purchase->get('remaining_flex');
-        $purchase->set('remaining_flex', $before + 1);
-        if ((int) $purchase->get('reserved_flex') > 0) {
-            $purchase->set('reserved_flex', (int) $purchase->get('reserved_flex') - 1);
-        }
+        $purchase->set('remaining_flex', $before + $count);
+        $purchase->set('reserved_flex', max(0, (int) $purchase->get('reserved_flex') - $count));
         $this->revive_if_used($purchase);
         $purchase->update();
 
-        $this->log($studentid, $purchaseid, $lessonid, flex_tx::TYPE_RETURN, 1,
-            $before, $before + 1, $performedby, $reason);
+        $this->log($studentid, $purchaseid, $lessonid, flex_tx::TYPE_RETURN, $count,
+            $before, $before + $count, $performedby, $reason);
         $this->close_if_ended($purchase);
     }
 
     /**
-     * Reverse a consumed Flex back to the student's balance (admin reversal, US-FN-1-5).
+     * Reverse a lesson's consumed Flex back to the student's balance (admin reversal, US-FN-1-5).
      *
      * @param int $studentid
      * @param int $purchaseid
      * @param int $lessonid
      * @param int $performedby
      * @param string $reason
+     * @param int $count how many Flex the lesson consumed
      * @return void
      */
     public function reverse_consumed(int $studentid, int $purchaseid, int $lessonid, int $performedby,
-            string $reason = ''): void {
+            string $reason = '', int $count = 1): void {
+        $count = max(1, $count);
         $purchase = $this->purchase_or_fail($purchaseid);
         $before = (int) $purchase->get('remaining_flex');
-        $purchase->set('remaining_flex', $before + 1);
-        if ((int) $purchase->get('consumed_flex') > 0) {
-            $purchase->set('consumed_flex', (int) $purchase->get('consumed_flex') - 1);
-        }
+        $purchase->set('remaining_flex', $before + $count);
+        $purchase->set('consumed_flex', max(0, (int) $purchase->get('consumed_flex') - $count));
         $this->revive_if_used($purchase);
         $purchase->update();
 
-        $this->log($studentid, $purchaseid, $lessonid, flex_tx::TYPE_RETURN, 1,
-            $before, $before + 1, $performedby, $reason);
+        $this->log($studentid, $purchaseid, $lessonid, flex_tx::TYPE_RETURN, $count,
+            $before, $before + $count, $performedby, $reason);
         $this->close_if_ended($purchase);
     }
 

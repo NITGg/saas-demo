@@ -1512,6 +1512,12 @@ class format_topics_renderer extends \format_topics\output\renderer {
                 . html_writer::link($detailsurl, get_string('acad_gotocourse', 'theme_nit'),
                     ['class' => 'bthc__btn bthc__btn--ghost']);
         } else if ($info['haspricing']) {
+            global $USER;
+            // Pay from the student wallet in the checkout dialog (local_nit_finance), when it can.
+            $wallet = class_exists('\local_nit_finance\local\output')
+                ? \local_nit_finance\local\output::course_wallet_option((int) $USER->id, (int) $course->id,
+                    $this->page->url->out_as_local_url(false))
+                : null;
             $cta = html_writer::tag('button', get_string('acad_subscribe', 'theme_nit'), [
                 'type'                => 'button',
                 'class'               => 'bthc__btn',
@@ -1519,6 +1525,7 @@ class format_topics_renderer extends \format_topics\output\renderer {
                 'data-courseid'       => (int) $course->id,
                 'data-name'           => s(format_string($course->fullname)),
                 'data-price'          => s((string) $info['price']),
+                'data-wallet'         => $wallet ? json_encode($wallet) : '',
             ]);
         } else {
             $cta = html_writer::link($enrolurl, get_string('acad_enrol', 'theme_nit'), ['class' => 'bthc__btn']);
@@ -1701,10 +1708,11 @@ class format_topics_renderer extends \format_topics\output\renderer {
         }
         require_once($CFG->dirroot . '/local/nit_commerce/lib.php');
 
-        $costr = local_nit_commerce_string_map([
+        $hasfinance = class_exists('\local_nit_finance\local\output');
+        $costr = local_nit_commerce_string_map(array_merge([
             'co_title', 'co_intro', 'co_total', 'co_total_sub', 'co_offer', 'co_coupon', 'co_apply', 'co_discount',
             'co_secure', 'co_proceed', 'co_cancel', 'co_loading', 'co_coupon_failed', 'co_currency',
-        ]);
+        ], $hasfinance ? \local_nit_finance\local\output::wallet_modal_strings() : []));
 
         $o  = html_writer::tag('script', '',
             ['src' => (new moodle_url('/local/nit_commerce/checkout_modal.js'))->out(false)]);
@@ -1714,6 +1722,7 @@ class format_topics_renderer extends \format_topics\output\renderer {
             'commerce' => '/local/nit_commerce/api.php',
             'str'      => $costr,
             'loggedin' => isloggedin() && !isguestuser(),
+            'online'   => !$hasfinance || \local_nit_finance\local\output::online_payment_available(),
         ]) . ';');
         $o .= html_writer::script(<<<'JS'
 (function () {
@@ -1731,6 +1740,8 @@ class format_topics_renderer extends \format_topics\output\renderer {
                 itemId: parseInt(id, 10),
                 name: btn.getAttribute('data-name'),
                 price: parseFloat(btn.getAttribute('data-price')) || 0,
+                wallet: btn.getAttribute('data-wallet') ? JSON.parse(btn.getAttribute('data-wallet')) : null,
+                online: window.NIT_CO.online,
                 proceed: function (code) {
                     window.location.href = window.NIT_CO.wwwroot + '/local/payments/checkout.php?courseid=' + id +
                         '&sesskey=' + encodeURIComponent(window.NIT_CO.sesskey) + '&coupon_code=' + encodeURIComponent(code);

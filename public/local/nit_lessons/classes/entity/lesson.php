@@ -84,6 +84,7 @@ class lesson extends entity {
             'cancel_reason'  => ['type' => PARAM_TEXT, 'null' => NULL_ALLOWED, 'default' => null],
             'purchaseid'     => ['type' => PARAM_INT, 'default' => 0],
             'flex_state'     => ['type' => PARAM_ALPHA, 'default' => 'none'],
+            'flex_count'     => ['type' => PARAM_INT, 'default' => 1],
             'actual_start'   => ['type' => PARAM_INT, 'default' => 0],
             'actual_end'     => ['type' => PARAM_INT, 'default' => 0],
             'sessionid'      => ['type' => PARAM_INT, 'default' => 0],

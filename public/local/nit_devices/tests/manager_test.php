@@ -96,22 +96,33 @@ final class manager_test extends \advanced_testcase {
         $this->assertSame([], manager::devices((int) $user->id));
     }
 
-    public function test_admins_and_teachers_have_no_limit(): void {
+    public function test_only_admins_and_managers_have_no_limit(): void {
+        global $DB;
         $gen = $this->getDataGenerator();
         $student = $gen->create_user();
         $teacher = $gen->create_user();
+        $catmanager = $gen->create_user();
         $course = $gen->create_course();
         $gen->enrol_user($student->id, $course->id, 'student');
         $gen->enrol_user($teacher->id, $course->id, 'editingteacher');
+        // A manager on a category only: no system capability, still a manager.
+        $managerrole = $DB->get_field('role', 'id', ['shortname' => 'manager']);
+        role_assign($managerrole, $catmanager->id, \context_coursecat::instance($course->category)->id);
 
         $this->assertTrue(manager::applies_to((int) $student->id));
-        $this->assertFalse(manager::applies_to((int) $teacher->id));
+        $this->assertTrue(manager::applies_to((int) $teacher->id), 'teachers are limited like students');
+        $this->assertFalse(manager::applies_to((int) $catmanager->id));
         $this->assertFalse(manager::applies_to((int) get_admin()->id));
 
         foreach (['a', 'b', 'c'] as $id) {
-            manager::register((int) $teacher->id, manager::WEB, $id);
+            manager::register((int) $catmanager->id, manager::WEB, $id);
         }
-        $this->assertCount(3, manager::devices((int) $teacher->id), 'recorded, never refused');
+        $this->assertCount(3, manager::devices((int) $catmanager->id), 'recorded, never refused');
+
+        manager::register((int) $teacher->id, manager::WEB, 'a');
+        manager::register((int) $teacher->id, manager::WEB, 'b');
+        $this->expectException(device_limit_exception::class);
+        manager::register((int) $teacher->id, manager::WEB, 'c');
     }
 
     public function test_old_app_phones_count_as_one_device(): void {

@@ -21,7 +21,7 @@ $string['nit_devices:manage'] = 'See and remove the devices of any account';
 $string['nit_devices:exempt'] = 'No device limit';
 
 $string['enabled'] = 'Limit devices per account';
-$string['enabled_desc'] = 'Each account may be used on a set number of devices (browsers and app installs together). Site admins, managers and course teachers have no limit.';
+$string['enabled_desc'] = 'Each account may be used on a set number of devices (browsers and app installs together). Students and teachers are limited; only site admins and managers have no limit.';
 $string['maxdevices'] = 'Devices per account';
 $string['maxdevices_desc'] = 'Browsers and app installs count together. A device stays registered until it is removed on the Devices page (signing out does not free its place).';
 $string['policy'] = 'When a device too many signs in';
@@ -62,7 +62,7 @@ $string['searchplaceholder'] = 'Name, email, username or phone';
 $string['nousersfound'] = 'No account found.';
 $string['limitinfo'] = 'Up to {$a->max} devices (browsers and app together). One more: {$a->policy}.';
 $string['limitoff'] = 'The device limit is switched off (Site administration → Plugins → Local plugins → Device limit).';
-$string['exemptinfo'] = 'This account has no device limit (admin, manager or teacher).';
+$string['exemptinfo'] = 'This account has no device limit (site admin or manager).';
 
 $string['videocheck'] = 'Video protection check';
 $string['videocheck_desc'] = 'Only VdoCipher lessons are protected with DRM (Widevine / FairPlay) and the viewer\'s watermark. Vimeo lessons are easier to download or screen-record. These paid courses still have Vimeo lessons; move them to VdoCipher.';
@@ -80,3 +80,12 @@ $string['privacy:metadata:platform'] = 'The operating system.';
 $string['privacy:metadata:ip'] = 'The IP address of the latest use.';
 $string['privacy:metadata:timecreated'] = 'When the device was first used.';
 $string['privacy:metadata:lastseen'] = 'When the device was last used.';
+
+$string['stat_accounts'] = 'Accounts with devices';
+$string['stat_devices'] = 'Devices';
+$string['stat_full'] = 'Accounts at the limit';
+$string['onlyfull'] = 'Only accounts at the limit';
+$string['nodevicesyet'] = 'No account has signed in since the device limit was switched on.';
+$string['exempt'] = 'No limit';
+$string['full'] = 'Full';
+$string['details'] = 'Details';
