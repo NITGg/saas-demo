@@ -11,6 +11,17 @@ defined('MOODLE_INTERNAL') || die();
 class manager {
 
     /**
+     * Webhook columns that are encrypted at rest, mapped to their crypto context.
+     * Single source of truth shared by the writer (handle_webhook) and the reader
+     * (decrypt_webhook / get_webhook) so contexts never drift.
+     */
+    public const ENCRYPTED_WEBHOOK_FIELDS = [
+        'card_info'       => 'local_payments.card_info',
+        'source_of_funds' => 'local_payments.source_of_funds',
+        'signature_keys'  => 'local_payments.signature_keys',
+    ];
+
+    /**
      * Get the best provider for a given country and currency.
      *
      * @param string $country ISO 3166-1 alpha-2
@@ -883,10 +894,12 @@ class manager {
             'currency' => $result->currency,
             'payload' => $payload,
             'headers' => json_encode($headers),
-            'card_info' => !empty($result->card_info) ? json_encode($result->card_info) : null,
-            'source_of_funds' => !empty($result->source_of_funds) ? json_encode($result->source_of_funds) : null,
+            // Encrypt payment-card / signature secrets at the app layer so they are
+            // ciphertext inside the DB (and in dumps). Read back via self::decrypt_webhook().
+            'card_info' => self::encrypt_webhook_field($result->card_info, 'card_info'),
+            'source_of_funds' => self::encrypt_webhook_field($result->source_of_funds, 'source_of_funds'),
             'channel' => $result->channel,
-            'signature_keys' => !empty($result->signature_keys) ? json_encode($result->signature_keys) : null,
+            'signature_keys' => self::encrypt_webhook_field($result->signature_keys, 'signature_keys'),
             'signature_valid' => $result->signature_valid ? 1 : 0,
             'status' => 'received',
             'timecreated' => time(),
@@ -1465,5 +1478,70 @@ class manager {
         } finally {
             force_current_language($oldlang);
         }
+    }
+
+    /**
+     * Encrypt a webhook secret field for storage. Array|null in → ciphertext|null.
+     *
+     * @param mixed $value The DTO value (array) to store.
+     * @param string $field One of self::ENCRYPTED_WEBHOOK_FIELDS keys.
+     * @return string|null
+     */
+    private static function encrypt_webhook_field($value, string $field): ?string {
+        if (empty($value)) {
+            return null;
+        }
+        return \local_nit_core\helper\crypto::encrypt(
+            json_encode($value), self::ENCRYPTED_WEBHOOK_FIELDS[$field]);
+    }
+
+    /**
+     * Decrypt the sensitive columns of a webhook record IN PLACE, for display/reporting.
+     *
+     * Call this on any record loaded from local_payments_webhooks before reading
+     * card_info / source_of_funds / signature_keys. Fields come back as JSON strings
+     * (exactly as before encryption) — json_decode() them as usual. Safe on legacy
+     * plaintext rows (returned unchanged) and on null/empty fields.
+     *
+     * @param \stdClass|null $webhook A row from local_payments_webhooks.
+     * @return \stdClass|null The same object with the sensitive fields decrypted.
+     */
+    public static function decrypt_webhook(?\stdClass $webhook): ?\stdClass {
+        if ($webhook === null) {
+            return null;
+        }
+        foreach (self::ENCRYPTED_WEBHOOK_FIELDS as $field => $context) {
+            if (!empty($webhook->$field)) {
+                $webhook->$field = \local_nit_core\helper\crypto::decrypt($webhook->$field, $context);
+            }
+        }
+        return $webhook;
+    }
+
+    /**
+     * Load a webhook record ready for display, with its secret columns decrypted.
+     * Use this instead of a raw $DB->get_record() wherever a webhook is shown.
+     *
+     * @param int $id local_payments_webhooks.id
+     * @param int $strictness IGNORE_MISSING (default) or MUST_EXIST.
+     * @return \stdClass|null
+     */
+    public static function get_webhook(int $id, int $strictness = IGNORE_MISSING): ?\stdClass {
+        global $DB;
+        $record = $DB->get_record('local_payments_webhooks', ['id' => $id], '*', $strictness);
+        return $record ? self::decrypt_webhook($record) : null;
+    }
+
+    /**
+     * Decrypt the secret columns of many webhook records in place (for list views).
+     *
+     * @param array $webhooks Array of local_payments_webhooks records.
+     * @return array The same array, each record decrypted.
+     */
+    public static function decrypt_webhooks(array $webhooks): array {
+        foreach ($webhooks as $webhook) {
+            self::decrypt_webhook($webhook);
+        }
+        return $webhooks;
     }
 }
