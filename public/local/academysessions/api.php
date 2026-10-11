@@ -156,6 +156,25 @@ api::run(function (string $function) use ($userid) {
             api::require_post();
             return sessions::leave(required_param('sessionid', PARAM_INT), $userid);
 
+        // ── Any Jitsi room (course rooms and lesson rooms) ────────────────────────
+
+        // The room's attendance log: call with present=1 on conference joined, present=0
+        // on left (same as the web page). Joining is logged only while the room lets you in.
+        case 'room_presence':
+            api::require_post();
+            $cm = academysessions_jitsi_cm(required_param('cmid', PARAM_INT));
+            $present = required_param('present', PARAM_BOOL);
+            if ($present) {
+                $cminfo = get_fast_modinfo($cm->course, $userid)->get_cm($cm->id);
+                $decision = \mod_jitsi\local\access::check($cminfo, $userid);
+                if ($decision->allowed) {
+                    \mod_jitsi\local\roomlog::joined((int) $cm->instance, $userid, $decision->moderator);
+                }
+            } else {
+                \mod_jitsi\local\roomlog::left((int) $cm->instance, $userid);
+            }
+            return ['cmid' => (int) $cm->id, 'present' => $present];
+
         // ── Recordings (Vimeo) ────────────────────────────────────────────────────
 
         case 'get_session_recordings':

@@ -101,7 +101,19 @@ class get_session_info extends external_api {
             }
         }
 
+        $session = $decision->session;
         return [
+            // What the app must do in the call (the web page does the same, view.php):
+            // a student sees the teacher only; a host turns the Jitsi lobby on when `lobby`
+            // and lets other hosts (host_names) out of it at once, students' knocks being
+            // answered by the teacher inside the meeting. access_code says why not in yet.
+            'isolate_students' => !$is_teacher,
+            'auto_admit'    => $is_teacher,
+            'lobby'         => \mod_jitsi\local\access::waiting_room($cm),
+            'host_names'    => \mod_jitsi\local\access::host_names($cm, $session ?: null),
+            'access_code'   => $decision->code,
+            'teacher_name'  => (string) (jitsi_teacher_names($cm, $session)[0] ?? ''),
+            'teacher_names' => jitsi_teacher_names($cm, $session),
             'cmid'          => $cm->id,
             'name'          => format_string($jitsi->name),
             'available'     => $available,
@@ -118,6 +130,19 @@ class get_session_info extends external_api {
 
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
+            'isolate_students' => new external_value(PARAM_BOOL, 'A student: show the teacher only '
+                . '(no tile view / filmstrip, pin the teacher, lastN 1)'),
+            'auto_admit'     => new external_value(PARAM_BOOL, 'A host: let knockers named in host_names in at once '
+                . '(everyone, when lobby is false)'),
+            'lobby'          => new external_value(PARAM_BOOL, 'Course room with a waiting room: a host turns the Jitsi '
+                . 'lobby on when joining; students knock and the teacher admits them inside the meeting'),
+            'host_names'     => new external_multiple_structure(
+                new external_value(PARAM_TEXT, 'Display name'), 'Display names of the room\'s hosts (teachers, admins)'),
+            'access_code'    => new external_value(PARAM_ALPHANUMEXT, 'ok, or why not yet: waitingforteacher, '
+                . 'sessionnotavailable, sessionended, notallowed, unavailable'),
+            'teacher_name'   => new external_value(PARAM_TEXT, 'The (first) teacher\'s display name, to pin'),
+            'teacher_names'  => new external_multiple_structure(
+                new external_value(PARAM_TEXT, 'Display name'), 'Every teacher\'s display name (a course room can have several)'),
             'cmid'           => new external_value(PARAM_INT,  'Course module ID'),
             'name'           => new external_value(PARAM_TEXT, 'Activity name'),
             'available'      => new external_value(PARAM_BOOL, 'Whether session is accessible'),

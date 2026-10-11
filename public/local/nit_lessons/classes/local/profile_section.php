@@ -19,8 +19,8 @@ namespace local_nit_lessons\local;
 use local_nit_lessons\service\teacher_service;
 
 /**
- * The teacher's live-lesson settings (take bookings, headline, subjects, weekly
- * hours) as a card of the profile page /local/academy/profile.php — it replaced
+ * The teacher's live-lesson settings (take bookings, headline, Flex per lesson,
+ * subjects, weekly hours) as a card of the profile page /local/academy/profile.php — it replaced
  * the old /local/nit_lessons/teacher_profile.php. The card's inputs post with the
  * profile form; save() stores them.
  *
@@ -66,9 +66,15 @@ class profile_section {
             $hours[] = ['dayofweek' => (int) $day, 'starttime' => (string) ($starts[$i] ?? ''),
                 'endtime' => (string) ($ends[$i] ?? '')];
         }
+        // Flex per lesson: an empty or missing box keeps the saved price; anything else must be a whole number ≥ 1.
+        $lessonflex = trim(optional_param('nitlx_lessonflex', '', PARAM_RAW_TRIMMED));
+        if ($lessonflex !== '' && !preg_match('/^\d{1,18}$/', $lessonflex)) {
+            return get_string('err_badlessonflex', 'local_nit_lessons');
+        }
         try {
             (new teacher_service())->save($userid, (bool) optional_param('nitlx_available', 0, PARAM_BOOL),
-                optional_param('nitlx_headline', '', PARAM_TEXT), optional_param_array('nitlx_subjects', [], PARAM_TEXT), $hours);
+                optional_param('nitlx_headline', '', PARAM_TEXT), optional_param_array('nitlx_subjects', [], PARAM_TEXT), $hours,
+                $lessonflex === '' ? null : (int) $lessonflex);
         } catch (\moodle_exception $e) {
             return $e->getMessage();
         }
@@ -109,6 +115,7 @@ class profile_section {
             'marker' => self::MARKER,
             'available' => $profile['available'],
             'headline' => $profile['headline'],
+            'lessonflex' => $profile['lesson_flex'],
             'subjects' => $subjects,
             'blankoptions' => $select(''),
             'hassubjectoptions' => !empty($options),

@@ -99,12 +99,13 @@
                     <div class="nitlx-teacher__body">
                         <h3 class="nitlx-teacher__name">{{name}}</h3>
                         {{#headline}}<p class="nitlx-teacher__headline">{{headline}}</p>{{/headline}}
+                        <p class="nitlx-teacher__flex">{{#str}}flexperlesson, local_nit_lessons, {{flexcost}}{{/str}}</p>
                         <ul class="nitlx-chips">{{#subjects}}<li>{{name}}</li>{{/subjects}}</ul>
                     </div>
                     <button type="button" class="nitfin-btn nitfin-btn--small nitlx-teacher__btn" data-act="request"
                             data-need="request" data-teacher="{{id}}" data-subjects="{{subjectsjson}}"
                             data-title="{{#str}}requestwith, local_nit_lessons, {{name}}{{/str}}"
-                            {{^hasflex}}disabled{{/hasflex}}>{{#str}}requestlesson, local_nit_lessons{{/str}}</button>
+                            {{^canbook}}disabled title="{{#str}}err_notenoughflex, local_nit_lessons, {{flexcost}}{{/str}}"{{/canbook}}>{{#str}}requestlesson, local_nit_lessons{{/str}}</button>
                 </article>
                 {{/teachers}}
             </div>
@@ -191,11 +192,12 @@
             {{#subactive}}<p class="nitfin-note nitlx-note">{{#str}}subalreadyactive, local_nit_lessons{{/str}}</p>{{/subactive}}
             {{#hassubs}}
             {{^subonline}}<p class="nitfin-note nitlx-note">{{#str}}subnoonline, local_nit_lessons{{/str}}</p>{{/subonline}}
+            <p class="nitfin-note nitlx-note">{{#str}}walletbalanceis, local_nit_finance, {{walletbalance}}{{/str}} · <a href="{{topupurl}}">{{#str}}co_wallet_topup, local_nit_commerce{{/str}}</a></p>
             <div class="nitlx-pkgs">
                 {{#subs}}
                 <article class="nitlx-pkg">
                     <h2 class="nitlx-pkg__name">{{name}}</h2>
-                    <div class="nitlx-pkg__price" dir="ltr"><strong>{{price}}</strong></div>
+                    <div class="nitlx-pkg__price" dir="ltr">{{#original}}<del>{{original}}</del> {{/original}}<strong>{{price}}</strong></div>
                     <ul class="nitlx-pkg__facts"><li>{{days}}</li></ul>
                     {{#description}}<div class="nitlx-pkg__desc">{{description}}</div>{{/description}}
                     <ul class="nitlx-chips">{{#courses}}<li>{{name}}</li>{{/courses}}</ul>
@@ -205,6 +207,12 @@
                         <input type="hidden" name="action" value="buysub">
                         <input type="hidden" name="subscriptionid" value="{{id}}">
                         <button type="submit" class="nitfin-btn nitfin-btn--block" {{#disabled}}disabled{{/disabled}}>{{#str}}subscribe, local_nit_lessons{{/str}}</button>
+                    </form>
+                    <form method="post" action="{{walletpayurl}}">
+                        <input type="hidden" name="sesskey" value="{{sesskey}}">
+                        <input type="hidden" name="type" value="subscription">
+                        <input type="hidden" name="id" value="{{id}}">
+                        <button type="submit" class="nitfin-btn nitfin-btn--outline nitfin-btn--block" {{#walletdisabled}}disabled{{/walletdisabled}}>{{#str}}paysubwithwallet, local_nit_finance{{/str}}</button>
                     </form>
                 </article>
                 {{/subs}}

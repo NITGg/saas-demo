@@ -101,9 +101,11 @@ api::run(function (string $function) use ($userid) {
 
         case 'update_teacher_profile':
             api::require_post();
+            // lesson_flex is optional: left out, the teacher's saved price stays.
+            $lessonflex = optional_param('lesson_flex', null, PARAM_INT);
             return lessonsapi::update_teacher_profile($userid, (bool) optional_param('available', 0, PARAM_BOOL),
                 optional_param('headline', '', PARAM_TEXT), api::json_param('subjects'),
-                api::json_param('hours', false));
+                api::json_param('hours', false), $lessonflex === null ? null : (int) $lessonflex);
 
         // ── Admin (local/nit_lessons:managesettings) ───────────────────────
 

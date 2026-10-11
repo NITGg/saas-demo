@@ -67,6 +67,26 @@ if ($function === 'end_room') {
     exit;
 }
 
+// ── room_presence ──────────────────────────────────────────────────────────
+// The room's attendance log: the caller came into the call (present=1) or left it
+// (present=0). Joining is only logged for someone the room lets in right now.
+if ($function === 'room_presence') {
+    $cmid = required_param('cmid', PARAM_INT);
+    $present = required_param('present', PARAM_BOOL);
+    [$course, $cm] = get_course_and_cm_from_cmid($cmid, 'jitsi');
+    if ($present) {
+        $cminfo = get_fast_modinfo($course, (int) $USER->id)->get_cm($cm->id);
+        $decision = \mod_jitsi\local\access::check($cminfo, (int) $USER->id);
+        if ($decision->allowed) {
+            \mod_jitsi\local\roomlog::joined((int) $cm->instance, (int) $USER->id, $decision->moderator);
+        }
+    } else {
+        \mod_jitsi\local\roomlog::left((int) $cm->instance, (int) $USER->id);
+    }
+    echo json_encode(['status' => 'success']);
+    exit;
+}
+
 // ── Recording endpoints (Bunny/MinIO) removed for the SaaS ──────────────────
 // Session recording moves to VdoCipher (local_vdocipher) in a later phase. Until
 // then these return an empty result so any lingering client poll is harmless.

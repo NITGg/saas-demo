@@ -61,42 +61,36 @@ $PAGE->set_context($context);
 $PAGE->set_title(format_string($jitsi->name));
 $PAGE->set_heading(format_string($course->fullname));
 
-if (!$decision->allowed) {
+if ($decision->code === \mod_jitsi\local\access::NOT_ALLOWED) {
     echo $OUTPUT->header();
     echo $OUTPUT->heading(format_string($jitsi->name));
-    switch ($decision->code) {
-        case \mod_jitsi\local\access::UNAVAILABLE:
-            // Moodle availability ("available until" passed etc.).
-            echo $OUTPUT->notification($cm->availableinfo ?: get_string('sessionended', 'jitsi'), 'warning');
-            jitsi_print_recordings($session, $context, $is_teacher, $cm->id);
-            break;
-        case \mod_jitsi\local\access::WAITING:
-            // The waiting page reloads, so the student drops into the room the moment
-            // the teacher arrives (teacher_present.php stamps teacher_joined_at).
-            echo html_writer::tag('div',
-                $OUTPUT->notification($decision->message, 'info'), ['id' => 'jitsi-waiting']);
-            echo html_writer::script('setTimeout(function(){ location.reload(); }, 5000);');
-            break;
-        case \mod_jitsi\local\access::ENDED:
-            echo $OUTPUT->notification($decision->message, 'info');
-            jitsi_print_recordings($session, $context, $is_teacher, $cm->id);
-            break;
-        case \mod_jitsi\local\access::NOT_ALLOWED:
-            echo $OUTPUT->notification($decision->message, 'warning');
-            break;
-        default:
-            echo $OUTPUT->notification($decision->message, 'info');
-    }
+    echo $OUTPUT->notification($decision->message, 'warning');
     echo $OUTPUT->footer();
     exit;
 }
 
-// A student let in: open their attendance row.
-\mod_jitsi\local\access::record_entry($decision, (int) $USER->id);
+// Opening the activity only shows the room; the call starts after "Join" (join=1), so
+// someone browsing the course never lands in the meeting (nor starts its recording).
+$wantsjoin = optional_param('join', 0, PARAM_BOOL);
+
+// Closed for now (waiting for the teacher, not open yet, ended, unavailable): the page
+// keeps its tabs (recordings, whiteboard...) and the video tab says why there is no call.
+// A student waiting for the teacher still gets the "Join" step, like the teacher; the
+// wait shows once they press it.
+$closed = !$decision->allowed
+    && !($decision->code === \mod_jitsi\local\access::WAITING && !$wantsjoin);
+$joining = $decision->allowed && $wantsjoin;
+
+// A student who joined: open their attendance row.
+if ($joining) {
+    \mod_jitsi\local\access::record_entry($decision, (int) $USER->id);
+}
 
 // Completion tracking.
-$completion = new completion_info($course);
-$completion->set_module_viewed($cm);
+if ($decision->allowed) {
+    $completion = new completion_info($course);
+    $completion->set_module_viewed($cm);
+}
 
 // -------------------------------------------------------------------------
 // Build Jitsi configuration.
@@ -110,10 +104,11 @@ $jitsi_room = jitsi_room_name($jitsi, $cm);
 $display_name = fullname($USER);
 $user_email   = $USER->email;
 
-// JWT token — tells Jitsi who is moderator.
-$jitsi_jwt = \local_academysessions\jitsi_jwt::generate(
+// JWT token — tells Jitsi who is moderator. Only for someone joining the call (the key
+// is the way into the room: never for a student still waiting outside).
+$jitsi_jwt = $joining ? \local_academysessions\jitsi_jwt::generate(
     $jitsi_room, $display_name, $user_email, $is_teacher
-);
+) : '';
 
 // Map Moodle lang codes to Jitsi / i18n codes.
 $lang_map = [
@@ -151,7 +146,14 @@ $toolbar_student = [
     'tileview', 'videoquality',
     'fullscreen', 'hangup',
 ];
+// A student sees the teacher only (not the other students), in every room: no tile view,
+// no filmstrip, the teacher pinned on the main video (see the script below).
+$isolate_students = !$is_teacher;
+if ($isolate_students) {
+    $toolbar_student = array_values(array_diff($toolbar_student, ['tileview']));
+}
 $toolbar         = $is_teacher ? $toolbar_teacher : $toolbar_student;
+$teacher_names   = jitsi_teacher_names($cm, $session);
 
 // Jitsi is now on HTTPS (mkcert cert, port 8443 → container 443).
 // External API requires HTTPS — this is now satisfied.
@@ -169,13 +171,24 @@ $sesskey      = sesskey();
 $session_id   = $session ? (int)$session->id : 0;
 $end_ajax_url = (new moodle_url('/mod/jitsi/ajax.php'))->out(false);
 
+// Auto-start the recording when the host joins (Jibri records -> finalize.sh ->
+// Vimeo). Per-academy toggle: theme_nit/jitsi_autorecord (default ON), so an
+// academy can turn it off site-wide.
+// Only the lesson's own teacher starts it: a site admin dropping in must not.
+$autorecord = (get_config('theme_nit', 'jitsi_autorecord') !== '0')
+    && (!$session || (int) $session->teacherid === (int) $USER->id);
+
+$show_recs = jitsi_show_recordings_tab($is_teacher, $session);
+
 // -------------------------------------------------------------------------
 // Output.
 // -------------------------------------------------------------------------
 echo $OUTPUT->header();
 
-// Load Jitsi External API as a static <script> tag.
-echo '<script src="' . s($jitsi_scheme . '://' . $jitsi_host . '/external_api.js') . '"></script>' . "\n";
+// Load Jitsi External API as a static <script> tag (only once the user joins).
+if ($joining) {
+    echo '<script src="' . s($jitsi_scheme . '://' . $jitsi_host . '/external_api.js') . '"></script>' . "\n";
+}
 
 // NOTE: no explicit $OUTPUT->heading() here — the theme's activity header
 // (full_header) already renders the activity name; echoing it again showed the
@@ -193,22 +206,60 @@ echo '<button id="tab-video" onclick="jitsiSwitchTab(\'video\')" class="btn btn-
      . get_string('tab_video', 'jitsi') . '</button>';
 echo '<button id="tab-whiteboard" onclick="jitsiSwitchTab(\'whiteboard\')" class="btn btn-outline-secondary btn-sm" style="border-radius:16px;">'
      . get_string('tab_whiteboard', 'jitsi') . '</button>';
+if ($show_recs) {
+    echo '<button id="tab-recordings" onclick="jitsiSwitchTab(\'recordings\')" class="btn btn-outline-secondary btn-sm" style="border-radius:16px;">'
+         . get_string('recordings', 'jitsi') . '</button>';
+}
 if ($is_teacher) {
+    echo '<button id="tab-attendance" onclick="jitsiSwitchTab(\'attendance\')" class="btn btn-outline-secondary btn-sm" style="border-radius:16px;">'
+        . get_string('attendancelog', 'jitsi') . '</button>';
     echo '<span class="badge badge-info ml-auto" style="align-self:center;font-size:12px;">'
          . get_string('youarehost', 'jitsi') . '</span>';
     // Recording (Jibri) is not wired in this phase — no Stop Recording button.
 }
 echo '</div>';
 
-// ── Jitsi External API container ─────────────────────────────────────────
-echo '<div id="panel-video" style="width:100%;height:620px;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.15);">';
-echo '<div id="jitsi-container" style="width:100%;height:100%;"></div>';
+// ── Jitsi External API container (or the "Join" step before it) ───────────
+echo '<div id="panel-video" style="position:relative;width:100%;height:' . ($joining ? '620px' : '360px')
+    . ';border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.15);">';
+if ($closed) {
+    echo jitsi_closed_html($decision, $cm, $wantsjoin,
+        \mod_jitsi\local\access::waiting_room($cm));
+} else if (!$joining) {
+    echo jitsi_prejoin_html($cm, $is_teacher && $autorecord);
+}
+echo '<div id="jitsi-container" style="width:100%;height:100%;' . ($joining ? '' : 'display:none;') . '"></div>';
+if ($isolate_students) {
+    // Covers the video while the teacher is not in the call, so a student never sees
+    // another student on the main video (it would show whoever is speaking).
+    echo '<div id="jitsi-teacher-away" style="display:none;position:absolute;inset:0 0 72px 0;align-items:center;'
+        . 'justify-content:center;text-align:center;padding:24px;background:#1b1f24;color:#fff;font-size:18px;">'
+        . get_string('teacheraway', 'jitsi') . '</div>';
+}
 echo '</div>';
 
 // ── Whiteboard panel ─────────────────────────────────────────────────────
 echo '<div id="panel-whiteboard" style="display:none;width:100%;height:620px;border-radius:8px;overflow:hidden;border:1px solid #e0e0e0;">';
-echo '<iframe src="' . s($wb_url) . '" style="width:100%;height:100%;border:none;" allow="clipboard-read;clipboard-write"></iframe>';
+// Loaded the first time the tab opens (data-src), not with every visit to the page.
+echo '<iframe data-src="' . s($wb_url) . '" style="width:100%;height:100%;border:none;" allow="clipboard-read;clipboard-write"></iframe>';
 echo '</div>';
+
+// ── Recordings panel ─────────────────────────────────────────────────────
+if ($show_recs) {
+    echo '<div id="panel-recordings" style="display:none;">';
+    jitsi_print_recordings($session, $context, $is_teacher, $cm->id, false);
+    echo '</div>';
+}
+
+// ── Attendance log panel (the room's hosts) ──────────────────────────────
+// attendance.php in the embedded layout (nitplayer=1), (re)loaded each time the tab opens,
+// so changing the day or downloading the CSV happens inside it and never leaves the call.
+if ($is_teacher) {
+    $attendance_url = new moodle_url('/mod/jitsi/attendance.php', ['id' => $cm->id, 'nitplayer' => 1]);
+    echo '<div id="panel-attendance" style="display:none;width:100%;height:620px;border-radius:8px;overflow:hidden;border:1px solid #e0e0e0;">';
+    echo '<iframe data-reload="' . s($attendance_url->out(false)) . '" style="width:100%;height:100%;border:none;"></iframe>';
+    echo '</div>';
+}
 
 // ── Post-call panel (hidden until call ends) ──────────────────────────────
 echo '<div id="panel-ended" style="display:none;padding:30px;text-align:center;background:#f8f9fa;border-radius:8px;">';
@@ -221,7 +272,10 @@ echo '</div>'; // #jitsi-activity-container
 
 // Security settings stored on the activity.
 $room_password  = !empty($jitsi->roompassword)  ? $jitsi->roompassword  : '';
-$lobby_enabled  = !empty($jitsi->lobby_enabled);
+// Course room with "students wait for the teacher": a host turns the Jitsi lobby on when
+// they join, students knock and the teacher lets them in from inside the meeting. Hosts'
+// pages let other hosts out of the lobby at once. Lesson rooms: no lobby.
+$lobby_enabled  = \mod_jitsi\local\access::waiting_room($cm);
 
 $js_config = json_encode([
     'isTeacher'       => (bool)$is_teacher,
@@ -239,16 +293,66 @@ $js_config = json_encode([
     'jwt'             => $jitsi_jwt,
     'roomPassword'    => $room_password,
     'lobbyEnabled'    => $lobby_enabled,
+    // A host's page lets these straight out of the lobby (other hosts never wait); a
+    // student's knock is left to the teacher, who answers it inside the meeting.
+    'autoAdmit'       => (bool) $is_teacher,
+    'hostNames'       => \mod_jitsi\local\access::host_names($cm, $session ?: null),
+    'isolateStudents' => (bool) $isolate_students,
+    'awayText'        => get_string('teacheraway', 'jitsi'),
+    'awayKnock'       => get_string('waitingadmit', 'jitsi'),
+    'teacherNames'    => $teacher_names,
+    'presenceUrl'     => (new moodle_url('/mod/jitsi/ajax.php'))->out(false),
     'cmid'              => (int)$cm->id,
     'teacherPresentUrl' => $CFG->wwwroot . '/mod/jitsi/teacher_present.php',
-    // Auto-start the recording when the host joins (Jibri records -> finalize.sh ->
-    // Vimeo). Per-academy toggle: theme_nit/jitsi_autorecord (default ON), so an
-    // academy can turn it off site-wide.
-    // Only the lesson's own teacher starts it: a site admin dropping in must not.
-    'autoRecord'        => (get_config('theme_nit', 'jitsi_autorecord') !== '0')
-        && (!$session || (int) $session->teacherid === (int) $USER->id),
+    'autoRecord'        => $autorecord,
 ]);
 
+// Tab switcher (also before joining: the recordings / whiteboard tabs work without the call).
+echo <<<HTML
+<script>
+window.jitsiSwitchTab = function(tab) {
+    ['video', 'whiteboard', 'recordings', 'attendance'].forEach(function(name) {
+        var panel = document.getElementById('panel-' + name);
+        var button = document.getElementById('tab-' + name);
+        if (!panel || !button) {
+            return;
+        }
+        panel.style.display = name === tab ? 'block' : 'none';
+        button.className = name === tab ? 'btn btn-primary btn-sm' : 'btn btn-outline-secondary btn-sm';
+        button.style.borderRadius = '16px';
+    });
+    var frame = tab === 'whiteboard' && document.querySelector('#panel-whiteboard iframe[data-src]');
+    if (frame) {
+        frame.src = frame.getAttribute('data-src');
+        frame.removeAttribute('data-src');
+    }
+    // The attendance log: fresh each time it opens.
+    var log = tab === 'attendance' && document.querySelector('#panel-attendance iframe');
+    if (log) {
+        log.src = log.getAttribute('data-reload');
+    }
+};
+</script>
+HTML;
+
+// Waiting for the teacher: check again every few seconds, so the student goes on the
+// moment the teacher arrives (into the call if they had pressed "Join"). Not while they
+// are on another tab (a reload would stop the recording they are watching).
+if ($closed && $decision->code === \mod_jitsi\local\access::WAITING) {
+    echo html_writer::script("(function() {
+        var check = function() {
+            var video = document.getElementById('panel-video');
+            if (video && video.style.display !== 'none') {
+                location.reload();
+            } else {
+                setTimeout(check, 5000);
+            }
+        };
+        setTimeout(check, 5000);
+    })();");
+}
+
+if ($joining) {
 echo <<<HTML
 <script>
 (function() {
@@ -277,6 +381,15 @@ echo <<<HTML
                 startWithAudioMuted: true,
                 startWithVideoMuted: true,
                 prejoinPageEnabled: false,
+                // Straight into the call (no "Join meeting" screen); a student held by the
+                // lobby knocks at once. The name comes from Moodle's key and can't be changed
+                // (a host's page recognises other hosts by it).
+                prejoinConfig: { enabled: false },
+                readOnlyName: true,
+                lobby: { autoKnock: true },
+                // A student's screen keeps the teacher on it (see below), not the latest
+                // screen share.
+                autoPinLatestScreenShare: !CFG.isolateStudents,
                 disableDeepLinking: true,
                 disableInviteFunctions: !CFG.isTeacher,
                 enableClosePage: false,
@@ -290,7 +403,11 @@ echo <<<HTML
                 disableProfile: false,
                 enableNoisyMicDetection: true,
                 enableNoAudioDetection: true,
-                channelLastN: -1,
+                // A student in a lesson room receives one video (the pinned teacher) and
+                // has no filmstrip / tile view to show other students; the host sees all.
+                channelLastN: CFG.isolateStudents ? 1 : -1,
+                disableTileView: CFG.isolateStudents,
+                filmstrip: CFG.isolateStudents ? { disabled: true, disableStageFilmstrip: true } : {},
                 startWithAudioMuted: true,
                 startWithVideoMuted: false,
                 disableSelfViewSettings: false,
@@ -339,6 +456,149 @@ echo <<<HTML
             window.addEventListener('pagehide', studentLeft);
         }
 
+        // Lesson room host (teacher or admin): whoever knocks (a lobby someone turned on,
+        // e.g. from the app) is let in at once. Reaching this room needs a key Moodle only
+        // gives its teacher, its invited students and admins, so nobody asks anybody.
+        if (CFG.autoAdmit) {
+            api.addEventListener('knockingParticipant', function(e) {
+                var p = e && e.participant;
+                if (!p || !p.id) {
+                    return;
+                }
+                // Another host (by name; names come from Moodle's key and can't be edited, see
+                // readOnlyName), or anyone in a room that should have no lobby: straight in.
+                // A student in a course room's waiting room: Jitsi shows the host the request
+                // with Admit / Reject, inside the meeting.
+                if (!CFG.lobbyEnabled || CFG.hostNames.indexOf(p.name) !== -1) {
+                    api.executeCommand('answerKnockingParticipant', p.id, true);
+                }
+            });
+        }
+
+        // Student: the teacher only, in every room. Keep the teacher pinned on the main
+        // video (their camera, or their screen while they share it), tile view off and the
+        // filmstrip hidden, so the student never shows (and, with lastN 1, never receives)
+        // another student's camera or screen. While no teacher is in the call, cover the
+        // video. NOTE: enforced in this page (and the app), not by the Jitsi server; see
+        // docs/CAMERA-PRIVACY-STUDY.md.
+        if (CFG.isolateStudents) {
+            var myId = null, hosts = {}, sharing = [];
+            var away = document.getElementById('jitsi-teacher-away');
+            var pickTeacher = function(people) {
+                var teacher = null;
+                // By name in order (the course's teachers first), else anyone who is a host.
+                CFG.teacherNames.forEach(function(name) {
+                    people.forEach(function(p) {
+                        if (!teacher && p.participantId !== myId && p.displayName === name) {
+                            teacher = p.participantId;
+                        }
+                    });
+                });
+                people.forEach(function(p) {
+                    if (!teacher && p.participantId !== myId && hosts[p.participantId]) {
+                        teacher = p.participantId;
+                    }
+                });
+                return teacher;
+            };
+            var keepTeacherOnly = function() {
+                // Not in the call yet: still connecting, or knocking in the waiting room
+                // (the teacher has to let them in), so not "the teacher is away".
+                if (!myId) {
+                    if (away) {
+                        away.textContent = CFG.awayKnock;
+                        away.style.display = CFG.lobbyEnabled ? 'flex' : 'none';
+                    }
+                    return;
+                }
+                if (away) {
+                    away.textContent = CFG.awayText;
+                }
+                var teacher = pickTeacher((api.getParticipantsInfo && api.getParticipantsInfo()) || []);
+                if (teacher) {
+                    api.pinParticipant(teacher, sharing.indexOf(teacher) !== -1 ? 'desktop' : 'camera');
+                }
+                if (away) {
+                    away.style.display = teacher ? 'none' : 'flex';
+                }
+                api.executeCommand('setTileView', false);
+            };
+            // Who is a host comes from the room's roles (moderator), not only from names.
+            var refreshHosts = function() {
+                if (!api.getRoomsInfo) {
+                    keepTeacherOnly();
+                    return;
+                }
+                api.getRoomsInfo().then(function(info) {
+                    (info.rooms || []).forEach(function(room) {
+                        (room.participants || []).forEach(function(p) {
+                            var id = p.id || (p.jid ? String(p.jid).split('/').pop() : null);
+                            if (id && p.role === 'moderator') {
+                                hosts[id] = true;
+                            }
+                        });
+                    });
+                    keepTeacherOnly();
+                }).catch(keepTeacherOnly);
+            };
+            api.addEventListener('videoConferenceJoined', function(e) {
+                myId = e.id;
+                refreshHosts();
+            });
+            api.addEventListener('participantRoleChanged', function(e) {
+                if (e.role === 'moderator') {
+                    hosts[e.id] = true;
+                }
+                keepTeacherOnly();
+            });
+            ['participantJoined', 'participantLeft', 'displayNameChange'].forEach(function(ev) {
+                api.addEventListener(ev, refreshHosts);
+            });
+            api.addEventListener('dominantSpeakerChanged', keepTeacherOnly);
+            // Someone started / stopped sharing a screen: back to the teacher at once (their
+            // screen if it is theirs), never another student's share.
+            api.addEventListener('contentSharingParticipantsChanged', function(e) {
+                sharing = (e && e.data) || [];
+                keepTeacherOnly();
+            });
+            api.addEventListener('tileViewChanged', function(e) {
+                if (e.enabled) {
+                    api.executeCommand('setTileView', false);
+                }
+            });
+            api.addEventListener('filmstripDisplayChanged', function(e) {
+                if (e.visible) {
+                    api.executeCommand('toggleFilmStrip');
+                }
+            });
+            // A safety net for anything that moved the main video without an event.
+            setInterval(keepTeacherOnly, 3000);
+        }
+
+        // The room's attendance log (attendance.php): everyone's every stretch in the call.
+        var roomPresence = function(present) {
+            fetch(CFG.presenceUrl, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: 'function=room_presence&sesskey=' + encodeURIComponent(CFG.sesskey) + '&cmid=' + CFG.cmid
+                    + '&present=' + (present ? 1 : 0),
+                keepalive: true
+            }).catch(function() {});
+        };
+        var _inCall = false;
+        api.addEventListener('videoConferenceJoined', function() { _inCall = true; roomPresence(true); });
+        // Heartbeat: the same "joined" every minute while in the call. If it stops (browser
+        // crashed, connection lost) the server closes the stretch at the last one.
+        setInterval(function() {
+            if (_inCall) { roomPresence(true); }
+        }, 60000);
+        var leftCall = function() {
+            if (_inCall) { _inCall = false; roomPresence(false); }
+        };
+        api.addEventListener('videoConferenceLeft', leftCall);
+        api.addEventListener('readyToClose', leftCall);
+        window.addEventListener('pagehide', leftCall);
+
         // Auto-submit password for everyone so no one gets a prompt
         // (Moodle already gates who can reach this page).
         if (CFG.roomPassword) {
@@ -347,8 +607,8 @@ echo <<<HTML
             });
         }
 
-        // Teacher: set password on first join and enable lobby if configured.
-        // JWT moderator role automatically bypasses the lobby on rejoin.
+        // Host: set the password on join and the lobby (standalone rooms only, see above).
+        // Note: a JWT moderator does NOT skip a lobby on this server; they knock like anyone.
         // Tell the backend whether the teacher is currently in the call, so the student
         // entry gate in view.php only opens while the teacher is present.
         function setTeacherPresent(present) {
@@ -368,6 +628,10 @@ echo <<<HTML
                 }
                 if (CFG.lobbyEnabled) {
                     api.executeCommand('toggleLobby', true);
+                } else {
+                    // Switch off a Jitsi lobby an earlier host may have turned on: the
+                    // waiting room is Moodle's now, and hosts must never knock.
+                    api.executeCommand('toggleLobby', false);
                 }
                 // Auto-start the recording a few seconds after the host joins (like the
                 // old academy). Uses the Jitsi API — Jibri records the file, then
@@ -408,6 +672,8 @@ echo <<<HTML
         document.getElementById('jitsi-tabs').style.display = 'none';
         document.getElementById('panel-video').style.display = 'none';
         document.getElementById('panel-whiteboard').style.display = 'none';
+        var recPanel = document.getElementById('panel-recordings');
+        if (recPanel) { recPanel.style.display = 'none'; }
         document.getElementById('panel-ended').style.display = 'block';
 
         if (teacherEndedForAll && CFG.isTeacher && !_sessionEndCalled) {
@@ -490,45 +756,9 @@ echo <<<HTML
             });
     }
 
-    /* ── tab switcher ───────────────────────────────────────────────── */
-    window.jitsiSwitchTab = function(tab) {
-        var vp = document.getElementById('panel-video');
-        var wp = document.getElementById('panel-whiteboard');
-        var tv = document.getElementById('tab-video');
-        var tw = document.getElementById('tab-whiteboard');
-        if (tab === 'video') {
-            vp.style.display = 'block'; wp.style.display = 'none';
-            tv.className = 'btn btn-primary btn-sm'; tv.style.borderRadius = '16px';
-            tw.className = 'btn btn-outline-secondary btn-sm'; tw.style.borderRadius = '16px';
-        } else {
-            vp.style.display = 'none'; wp.style.display = 'block';
-            tv.className = 'btn btn-outline-secondary btn-sm'; tv.style.borderRadius = '16px';
-            tw.className = 'btn btn-primary btn-sm'; tw.style.borderRadius = '16px';
-        }
-    };
 })();
 </script>
 HTML;
-
-// Show recordings below the conference:
-// - If there's a linked session: teacher always sees them; students see after session window ends.
-// - If standalone (no session): always show if any recordings exist.
-if ($session) {
-    $show_recs = $is_teacher;
-    if (!$is_teacher) {
-        $now        = time();
-        $open_until = $session->start_time + ($session->duration * 60);
-        $show_recs  = ($now > $open_until);
-    }
-    if ($show_recs) {
-        jitsi_print_recordings($session, $context, $is_teacher, $cm->id);
-    }
-} else {
-    // Standalone room — show recordings if any exist for this cmid.
-    $has_recs = $DB->record_exists('academy_session_recordings', ['cmid' => $cm->id]);
-    if ($has_recs) {
-        jitsi_print_recordings(null, $context, $is_teacher, $cm->id);
-    }
 }
 
 echo $OUTPUT->footer();
@@ -536,7 +766,7 @@ echo $OUTPUT->footer();
 // -------------------------------------------------------------------------
 // Helper: render this activity's recordings, played from VdoCipher.
 // -------------------------------------------------------------------------
-function jitsi_print_recordings($session, $context, $is_teacher, $cmid = null) {
+function jitsi_print_recordings($session, $context, $is_teacher, $cmid = null, $heading = true) {
     global $DB, $OUTPUT, $USER, $cm;
 
     $cmid = $cmid ?: ($cm->id ?? 0);
@@ -555,8 +785,10 @@ function jitsi_print_recordings($session, $context, $is_teacher, $cmid = null) {
         "($where) AND vimeo_videoid IS NOT NULL AND vimeo_videoid <> ''",
         $params, 'timecreated DESC');
 
-    echo '<div class="jitsi-recordings" style="margin-top:24px;">';
-    echo $OUTPUT->heading(get_string('recordings', 'jitsi'), 4);
+    echo '<div class="jitsi-recordings" style="margin-top:' . ($heading ? '24px' : '0') . ';">';
+    if ($heading) {
+        echo $OUTPUT->heading(get_string('recordings', 'jitsi'), 4);
+    }
 
     if (!$rows) {
         echo '<p class="text-muted">' . get_string('norecordings', 'jitsi') . '</p></div>';

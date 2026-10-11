@@ -42,5 +42,31 @@ function xmldb_local_nit_lessons_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026100500, 'local', 'nit_lessons');
     }
 
+    if ($oldversion < 2026101000) {
+        // The teacher sets how many Flex one lesson costs; each lesson keeps the price it was booked at.
+        $field = new xmldb_field('lesson_flex', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '1', 'headline');
+        $table = new xmldb_table('nit_teacher_profile');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        $field = new xmldb_field('flex_count', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '1', 'flex_state');
+        $table = new xmldb_table('nit_lesson');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        upgrade_plugin_savepoint(true, 2026101000, 'local', 'nit_lessons');
+    }
+
+    if ($oldversion < 2026101100) {
+        // No maximum on the Flex price of a lesson: drop the max_lesson_flex setting and widen both
+        // columns (they were 4 digits).
+        unset_config('max_lesson_flex', 'local_nit_lessons');
+        $field = new xmldb_field('lesson_flex', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '1', 'headline');
+        $dbman->change_field_precision(new xmldb_table('nit_teacher_profile'), $field);
+        $field = new xmldb_field('flex_count', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '1', 'flex_state');
+        $dbman->change_field_precision(new xmldb_table('nit_lesson'), $field);
+        upgrade_plugin_savepoint(true, 2026101100, 'local', 'nit_lessons');
+    }
+
     return true;
 }

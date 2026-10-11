@@ -60,6 +60,7 @@ final class lesson_view {
             'cancelreason' => (string) $lesson['cancel_reason'],
             'flex' => $lesson['flex_state'] !== 'none'
                 ? get_string('flexstate_' . $lesson['flex_state'], 'local_nit_lessons') : '',
+            'flexcost' => get_string('lessonflexcost', 'local_nit_lessons', $lesson['flex_count'] ?? 1),
             'suggested' => '',
             'reschedule' => '',
             'actions' => [],

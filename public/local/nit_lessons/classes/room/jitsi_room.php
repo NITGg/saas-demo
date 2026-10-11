@@ -88,7 +88,9 @@ class jitsi_room implements room_interface {
             'cmidnumber' => '',
             'name' => \core_text::substr($title, 0, 255),
             'introeditor' => ['text' => '', 'format' => FORMAT_HTML, 'itemid' => 0],
-            'lobby_enabled' => 1, // 1:1 lesson: the teacher admits the student.
+            // No Jitsi lobby: Moodle already lets in only the teacher, the student (once the
+            // teacher is in) and site admins; a lobby made each of them knock (mod_jitsi view.php).
+            'lobby_enabled' => 0,
         ];
         $created = self::create_module_elevated($moduleinfo);
         $cmid = (int) $created->coursemodule;

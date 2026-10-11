@@ -228,6 +228,8 @@ final class hub {
     private static function tab_book(int $userid, array $params): array {
         global $PAGE;
         $search = (string) ($params['search'] ?? '');
+        $active = purchase::active($userid);
+        $remaining = $active ? (int) $active['remaining_flex'] : 0;
         $teachers = [];
         foreach ((new teacher_service())->browse($search) as $t) {
             if ($t['id'] === $userid) {
@@ -239,6 +241,8 @@ final class hub {
                 'id' => $t['id'],
                 'name' => $t['fullname'],
                 'headline' => format_string($t['headline']),
+                'flexcost' => $t['lesson_flex'],
+                'canbook' => $remaining >= $t['lesson_flex'],
                 'picture' => $picture->get_url($PAGE)->out(false),
                 'subjects' => array_map(fn($s) => ['name' => format_string($s), 'value' => $s], $t['subjects']),
                 'subjectsjson' => json_encode(array_map(fn($s) => ['name' => format_string($s), 'value' => $s],
@@ -335,6 +339,7 @@ final class hub {
         $hasactive = \local_nit_subscriptions\subscription_purchase_manager::has_active_normal($userid);
         $canonline = method_exists('\local_payments\manager', 'create_subscription_checkout')
             && \local_nit_finance\local\output::online_payment_available();
+        $balance = \local_nit_finance\local\wallets::balance(\local_nit_finance\local\wallets::STUDENT, $userid);
         $subs = [];
         foreach (\local_nit_subscriptions\subscription_manager::get_subscriptions('active') as $s) {
             $courses = [];
@@ -342,18 +347,25 @@ final class hub {
                 $c = (array) $c;
                 $courses[] = ['name' => format_string($c['fullname'] ?? '')];
             }
+            // What both ways of paying charge: the plan price after any running offer.
+            $quote = \local_nit_finance\local\wallet_checkout::subscription_quote($userid, (int) $s->id);
             $subs[] = [
                 'id' => (int) $s->id,
                 'name' => format_string(\local_nit_subscriptions\subscription_manager::resolve_mlang($s->name)),
                 'description' => format_string(\local_nit_subscriptions\subscription_manager::resolve_mlang(
                     (string) $s->description)),
-                'price' => money::format((int) round(((float) $s->price) * 100)),
+                'price' => money::format($quote['final_minor']),
+                'original' => $quote['discount_minor'] > 0 ? money::format($quote['original_minor']) : '',
                 'days' => get_string('subdays', 'local_nit_lessons', (int) $s->duration_days),
                 'courses' => $courses,
                 'disabled' => $hasactive || !$canonline,
+                'walletdisabled' => $hasactive || $balance < $quote['final_minor'],
             ];
         }
-        return ['subs' => $subs, 'hassubs' => !empty($subs), 'subactive' => $hasactive, 'subonline' => $canonline];
+        return ['subs' => $subs, 'hassubs' => !empty($subs), 'subactive' => $hasactive, 'subonline' => $canonline,
+            'walletbalance' => money::format($balance),
+            'walletpayurl' => (new \moodle_url('/local/nit_finance/walletpay.php'))->out(false),
+            'topupurl' => (new \moodle_url('/local/nit_finance/wallet.php', [], 'topup'))->out(false)];
     }
 
     /**

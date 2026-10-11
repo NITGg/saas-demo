@@ -148,6 +148,7 @@ final class mobile_api {
                 'id' => $t['id'],
                 'fullname' => $t['fullname'],
                 'headline' => format_string($t['headline']),
+                'lesson_flex' => $t['lesson_flex'],
                 'subjects' => array_map(fn($s) => ['value' => $s, 'name' => format_string($s)], $t['subjects']),
                 'picture_url' => \local_academy\api\endpoint::file_url($picture->get_url($PAGE)),
             ];
@@ -343,15 +344,16 @@ final class mobile_api {
      * @param string $headline
      * @param array $subjects strings
      * @param array $hours [{dayofweek, starttime "HH:MM", endtime "HH:MM"}]
+     * @param int|null $lessonflex Flex per lesson (1 or more); null keeps the saved price
      * @return array
      */
     public static function update_teacher_profile(int $userid, bool $available, string $headline, array $subjects,
-            array $hours): array {
+            array $hours, ?int $lessonflex = null): array {
         $service = new teacher_service();
         if (!$service->is_teacher($userid)) {
             throw new lesson_exception('err_notateacher');
         }
-        $service->save($userid, $available, $headline, array_map('strval', $subjects), $hours);
+        $service->save($userid, $available, $headline, array_map('strval', $subjects), $hours, $lessonflex);
         return self::get_teacher_profile($userid);
     }
 

@@ -24,7 +24,7 @@ $capabilities = [
         'contextlevel' => CONTEXT_SYSTEM,
         'archetypes' => ['manager' => CAP_ALLOW],
     ],
-    // No device limit (checked in the system context). Site admins and course teachers are always exempt.
+    // No device limit (checked in the system context). Site admins and anyone with a manager role are always exempt.
     'local/nit_devices:exempt' => [
         'captype' => 'read',
         'contextlevel' => CONTEXT_SYSTEM,

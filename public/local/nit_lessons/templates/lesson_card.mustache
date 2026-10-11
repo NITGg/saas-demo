@@ -23,7 +23,7 @@
     {
         "id": 3, "subject": "Physics", "with": "With Mr Ali", "when": "Monday, 5 October 2026, 5:00 PM",
         "confirmed": true, "status": "confirmed", "statuslabel": "Confirmed", "note": "Chapter 2",
-        "rejectreason": "", "cancelreason": "", "flex": "Flex booked", "suggested": "", "reschedule": "",
+        "rejectreason": "", "cancelreason": "", "flex": "Flex booked", "flexcost": "Price: 2 Flex", "suggested": "", "reschedule": "",
         "hasactions": true, "joinurl": "",
         "actions": [{"do": "start", "value": "", "label": "Start", "need": "none", "style": "primary", "confirm": ""}]
     }
@@ -40,7 +40,7 @@
         <li>{{#pix}}i/calendar, core{{/pix}}
             {{#confirmed}}{{#str}}lesson_at, local_nit_lessons{{/str}} {{when}}{{/confirmed}}
             {{^confirmed}}{{#str}}lesson_requestedfor, local_nit_lessons{{/str}} {{when}}{{/confirmed}}</li>
-        {{#flex}}<li>{{#pix}}i/star, core{{/pix}}{{flex}}</li>{{/flex}}
+        <li>{{#pix}}i/star, core{{/pix}}{{flexcost}}{{#flex}} · {{flex}}{{/flex}}</li>
         {{#note}}<li>{{#pix}}i/edit, core{{/pix}}{{note}}</li>{{/note}}
         {{#rejectreason}}<li class="nitlx-lesson__reason"><strong>{{#str}}rejectreason, local_nit_lessons{{/str}}</strong> {{rejectreason}}</li>{{/rejectreason}}
         {{#cancelreason}}<li class="nitlx-lesson__reason"><strong>{{#str}}cancelreason, local_nit_lessons{{/str}}</strong> {{cancelreason}}</li>{{/cancelreason}}

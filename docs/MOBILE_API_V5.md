@@ -7,7 +7,8 @@ This file lists **only** what changed after [`MOBILE_API_V4.md`](MOBILE_API_V4.m
 **Summary:** one new endpoint, **Static pages & articles (CMS)** (§1). The **reports system** (§2) is web
 only, with no mobile endpoints. There are also **app-visible changes to existing calls** (§3): the
 legal/about links now point to the CMS pages, the purchase check needs an active enrolment, the
-video-progress protocol has one new step, and payment messages arrive in the buyer's language. The
+video-progress protocol has one new step, payment messages arrive in the buyer's language, and a teacher
+sets how many Flex one live lesson costs (§3.7). The
 **device limit** (§4) brings a new sign-in endpoint with a per-install `deviceid`.
 
 | # | Area | Affects | App change needed |
@@ -22,6 +23,7 @@ video-progress protocol has one new step, and payment messages arrive in the buy
 | 8 | Teacher reports API | New endpoint `/local/nit_reports/api.php`: `get_reports`, `get_report` (the 5 teacher reports as cards + table) | Yes, for the new teacher "Reports" screen (§5) |
 | 9 | Live-session rooms (Jitsi) | `mod_jitsi_get_session_info` (`jwt` empty until `available`), `/mod/jitsi/api_token.php` (new errorcodes `waitingforteacher`, `jitsinotconfigured`), `join_session` (attendance after the teacher arrives) | **Check**: don't join with an empty `jwt` (§3.5) |
 | 10 | Messaging between students | When the admin turns on "Prevent messaging between students": `core_message_send_instant_messages` (per-message error), `send_messages_to_conversation` / `create_contact_request` (errorcode `studentmessaging_blocked`), `canmessage = false` between two students | **Check**: hide the message box when `canmessage` is `false` (§3.6) |
+| 11 | Flex price per live lesson | `/local/nit_lessons/api.php`: `get_teachers` (+`lesson_flex`), `get_teacher_profile` (+`lesson_flex`), `update_teacher_profile` (+optional `lesson_flex`), every lesson (+`flex_count`), `request_lesson` (new errorcode `notenoughflex`) | **Yes**: show the price, a "Flex per lesson" box for teachers, handle `notenoughflex` (§3.7) |
 
 ---
 
@@ -292,6 +294,62 @@ web room page:
   joins is recorded as being in the call, but the students still wait for the teacher.
 - **App action:** none required. Show `end_reason` / `ended_at` if useful.
 
+> **Step-by-step guide for the app:** [`apis/jitsi-rooms-mobile-guide.md`](apis/jitsi-rooms-mobile-guide.md)
+> (with answers to the app team's questions). **New 11/10:** while in the call, repeat `room_presence(present=1)` every
+> 60 s (heartbeat). A stretch silent for 3 min is closed by the server at the last heartbeat.
+> Recommended: open the room's web page in a WebView (everything below then works as on the website).
+
+**In the call: students see the teacher only, hosts never wait (10–11/10). Applies to every room: lesson
+rooms and course Jitsi activities:**
+- **`mod_jitsi_get_session_info` has new fields:**
+
+  | Field | Meaning |
+  |---|---|
+  | `isolate_students` | `true` for every student (non-host). They must see **the teacher only** |
+  | `auto_admit` | `true` for a host (teacher, manager, admin). See the waiting room below |
+  | `lobby` | `true` for a course room with a waiting room (below). `false` for lesson rooms |
+  | `host_names` | display names of the room's hosts (its teachers, then every site admin) |
+  | `access_code` | `ok`, or why the user is not in yet: `waitingforteacher`, `sessionnotavailable`, `sessionended`, `notallowed`, `unavailable` |
+  | `teacher_name` | the (first) teacher's display name, to pin |
+  | `teacher_names` | the teachers' display names in order (course teachers first, then admins / managers); pin the first one in the call |
+
+- **App action (Jitsi Meet SDK), when `isolate_students` is true.** These are what the web page does:
+  - config `channelLastN: 1`
+  - `disableTileView: true`
+  - `filmstrip: {disabled: true, disableStageFilmstrip: true}`
+  - `autoPinLatestScreenShare: false`
+  - remove the tile-view button
+  - pin the first participant in `teacher_names` who is in the call; else any moderator (from the room roles)
+  - pin their **screen share** while they share it, otherwise their camera
+  - re-pin on: participant joined / left / role changed, content-sharing changed, and every few seconds
+  - while no teacher is in the call, cover the video with a "the teacher is not in the call" notice
+
+**Course rooms: the waiting room is Jitsi's own lobby (11/10).** A course Jitsi activity has "Students wait for the
+teacher to let them in" (on by default). The teacher answers the student **inside the meeting** (Jitsi's "wants to
+join" notification with Admit / Reject).
+- **Student:** gets a JWT only **while a host is in the call** (until then `available=false`,
+  `access_code=waitingforteacher`; poll every 5 s). With the JWT they join, land in the lobby and knock.
+  - The SDK shows its knocking screen.
+  - Turn auto-knock on and make the name read-only (`readOnlyName: true`).
+- **Host, when `lobby` is true:**
+  - on conference joined, turn the lobby on;
+  - on a knocking participant whose name is in `host_names`, admit them at once (hosts never wait for each other);
+  - leave everyone else to the SDK's built-in admit / reject prompt.
+- **Host, when `lobby` is false** (lesson rooms): turn the lobby off on join, and admit every knocker.
+- **"A host is in the call"** is what the room's attendance log says. So the app **must** call `room_presence`
+  (below) on joined / left. Otherwise students wait for a teacher who is on the app.
+- Removed: Moodle's own request list (`get_room_admissions`, `decide_room_admission`, `ask_room_admission`, codes
+  `waitingforapproval` / `admissiondenied`). They existed for a few hours on 11/10 and were never released to the app.
+
+**The room's attendance log (11/10).** Every time anyone is in a room's call is recorded, and the room's hosts see
+it on the web page "Attendance log" (activity menu, or `/mod/jitsi/attendance.php?id=<cmid>`, with a CSV download).
+- **App action:** call `POST /local/academysessions/api.php?function=room_presence&cmid=…&present=1` when the
+  conference is joined, and `present=0` when it is left.
+- Joining is only recorded while the room lets the user in.
+- ⚠️ **This is enforced in the clients (web page and app), not by the Jitsi server.** A student with a modified
+  client could still request other students' video. Server-side isolation is planned
+  (`docs/CAMERA-PRIVACY-STUDY.md`).
+
 ### 3.6 Messaging: "Prevent messaging between students"
 
 New admin setting (Site administration → Messaging → Messaging settings, off by default). When it is on,
@@ -312,6 +370,47 @@ to the core `core_message_*` web services the app already calls:
 - **App action:** when `canmessage` is `false`, hide the message box and show "You can't message this user"
   (the web drawer already does this). Show `errormessage` / the exception message if a send fails.
 
+### 3.7 Live lessons: the teacher sets the Flex price of a lesson
+
+A lesson used to cost exactly 1 Flex. Now each teacher sets **how many Flex one lesson with them costs**
+(Profile → Teacher profile on the web, or `update_teacher_profile`): any whole number, 1 or more, with
+no maximum. A teacher who never set it costs 1 Flex, so nothing changes for them.
+
+- The price is fixed on the lesson **when the student requests it** (`flex_count`). If the teacher changes
+  their price later, lessons already requested keep their old price.
+- Everything that moved 1 Flex now moves `flex_count`: the teacher accepting reserves `flex_count`, a
+  completed lesson / late cancel / student absent uses `flex_count`, an early cancel / teacher cancel /
+  teacher absent / admin reversal returns `flex_count`. The teacher's earning is its percent of
+  `flex_count` × the value of one Flex of the student's package.
+
+**`get_teachers`** — each teacher has `lesson_flex` (int, ≥ 1):
+```json
+{"id":22,"fullname":"مدرس الحصص","headline":"مدرس فيزياء","lesson_flex":3,"subjects":[…],"picture_url":"…"}
+```
+Show it ("3 Flex per lesson"). Disable "Request a lesson" when the student's `remaining_flex` (from
+`get_my_flex`) is less than `lesson_flex`.
+
+**Every lesson** (`get_my_lessons`, `get_lesson`, and the result of every lesson action) has
+`flex_count` (int, ≥ 1): the Flex this lesson costs.
+
+**`request_lesson`** — new errorcode **`notenoughflex`**: the student has Flex, but fewer than the
+teacher's `lesson_flex`. The message names the price; send the student to the packages screen, as for
+`noflex`. (`noflex` still means no Flex at all.) If the student spends Flex between the request and the
+teacher accepting, the accept fails with `noflex`, as before.
+
+**`get_teacher_profile`** — one new field:
+```json
+{"available":true,"headline":"مدرس فيزياء","lesson_flex":3,"subjects":[…],"hours":[…], …}
+```
+
+**`update_teacher_profile`** — one new optional param:
+
+| Param | Type | Req | Description |
+|---|---|---|---|
+| lesson_flex | int | no | Flex per lesson, 1 or more (no maximum). **Leave it out to keep the saved price** |
+
+New errorcode **`badlessonflex`**: `lesson_flex` is less than 1.
+
 ---
 
 ## 4. Device limit — `local_nit_devices` (new)
@@ -320,7 +419,7 @@ An account may be used on a set number of devices (an admin setting, e.g. 2). **
 count together.** A device stays registered until an admin removes it, so signing out does not free its
 place. When one device too many signs in, the admin's policy decides: **refuse it** (`devicelimit`) or
 **sign the oldest device out** (its token is deleted: its next call answers HTTP 401 `invalidtoken`, as
-for any dead token). Site admins, managers and teachers have no limit. While the admin keeps the limit
+for any dead token). Students and teachers are limited; site admins and managers have no limit. While the admin keeps the limit
 switched off, nothing below changes anything.
 
 **Why the app must change:** `/login/token.php` gives every phone of an account the **same** token, so
@@ -379,7 +478,7 @@ For an optional "My devices" screen (read only: removing a device is done by sup
             {"id":3,"kind":"web","name":"Chrome — Windows","platform":"Windows","current":false,
              "firstseen":1791620563,"lastseen":1791620563}]}}
 ```
-- `limited` false: this account has no limit (teacher, manager, admin) or the limit is off.
+- `limited` false: this account has no limit (site admin or manager) or the limit is off.
 - `policy`: `block` (refuse a new device) or `replace` (sign the oldest out).
 - `current`: the device making this call. `kind`: `web` or `mobile`. Times are Unix seconds.
 

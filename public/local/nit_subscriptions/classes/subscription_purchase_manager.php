@@ -91,6 +91,41 @@ class subscription_purchase_manager {
     }
 
     /**
+     * Create a NORMAL subscription purchase paid from the student wallet (local_nit_finance).
+     *
+     * The caller holds the student's wallet lock and runs inside the transaction that takes the
+     * money, so no notification is sent here (a message queued inside a transaction can fail the
+     * commit): call {@see self::notify_started()} after committing.
+     *
+     * @param int $userid
+     * @param int $subscriptionid
+     * @param float $pricepaid amount taken from the wallet (after offer/coupon)
+     * @param string $reference unique wallet payment reference
+     * @return \stdClass the nit_sub_purchase row
+     */
+    public static function create_wallet_purchase(int $userid, int $subscriptionid, float $pricepaid,
+            string $reference): \stdClass {
+        global $DB;
+        if (self::has_active_normal($userid)) {
+            throw new \moodle_exception('error', 'moodle', '', null, 'You already have an active subscription');
+        }
+        self::insert_purchase($DB, $userid, $subscriptionid, $pricepaid, $reference, 'normal', 0, 'wallet', false);
+        return $DB->get_record('nit_sub_purchase', ['reference' => $reference], '*', MUST_EXIST);
+    }
+
+    /**
+     * Send "your subscription is active / was renewed" for a purchase (local_nit_notifications).
+     *
+     * @param \stdClass $purchase nit_sub_purchase row
+     * @return void
+     */
+    public static function notify_started(\stdClass $purchase): void {
+        if (class_exists('\local_nit_notifications\auto')) {
+            \local_nit_notifications\auto::subscription_started($purchase);
+        }
+    }
+
+    /**
      * Build and insert the purchase row. Split out of fulfil_from_gateway so the
      * insert happens inside the reference lock held by the caller.
      *
@@ -101,9 +136,12 @@ class subscription_purchase_manager {
      * @param string $reference
      * @param string $type
      * @param int $seats
+     * @param string $source online | admin_assigned | wallet ('' = from the reference)
+     * @param bool $notify send the "subscription started" notification now
      * @return array purchase summary
      */
-    private static function insert_purchase($DB, $userid, $subscriptionid, $pricepaid, $reference, $type, $seats) {
+    private static function insert_purchase($DB, $userid, $subscriptionid, $pricepaid, $reference, $type, $seats,
+            $source = '', $notify = true) {
         $sub = $DB->get_record('nit_subscription', ['id' => $subscriptionid], '*', MUST_EXIST);
         $isb2b = ($type === 'b2b');
 
@@ -144,7 +182,8 @@ class subscription_purchase_manager {
         $purchase->price_paid       = (float) $pricepaid;
         $purchase->duration_days    = (int) $sub->duration_days;
         $purchase->status           = self::STATUS_ACTIVE;
-        $purchase->source           = ($reference === 'admin_assigned') ? 'admin_assigned' : 'online';
+        $purchase->source           = $source !== '' ? $source
+            : (($reference === 'admin_assigned') ? 'admin_assigned' : 'online');
         $purchase->reference        = $reference;
         $purchase->timeactivated    = $now;
         $purchase->expires_at       = $expiresat;
@@ -152,8 +191,8 @@ class subscription_purchase_manager {
         $purchase->id = $DB->insert_record('nit_sub_purchase', $purchase);
 
         // "Your subscription is active / was renewed" (local_nit_notifications, when installed).
-        if (class_exists('\local_nit_notifications\auto')) {
-            \local_nit_notifications\auto::subscription_started($purchase);
+        if ($notify) {
+            self::notify_started($purchase);
         }
 
         return self::summary($purchase);
@@ -415,6 +454,29 @@ class subscription_purchase_manager {
                 'timecreated'    => (int) $r->timecreated,
             ];
         }
+
+        // Plans paid from the student wallet have no gateway transaction: their purchase row is the payment.
+        $wallet = $DB->get_records_sql(
+            "SELECT sp.id, sp.subscriptionid, sp.reference, sp.price_paid, sp.timecreated, s.name
+               FROM {nit_sub_purchase} sp
+          LEFT JOIN {nit_subscription} s ON s.id = sp.subscriptionid
+              WHERE sp.userid = :userid AND sp.source = :source",
+            ['userid' => $userid, 'source' => 'wallet']);
+        foreach ($wallet as $w) {
+            $out[] = [
+                'id'             => 0,
+                'subscriptionid' => (int) $w->subscriptionid,
+                'name'           => format_string(subscription_manager::resolve_mlang((string) $w->name)),
+                'order_id'       => (string) $w->reference,
+                'amount'         => (float) $w->price_paid,
+                'currency'       => 'EGP',
+                'status'         => 'completed',
+                'payment_method' => 'wallet',
+                'coupon_code'    => '',
+                'timecreated'    => (int) $w->timecreated,
+            ];
+        }
+        usort($out, fn($a, $b) => $b['timecreated'] <=> $a['timecreated']);
         return $out;
     }
 

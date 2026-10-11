@@ -53,6 +53,12 @@ $string['set_complete_allowed_minutes'] = 'Complete after (minutes)';
 $string['set_complete_allowed_minutes_desc'] = 'Minutes after the start before the teacher can mark the lesson completed.';
 $string['set_absence_report_minutes'] = 'Report absence after (minutes)';
 $string['set_absence_report_minutes_desc'] = 'Minutes after the start time before either side can report the other absent.';
+$string['lessonflex'] = 'Flex per lesson';
+$string['lessonflex_help'] = 'How many Flex a student pays for one lesson with you. Lessons already booked keep the price they were booked at.';
+$string['flexperlesson'] = '{$a} Flex per lesson';
+$string['lessonflexcost'] = 'Price: {$a} Flex';
+$string['err_badlessonflex'] = 'Flex per lesson must be a whole number, 1 or more.';
+$string['err_notenoughflex'] = 'A lesson with this teacher costs {$a} Flex and you do not have enough. Buy a package first.';
 
 // Tabs and hub.
 $string['tab_book'] = 'Book a lesson';

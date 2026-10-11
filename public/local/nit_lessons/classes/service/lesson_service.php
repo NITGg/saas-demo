@@ -80,10 +80,15 @@ class lesson_service extends service {
         if (!$teachers->within_hours($teacherid, $requestedtime)) {
             throw new lesson_exception('err_outsidehours');
         }
-        // Student must have an active package with available Flex (nothing is reserved yet).
+        // Student must have an active package with the teacher's price in Flex (nothing is reserved
+        // yet). The lesson keeps this price even if the teacher changes it later.
+        $cost = $teachers->lesson_flex($teacherid);
         $active = \local_nit_flex\api\purchase::active($studentid);
         if (!$active || (int) $active['remaining_flex'] < 1) {
             throw new lesson_exception('err_noflex');
+        }
+        if ((int) $active['remaining_flex'] < $cost) {
+            throw new lesson_exception('err_notenoughflex', $cost);
         }
         $this->require_min_booking($requestedtime);
         $this->check_time_conflict($teacherid, $requestedtime, lesson::DEFAULT_DURATION);
@@ -96,6 +101,7 @@ class lesson_service extends service {
             'requested_time' => $requestedtime,
             'duration'       => lesson::DEFAULT_DURATION,
             'note'           => $note,
+            'flex_count'     => $cost,
         ]);
         $lesson->create();
         return $this->format_lesson($lesson, $studentid, true);
@@ -244,16 +250,17 @@ class lesson_service extends service {
 
         $studentid  = (int) $lesson->get('studentid');
         $purchaseid = (int) $lesson->get('purchaseid');
+        $count      = self::flex_count($lesson);
 
         $transaction = $DB->start_delegated_transaction();
         room_factory::instance()->end_for_lesson($lesson);
-        flex::consume($studentid, $purchaseid, $lessonid, $teacherid, 'Lesson completed');
+        flex::consume($studentid, $purchaseid, $lessonid, $teacherid, 'Lesson completed', $count);
         $extra = ['actual_end' => time(), 'flex_state' => 'consumed'];
         if ($note !== null) {
             $extra['note'] = $note;
         }
         $result = $this->transition($lesson, lesson::STATUS_COMPLETED, $teacherid, $extra);
-        $value = flex::value_for_purchase($purchaseid);
+        $value = flex::value_for_purchase($purchaseid) * $count;
         wallet::distribute($lessonid, $teacherid, $studentid, $purchaseid, $value);
         $transaction->allow_commit();
         return $result;
@@ -280,12 +287,13 @@ class lesson_service extends service {
 
         $transaction = $DB->start_delegated_transaction();
         room_factory::instance()->end_for_lesson($lesson);
+        $count = self::flex_count($lesson);
         flex::consume((int) $lesson->get('studentid'), (int) $lesson->get('purchaseid'), $lessonid,
-            $teacherid, 'Student absent');
+            $teacherid, 'Student absent', $count);
         $result = $this->transition($lesson, lesson::STATUS_STUDENT_ABSENT, $teacherid,
             ['flex_state' => 'consumed']);
         wallet::distribute($lessonid, $teacherid, (int) $lesson->get('studentid'),
-            (int) $lesson->get('purchaseid'), flex::value_for_purchase((int) $lesson->get('purchaseid')), false);
+            (int) $lesson->get('purchaseid'), flex::value_for_purchase((int) $lesson->get('purchaseid')) * $count, false);
         $transaction->allow_commit();
         return $result;
     }
@@ -308,7 +316,8 @@ class lesson_service extends service {
 
         $transaction = $DB->start_delegated_transaction();
         room_factory::instance()->end_for_lesson($lesson);
-        flex::return_flex($studentid, (int) $lesson->get('purchaseid'), $lessonid, $studentid, 'Teacher absent');
+        flex::return_flex($studentid, (int) $lesson->get('purchaseid'), $lessonid, $studentid, 'Teacher absent',
+            self::flex_count($lesson));
         $result = $this->transition($lesson, lesson::STATUS_TEACHER_ABSENT, $studentid,
             ['flex_state' => 'returned']);
         $transaction->allow_commit();
@@ -359,13 +368,14 @@ class lesson_service extends service {
         $deadline = (int) $lesson->get('confirmed_time') - $this->setting('cancel_deadline_minutes') * MINSECS;
         $early = time() <= $deadline;
         $purchaseid = (int) $lesson->get('purchaseid');
+        $count = self::flex_count($lesson);
 
         $transaction = $DB->start_delegated_transaction();
         if ($early) {
-            flex::return_flex($studentid, $purchaseid, $lessonid, $studentid, 'Student cancelled (early)');
+            flex::return_flex($studentid, $purchaseid, $lessonid, $studentid, 'Student cancelled (early)', $count);
             $flexstate = 'returned';
         } else {
-            flex::consume($studentid, $purchaseid, $lessonid, $studentid, 'Student cancelled (late)');
+            flex::consume($studentid, $purchaseid, $lessonid, $studentid, 'Student cancelled (late)', $count);
             $flexstate = 'consumed';
         }
         $result = $this->transition($lesson, lesson::STATUS_CANCELLED, $studentid,
@@ -373,7 +383,7 @@ class lesson_service extends service {
         if (!$early) {
             // A late cancel uses the Flex, but no lesson happened: the platform keeps its value.
             wallet::distribute($lessonid, (int) $lesson->get('teacherid'), $studentid, $purchaseid,
-                flex::value_for_purchase($purchaseid), false);
+                flex::value_for_purchase($purchaseid) * $count, false);
         }
         $transaction->allow_commit();
         return $result;
@@ -402,7 +412,7 @@ class lesson_service extends service {
         }
         $transaction = $DB->start_delegated_transaction();
         flex::return_flex((int) $lesson->get('studentid'), (int) $lesson->get('purchaseid'),
-            $lessonid, $teacherid, 'Teacher cancelled');
+            $lessonid, $teacherid, 'Teacher cancelled', self::flex_count($lesson));
         $result = $this->transition($lesson, lesson::STATUS_CANCELLED_TEACHER, $teacherid,
             ['cancel_reason' => $reason, 'flex_state' => 'returned']);
         $transaction->allow_commit();
@@ -502,7 +512,7 @@ class lesson_service extends service {
         // Finance validates there is an active earning to reverse, then flips it.
         wallet::reverse_earning($lessonid, $adminid, $reason);
         flex::reverse_consumed((int) $lesson->get('studentid'), (int) $lesson->get('purchaseid'),
-            $lessonid, $adminid, 'Admin reversal: ' . $reason);
+            $lessonid, $adminid, 'Admin reversal: ' . $reason, self::flex_count($lesson));
         $result = $this->transition($lesson, $lesson->get('status'), $adminid, ['flex_state' => 'returned']);
         $transaction->allow_commit();
         return $result;
@@ -571,7 +581,7 @@ class lesson_service extends service {
     // ── internal helpers ─────────────────────────────────────────────────────
 
     /**
-     * Confirm a lesson at a time and reserve one Flex (US-FN-1-2). Shared by both accept paths.
+     * Confirm a lesson at a time and reserve its Flex (US-FN-1-2). Shared by both accept paths.
      *
      * @param lesson $lesson
      * @param int $time
@@ -585,7 +595,7 @@ class lesson_service extends service {
         }
         $transaction = $DB->start_delegated_transaction();
         $purchaseid = flex::reserve((int) $lesson->get('studentid'), (int) $lesson->get('id'),
-            $actorid, 'Lesson confirmed');
+            $actorid, 'Lesson confirmed', self::flex_count($lesson));
         $this->mark_proposal_accepted((int) $lesson->get('id'), $time);
         $result = $this->transition($lesson, lesson::STATUS_CONFIRMED, $actorid, [
             'confirmed_time' => $time,
@@ -882,6 +892,7 @@ class lesson_service extends service {
             'reject_reason'  => $lesson->get('reject_reason'),
             'cancel_reason'  => $lesson->get('cancel_reason'),
             'flex_state'     => $lesson->get('flex_state'),
+            'flex_count'     => self::flex_count($lesson),
             'actual_start'   => (int) $lesson->get('actual_start'),
             'actual_end'     => (int) $lesson->get('actual_end'),
             'cmid'           => (int) $lesson->get('cmid'),
@@ -907,6 +918,16 @@ class lesson_service extends service {
             ], array_values($props));
         }
         return $out;
+    }
+
+    /**
+     * How many Flex a lesson costs (at least 1).
+     *
+     * @param lesson $lesson
+     * @return int
+     */
+    private static function flex_count(lesson $lesson): int {
+        return max(1, (int) $lesson->get('flex_count'));
     }
 
     /**

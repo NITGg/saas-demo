@@ -156,8 +156,11 @@ class manager {
             throw new \moodle_exception('alreadypurchased', 'local_payments');
         }
 
-        // Check already enrolled.
-        if (enrollment_handler::is_enrolled($userid, $courseid)) {
+        // Check already enrolled — unless they got in only by buying single lessons
+        // (local_nit_finance): they may still buy the whole course.
+        $lessononly = class_exists('\local_nit_finance\local\access')
+            && \local_nit_finance\local\access::course_state($userid, $courseid)['lessononly'];
+        if (enrollment_handler::is_enrolled($userid, $courseid) && !$lessononly) {
             throw new \moodle_exception('alreadyenrolled', 'local_payments');
         }
 

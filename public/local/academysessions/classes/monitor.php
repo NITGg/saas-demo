@@ -220,7 +220,23 @@ class monitor {
         $ids = array_unique(array_merge([$teacherid], $invited, array_keys($stretches)));
         $names = self::names($ids);
 
-        $row = function(int $userid, string $role) use ($stretches, $names, $until, $over, $session, $teacherid) {
+        // The timeline: the planned window, stretched to anything seen outside it (an early
+        // join, running over, the time it was ended), and "now" while it is on.
+        $from = (int) $session->start_time;
+        $to = self::end_time($session);
+        foreach ($stretches as $mine) {
+            foreach ($mine as $p) {
+                $from = min($from, (int) $p->joined_at);
+                $to = max($to, (int) ($p->left_at ?: 0));
+            }
+        }
+        if (!$over) {
+            $to = max($to, $now);
+        }
+        $span = max(MINSECS, $to - $from);
+        $pos = fn(int $t) => round(100 * ($t - $from) / $span, 2);
+
+        $row = function(int $userid, string $role) use ($stretches, $names, $until, $over, $session, $teacherid, $pos, $span) {
             $mine = $stretches[$userid] ?? [];
             $open = !$over && $mine && empty(end($mine)->left_at);
             if ($role === 'teacher') {
@@ -228,11 +244,19 @@ class monitor {
             }
             $seconds = 0;
             $parts = [];
+            $segments = [];
             foreach ($mine as $p) {
-                $to = $p->left_at ? (int) $p->left_at : $until;
-                $seconds += max(0, $to - (int) $p->joined_at);
-                $parts[] = self::time((int) $p->joined_at) . ' – '
-                    . ($p->left_at ? self::time((int) $p->left_at) : self::str('stillin'));
+                $joined = (int) $p->joined_at;
+                $left = $p->left_at ? (int) $p->left_at : $until;
+                $seconds += max(0, $left - $joined);
+                $parts[] = self::time($joined) . ' – ' . ($p->left_at ? self::time((int) $p->left_at) : self::str('stillin'));
+                $segments[] = [
+                    'start' => $pos($joined),
+                    // At least a sliver, so a few seconds in the call still shows.
+                    'size' => max(0.8, round(100 * ($left - $joined) / $span, 2)),
+                    'open' => !$p->left_at && !$over,
+                    'label' => end($parts),
+                ];
             }
             // The teacher's first join is the session's teacher_first_join (what lateness uses).
             $first = $userid === $teacherid && !empty($session->teacher_first_join)
@@ -241,31 +265,50 @@ class monitor {
             foreach ($mine as $p) {
                 $last = max($last, (int) $p->left_at);
             }
+            $state = $open ? 'in' : ($first ? 'out' : 'never');
             return [
                 'name' => $names[$userid] ?? '—',
                 'role' => self::str('role_' . $role),
                 'isteacher' => $role === 'teacher',
+                'isother' => $role === 'other',
                 'joined' => (bool) $first,
                 'firstjoin' => $first ? self::time($first) : '',
                 'lastleave' => !$open && $last ? self::time($last) : '',
                 'present' => $open,
-                'state' => $open ? self::str('person_present') : ($first ? self::str('person_left') : self::str('person_never')),
-                'statecolour' => $open ? 'success' : ($first ? 'warning' : 'secondary'),
+                'state' => self::str('person_' . ['in' => 'present', 'out' => 'left', 'never' => 'never'][$state]),
+                'stateclass' => $state,
+                'statecolour' => ['in' => 'success', 'out' => 'warning', 'never' => 'secondary'][$state],
                 'visits' => count($mine),
                 'minutes' => $mine ? self::str('minutes', (int) floor($seconds / MINSECS)) : '—',
+                'summary' => $mine ? self::str('personsummary', ['visits' => count($mine),
+                    'minutes' => (int) floor($seconds / MINSECS)]) : '',
                 'stretches' => implode(self::str('listsep'), $parts),
+                'segments' => $segments,
             ];
         };
-        $people = [$row($teacherid, 'teacher')];
-        foreach ($invited as $uid) {
-            $people[] = $row($uid, 'student');
-        }
+        $teacher = $row($teacherid, 'teacher');
+        $students = array_map(fn($uid) => $row($uid, 'student'), $invited);
+        $others = [];
         foreach (array_keys($stretches) as $uid) {
             if ($uid !== $teacherid && !in_array($uid, $invited, true)) {
-                $people[] = $row($uid, 'other');
+                $others[] = $row($uid, 'other');
             }
         }
-        $card['people'] = $people;
+        $card['people'] = array_merge([$teacher], $students, $others);
+        $card['teacherrow'] = [$teacher];
+        $card['students'] = $students;
+        $card['studentcount'] = count($students);
+        $card['others'] = $others;
+        $card['hasothers'] = (bool) $others;
+        $card['axis'] = [
+            'from' => self::time($from),
+            'to' => self::time($to),
+            'hasnow' => !$over && $now >= $from && $now <= $to,
+            'now' => $pos(min(max($now, $from), $to)),
+            // The planned window inside the axis (it can be narrower when people came early or stayed late).
+            'planstart' => $pos((int) $session->start_time),
+            'plansize' => round(100 * (self::end_time($session) - (int) $session->start_time) / $span, 2),
+        ];
         return $card;
     }
 

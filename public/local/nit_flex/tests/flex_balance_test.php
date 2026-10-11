@@ -68,6 +68,49 @@ final class flex_balance_test extends \advanced_testcase {
     }
 
     /**
+     * A lesson that costs several Flex moves all of them, and the ledger records the amount.
+     *
+     * @return void
+     */
+    public function test_multi_flex_lesson(): void {
+        $this->resetAfterTest();
+        $sid = (int) $this->getDataGenerator()->create_user()->id;
+        $packageid = packages::create((object) [
+            'name' => 'Flex5', 'flex_count' => 5, 'price_minor' => 50000, 'expiration_days' => 0,
+        ]);
+        $pid = purchase::fulfil($sid, $packageid)['id'];
+        $amounts = fn(string $type) => array_column(array_filter(flex::history($sid),
+            fn($tx) => $tx['lessonid'] === 201 && $tx['type'] === $type), 'amount');
+
+        flex::reserve($sid, 201, $sid, '', 3);
+        $active = purchase::active($sid);
+        $this->assertSame([2, 3], [$active['remaining_flex'], $active['reserved_flex']]);
+        $this->assertSame([-3], $amounts('reserve'));
+
+        // Not enough for another 3-Flex lesson.
+        try {
+            flex::reserve($sid, 202, $sid, '', 3);
+            $this->fail('err_noflex expected');
+        } catch (\local_nit_flex\exception\flex_exception $e) {
+            $this->assertSame('err_noflex', $e->errorcode);
+        }
+
+        flex::consume($sid, $pid, 201, $sid, '', 3);
+        $active = purchase::active($sid);
+        $this->assertSame([2, 0, 3], [$active['remaining_flex'], $active['reserved_flex'], $active['consumed_flex']]);
+
+        flex::reverse_consumed($sid, $pid, 201, $sid, '', 3);
+        $active = purchase::active($sid);
+        $this->assertSame([5, 0], [$active['remaining_flex'], $active['consumed_flex']]);
+        $this->assertSame([3], $amounts('return'));
+
+        flex::reserve($sid, 203, $sid, '', 5);
+        flex::return_flex($sid, $pid, 203, $sid, '', 5);
+        $active = purchase::active($sid);
+        $this->assertSame([5, 0], [$active['remaining_flex'], $active['reserved_flex']]);
+    }
+
+    /**
      * A student may hold only one active package at a time.
      *
      * @return void

@@ -215,5 +215,36 @@ final class access_test extends \advanced_testcase {
         $this->assertTrue($r['available']);
         $this->assertTrue($r['is_teacher']);
         $this->assertTrue($this->payload($r['jwt'])['context']['user']['moderator']);
+        // A host of a lesson room lets knockers in; it is not limited to the teacher's video.
+        $this->assertTrue($r['auto_admit']);
+        $this->assertFalse($r['isolate_students']);
+    }
+
+    public function test_ws_tells_the_app_a_student_sees_the_teacher_only(): void {
+        $this->teacher_joins();
+        $this->setUser($this->student);
+        $r = get_session_info::execute($this->cmid);
+        $this->assertTrue($r['isolate_students']);
+        $this->assertFalse($r['auto_admit']);
+        $this->assertSame(fullname($this->teacher), $r['teacher_name']);
+    }
+
+    public function test_ws_course_room_student_sees_the_course_teachers_only(): void {
+        $jitsi = $this->getDataGenerator()->create_module('jitsi', ['course' => $this->course->id]);
+        $this->setUser($this->stranger);
+        $r = get_session_info::execute((int) $jitsi->cmid);
+        $this->assertTrue($r['isolate_students']);
+        $this->assertFalse($r['auto_admit']);
+        // Any of the course's teachers may be the one to pin.
+        $names = $r['teacher_names'];
+        sort($names);
+        $expected = [fullname($this->teacher), fullname($this->otherteacher)];
+        sort($expected);
+        $this->assertSame($expected, $names);
+
+        $this->setUser($this->teacher);
+        $r = get_session_info::execute((int) $jitsi->cmid);
+        $this->assertTrue($r['auto_admit']);
+        $this->assertFalse($r['isolate_students']);
     }
 }

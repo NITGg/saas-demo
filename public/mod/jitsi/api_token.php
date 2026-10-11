@@ -18,7 +18,9 @@
  * Error response:
  * { "error": "message", "errorcode": "<code>" }   (HTTP 401 / 403 / 404 / 503)
  * 403 codes: nopermissions, notallowed, sessionnotavailable, sessionended,
- * waitingforteacher (poll again; the teacher is not in the call yet).
+ * waitingforteacher (poll again; the teacher is not in the call yet),
+ * (course room with a waiting room: a host must be in the call first; then the Jitsi
+ * lobby holds the student until the teacher lets them in from inside the meeting).
  * 503 jitsinotconfigured: the site has no Jitsi JWT secret.
  *
  * The token is validated by \local_academy\token_auth (expiry, IP restriction,

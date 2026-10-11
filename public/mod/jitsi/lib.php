@@ -29,6 +29,121 @@ function jitsi_room_name($jitsi, $cm): string {
 }
 
 /**
+ * Activity "More" menu: the room's attendance log, for its hosts.
+ *
+ * @param settings_navigation $settingsnav
+ * @param navigation_node $jitsinode
+ */
+function jitsi_extend_settings_navigation(settings_navigation $settingsnav, navigation_node $jitsinode) {
+    global $USER;
+    $cm = $settingsnav->get_page()->cm;
+    if (!$cm || !\mod_jitsi\local\presence::is_moderator($cm, (int) $USER->id)) {
+        return;
+    }
+    $jitsinode->add(get_string('attendancelog', 'jitsi'), new moodle_url('/mod/jitsi/attendance.php', ['id' => $cm->id]),
+        navigation_node::TYPE_SETTING, null, 'jitsi_attendancelog', new pix_icon('i/report', ''));
+}
+
+/**
+ * The names of a room's teachers, to pin on a student's screen: the session's teacher
+ * for a lesson room; for a course room, the users who host it (mod/jitsi:moderate).
+ *
+ * @param cm_info|stdClass $cm
+ * @param stdClass|null $session the linked live session
+ * @return string[]
+ */
+function jitsi_teacher_names($cm, $session): array {
+    if ($session) {
+        $teacher = core_user::get_user((int) $session->teacherid);
+        return $teacher ? [fullname($teacher)] : [];
+    }
+    $fields = 'u.id, ' . \core_user\fields::for_name()->get_sql('u', false, '', '', false)->selects;
+    $users = get_users_by_capability(context_module::instance($cm->id), 'mod/jitsi:moderate', $fields);
+    // The course's own teachers (enrolled) first, then admins / managers: a student's
+    // screen pins the first of these who is in the call.
+    $coursecontext = context_course::instance($cm->course);
+    usort($users, fn($a, $b) => (int) is_enrolled($coursecontext, $b) <=> (int) is_enrolled($coursecontext, $a));
+    return array_values(array_unique(array_map('fullname', $users)));
+}
+
+/**
+ * Does the room page show its "Session recordings" tab? The host always; a student of a
+ * linked session once it is over (local_academysessions\recordings::visible_to_students()),
+ * of a standalone room always.
+ *
+ * @param bool $ishost
+ * @param stdClass|null $session the linked live session
+ * @return bool
+ */
+function jitsi_show_recordings_tab(bool $ishost, $session): bool {
+    if ($ishost || !class_exists('\local_academysessions\recordings')) {
+        return true;
+    }
+    return \local_academysessions\recordings::visible_to_students($session ?: null);
+}
+
+/**
+ * The video tab of a room that is closed for this user right now (waiting for the teacher,
+ * not open yet, ended, or hidden by a Moodle restriction): why there is no call. The rest
+ * of the page (recordings, whiteboard...) stays as usual.
+ *
+ * Waiting for the teacher also says what comes next: straight into the call when they had
+ * pressed "Join" (join=1), else the "Join" step appears; in a room with a waiting room the
+ * teacher then lets them in.
+ *
+ * @param stdClass $decision \mod_jitsi\local\access::check() result (not allowed)
+ * @param cm_info|stdClass $cm
+ * @param bool $wantsjoin the user pressed "Join" (join=1)
+ * @param bool $waitingroom the room uses a waiting room (access::waiting_room())
+ * @return string HTML
+ */
+function jitsi_closed_html(stdClass $decision, $cm, bool $wantsjoin = false, bool $waitingroom = false): string {
+    $next = '';
+    if ($decision->code === \mod_jitsi\local\access::UNAVAILABLE) {
+        $message = $cm->availableinfo ?: get_string('sessionended', 'jitsi');
+    } else if ($decision->code === \mod_jitsi\local\access::WAITING) {
+        $message = get_string($wantsjoin ? 'waiting_title_join' : 'waiting_title', 'jitsi');
+        $next = get_string($wantsjoin ? 'waiting_next_join' : 'waiting_next_button', 'jitsi');
+        if ($waitingroom) {
+            $next .= ' ' . get_string('waiting_next_admit', 'jitsi');
+        }
+    } else {
+        $message = $decision->message;
+    }
+    $body = html_writer::div($message, '', ['style' => 'font-size:18px;']);
+    if ($next !== '') {
+        $body .= html_writer::div($next, '', ['style' => 'margin-top:10px;opacity:.85;']);
+    }
+    return html_writer::div(html_writer::div($body, '', ['style' => 'max-width:520px;']),
+        '', ['id' => 'jitsi-closed', 'data-code' => $decision->code,
+            'style' => 'height:100%;display:flex;align-items:center;justify-content:center;text-align:center;'
+            . 'padding:24px;background:#1b1f24;color:#fff;']);
+}
+
+/**
+ * The step before the call (view.php without join=1): opening the activity only shows the
+ * room, so someone browsing the course never lands in the meeting or starts its recording.
+ *
+ * @param cm_info|stdClass $cm
+ * @param bool $autorecord the recording starts when this user joins
+ * @return string HTML
+ */
+function jitsi_prejoin_html($cm, bool $autorecord): string {
+    $text = get_string('prejoin_text', 'jitsi');
+    if ($autorecord) {
+        $text .= ' ' . get_string('prejoin_autorecord', 'jitsi');
+    }
+    return html_writer::div(
+        html_writer::div(get_string('prejoin_title', 'jitsi'), '', ['style' => 'font-size:20px;font-weight:600;'])
+        . html_writer::div($text, '', ['style' => 'max-width:480px;opacity:.85;'])
+        . html_writer::link(new moodle_url('/mod/jitsi/view.php', ['id' => $cm->id, 'join' => 1]),
+            get_string('joinsession', 'jitsi'),
+            ['class' => 'btn btn-primary btn-lg', 'style' => 'border-radius:24px;padding:10px 36px;']),
+        '', ['id' => 'jitsi-prejoin', 'style' => 'height:100%;display:flex;flex-direction:column;align-items:center;'
+            . 'justify-content:center;gap:16px;text-align:center;padding:24px;background:#1b1f24;color:#fff;']);
+}
+
+/**
  * The Jitsi live-session activity is a Professional-tier feature. Returns true when
  * the academy's licence includes 'jitsi' (local_license already defines this feature
  * and grants it to the professional tier; has_feature() is true when enforcement is
@@ -81,6 +196,7 @@ function jitsi_delete_instance($id) {
     if (!$DB->get_record('jitsi', ['id' => $id])) {
         return false;
     }
+    $DB->delete_records('jitsi_presence', ['jitsiid' => $id]);
     $DB->delete_records('jitsi', ['id' => $id]);
     return true;
 }

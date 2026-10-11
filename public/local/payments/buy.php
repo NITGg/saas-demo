@@ -13,7 +13,11 @@ require_capability('local/payments:purchasecourse', $context);
 // enrolment (lapsed subscription/package) must NOT short-circuit here, so the
 // student can re-purchase or re-enrol rather than bouncing to a course they
 // can no longer access.
-if (is_enrolled($context, $USER->id, '', true)) {
+// A student who got in only by buying single lessons (local_nit_finance) stays
+// here: they may still buy the whole course.
+$lessononly = class_exists('\local_nit_finance\local\access')
+    && \local_nit_finance\local\access::course_state((int) $USER->id, $courseid)['lessononly'];
+if (is_enrolled($context, $USER->id, '', true) && !$lessononly) {
     redirect(new moodle_url('/course/view.php', ['id' => $courseid]));
 }
 
@@ -124,10 +128,11 @@ try {
 
     // NIT: intercept the checkout link → open the coupon/offer modal → proceed with the coupon.
     if ($nitcheckout) {
-        $costr = local_nit_commerce_string_map([
+        $hasfinance = class_exists('\local_nit_finance\local\output');
+        $costr = local_nit_commerce_string_map(array_merge([
             'co_title', 'co_intro', 'co_total', 'co_total_sub', 'co_offer', 'co_coupon', 'co_apply', 'co_discount',
             'co_secure', 'co_proceed', 'co_cancel', 'co_loading', 'co_coupon_failed', 'co_currency',
-        ]);
+        ], $hasfinance ? \local_nit_finance\local\output::wallet_modal_strings() : []));
         echo html_writer::script('window.NIT_CO = ' . json_encode([
             'wwwroot'  => $CFG->wwwroot,
             'sesskey'  => sesskey(),
@@ -136,6 +141,11 @@ try {
             'courseid' => (int) $courseid,
             'name'     => format_string($course->fullname),
             'price'    => (float) $pricing->price,
+            // Pay from the student wallet (local_nit_finance); null when it cannot pay this course.
+            'wallet'   => $hasfinance ? \local_nit_finance\local\output::course_wallet_option((int) $USER->id,
+                (int) $courseid, (new moodle_url('/local/payments/buy.php', ['courseid' => $courseid]))->out_as_local_url(false))
+                : null,
+            'online'   => !$hasfinance || \local_nit_finance\local\output::online_payment_available(),
         ]) . ';');
         echo html_writer::script(<<<'JS'
 (function () {
@@ -153,6 +163,8 @@ try {
                 itemId: window.NIT_CO.courseid,
                 name: window.NIT_CO.name,
                 price: window.NIT_CO.price,
+                wallet: window.NIT_CO.wallet,
+                online: window.NIT_CO.online,
                 proceed: function (code) {
                     window.location.href = href + (href.indexOf('?') >= 0 ? '&' : '?') + 'coupon_code=' + encodeURIComponent(code);
                 }

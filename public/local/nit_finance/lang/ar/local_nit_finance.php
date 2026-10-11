@@ -278,3 +278,12 @@ $string['previewdur_two'] = 'دقيقتين';
 $string['previewdur_few'] = '{$a} دقايق';
 $string['previewdur_many'] = '{$a} دقيقة';
 $string['previewdur_clock'] = '{$a} دقيقة';
+
+// Paying for a whole course or a subscription from the wallet.
+$string['itemtype_subscription'] = 'اشتراك';
+$string['err_notforsale_course'] = 'الكورس ده مش معروض للبيع.';
+$string['err_walletcurrency'] = 'سعر الكورس ده بعملة غير الجنيه، فمش هينفع تدفعه من المحفظة.';
+$string['err_subactive'] = 'معاك اشتراك شغال بالفعل.';
+$string['subbought'] = 'تمام! اشتراكك اتفعّل.';
+$string['paysubwithwallet'] = 'ادفع من المحفظة';
+$string['walletbalanceis'] = 'رصيد محفظتك: {$a}';

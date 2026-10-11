@@ -1,0 +1,48 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_academysessions/monitor_person
+
+    One person in a lesson's detail (local_academysessions/monitor_detail): who, their
+    stretches in the call as bars on the lesson's timeline, and a one-line summary.
+    The bars are drawn for the eye; the same stretches are written out for screen readers.
+
+    Example context (json):
+    {
+        "name": "Sara Ali", "role": "Teacher", "stateclass": "in", "state": "In the call",
+        "summary": "2 times · 23 min", "firstjoin": "10:02 AM", "lastleave": "",
+        "stretches": "10:02 AM – 10:10 AM, 10:15 AM – now",
+        "segments": [{"start": 4, "size": 16, "open": false, "label": "10:02 AM – 10:10 AM"},
+                     {"start": 30, "size": 20, "open": true, "label": "10:15 AM – now"}]
+    }
+}}
+<li class="nitmon-person nitmon-person-{{stateclass}}">
+    <div class="nitmon-person-who">
+        <span class="nitmon-person-name">{{name}}</span>
+        {{#isother}}<span class="nitmon-person-role">{{role}}</span>{{/isother}}
+    </div>
+    <div class="nitmon-track" aria-hidden="true">
+        {{#axis}}<span class="nitmon-track-plan" style="inset-inline-start: {{planstart}}%; inline-size: {{plansize}}%"></span>{{/axis}}
+        {{#axis.hasnow}}<span class="nitmon-track-now" style="inset-inline-start: {{axis.now}}%"></span>{{/axis.hasnow}}
+        {{#segments}}<span class="nitmon-seg {{#open}}nitmon-seg-open{{/open}}" style="inset-inline-start: {{start}}%; inline-size: {{size}}%" title="{{label}}"></span>{{/segments}}
+    </div>
+    <div class="nitmon-person-sum">
+        <span class="nitmon-state nitmon-state-{{stateclass}}">{{state}}</span>
+        {{#summary}}<span class="nitmon-person-numbers">{{summary}}</span>{{/summary}}
+        <span class="visually-hidden">{{stretches}}</span>
+    </div>
+</li>
