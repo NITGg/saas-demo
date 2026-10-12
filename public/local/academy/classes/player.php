@@ -87,7 +87,7 @@ class player {
         if ($pagetype !== 'mod-' . $cm->modname . '-view' || strtoupper($method) !== 'GET'
                 || !in_array($fetchdest, ['', 'document'], true)
                 || array_diff(array_keys($query), ['id']) || in_array($cm->modname, self::VIDEO_MODS, true)
-                || (int) $cm->course === SITEID
+                || (int) $cm->course === (int) SITEID
                 || (int) $cm->course === (int) get_config('local_nit_lessons', 'lessons_courseid')
                 || !self::is_lesson($cm)) {
             return null;

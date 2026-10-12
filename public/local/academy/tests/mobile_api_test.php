@@ -91,6 +91,46 @@ final class mobile_api_test extends \advanced_testcase {
         }
     }
 
+    public function test_update_profile_refuses_another_accounts_phone_and_national_id(): void {
+        // BUG-023: a student could take over another account's phone / national ID.
+        $this->resetAfterTest();
+        user_fields::ensure();
+        $other = $this->getDataGenerator()->create_user(['phone1' => '01099998888']);
+        profile_save_custom_fields($other->id, ['nationalid' => '30101010101010']);
+        $user = $this->getDataGenerator()->create_user(['phone1' => '01011112222']);
+
+        foreach ([
+            [['phone' => '+20 10 9999 8888'], 'err_phonetaken'],
+            [['fields' => ['nationalid' => '30101010101010']], 'err_nationalidtaken'],
+            [['firstname' => 'Mona2'], 'err_namedigits'],
+            [['phone' => '0123456'], 'err_invalidphone'],
+        ] as [$data, $expected]) {
+            try {
+                profile_manager::update_profile((int) $user->id, $data);
+                $this->fail('Expected ' . $expected);
+            } catch (\moodle_exception $e) {
+                $this->assertSame($expected, $e->errorcode);
+            }
+        }
+        $this->assertSame('01011112222', \core_user::get_user($user->id)->phone1);
+        $this->assertSame('', user_fields::values((int) $user->id)['nationalid']);
+    }
+
+    public function test_update_profile_keeps_working_for_old_values(): void {
+        // Saved data from before the rules (short phone, shared national ID) must not block other changes.
+        $this->resetAfterTest();
+        user_fields::ensure();
+        $other = $this->getDataGenerator()->create_user();
+        profile_save_custom_fields($other->id, ['nationalid' => '30101010101010']);
+        $user = $this->getDataGenerator()->create_user(['phone1' => '0123456']);
+        profile_save_custom_fields($user->id, ['nationalid' => '30101010101010']);
+
+        profile_manager::update_profile((int) $user->id, ['phone' => '0123456', 'lastname' => 'Saleh',
+            'fields' => ['nationalid' => '30101010101010', 'school' => 'Test school']]);
+        $this->assertSame('Saleh', \core_user::get_user($user->id)->lastname);
+        $this->assertSame('Test school', user_fields::values((int) $user->id)['school']);
+    }
+
     public function test_update_profile_rejects_a_division_of_another_system(): void {
         $this->resetAfterTest();
         user_fields::ensure();
