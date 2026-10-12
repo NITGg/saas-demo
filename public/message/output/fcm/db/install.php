@@ -37,5 +37,8 @@ function xmldb_message_fcm_install() {
         $DB->insert_record('message_processors', $processor);
     }
 
+    // Push goes wherever airnotifier push went; Moodle would otherwise leave FCM off everywhere.
+    \message_fcm\preferences::mirror_airnotifier();
+
     return true;
 }

@@ -25,6 +25,7 @@ sets how many Flex one live lesson costs (§3.7). The
 | 10 | Messaging between students | When the admin turns on "Prevent messaging between students": `core_message_send_instant_messages` (per-message error), `send_messages_to_conversation` / `create_contact_request` (errorcode `studentmessaging_blocked`), `canmessage = false` between two students | **Check**: hide the message box when `canmessage` is `false` (§3.6) |
 | 11 | Flex price per live lesson | `/local/nit_lessons/api.php`: `get_teachers` (+`lesson_flex`), `get_teacher_profile` (+`lesson_flex`), `update_teacher_profile` (+optional `lesson_flex`), every lesson (+`flex_count`), `request_lesson` (new errorcode `notenoughflex`) | **Yes**: show the price, a "Flex per lesson" box for teachers, handle `notenoughflex` (§3.7) |
 | 12 | Push Notifications (Firebase FCM) | Direct Firebase Cloud Messaging (HTTP v1) replaced Airnotifier. FCM token registered via `core_user_add_user_device` | **Yes**: Add Firebase to mobile app and register FCM token on login (§6) |
+| 13 | Course Jitsi activities with a session time | Session rows (+`audience`: `invited` / `course`); `get_student_sessions` also returns course sessions; the session reminder links to the activity; a user not enrolled in the course can't join any room | No (§3.8) |
 
 ---
 
@@ -411,6 +412,38 @@ teacher accepting, the accept fails with `noflex`, as before.
 | lesson_flex | int | no | Flex per lesson, 1 or more (no maximum). **Leave it out to keep the saved price** |
 
 New errorcode **`badlessonflex`**: `lesson_flex` is less than 1.
+
+### 3.8 Course Jitsi activities with a session time (12/10)
+
+A teacher can now give a course Jitsi activity a **session time** on the web (activity settings → "Session
+time": start + length in minutes). Such an activity gets a live session row like the ones the app creates,
+with a new field **`audience`**:
+
+| `audience` | Who the session is for |
+|---|---|
+| `invited` | the students listed on it (every session before 12/10, and every session the app creates) |
+| `course` | **every student of the course**, including students who enrol after it was scheduled |
+
+- **`get_student_sessions`** now also returns the `course` sessions of the student's courses (the student
+  list follows the course; a newly enrolled student appears within 5 minutes, or as soon as they open the
+  room). `get_teacher_sessions` returns them to the teacher who scheduled them. Every row has `audience`
+  (string) and `cmid` (the Jitsi activity).
+- **Joining:** the same calls as before (`mod_jitsi_get_session_info` / `api_token.php`, then `room_presence`):
+  - the room opens to students 30 minutes before the start and closes at the end
+    (`sessionnotavailable` / `sessionended`);
+  - students wait until a teacher is in the call (`waitingforteacher`);
+  - **every editing teacher of the course** hosts the room (`is_teacher=true`, moderator JWT). Any of them
+    being in the call lets the students in, and `teacher_names` lists all of them, as in a course room without
+    a time;
+  - `lobby` follows the activity's "Students wait for the teacher to let them in" setting.
+- **Reminders:** the session reminder notification (`sessionreminder`) goes to every student on the session
+  and to the teacher who scheduled it, at the admin's lead times. Its `url` is the activity
+  (`/mod/jitsi/view.php?id=<cmid>`), no longer the course page.
+- **Not enrolled = not allowed:** any Jitsi room (with or without a time) now refuses a user who is not
+  enrolled in its course (a course guest): `notallowed` / `available=false`.
+- `set_teacher_present` (app API) still accepts the session's own teacher only; the other teachers of a
+  `course` session are recorded by `room_presence`.
+- **App action:** none required. Show `audience=course` sessions in the student's list like the others.
 
 ---
 

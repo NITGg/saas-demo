@@ -58,25 +58,6 @@ class mod_jitsi_mod_form extends moodleform_mod {
     }
 
     public function validation($data, $files) {
-        global $DB;
-        $errors = parent::validation($data, $files);
-        if (empty($data['sessionstart'])) {
-            return $errors;
-        }
-        $duration = (int) ($data['sessionduration'] ?? 0);
-        if ($duration <= 0) {
-            $errors['sessionduration'] = get_string('sessionduration_invalid', 'jitsi');
-            return $errors;
-        }
-        // A time that is already over is a mistake (a wrong day), unless it is the time the
-        // session already had: editing other settings of a past session is fine.
-        $session = !empty($data['instance'])
-            ? $DB->get_record('academy_live_sessions', ['jitsiid' => $data['instance']]) : null;
-        $unchanged = $session && (int) $session->start_time === (int) $data['sessionstart']
-            && (int) $session->duration === $duration;
-        if (!$unchanged && (int) $data['sessionstart'] + $duration * MINSECS <= time()) {
-            $errors['sessionstart'] = get_string('sessionstart_past', 'jitsi');
-        }
-        return $errors;
+        return array_merge(parent::validation($data, $files), jitsi_schedule_errors($data));
     }
 }

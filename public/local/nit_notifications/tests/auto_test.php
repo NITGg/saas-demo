@@ -93,6 +93,27 @@ final class auto_test extends \advanced_testcase {
         $this->assertSame(2, $this->sent('lesson_reminder'));
     }
 
+    public function test_a_scheduled_jitsi_room_reminds_every_student_with_a_link_to_the_room(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->preventResetByRollback();
+        $this->redirectMessages();
+        $gen = $this->getDataGenerator();
+        $course = $gen->create_course();
+        $teacher = $gen->create_and_enrol($course, 'editingteacher');
+        $students = [$gen->create_and_enrol($course, 'student'), $gen->create_and_enrol($course, 'student')];
+        $now = time();
+        $this->setUser($teacher);
+        $room = $gen->create_module('jitsi', ['course' => $course->id, 'name' => 'Algebra',
+            'sessionstart' => $now + 30 * MINSECS, 'sessionduration' => 45]);
+
+        auto::send_session_reminders($now);
+        $notif = $DB->get_record('local_nit_notif', ['source' => 'session_reminder'], '*', MUST_EXIST);
+        $this->assertSame((new \moodle_url('/mod/jitsi/view.php', ['id' => $room->cmid]))->out(false), $notif->url);
+        // The two students and the teacher who scheduled it.
+        $this->assertSame(3, (int) $notif->total);
+    }
+
     public function test_subscription_started_then_renewed_in_the_users_language(): void {
         global $DB;
         $this->resetAfterTest();

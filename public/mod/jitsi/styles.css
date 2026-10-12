@@ -19,6 +19,11 @@
 #panel-video.nitdock-panel:fullscreen {
     border-radius: 0 !important;
 }
+/* The call stops above the dock: Jitsi draws its notifications at the bottom of the call,
+   they must not end up behind the dock. */
+#panel-video.nitdock-panel #jitsi-container {
+    height: calc(100% - 112px) !important;
+}
 
 /* ── Status strip ─────────────────────────────────────────────────────────── */
 .nitdock-top {
@@ -333,6 +338,9 @@
 
 /* Phones: icons only, smaller. */
 @media (max-width: 640px) {
+    #panel-video.nitdock-panel #jitsi-container {
+        height: calc(100% - 78px) !important;
+    }
     .nitdock {
         gap: 6px;
         padding: 8px;

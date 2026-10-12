@@ -188,7 +188,7 @@ if (!empty($jitsi->intro)) {
 // A scheduled room: when its session is.
 if ($session && \local_academysessions\session_manager::is_course_session($session)) {
     echo html_writer::div(html_writer::tag('strong', get_string('sessiontime', 'jitsi') . ': ')
-        . s(jitsi_session_time_text($session)), 'jitsi-sessiontime alert alert-info', ['style' => 'margin:10px 0;']);
+        . jitsi_session_time_html($session), 'jitsi-sessiontime alert alert-info', ['style' => 'margin:10px 0;']);
 }
 
 echo '<div id="jitsi-activity-container" style="margin:15px 0;">';
@@ -281,7 +281,7 @@ $js_config = json_encode([
     'endUrl'          => $end_ajax_url,
     'jitsiHost'       => $jitsi_host,
     'jitsiRoom'       => $jitsi_room,
-    'jitsiName'       => $jitsi->name,
+    'jitsiName'       => format_string($jitsi->name, true, ['context' => $context]), // {mlang} etc. resolved
     'jitsiLang'       => $jitsi_lang,
     'displayName'     => $display_name,
     'userEmail'       => $user_email,
@@ -400,6 +400,9 @@ echo <<<HTML
                 disableInviteFunctions: !CFG.isTeacher,
                 enableClosePage: false,
                 subject: CFG.jitsiName,
+                // The room's own strip (dock) shows the live timer; no second title and timer.
+                hideConferenceSubject: true,
+                hideConferenceTimer: true,
                 defaultLanguage: CFG.jitsiLang,
                 toolbarButtons: CFG.toolbarButtons,
                 fileRecordingsEnabled: CFG.isTeacher,

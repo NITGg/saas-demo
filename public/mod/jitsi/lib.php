@@ -440,18 +440,48 @@ function jitsi_release_session(stdClass $session): void {
 
 /**
  * When a room's session is, for people: "Monday, 12 October 2026, 10:00 PM · 60 minutes".
+ * HTML: the date is isolated (<bdi>), so its Latin "AM/PM" does not reorder an Arabic line.
  *
  * @param stdClass|null $session the linked session
  * @return string '' when the room has no session
  */
-function jitsi_session_time_text($session): string {
+function jitsi_session_time_html($session): string {
     if (!$session) {
         return '';
     }
     return get_string('sessiontime_text', 'jitsi', [
-        'date' => userdate((int) $session->start_time, get_string('strftimedaydatetime', 'langconfig')),
+        'date' => html_writer::tag('bdi', s(userdate((int) $session->start_time,
+            get_string('strftimedaydatetime', 'langconfig')))),
         'minutes' => (int) $session->duration,
     ]);
+}
+
+/**
+ * The settings form's checks of the session time: a length above 0, and a time that is not
+ * already over (a wrong day), unless it is the time the session already had (editing other
+ * settings of a past session is fine).
+ *
+ * @param array $data the submitted form (instance, sessionstart, sessionduration)
+ * @param int|null $now
+ * @return array field => error
+ */
+function jitsi_schedule_errors(array $data, ?int $now = null): array {
+    global $DB;
+    if (empty($data['sessionstart'])) {
+        return [];
+    }
+    $duration = (int) ($data['sessionduration'] ?? 0);
+    if ($duration <= 0) {
+        return ['sessionduration' => get_string('sessionduration_invalid', 'jitsi')];
+    }
+    $session = !empty($data['instance'])
+        ? $DB->get_record('academy_live_sessions', ['jitsiid' => $data['instance']]) : null;
+    $unchanged = $session && (int) $session->start_time === (int) $data['sessionstart']
+        && (int) $session->duration === $duration;
+    if (!$unchanged && (int) $data['sessionstart'] + $duration * MINSECS <= ($now ?? time())) {
+        return ['sessionstart' => get_string('sessionstart_past', 'jitsi')];
+    }
+    return [];
 }
 
 /**
@@ -532,5 +562,5 @@ function jitsi_cm_info_view(cm_info $cm) {
     if (!$session || !\local_academysessions\session_manager::is_course_session($session)) {
         return;
     }
-    $cm->set_after_link(html_writer::div(s(jitsi_session_time_text($session)), 'jitsi-sessiontime small text-muted'));
+    $cm->set_after_link(html_writer::div(jitsi_session_time_html($session), 'jitsi-sessiontime small text-muted'));
 }
