@@ -19,7 +19,7 @@
  * nothing here depends on Jitsi's own page or breaks when the Jitsi server is updated.
  *
  * A plain script (no build step), loaded by view.php after the call starts:
- *   NitJitsiDock.init(api, panel, {isHost: bool});
+ *   NitJitsiDock.init(api, panel, {isHost: bool, beforeLeave: function(done) {...}});
  *
  * @module     mod_jitsi/dock
  * @copyright  2026 NIT
@@ -202,11 +202,21 @@
                 if (menu) {
                     toggle(menu);
                 } else {
-                    api.executeCommand('hangup', false);
+                    hangup();
                 }
             },
-            hangup: function() { api.executeCommand('hangup', false); },
+            hangup: function() { hangup(); },
             endall: function() { api.executeCommand('endConference'); },
+        };
+        // Leaving: the page may first need a moment (opts.beforeLeave, view.php: the last
+        // host out opens the room's lobby).
+        var hangup = function() {
+            var go = function() { api.executeCommand('hangup', false); };
+            if (opts.beforeLeave) {
+                opts.beforeLeave(go);
+            } else {
+                go();
+            }
         };
         var toggle = function(pop, onopen) {
             if (!pop) {

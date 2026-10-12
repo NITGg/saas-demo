@@ -304,7 +304,8 @@ echo <<<HTML
 <script>
 window.jitsiSwitchTab = function(tab) {
     ['video', 'recordings', 'attendance'].forEach(function(name) {
-        var panel = document.getElementById('panel-' + name);
+        // After the call (onSessionLeft): the video tab shows "The session has ended".
+        var panel = document.getElementById('panel-' + (name === 'video' && window.jitsiCallEnded ? 'ended' : name));
         var button = document.getElementById('tab-' + name);
         if (!panel || !button) {
             return;
@@ -345,6 +346,7 @@ echo <<<HTML
 (function() {
     var CFG = {$js_config};
     var api = null;
+    var hostLeaving = null; // set for hosts, see "Host" below
 
     function initJitsiAPI() {
         if (typeof JitsiMeetExternalAPI === 'undefined') {
@@ -423,7 +425,11 @@ echo <<<HTML
         });
         // The room's own controls (dock.js), in place of Jitsi's toolbar.
         if (window.NitJitsiDock) {
-            window.NitJitsiDock.init(api, document.getElementById('panel-video'), {isHost: CFG.isTeacher});
+            window.NitJitsiDock.init(api, document.getElementById('panel-video'), {
+                isHost: CFG.isTeacher,
+                // A host's "Leave": the last host out first opens the room (see below).
+                beforeLeave: function(done) { hostLeaving ? hostLeaving(done) : done(); }
+            });
         }
         // readyToClose fires when teacher clicks "End meeting for all" — ended=true marks the session.
         api.addEventListener('readyToClose', function() { onSessionLeft(true); });
@@ -649,7 +655,75 @@ echo <<<HTML
         }
 
         if (CFG.isTeacher) {
-            api.addEventListener('videoConferenceJoined', function() {
+            // The other hosts in the call now (by role, main room), and whether the room's
+            // file recording is on (it may already be: started by another host, or before
+            // this page was reloaded).
+            var hostMe = null, otherHosts = 0, recOn = false;
+            var countHosts = function() {
+                if (!api || !api.getRoomsInfo) {
+                    return;
+                }
+                api.getRoomsInfo().then(function(info) {
+                    var n = 0;
+                    (info.rooms || []).forEach(function(room) {
+                        if (room.isMainRoom === false) {
+                            return;
+                        }
+                        (room.participants || []).forEach(function(p) {
+                            var id = p.id || (p.jid ? String(p.jid).split('/').pop() : null);
+                            if (p.role === 'moderator' && id && id !== hostMe) {
+                                n++;
+                            }
+                        });
+                    });
+                    otherHosts = n;
+                }).catch(function() {});
+            };
+            ['participantJoined', 'participantLeft', 'participantRoleChanged'].forEach(function(ev) {
+                api.addEventListener(ev, countHosts);
+            });
+            api.addEventListener('recordingStatusChanged', function(e) {
+                if (!e.mode || e.mode === 'file') {
+                    recOn = !!e.on;
+                }
+            });
+            // The last host leaving without ending the session: turn the Jitsi lobby off
+            // first. Jitsi gives every new connection a new identity, so a host coming back
+            // would otherwise knock with nobody in the call allowed to let them in (the
+            // students can't). Moodle still keeps new students out while no teacher is in
+            // the call (teacher_present.php). The recording this host started stops too.
+            var lastHostOut = function() {
+                if (otherHosts > 0) {
+                    return false;
+                }
+                try {
+                    if (CFG.lobbyEnabled) {
+                        api.executeCommand('toggleLobby', false);
+                    }
+                    if (CFG.autoRecord && recOn) {
+                        api.executeCommand('stopRecording', 'file');
+                    }
+                } catch (e) { /* the call is already gone */ }
+                return true;
+            };
+            hostLeaving = function(done) {
+                // A moment for the lobby change to reach the server before hanging up.
+                if (lastHostOut()) {
+                    setTimeout(done, 600);
+                } else {
+                    done();
+                }
+            };
+            // Closing or reloading the page: best effort (the page may be gone first).
+            window.addEventListener('pagehide', function() {
+                if (api) {
+                    lastHostOut();
+                }
+            });
+
+            api.addEventListener('videoConferenceJoined', function(e) {
+                hostMe = e && e.id;
+                countHosts();
                 setTeacherPresent(true);
                 if (CFG.roomPassword) {
                     api.executeCommand('password', CFG.roomPassword);
@@ -666,20 +740,24 @@ echo <<<HTML
                 // finalize.sh ships it to Vimeo. No direct Jibri call needed; the host's
                 // JWT grants recording. Guarded so it only fires once and only when
                 // auto-record is enabled for this activity.
+                // Not when the room is already being recorded (Jitsi tells a page joining
+                // a recorded room within those seconds): a second start fails, and Jitsi
+                // shows everyone "Failed to start recording".
                 if (CFG.autoRecord) {
                     setTimeout(function () {
+                        if (recOn || !api) {
+                            return;
+                        }
                         try { api.executeCommand('startRecording', { mode: 'file' }); }
                         catch (e) { /* Jibri busy / unavailable — teacher can start manually */ }
                     }, 4000);
                 }
             });
 
-            // Stop recording + re-gate students when the host leaves or ends the meeting.
+            // Re-gate students when the host leaves or ends the meeting (the recording
+            // and the lobby: lastHostOut(), before leaving).
             function onHostLeave() {
                 setTeacherPresent(false);
-                if (CFG.autoRecord) {
-                    try { api.executeCommand('stopRecording', 'file'); } catch (e) {}
-                }
             }
             api.addEventListener('videoConferenceLeft', onHostLeave);
             api.addEventListener('readyToClose', onHostLeave);
@@ -697,11 +775,10 @@ echo <<<HTML
     function onSessionLeft(teacherEndedForAll) {
         if (api) { try { api.dispose(); } catch(x) {} api = null; }
 
-        document.getElementById('jitsi-tabs').style.display = 'none';
+        // The tabs stay (recordings, attendance log); the video tab now shows the end.
+        window.jitsiCallEnded = true;
         document.getElementById('panel-video').style.display = 'none';
-        var recPanel = document.getElementById('panel-recordings');
-        if (recPanel) { recPanel.style.display = 'none'; }
-        document.getElementById('panel-ended').style.display = 'block';
+        window.jitsiSwitchTab('video');
 
         var sub = document.getElementById('ended-sub');
         if (teacherEndedForAll && CFG.isTeacher && !_sessionEndCalled) {

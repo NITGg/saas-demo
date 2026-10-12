@@ -190,3 +190,23 @@
         document.addEventListener('DOMContentLoaded', function () { noAutoPin(); hide(true); check(); });
     } catch (e) { /* never break the page */ }
 })();
+
+// 4. No blocking browser dialog from the whiteboard. Excalidraw calls window.alert() when
+// it receives drawing data it can't decrypt ("Couldn't decrypt data.": a client still on
+// the key of an earlier meeting of the same room, Jitsi keys the whiteboard by room name).
+// In Jibri's window an open alert makes every check Jibri runs in the page fail, so Jibri
+// ends the recording and everyone gets "Failed to start recording". So: no alert at all in
+// Jibri's window; elsewhere only that one is dropped (logged instead).
+(function () {
+    try {
+        var recorder = String(window.location.hash || '').indexOf('config.iAmRecorder=true') !== -1;
+        var original = window.alert;
+        window.alert = function (msg) {
+            if (recorder || /decrypt/i.test(String(msg))) {
+                try { console.warn('[nit] alert dropped: ' + msg); } catch (e) { /* no console */ }
+                return;
+            }
+            return original.apply(window, arguments);
+        };
+    } catch (e) { /* never break the page */ }
+})();
