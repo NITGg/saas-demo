@@ -66,6 +66,35 @@ class player {
         return $cm->uservisible && $cm->modname !== 'label' && $cm->url !== null && !$cm->deletioninprogress;
     }
 
+    /**
+     * Where a lesson's own page, opened on its own (a link from Moodle's course index, the
+     * calendar, a notification, an e-mail…), should go instead: the player, so a lesson
+     * always opens in the same frame. Only the plain view page of the activity (its
+     * "id" alone, a GET in the browser tab): a page inside the player's frame, a form
+     * posting back, a page with its own options (e.g. view.php?action=grading) and
+     * the video lessons (their view page IS the player) stay where they are. Private
+     * live lessons (local_nit_lessons' course) and the front page have no player.
+     *
+     * @param cm_info $cm
+     * @param string $pagetype $PAGE->pagetype
+     * @param array $query the request's GET parameters
+     * @param string $method the HTTP method
+     * @param string $fetchdest the Sec-Fetch-Dest header ('' when the browser sends none)
+     * @return moodle_url|null the player, or null to stay
+     */
+    public static function redirect_for_view(cm_info $cm, string $pagetype, array $query, string $method,
+            string $fetchdest): ?moodle_url {
+        if ($pagetype !== 'mod-' . $cm->modname . '-view' || strtoupper($method) !== 'GET'
+                || !in_array($fetchdest, ['', 'document'], true)
+                || array_diff(array_keys($query), ['id']) || in_array($cm->modname, self::VIDEO_MODS, true)
+                || (int) $cm->course === SITEID
+                || (int) $cm->course === (int) get_config('local_nit_lessons', 'lessons_courseid')
+                || !self::is_lesson($cm)) {
+            return null;
+        }
+        return new moodle_url('/local/academy/player.php', ['cmid' => $cm->id]);
+    }
+
     /** Whether the "lock lessons in order" option is on. */
     public static function lock_order(): bool {
         return (bool) get_config('local_academy', 'player_lockorder');

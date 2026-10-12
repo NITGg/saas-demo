@@ -126,6 +126,22 @@ class hook_callbacks {
             return;
         }
 
+        // Is this the app's WebView? Sticky for the rest of the (WebView-only) session.
+        $isapp = !empty($SESSION->theme_nit_appembed)
+            || \core_useragent::is_moodle_app()
+            || (bool) optional_param('nitembed', 0, PARAM_BOOL);
+
+        // A lesson's own page opened on its own (Moodle's course index, the calendar, a
+        // notification…): into the player, so a lesson always opens in the same frame.
+        // Not in the app's WebView (it shows the bare activity).
+        if (!$isapp && $PAGE->cm !== null && class_exists('\local_academy\player')) {
+            $to = \local_academy\player::redirect_for_view($PAGE->cm, $pt, $_GET,
+                (string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'), (string) ($_SERVER['HTTP_SEC_FETCH_DEST'] ?? ''));
+            if ($to) {
+                redirect($to);
+            }
+        }
+
         // Learners and visitors never reach course/view.php: local_academy sends them
         // to the course details page (local/academy/course.php, as on bassthalk.com),
         // whose button resumes their lesson in the player.
@@ -141,11 +157,6 @@ class hook_callbacks {
                 redirect(new \moodle_url('/local/academy/profile.php'));
             }
         }
-
-        // Is this the app's WebView? Sticky for the rest of the (WebView-only) session.
-        $isapp = !empty($SESSION->theme_nit_appembed)
-            || \core_useragent::is_moodle_app()
-            || (bool) optional_param('nitembed', 0, PARAM_BOOL);
 
         if (!$isapp) {
             return;

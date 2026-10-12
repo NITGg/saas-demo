@@ -35,6 +35,20 @@ function jitsi_room_name($jitsi, $cm): string {
 }
 
 /**
+ * Whether the Jibri finalize script sent the site's notify key (record_notify.php).
+ * The setting may be stored encrypted (local_nit_core crypto), so it is read through
+ * crypto::config_secret(). No fallback key: one written in the code is known to everyone
+ * who has the code, so a site without a key refuses every notification.
+ *
+ * @param mixed $provided the X-Notify-Key header
+ * @return bool
+ */
+function jitsi_notify_key_valid($provided): bool {
+    $key = (string) \local_nit_core\helper\crypto::config_secret('local_academysessions', 'jibri_notify_key');
+    return $key !== '' && is_string($provided) && hash_equals($key, $provided);
+}
+
+/**
  * One icon of the room's own controls (branding/dock/<name>.svg: Phosphor duotone, MIT,
  * cleaned to two plain paths; the lighter one has class "duo").
  *
