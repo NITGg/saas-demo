@@ -162,6 +162,11 @@
     fill: #fff;
     opacity: .35;
 }
+/* Recording on: red. */
+.nitdock-btn[data-action="record"][aria-pressed="true"] .nitdock-ico {
+    background: linear-gradient(145deg, var(--nd-red), var(--nd-red-2));
+    box-shadow: 0 6px 18px rgba(224, 40, 74, .45);
+}
 /* Mic / camera off: red, the slashed icon. */
 .nitdock-btn.is-off .nitdock-ico {
     background: linear-gradient(145deg, var(--nd-red), var(--nd-red-2));

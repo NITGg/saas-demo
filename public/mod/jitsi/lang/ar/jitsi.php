@@ -92,6 +92,7 @@ $string['dock_muteall'] = 'كتم الجميع';
 $string['dock_noise'] = 'إزالة الضوضاء';
 $string['dock_people'] = 'المشاركون';
 $string['dock_rec'] = 'جارٍ التسجيل';
+$string['dock_record'] = 'تسجيل';
 $string['dock_screen'] = 'مشاركة الشاشة';
 $string['dock_settings'] = 'الإعدادات';
 $string['dock_tile'] = 'عرض الكل';

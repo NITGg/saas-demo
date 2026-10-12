@@ -34,7 +34,7 @@
         if (!dock || !api) {
             return;
         }
-        var state = {me: null, chatOpen: false, paneOpen: false, knocks: 0, hand: false, since: 0};
+        var state = {me: null, chatOpen: false, paneOpen: false, knocks: 0, hand: false, since: 0, recording: false};
         var btn = function(action) {
             return dock.querySelector('[data-action="' + action + '"]');
         };
@@ -120,6 +120,12 @@
             if (rec) {
                 rec.hidden = !e.on;
             }
+            // The host's record button follows the file recording (Jibri may stop it on its
+            // own, e.g. everyone muted for a while), so the host can start it again.
+            if (!e.mode || e.mode === 'file') {
+                state.recording = !!e.on;
+                press('record', state.recording);
+            }
         });
         var count = function() {
             // The host's people button: who is waiting to come in, else how many are in.
@@ -147,6 +153,13 @@
             people: function() { api.executeCommand('toggleParticipantsPane', !state.paneOpen); },
             tile: function() { api.executeCommand('toggleTileView'); },
             muteall: function() { api.executeCommand('muteEveryone', 'audio'); },
+            record: function() {
+                if (state.recording) {
+                    api.executeCommand('stopRecording', 'file');
+                } else {
+                    api.executeCommand('startRecording', {mode: 'file'});
+                }
+            },
             settings: function() { toggle(dock.querySelector('[data-region="settings"]'), devices); },
             fullscreen: function() {
                 if (document.fullscreenElement) {

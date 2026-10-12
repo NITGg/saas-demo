@@ -92,6 +92,7 @@ $string['dock_muteall'] = 'Mute all';
 $string['dock_noise'] = 'Noise suppression';
 $string['dock_people'] = 'Participants';
 $string['dock_rec'] = 'Recording';
+$string['dock_record'] = 'Record';
 $string['dock_screen'] = 'Share screen';
 $string['dock_settings'] = 'Settings';
 $string['dock_tile'] = 'Grid view';

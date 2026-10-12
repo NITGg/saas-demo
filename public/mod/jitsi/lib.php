@@ -48,8 +48,8 @@ function jitsi_dock_icon(string $name): string {
 
 /**
  * The room's own controls (templates/dock.mustache), in place of Jitsi's toolbar. A host
- * also gets the people list (with who knocks), the grid view and "mute everyone", and
- * can end the call for everyone; a student who only sees the teacher gets no grid view.
+ * also gets the people list (with who knocks), the grid view, "mute everyone" and the
+ * recording on/off (to start it again after Jibri stopped it), and can end the call for everyone; a student who only sees the teacher gets no grid view.
  *
  * @param bool $ishost
  * @param bool $isolated a student who sees the teacher only
@@ -72,6 +72,7 @@ function jitsi_dock_context(bool $ishost, bool $isolated): array {
         $buttons[] = $button('people', 'users-three', '', true);
         $buttons[] = $button('tile', 'squares-four');
         $buttons[] = $button('muteall', 'speaker-simple-slash', '', false, false);
+        $buttons[] = $button('record', 'record');
     } else if (!$isolated) {
         $buttons[] = $button('tile', 'squares-four');
     }
