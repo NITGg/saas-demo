@@ -227,7 +227,10 @@ echo $OUTPUT->header();
   .nit-cat-icon--pill{ width:20px; height:20px; font-size:17px; }
   .nit-cat-icon--sect, .nit-cat-sectimg{ width:30px; height:30px; font-size:26px; align-self:center; }
   .nit-cat-sectimg{ object-fit:cover; border-radius:8px; }
-  .nit-cat .nit-cat-filter .nit-cat-filtername{ display:inline-flex; align-items:center; gap:8px; font-size:14px; color:inherit; }
+  .nit-cat .nit-cat-filter .nit-cat-filtername{ display:inline-flex; align-items:center; gap:8px; font-size:14px; color:inherit; min-width:0; overflow-wrap:anywhere; }
+  /* A long unbroken category name must wrap inside the sidebar / title, never spill out. */
+  .nit-cat-body > *{ min-width:0; }
+  .nit-cat-secttitle, .nit-cat-h1 span{ overflow-wrap:anywhere; min-width:0; }
   @media (max-width:600px){ .nit-cat-heroimg{ width:96px; height:96px; border-radius:16px; } }
   /* Search box (same look as the navbar search pill). */
   .nit-cat-search{ display:flex; align-items:center; gap:8px; margin-top:22px; max-width:560px; }
