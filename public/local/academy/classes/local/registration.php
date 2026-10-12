@@ -208,8 +208,7 @@ class registration {
             }
             $value = trim(clean_param($value, PARAM_TEXT));
             if (in_array($name, ['phone', 'fatherphone', 'motherphone', 'national'], true)) {
-                $value = strtr($value, ['٠' => '0', '١' => '1', '٢' => '2', '٣' => '3', '٤' => '4',
-                    '٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9']);
+                $value = student_rules::ascii_digits($value);
             }
             $out[$name] = $value;
         }
@@ -232,13 +231,31 @@ class registration {
                 $errors[$name] = get_string('reg_required', 'local_academy');
             }
         }
+        // The form's own rules (register.php validateStep), checked again here for requests that skip the browser.
+        foreach (['firstname', 'secondname', 'thirdname', 'lastname'] as $name) {
+            if (!isset($errors[$name]) && ($error = student_rules::name_error($data[$name])) !== '') {
+                $errors[$name] = get_string($error, 'local_academy');
+            }
+        }
+        foreach (['school', 'guardianjob'] as $name) {
+            if (!isset($errors[$name]) && ($error = student_rules::text_error($data[$name])) !== '') {
+                $errors[$name] = get_string($error, 'local_academy');
+            }
+        }
         foreach (['phone', 'fatherphone', 'motherphone'] as $name) {
-            if (!isset($errors[$name]) && !\local_academy\profile_manager::valid_phone($data[$name])) {
+            if (!isset($errors[$name]) && !student_rules::valid_phone($data[$name])) {
                 $errors[$name] = get_string('err_invalidphone', 'local_academy');
             }
         }
-        if (!isset($errors['national']) && !preg_match('/^[0-9]{14}$/', $data['national'])) {
+        if (!isset($errors['national']) && !student_rules::valid_nationalid($data['national'])) {
             $errors['national'] = get_string('err_invalidnationalid', 'local_academy');
+        }
+        // The student's own phone and national ID belong to one account.
+        if (!isset($errors['phone']) && student_rules::phone_taken($data['phone'])) {
+            $errors['phone'] = get_string('err_phonetaken', 'local_academy');
+        }
+        if (!isset($errors['national']) && student_rules::nationalid_taken($data['national'])) {
+            $errors['national'] = get_string('err_nationalidtaken', 'local_academy');
         }
 
         // Dropdowns accept only their own options.

@@ -97,25 +97,16 @@ class recordings {
     }
 
     /**
-     * May a non-staff participant see the recordings yet? Standalone rooms: always.
-     * Linked sessions: once ended, or once the session window has passed (a course
-     * session running over with a teacher still in it is not over yet).
+     * May a non-staff participant see the recordings? Yes, at any time: the recordings made
+     * so far, also while the session is still on (the room's earlier sessions, or a part
+     * recorded before the teacher left and came back). Who may see the room at all is
+     * checked by the callers.
      *
      * @param \stdClass|null $session academy_live_sessions row (null = standalone room)
      * @param int|null $now
      * @return bool
      */
     public static function visible_to_students(?\stdClass $session, ?int $now = null): bool {
-        if (!$session) {
-            return true;
-        }
-        if (($session->status ?? '') === 'ended') {
-            return true;
-        }
-        if (session_manager::is_course_session($session) && !empty($session->teacher_joined_at)) {
-            return false;
-        }
-        $now = $now ?? time();
-        return $now > ((int) $session->start_time + ((int) $session->duration * 60));
+        return true;
     }
 }

@@ -81,6 +81,11 @@ $string['err_invalidlanguage']  = 'لغة غير معروفة.';
 $string['err_invalidoption']    = 'اختيار غير صحيح في "{$a}".';
 $string['err_divisionmismatch'] = 'هذه الشعبة لا تتبع النظام الدراسي المختار.';
 $string['err_invalidnationalid'] = 'الرقم القومي 14 رقم.';
+$string['err_nationalidtaken'] = 'هذا الرقم القومي مسجّل بالفعل في حساب آخر.';
+$string['err_phonetaken'] = 'رقم الهاتف هذا مسجّل بالفعل في حساب آخر.';
+$string['err_namedigits'] = 'الاسم لا يمكن أن يحتوي على أرقام.';
+$string['err_nameshort'] = 'الاسم يجب أن يتكون من حرفين على الأقل.';
+$string['err_textshort'] = 'يجب إدخال حرفين على الأقل.';
 $string['err_coursenotfound']   = 'الكورس غير موجود.';
 $string['err_notenrolled']      = 'أنت غير مشترك في هذا الكورس.';
 $string['err_lessonlocked']     = 'أكمل الدروس السابقة أولًا.';
@@ -129,7 +134,13 @@ $string['err_toomanyregistrations'] = 'تم إنشاء حسابات كثيرة �
 $string['reg_passwordmismatch'] = 'كلمتا السر غير متطابقتين';
 $string['registration_heading'] = 'تسجيل الطلاب';
 $string['registration_enabled'] = 'السماح للطلاب بإنشاء حساب';
-$string['registration_enabled_desc'] = 'يفتح صفحة التسجيل (/local/academy/register.php) والتسجيل من التطبيق. الحساب الجديد يتفعّل فورًا والطالب يدخل بالإيميل. مستقل عن إعداد "التسجيل الذاتي" في Moodle.';
+$string['filelessons_heading'] = 'دروس الملفات';
+$string['filelessonmaxmb'] = 'أكبر حجم للملف (ميجابايت)';
+$string['filelessonmaxmb_desc'] = 'أكبر ملف يقدر المدرس يرفعه في درس ملف أو مجلد. الملفات المسموحة: PDF وWord وExcel وPowerPoint والصور (JPG وPNG وWEBP)، ويتم التحقق منها من محتواها. مدير الموقع غير مقيّد.';
+$string['err_filelessontype'] = 'لا يمكن رفع "{$a->file}": الملفات المسموحة هي {$a->types}.';
+$string['err_filelessonfake'] = '"{$a->file}" ليس ملف {$a->type} حقيقي.';
+$string['err_filelessonsize'] = '"{$a->file}" حجمه كبير: أكبر حجم مسموح {$a->max}.';
+$string['registration_enabled_desc'] ='يفتح صفحة التسجيل (/local/academy/register.php) والتسجيل من التطبيق. الحساب الجديد يتفعّل فورًا والطالب يدخل بالإيميل. مستقل عن إعداد "التسجيل الذاتي" في Moodle.';
 
 // Strings that were missing in Arabic (English pages showed through).
 $string['pluginname'] = 'الأكاديمية';

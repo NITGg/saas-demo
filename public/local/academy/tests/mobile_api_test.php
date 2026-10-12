@@ -33,6 +33,12 @@ use local_academy\local\user_fields;
  */
 final class mobile_api_test extends \advanced_testcase {
 
+    public static function setUpBeforeClass(): void {
+        global $CFG;
+        require_once($CFG->dirroot . '/user/profile/lib.php');
+        parent::setUpBeforeClass();
+    }
+
     public function test_describe_shows_business_errors_without_err_prefix(): void {
         [$code, $message] = endpoint::describe(new \moodle_exception('err_invalidphone', 'local_academy'));
         $this->assertSame('invalidphone', $code);

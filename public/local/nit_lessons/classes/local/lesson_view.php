@@ -119,8 +119,8 @@ final class lesson_view {
     }
 
     /**
-     * The recordings of a lesson's meeting room that this side may watch: the teacher
-     * always, the student once the lesson is over (the room's own rule,
+     * The recordings of a lesson's meeting room that this side may watch: the teacher and
+     * the student, at any time (the room's own rule,
      * local_academysessions\recordings::visible_to_students()).
      *
      * @param array $lesson a formatted lesson (needs id, cmid)

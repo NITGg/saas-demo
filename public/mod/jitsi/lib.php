@@ -217,9 +217,8 @@ function jitsi_teacher_names($cm, $session): array {
 }
 
 /**
- * Does the room page show its "Session recordings" tab? The host always; a student of a
- * linked session once it is over (local_academysessions\recordings::visible_to_students()),
- * of a standalone room always.
+ * Does the room page show its "Session recordings" tab? The host and the students alike, at
+ * any time (local_academysessions\recordings::visible_to_students()).
  *
  * @param bool $ishost
  * @param stdClass|null $session the linked live session

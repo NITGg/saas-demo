@@ -101,5 +101,13 @@ function xmldb_local_academy_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026100504, 'local', 'academy');
     }
 
+    if ($oldversion < 2026101200) {
+        // QA run 1: account lockout after wrong passwords (BUG-019) and one account per
+        // national ID, also on Moodle's own profile forms (BUG-010 / BUG-023).
+        \local_academy\local\site_defaults::login_lockout();
+        $DB->set_field('user_info_field', 'forceunique', 1, ['shortname' => 'nationalid']);
+        upgrade_plugin_savepoint(true, 2026101200, 'local', 'academy');
+    }
+
     return true;
 }

@@ -63,7 +63,7 @@ final class hub_tabs_test extends \advanced_testcase {
         }
     }
 
-    public function test_a_student_sees_a_recording_once_the_lesson_is_over(): void {
+    public function test_a_student_sees_a_recording_also_during_the_lesson(): void {
         global $DB;
         $now = time();
         $sessionid = $DB->insert_record('academy_live_sessions', (object) [
@@ -79,7 +79,7 @@ final class hub_tabs_test extends \advanced_testcase {
         $lesson = ['id' => $lessonid, 'cmid' => 77];
 
         $this->assertCount(1, lesson_view::recordings($lesson, 'teacher'));
-        $this->assertCount(0, lesson_view::recordings($lesson, 'student'));
+        $this->assertCount(1, lesson_view::recordings($lesson, 'student'), 'while it is on');
         $DB->set_field('academy_live_sessions', 'status', 'ended', ['id' => $sessionid]);
         $this->assertCount(1, lesson_view::recordings($lesson, 'student'));
         // A lesson without a room has nothing.

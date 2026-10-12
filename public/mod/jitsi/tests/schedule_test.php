@@ -325,8 +325,8 @@ final class schedule_test extends \advanced_testcase {
         $task->execute();
         $this->assertSame('live', $DB->get_field('academy_live_sessions', 'status', ['id' => $session->id]));
         $this->assertTrue($this->check($jitsi, $this->student)->allowed);
-        $this->assertFalse(\local_academysessions\recordings::visible_to_students($this->session($jitsi)),
-            'its recording is not out yet');
+        $this->assertTrue(\local_academysessions\recordings::visible_to_students($this->session($jitsi)),
+            'its recordings so far are out already');
 
         // The teacher left: no one new comes in, and the next run ends it.
         presence::set($cm, (int) $this->teacher->id, false);
@@ -360,7 +360,7 @@ final class schedule_test extends \advanced_testcase {
         $this->setUser($this->teacher);
         $this->assertCount(1, jitsi_recordings_for_user($cm($this->teacher), (int) $this->teacher->id), 'the host: always');
         $this->setUser($this->student);
-        $this->assertSame([], jitsi_recordings_for_user($cm($this->student), (int) $this->student->id), 'not during it');
+        $this->assertCount(1, jitsi_recordings_for_user($cm($this->student), (int) $this->student->id), 'also during it');
 
         session_manager::end_session((int) $session->id, 'schedule');
         $recs = jitsi_recordings_for_user($cm($this->student), (int) $this->student->id);

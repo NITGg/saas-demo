@@ -24,6 +24,7 @@ function xmldb_local_academy_install() {
     \local_academy\local\academic_structure::sync();
     \local_academy\local\site_defaults::apply();
     \local_academy\local\site_defaults::email_confirmation();
+    \local_academy\local\site_defaults::login_lockout();
     \local_academy\local\site_defaults::ensure_arabic();
     return true;
 }
