@@ -10,7 +10,8 @@
  * View page for mod_jitsi.
  *
  * Handles session access restrictions, Jitsi Meet embed (with user identity and
- * language), collaborative whiteboard tab, and post-session recording display.
+ * language, and Jitsi's whiteboard driven from the room's dock), and post-session
+ * recording display.
  *
  * @package   mod_jitsi
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -79,7 +80,7 @@ if ($decision->code === \mod_jitsi\local\access::NOT_ALLOWED) {
 $wantsjoin = optional_param('join', 0, PARAM_BOOL);
 
 // Closed for now (waiting for the teacher, not open yet, ended, unavailable): the page
-// keeps its tabs (recordings, whiteboard...) and the video tab says why there is no call.
+// keeps its tabs (recordings...) and the video tab says why there is no call.
 // A student waiting for the teacher still gets the "Join" step, like the teacher; the
 // wait shows once they press it.
 $closed = !$decision->allowed
@@ -143,13 +144,6 @@ $teacher_names   = jitsi_teacher_names($cm, $session);
 // External API requires HTTPS — this is now satisfied.
 $jitsi_scheme = 'https';
 
-// Whiteboard — self-hosted Excalidraw frontend (port 9091).
-// Port 9090 is the Socket.IO relay only; the drawable UI is on 9091.
-$excalidraw_app = get_config('local_academysessions', 'excalidraw_app')
-    ?: 'https://academy2026.nitg-eg.com/whiteboard';
-$wb_room = 'academy_wb_jitsi_' . $cm->id;
-$wb_url  = rtrim($excalidraw_app, '/') . '/#room=' . rawurlencode($wb_room);
-
 // Session token for AJAX end-session call.
 $sesskey      = sesskey();
 $session_id   = $session ? (int)$session->id : 0;
@@ -197,8 +191,6 @@ echo '<div id="jitsi-activity-container" style="margin:15px 0;">';
 echo '<div id="jitsi-tabs" style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">';
 echo '<button id="tab-video" onclick="jitsiSwitchTab(\'video\')" class="btn btn-primary btn-sm" style="border-radius:16px;">'
      . get_string('tab_video', 'jitsi') . '</button>';
-echo '<button id="tab-whiteboard" onclick="jitsiSwitchTab(\'whiteboard\')" class="btn btn-outline-secondary btn-sm" style="border-radius:16px;">'
-     . get_string('tab_whiteboard', 'jitsi') . '</button>';
 if ($show_recs) {
     echo '<button id="tab-recordings" onclick="jitsiSwitchTab(\'recordings\')" class="btn btn-outline-secondary btn-sm" style="border-radius:16px;">'
          . get_string('recordings', 'jitsi') . '</button>';
@@ -232,12 +224,6 @@ if ($isolate_students) {
 if ($joining) {
     echo $OUTPUT->render_from_template('mod_jitsi/dock', jitsi_dock_context($is_teacher, $isolate_students));
 }
-echo '</div>';
-
-// ── Whiteboard panel ─────────────────────────────────────────────────────
-echo '<div id="panel-whiteboard" style="display:none;width:100%;height:620px;border-radius:8px;overflow:hidden;border:1px solid #e0e0e0;">';
-// Loaded the first time the tab opens (data-src), not with every visit to the page.
-echo '<iframe data-src="' . s($wb_url) . '" style="width:100%;height:100%;border:none;" allow="clipboard-read;clipboard-write"></iframe>';
 echo '</div>';
 
 // ── Recordings panel ─────────────────────────────────────────────────────
@@ -313,11 +299,11 @@ $js_config = json_encode([
     ],
 ]);
 
-// Tab switcher (also before joining: the recordings / whiteboard tabs work without the call).
+// Tab switcher (also before joining: the recordings tab works without the call).
 echo <<<HTML
 <script>
 window.jitsiSwitchTab = function(tab) {
-    ['video', 'whiteboard', 'recordings', 'attendance'].forEach(function(name) {
+    ['video', 'recordings', 'attendance'].forEach(function(name) {
         var panel = document.getElementById('panel-' + name);
         var button = document.getElementById('tab-' + name);
         if (!panel || !button) {
@@ -327,11 +313,6 @@ window.jitsiSwitchTab = function(tab) {
         button.className = name === tab ? 'btn btn-primary btn-sm' : 'btn btn-outline-secondary btn-sm';
         button.style.borderRadius = '16px';
     });
-    var frame = tab === 'whiteboard' && document.querySelector('#panel-whiteboard iframe[data-src]');
-    if (frame) {
-        frame.src = frame.getAttribute('data-src');
-        frame.removeAttribute('data-src');
-    }
     // The attendance log: fresh each time it opens.
     var log = tab === 'attendance' && document.querySelector('#panel-attendance iframe');
     if (log) {
@@ -489,7 +470,8 @@ echo <<<HTML
         }
 
         // Student: the teacher only, in every room. Keep the teacher pinned on the main
-        // video (their camera, or their screen while they share it), tile view off and the
+        // video (their camera, their screen while they share it, or the whiteboard while
+        // they have it on), tile view off and the
         // filmstrip hidden, so the student never shows (and, with lastN 1, never receives)
         // another student's camera or screen. While no teacher is in the call, cover the
         // video. NOTE: enforced in this page (and the app), not by the Jitsi server; see
@@ -514,6 +496,35 @@ echo <<<HTML
                 });
                 return teacher;
             };
+            // The whiteboard (Jitsi's own, opened by the teacher from the dock): on the main
+            // video in place of the teacher's camera while the teacher has it on, and back to the
+            // teacher when they hide it (Jitsi hides it on their screen only; their page
+            // says so, dock.js). Messages from anyone but a host are ignored.
+            var board = {here: false, on: true};
+            api.addEventListener('whiteboardStatusChanged', function(e) {
+                var status = e && e.status;
+                if (status === 'SHOWN' || status === 'INSTANTIATED') {
+                    board.here = true;
+                } else if (status === 'RESET') {
+                    board.here = false;
+                }
+                keepTeacherOnly();
+            });
+            api.addEventListener('endpointTextMessageReceived', function(e) {
+                var data = (e && e.data) || {};
+                var from = data.senderInfo && data.senderInfo.id;
+                var msg = null;
+                try {
+                    msg = JSON.parse(data.eventData && data.eventData.text);
+                } catch (x) {
+                    return;
+                }
+                if (msg && typeof msg.nitWhiteboard === 'boolean' && from && hosts[from]
+                        && msg.nitWhiteboard !== board.on) {
+                    board.on = msg.nitWhiteboard;
+                    keepTeacherOnly();
+                }
+            });
             var keepTeacherOnly = function() {
                 // Not in the call yet: still connecting, or knocking in the waiting room
                 // (the teacher has to let them in), so not "the teacher is away".
@@ -528,7 +539,11 @@ echo <<<HTML
                     away.textContent = CFG.awayText;
                 }
                 var teacher = pickTeacher((api.getParticipantsInfo && api.getParticipantsInfo()) || []);
-                if (teacher) {
+                // The teacher's screen share wins over the whiteboard, the whiteboard over
+                // their camera.
+                if (board.here && board.on && !(teacher && sharing.indexOf(teacher) !== -1)) {
+                    api.pinParticipant('whiteboard');
+                } else if (teacher) {
                     api.pinParticipant(teacher, sharing.indexOf(teacher) !== -1 ? 'desktop' : 'camera');
                 }
                 if (away) {
@@ -684,7 +699,6 @@ echo <<<HTML
 
         document.getElementById('jitsi-tabs').style.display = 'none';
         document.getElementById('panel-video').style.display = 'none';
-        document.getElementById('panel-whiteboard').style.display = 'none';
         var recPanel = document.getElementById('panel-recordings');
         if (recPanel) { recPanel.style.display = 'none'; }
         document.getElementById('panel-ended').style.display = 'block';

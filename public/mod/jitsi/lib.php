@@ -48,7 +48,7 @@ function jitsi_dock_icon(string $name): string {
 
 /**
  * The room's own controls (templates/dock.mustache), in place of Jitsi's toolbar. A host
- * also gets the people list (with who knocks), the grid view, "mute everyone" and the
+ * also gets the whiteboard, the people list (with who knocks), the grid view, "mute everyone" and the
  * recording on/off (to start it again after Jibri stopped it), and can end the call for everyone; a student who only sees the teacher gets no grid view.
  *
  * @param bool $ishost
@@ -69,6 +69,7 @@ function jitsi_dock_context(bool $ishost, bool $isolated): array {
         $button('hand', 'hand-palm'),
     ];
     if ($ishost) {
+        $buttons[] = $button('whiteboard', 'chalkboard-simple');
         $buttons[] = $button('people', 'users-three', '', true);
         $buttons[] = $button('tile', 'squares-four');
         $buttons[] = $button('muteall', 'speaker-simple-slash', '', false, false);
@@ -248,7 +249,7 @@ function jitsi_recordings_for_user(cm_info $cm, int $userid): array {
 /**
  * The video tab of a room that is closed for this user right now (waiting for the teacher,
  * not open yet, ended, or hidden by a Moodle restriction): why there is no call. The rest
- * of the page (recordings, whiteboard...) stays as usual.
+ * of the page (recordings...) stays as usual.
  *
  * Waiting for the teacher also says what comes next: straight into the call when they had
  * pressed "Join" (join=1), else the "Join" step appears; in a room with a waiting room the

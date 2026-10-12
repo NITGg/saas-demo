@@ -286,8 +286,9 @@ final class monitor_test extends \advanced_testcase {
         $key = 'r' . $room->id;
         $this->assertArrayNotHasKey($key, $this->cards(), 'nobody in: no card');
 
-        // A student came in first, then the teacher.
+        // A student came in first (5 minutes ago, their last heartbeat a minute ago), then the teacher.
         \mod_jitsi\local\roomlog::joined((int) $room->id, (int) $this->student->id, false, $this->now - 5 * MINSECS);
+        \mod_jitsi\local\roomlog::joined((int) $room->id, (int) $this->student->id, false, $this->now - MINSECS);
         $card = $this->cards()[$key];
         $this->assertSame(monitor::WAITING, $card['status']);
         $this->assertSame(1, $card['present']);

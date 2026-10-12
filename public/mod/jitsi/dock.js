@@ -143,6 +143,28 @@
         api.addEventListener('participantJoined', count);
         api.addEventListener('participantLeft', count);
 
+        // ── The whiteboard (Jitsi's own; config.whiteboard on the Jitsi server) ─────
+        // Only a host opens it (Jitsi's rule) and, opened, it takes everyone's main video.
+        // Jitsi's "hide" only hides it on the host's own screen, so the host who opened it
+        // here tells the students' pages (view.php) and the recording (nit-rooms.js) whether
+        // it is on: on each change, and every few seconds for whoever comes in later.
+        var board = {mine: false, on: false};
+        var tellBoard = function() {
+            if (board.mine) {
+                api.executeCommand('sendEndpointTextMessage', '', JSON.stringify({nitWhiteboard: board.on}));
+            }
+        };
+        api.addEventListener('whiteboardStatusChanged', function(e) {
+            var status = e && e.status;
+            if (status === 'FORBIDDEN') {
+                return;
+            }
+            board.on = status === 'SHOWN' || status === 'INSTANTIATED';
+            press('whiteboard', board.on);
+            tellBoard();
+        });
+        setInterval(tellBoard, 5000);
+
         // ── The buttons ──────────────────────────────────────────────────────────
         var actions = {
             mic: function() { api.executeCommand('toggleAudio'); },
@@ -152,6 +174,13 @@
             hand: function() { api.executeCommand('toggleRaiseHand'); },
             people: function() { api.executeCommand('toggleParticipantsPane', !state.paneOpen); },
             tile: function() { api.executeCommand('toggleTileView'); },
+            whiteboard: function() {
+                board.mine = true;
+                if (!board.on) {
+                    api.executeCommand('setTileView', false); // the grid view hides it
+                }
+                api.executeCommand('toggleWhiteboard');
+            },
             muteall: function() { api.executeCommand('muteEveryone', 'audio'); },
             record: function() {
                 if (state.recording) {

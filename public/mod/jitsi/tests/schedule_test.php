@@ -24,7 +24,6 @@ defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
 require_once($CFG->dirroot . '/mod/jitsi/lib.php');
-require_once($CFG->dirroot . '/course/modlib.php');
 
 /**
  * A Jitsi activity scheduled from its settings ("Session time"): a course session for
@@ -282,7 +281,7 @@ final class schedule_test extends \advanced_testcase {
         $jitsi = $this->room(time() - MINSECS);
         $sessionid = (int) $this->session($jitsi)->id;
         session_manager::record_attendance($sessionid, (int) $this->student->id);
-        course_delete_module($jitsi->cmid);
+        \core_courseformat\formatactions::cm($this->course->id)->delete((int) $jitsi->cmid);
         $this->assertTrue($DB->record_exists('academy_live_sessions', ['id' => $sessionid, 'jitsiid' => null]));
     }
 

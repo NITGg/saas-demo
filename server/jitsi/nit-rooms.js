@@ -32,15 +32,65 @@
     } catch (e) { /* never break the page */ }
 })();
 
-// 2. The recording of a course room shows the teacher only.
+// 2. The whiteboard in the recording. Jitsi puts it on the main video of everyone (the
+// recorder too) when a host opens it, but hides it again only on that host's screen; the
+// host's page (mod/jitsi/dock.js) says whether it is on, in an endpoint message
+// {"nitWhiteboard": true|false}. Kept here in window.nitBoardOn for block 3 (course rooms),
+// and applied here in private lesson rooms (block 3 leaves those as they are).
+// Runs in Jibri's window only, in NIT academy rooms only.
+(function () {
+    try {
+        var hash = String(window.location.hash || '');
+        var room = String(window.location.pathname.split('/').pop() || '').toLowerCase();
+        if (hash.indexOf('config.iAmRecorder=true') === -1 || room.indexOf('nit_') !== 0) {
+            return;
+        }
+        var lesson = room.split('_').pop().length >= 12;
+        window.nitBoardOn = true;
+        var apply = function () {
+            if (!lesson || !window.APP || !APP.store) {
+                return;
+            }
+            var state = APP.store.getState();
+            var parts = state['features/base/participants'];
+            var here = parts && parts.remote && parts.remote.has('whiteboard');
+            var pinned = parts && parts.pinnedParticipant;
+            if (here && window.nitBoardOn) {
+                APP.store.dispatch({ type: 'PIN_PARTICIPANT', participant: { id: 'whiteboard' } });
+            } else if (!window.nitBoardOn && pinned === 'whiteboard') {
+                APP.store.dispatch({ type: 'PIN_PARTICIPANT', participant: { id: null } });
+            }
+        };
+        var hooked = null;
+        setInterval(function () {
+            var conf = window.APP && APP.conference && APP.conference._room;
+            if (conf && conf !== hooked) {
+                hooked = conf;
+                conf.on('conference.endpoint_message_received', function (from, data) {
+                    try {
+                        var msg = data && data.name === 'endpoint-text-message' ? JSON.parse(data.text) : null;
+                        if (msg && typeof msg.nitWhiteboard === 'boolean' && from && from.getRole() === 'moderator'
+                                && msg.nitWhiteboard !== window.nitBoardOn) {
+                            window.nitBoardOn = msg.nitWhiteboard;
+                            apply(); // on a change only: a screen share pinned since stays
+                        }
+                    } catch (e) { /* not ours */ }
+                });
+            }
+        }, 500);
+    } catch (e) { /* never break the page */ }
+})();
+
+// 3. The recording of a course room shows the teacher only (or the whiteboard, block 2).
 // Runs in Jibri's window only (Jibri opens the meeting with config.iAmRecorder=true in
 // the URL) and only in NIT academy course rooms (nit_<slug>_<cmid>_<8-char hash>).
 // Everyone else's screen, the old academy's rooms (academy_jitsi_*) and private lesson
 // rooms (a 12-char hash, see mod/jitsi/lib.php jitsi_room_name(): one teacher and one
 // student, recorded as they are, screen shares included) are untouched.
 // In the recording: no thumbnails, no tile view, no notifications, and the main video is
-// the teacher (the room's moderator), or the teacher's screen while they share it. The
-// audio is everyone's.
+// the teacher (the room's moderator), or the teacher's screen while they share it, or the
+// whiteboard while the teacher has it on (it holds the main video then, so whatever video
+// the bridge sends is not shown). The audio is everyone's.
 // Never a student's frame, even for an instant:
 //  1. Jitsi does not move a new screen share onto the main video by itself;
 //  2. the recorder receives one video only, the pinned teacher's (lastN 1);
@@ -104,6 +154,8 @@
                     });
                     if (share) {
                         target = share.id;
+                    } else if (window.nitBoardOn && here('whiteboard')) {
+                        target = 'whiteboard'; // the whiteboard wins over the camera (block 2)
                     }
                 }
                 if (target && parts.pinnedParticipant !== target) {
