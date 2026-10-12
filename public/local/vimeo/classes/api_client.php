@@ -50,7 +50,7 @@ class api_client {
      */
     public function __construct(?string $token = null, ?string $base = null) {
         // Trimmed: a pasted token often carries a space / line break, which Vimeo rejects with HTTP 401.
-        $this->token = trim($token ?? (string) get_config('local_vimeo', 'access_token'));
+        $this->token = trim($token ?? (string) \local_nit_core\helper\crypto::config_secret('local_vimeo', 'access_token'));
         $configbase  = $base ?? (string) get_config('local_vimeo', 'apibase');
         $this->base  = rtrim($configbase ?: self::DEFAULT_BASE, '/');
 
@@ -61,7 +61,7 @@ class api_client {
 
     /** @return bool whether an access token has been configured. */
     public static function is_configured(): bool {
-        return trim((string) get_config('local_vimeo', 'access_token')) !== '';
+        return trim((string) \local_nit_core\helper\crypto::config_secret('local_vimeo', 'access_token')) !== '';
     }
 
     // ── Public API ───────────────────────────────────────────────────────────

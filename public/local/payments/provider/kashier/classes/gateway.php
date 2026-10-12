@@ -8,6 +8,7 @@ use local_payments\provider\verification_result;
 use local_payments\provider\webhook_result;
 use local_payments\provider\refund_result;
 use local_payments\provider\transaction_info;
+use local_nit_core\helper\crypto;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -41,12 +42,27 @@ class gateway extends base_provider {
         return $v;
     }
 
+    /**
+     * A SECRET credential for the active mode (e.g. live_api_key), read via the
+     * crypto helper so a value encrypted at rest in the DB is decrypted, while a
+     * legacy PLAINTEXT value passes through unchanged. Same live/test + legacy
+     * fallback as {@see cred()}.
+     */
+    private function cred_secret(string $name): string {
+        $mode = $this->get_mode();
+        $v = (string) crypto::config_secret($this->plugin_name, $mode . '_' . $name);
+        if ($v === '') {
+            $v = (string) crypto::config_secret($this->plugin_name, $name); // legacy (pre live/test split)
+        }
+        return $v;
+    }
+
     private function get_api_key(): string {
-        return $this->cred('api_key');
+        return $this->cred_secret('api_key');
     }
 
     private function get_secret_key(): string {
-        return $this->cred('secret_key');
+        return $this->cred_secret('secret_key');
     }
 
     private function get_merchant_id(): string {
