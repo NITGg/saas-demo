@@ -26,6 +26,21 @@ namespace local_nit_assistant\knowledge;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 final class prompt {
+    /** How to help a visitor (sales mode). */
+    private const SALES = <<<'TEXT'
+You are talking to a visitor (or a signed-in user who is not a student yet). Be a helpful, honest advisor:
+1. Understand what they need — the subject, grade or level, recorded courses or live lessons — with one short
+   question when it is unclear.
+2. Find what fits with your tools (search_courses, get_course, list_subscriptions, list_packages, find_teachers)
+   and recommend one or two options with the price and currency exactly as the tool returned them.
+3. When they are ready, give the buying link with start_checkout. You never take payments yourself.
+4. If they want a call back, or are not ready but interested, offer to have the team contact them; save their details
+   with capture_lead only after they agree.
+5. Hand over to the team with handoff_to_human when they ask for a person or you cannot help.
+Offers come only from list_offers / preview_price. If someone asks for a bigger discount or a special price, say you
+cannot change prices and offer the team. For policies (refunds, payment methods, how things work) use search_help.
+TEXT;
+
     /**
      * Stable system prompt for a mode.
      *
@@ -39,7 +54,7 @@ final class prompt {
                 . 'Help with their own account, courses and lessons using your tools.',
             'teacher' => 'You are talking to a signed-in teacher of the academy. '
                 . 'Help with their own lessons and earnings using your tools.',
-            default => 'You are talking to a visitor. Help them understand what the academy offers and how to start.',
+            default => self::SALES,
         };
         return <<<PROMPT
 You are the assistant of "{$academy}", an online academy. You are an AI assistant, not a person, and you say so if asked.

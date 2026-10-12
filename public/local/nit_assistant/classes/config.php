@@ -69,6 +69,45 @@ final class config {
     }
 
     /**
+     * May visitors (not signed in) chat?
+     *
+     * @return bool
+     */
+    public static function visitors(): bool {
+        $value = get_config('local_nit_assistant', 'visitors');
+        return $value === false || (bool) $value;
+    }
+
+    /**
+     * Messages one sender may send per hour (four times this per day).
+     *
+     * @return int
+     */
+    public static function hourly_limit(): int {
+        return max(1, (int) (get_config('local_nit_assistant', 'hourlylimit') ?: 30));
+    }
+
+    /**
+     * The team's working hours as the academy wrote them (may hold {mlang} parts).
+     *
+     * @return string
+     */
+    public static function working_hours(): string {
+        return trim((string) get_config('local_nit_assistant', 'workinghours'));
+    }
+
+    /**
+     * The first message shown when the chat opens, in a language.
+     *
+     * @param string $lang ar | en
+     * @return string
+     */
+    public static function greeting(string $lang): string {
+        $text = \local_nit_assistant\tools\sales\helper::ml((string) get_config('local_nit_assistant', 'greeting'), $lang);
+        return $text !== '' ? $text : get_string_manager()->get_string('greeting_default', 'local_nit_assistant', null, $lang);
+    }
+
+    /**
      * Model for chat replies.
      *
      * @return string

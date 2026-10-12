@@ -172,3 +172,42 @@ like nit2.
 5. **Model access:** the **Claude API directly** (no core_ai / Bedrock).
 6. **WhatsApp:** per academy, configured in the settings like nit2 — **built last** (after phase 4).
 7. **Scope:** work only on **bassthalk** (branch `bassthalk-clone`); pushes go to that branch.
+
+---
+
+## 9. Phase 1 — what was built (sales assistant)
+
+**Visitors' chat:** a chat button on every page (hook `before_footer_html_generation`; not in the
+app WebView, chrome-free layouts or admin pages), RTL, a full-screen sheet on phones. Replies
+stream from `chat.php` (server-sent events); `api.php` returns the history and starts a new chat.
+A visitor is known by a random key kept in their browser (only its hash is stored); the chat follows
+them when they sign in and is not shown again after they sign out. The mobile app uses the web
+services `local_nit_assistant_send_message` / `local_nit_assistant_get_messages`.
+
+**Sales tools** (all read the academy's own plugins, so prices/offers match the checkout):
+`list_subscriptions`, `list_packages`, `search_courses`, `get_course`, `list_offers` (never coupon
+codes), `preview_price` (offer + a coupon the visitor typed; 5 coupon checks per chat),
+`find_teachers` (no phone/email), `search_help` (CMS pages, articles, the academy's notes; Arabic
+spelling variants), `start_checkout` (link only), `capture_lead` (only with consent),
+`handoff_to_human`, plus `get_academy_info`.
+
+**Staff side** (Site administration → Plugins → Local plugins → AI assistant):
+AI Inbox (waiting first; take over, reply — replying takes over —, hand back, close; refreshes
+itself), Leads (status + notes), Usage & cost (30 days, per model), Settings. Alerts (bell, push,
+email) go to users with `local/nit_assistant:viewinbox` — the site admins if nobody has it —
+through `local_nit_notifications`, provider `local_nit_assistant/staffalert`.
+
+**Settings added:** visitors can chat, greeting, notes for the assistant (one topic per paragraph),
+team working hours, messages per hour per person (×4 per day).
+
+**Tests:** 53 PHPUnit tests; mutation checks for the safety rules. **Evals:** 40 AR/EN cases in
+`tests/evals/sales_cases.json`, run with the real model on demand:
+`NIT_ASSISTANT_EVAL_KEY=sk-ant-… vendor/bin/phpunit --testsuite local_nit_assistant_testsuite --group nit_assistant_eval`
+(test environment only; costs a few cents per run). Gate: 90% overall, 100% of safety cases.
+
+**To switch it on for an academy:** set `$CFG->nit_crypto_key` (if not set), then in the settings
+turn it on, paste the academy's Anthropic key, set a daily budget, write the notes and working
+hours, and give the staff role `local/nit_assistant:viewinbox` + `:reply`.
+
+**Known:** Flex entities (`local_nit_core\base\entity::get_id()` is public) throw under developer
+debugging — a separate fix; the assistant's Flex tests switch developer debugging off meanwhile.

@@ -40,6 +40,17 @@ final class registry {
     public function __construct(?array $tools = null) {
         $this->tools = $tools ?? [
             new common\academy_info(),
+            new common\search_help(),
+            new sales\list_subscriptions(),
+            new sales\list_packages(),
+            new sales\search_courses(),
+            new sales\get_course(),
+            new sales\list_offers(),
+            new sales\preview_price(),
+            new sales\find_teachers(),
+            new sales\start_checkout(),
+            new sales\capture_lead(),
+            new common\handoff_to_human(),
         ];
     }
 
@@ -114,11 +125,15 @@ final class registry {
                 return $done(json_decode($prev, true));
             }
         }
+        // The academy's plugins resolve names and texts in the current language: use the conversation's.
+        $previous = force_current_language($ctx->lang);
         try {
             $result = $tool->run($ctx, $input);
         } catch (\Throwable $e) {
             debugging("local_nit_assistant: tool {$name} failed: " . $e->getMessage(), DEBUG_DEVELOPER);
             $result = ['ok' => false, 'code' => 'service_unavailable', 'message' => 'Could not do that right now.'];
+        } finally {
+            force_current_language($previous);
         }
         if ($key !== null && !empty($result['ok'])) {
             try {

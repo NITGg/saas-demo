@@ -52,6 +52,11 @@ final class provider implements
         $collection->add_database_table('local_nit_asst_event', [
             'userid' => 'privacy:metadata:event:userid', 'cost' => 'privacy:metadata:event:cost',
         ], 'privacy:metadata:event');
+        $collection->add_database_table('local_nit_asst_lead', [
+            'userid' => 'privacy:metadata:lead:userid', 'name' => 'privacy:metadata:lead:name',
+            'phone' => 'privacy:metadata:lead:phone', 'email' => 'privacy:metadata:lead:email',
+            'interest' => 'privacy:metadata:lead:interest',
+        ], 'privacy:metadata:lead');
         $collection->add_external_location_link('anthropic', [
             'messages' => 'privacy:metadata:anthropic:messages',
         ], 'privacy:metadata:anthropic');
@@ -68,6 +73,7 @@ final class provider implements
             $DB->record_exists('local_nit_asst_conv', ['userid' => $userid])
                 || $DB->record_exists('local_nit_asst_audit', ['userid' => $userid])
                 || $DB->record_exists('local_nit_asst_event', ['userid' => $userid])
+                || $DB->record_exists('local_nit_asst_lead', ['userid' => $userid])
         ) {
             $list->add_system_context();
         }
@@ -81,7 +87,7 @@ final class provider implements
         if (!$userlist->get_context() instanceof \context_system) {
             return;
         }
-        foreach (['local_nit_asst_conv', 'local_nit_asst_audit', 'local_nit_asst_event'] as $table) {
+        foreach (['local_nit_asst_conv', 'local_nit_asst_audit', 'local_nit_asst_event', 'local_nit_asst_lead'] as $table) {
             $userlist->add_from_sql('userid', "SELECT userid FROM {{$table}} WHERE userid > 0", []);
         }
     }
@@ -111,6 +117,9 @@ final class provider implements
                         'started' => \core_privacy\local\request\transform::datetime($conv->timecreated),
                         'language' => $conv->lang,
                         'summary' => $conv->summary,
+                        'contact' => array_values(array_map(static fn($l) => [
+                            'name' => $l->name, 'phone' => $l->phone, 'email' => $l->email, 'interest' => $l->interest,
+                        ], $DB->get_records('local_nit_asst_lead', ['convid' => $conv->id]))),
                         'messages' => array_values(array_map(static fn($m) => [
                             'from' => $m->role === 'visitor' ? 'you' : $m->role,
                             'text' => $m->content,
@@ -134,6 +143,7 @@ final class provider implements
         $DB->delete_records('local_nit_asst_audit');
         $DB->delete_records('local_nit_asst_conv');
         $DB->delete_records('local_nit_asst_event');
+        $DB->delete_records('local_nit_asst_lead');
     }
 
     /**
@@ -173,9 +183,11 @@ final class provider implements
             [$cin, $cparams] = $DB->get_in_or_equal($convids, SQL_PARAMS_NAMED, 'c');
             $DB->delete_records_select('local_nit_asst_msg', "convid {$cin}", $cparams);
             $DB->delete_records_select('local_nit_asst_audit', "convid {$cin}", $cparams);
+            $DB->delete_records_select('local_nit_asst_lead', "convid {$cin}", $cparams);
             $DB->delete_records_select('local_nit_asst_conv', "id {$cin}", $cparams);
         }
         $DB->delete_records_select('local_nit_asst_audit', "userid {$insql}", $params);
         $DB->delete_records_select('local_nit_asst_event', "userid {$insql}", $params);
+        $DB->delete_records_select('local_nit_asst_lead', "userid {$insql}", $params);
     }
 }
