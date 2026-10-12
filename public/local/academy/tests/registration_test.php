@@ -119,6 +119,44 @@ final class registration_test extends \advanced_testcase {
         $this->assertNotEmpty($existing->id);
     }
 
+    public function test_server_applies_the_form_name_rules(): void {
+        // BUG-001: names with digits / one letter were accepted when the browser check was skipped.
+        $this->resetAfterTest();
+        $data = array_merge($this->valid(), ['firstname' => 'A1', 'secondname' => 'B', 'thirdname' => '123',
+            'lastname' => 'Saleh', 'school' => 'S', 'guardianjob' => 'J']);
+        $errors = registration::validate(registration::clean($data), true);
+        $this->assertEqualsCanonicalizing(['firstname', 'secondname', 'thirdname', 'school', 'guardianjob'],
+            array_keys($errors));
+        $this->assertSame(get_string('err_namedigits', 'local_academy'), $errors['firstname']);
+        $this->assertSame(get_string('err_nameshort', 'local_academy'), $errors['secondname']);
+    }
+
+    public function test_server_applies_the_form_phone_rule(): void {
+        // BUG-009: "0123456" (7 digits) and a 013 mobile passed the server check.
+        $this->resetAfterTest();
+        $data = array_merge($this->valid(), ['phone' => '0123456', 'fatherphone' => '01312345678',
+            'motherphone' => '+20 101 234 5678']);
+        $errors = registration::validate(registration::clean($data), true);
+        $this->assertSame(['phone', 'fatherphone'], array_keys($errors));
+    }
+
+    public function test_phone_and_national_id_belong_to_one_account(): void {
+        // BUG-010: a second account could register with the same phone / national ID.
+        $this->resetAfterTest();
+        $data = $this->valid();
+        $other = $this->getDataGenerator()->create_user(['phone1' => '+20 101 111 2222']);
+        profile_save_custom_fields($other->id, ['nationalid' => $data['national']]);
+
+        $errors = registration::validate(registration::clean($data), true);
+        $this->assertSame(['phone', 'national'], array_keys($errors));
+        $this->assertSame(get_string('err_phonetaken', 'local_academy'), $errors['phone']);
+        $this->assertSame(get_string('err_nationalidtaken', 'local_academy'), $errors['national']);
+
+        // A deleted account frees them again.
+        delete_user($other);
+        $this->assertSame([], registration::validate(registration::clean($data), true));
+    }
+
     public function test_division_must_belong_to_the_study_system(): void {
         $this->resetAfterTest();
         set_config('registerauth', 'email');

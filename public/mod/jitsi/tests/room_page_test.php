@@ -121,12 +121,14 @@ final class room_page_test extends \advanced_testcase {
     public function test_dock_buttons_per_role(): void {
         $actions = fn(array $ctx) => array_column($ctx['buttons'], 'action');
 
-        // The host: everyone's list (with who knocks), grid view, mute all, recording, end for all.
+        // The host: the whiteboard, everyone's list (with who knocks), grid view, mute all,
+        // recording, end for all.
         $host = jitsi_dock_context(true, false);
-        $this->assertSame(['mic', 'camera', 'screen', 'chat', 'hand', 'people', 'tile', 'muteall', 'record',
-            'settings', 'fullscreen'], $actions($host));
+        $this->assertSame(['mic', 'camera', 'screen', 'chat', 'hand', 'whiteboard', 'people', 'tile', 'muteall',
+            'record', 'settings', 'fullscreen'], $actions($host));
         $this->assertTrue($host['ishost']);
-        // A student who sees the teacher only: no list, no grid view, no host tools.
+        // A student who sees the teacher only: no whiteboard button (Jitsi lets only a host
+        // open it; it reaches the student's screen by itself), no list, no grid view, no host tools.
         $student = jitsi_dock_context(false, true);
         $this->assertSame(['mic', 'camera', 'screen', 'chat', 'hand', 'settings', 'fullscreen'], $actions($student));
         $this->assertFalse($student['ishost']);
