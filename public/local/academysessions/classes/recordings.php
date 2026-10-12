@@ -98,7 +98,8 @@ class recordings {
 
     /**
      * May a non-staff participant see the recordings yet? Standalone rooms: always.
-     * Linked sessions: once ended, or once the session window has passed.
+     * Linked sessions: once ended, or once the session window has passed (a course
+     * session running over with a teacher still in it is not over yet).
      *
      * @param \stdClass|null $session academy_live_sessions row (null = standalone room)
      * @param int|null $now
@@ -110,6 +111,9 @@ class recordings {
         }
         if (($session->status ?? '') === 'ended') {
             return true;
+        }
+        if (session_manager::is_course_session($session) && !empty($session->teacher_joined_at)) {
+            return false;
         }
         $now = $now ?? time();
         return $now > ((int) $session->start_time + ((int) $session->duration * 60));

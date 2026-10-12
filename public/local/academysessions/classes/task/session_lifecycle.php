@@ -38,6 +38,11 @@ class session_lifecycle extends \core\task\scheduled_task {
             array('now' => $now)
         );
         foreach ($live as $session) {
+            // A course session runs over while a teacher is still in the call: it ends at the
+            // first run after they leave (or when they end it for everyone).
+            if (\local_academysessions\session_manager::is_course_session($session) && !empty($session->teacher_joined_at)) {
+                continue;
+            }
             \local_academysessions\session_manager::end_session($session->id, 'schedule');
             mtrace("Session {$session->id} '{$session->title}' has ended.");
         }

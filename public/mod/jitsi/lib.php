@@ -373,7 +373,7 @@ function jitsi_delete_instance($id) {
 
 /**
  * The room's session time, from the activity's settings ("Session time"): sessionstart
- * (0 = not scheduled) and sessionduration (minutes).
+ * (0 = not scheduled) and sessionend (stored as the session's length in minutes).
  *
  * A scheduled room is a course session (local_academysessions, audience = course): every
  * student of the course is on it, it opens to them half an hour before the start, the
@@ -382,7 +382,7 @@ function jitsi_delete_instance($id) {
  * stays in the reports); taking the time off releases the session (jitsi_release_session()).
  * Lesson rooms are scheduled by their lesson, never here.
  *
- * @param stdClass $data the form data (id, course, name, coursemodule, sessionstart, sessionduration)
+ * @param stdClass $data the form data (id, course, name, coursemodule, sessionstart, sessionend)
  */
 function jitsi_save_schedule(stdClass $data): void {
     global $DB, $USER;
@@ -392,7 +392,7 @@ function jitsi_save_schedule(stdClass $data): void {
     }
     $manager = '\local_academysessions\session_manager';
     $start = (int) $data->sessionstart;
-    $duration = (int) ($data->sessionduration ?? 0);
+    $duration = jitsi_schedule_minutes($start, (int) ($data->sessionend ?? 0));
     $session = $DB->get_record('academy_live_sessions', ['jitsiid' => $data->id]);
 
     if (!$start) {
@@ -439,8 +439,20 @@ function jitsi_release_session(stdClass $session): void {
 }
 
 /**
- * When a room's session is, for people: "Monday, 12 October 2026, 10:00 PM · 60 minutes".
- * HTML: the date is isolated (<bdi>), so its Latin "AM/PM" does not reorder an Arabic line.
+ * A session's length in minutes, from its start and end times (0 when the end is not after the start).
+ *
+ * @param int $start
+ * @param int $end
+ * @return int
+ */
+function jitsi_schedule_minutes(int $start, int $end): int {
+    return $end > $start ? (int) round(($end - $start) / MINSECS) : 0;
+}
+
+/**
+ * When a room's session is, for people: "Monday, 12 October 2026, 10:00 AM – 11:00 AM" (the
+ * end with its date too when it is another day). HTML: each time is isolated (<bdi>), so its
+ * Latin "AM/PM" does not reorder an Arabic line.
  *
  * @param stdClass|null $session the linked session
  * @return string '' when the room has no session
@@ -449,19 +461,25 @@ function jitsi_session_time_html($session): string {
     if (!$session) {
         return '';
     }
+    $start = (int) $session->start_time;
+    $end = $start + (int) $session->duration * MINSECS;
+    $daytime = get_string('strftimedaydatetime', 'langconfig');
+    $sameday = userdate($start, '%Y-%m-%d') === userdate($end, '%Y-%m-%d');
     return get_string('sessiontime_text', 'jitsi', [
-        'date' => html_writer::tag('bdi', s(userdate((int) $session->start_time,
-            get_string('strftimedaydatetime', 'langconfig')))),
-        'minutes' => (int) $session->duration,
+        'start' => html_writer::tag('bdi', s(userdate($start, $daytime))),
+        'end' => html_writer::tag('bdi', s(userdate($end, $sameday ? get_string('strftimetime', 'langconfig') : $daytime))),
     ]);
 }
 
+/** @var int the longest session, minutes (a day: the rule the app's create_session has too). */
+const JITSI_MAX_SESSION_MINUTES = 1440;
+
 /**
- * The settings form's checks of the session time: a length above 0, and a time that is not
- * already over (a wrong day), unless it is the time the session already had (editing other
- * settings of a past session is fine).
+ * The settings form's checks of the session time: an end after the start, at most a day
+ * later, and a time that is not already over (a wrong day), unless it is the time the session
+ * already had (editing other settings of a past session is fine).
  *
- * @param array $data the submitted form (instance, sessionstart, sessionduration)
+ * @param array $data the submitted form (instance, sessionstart, sessionend)
  * @param int|null $now
  * @return array field => error
  */
@@ -470,9 +488,12 @@ function jitsi_schedule_errors(array $data, ?int $now = null): array {
     if (empty($data['sessionstart'])) {
         return [];
     }
-    $duration = (int) ($data['sessionduration'] ?? 0);
+    $duration = jitsi_schedule_minutes((int) $data['sessionstart'], (int) ($data['sessionend'] ?? 0));
     if ($duration <= 0) {
-        return ['sessionduration' => get_string('sessionduration_invalid', 'jitsi')];
+        return ['sessionend' => get_string('sessionend_beforestart', 'jitsi')];
+    }
+    if ($duration > JITSI_MAX_SESSION_MINUTES) {
+        return ['sessionend' => get_string('sessionend_toolong', 'jitsi')];
     }
     $session = !empty($data['instance'])
         ? $DB->get_record('academy_live_sessions', ['jitsiid' => $data['instance']]) : null;
@@ -497,7 +518,7 @@ function jitsi_schedule_form_defaults(array &$defaults): void {
     $session = $DB->get_record('academy_live_sessions', ['jitsiid' => $defaults['instance']]);
     if ($session) {
         $defaults['sessionstart'] = (int) $session->start_time;
-        $defaults['sessionduration'] = (int) $session->duration;
+        $defaults['sessionend'] = (int) $session->start_time + (int) $session->duration * MINSECS;
     }
 }
 

@@ -6,9 +6,6 @@ require_once($CFG->dirroot . '/mod/jitsi/lib.php');
 
 class mod_jitsi_mod_form extends moodleform_mod {
 
-    /** @var int default length of a session, minutes. */
-    const DEFAULT_DURATION = 60;
-
     public function definition() {
         $mform = $this->_form;
 
@@ -29,10 +26,10 @@ class mod_jitsi_mod_form extends moodleform_mod {
             $mform->addElement('date_time_selector', 'sessionstart', get_string('sessionstart', 'jitsi'),
                 ['optional' => true]);
             $mform->addHelpButton('sessionstart', 'sessionstart', 'jitsi');
-            $mform->addElement('text', 'sessionduration', get_string('sessionduration', 'jitsi'), ['size' => 5]);
-            $mform->setType('sessionduration', PARAM_INT);
-            $mform->setDefault('sessionduration', self::DEFAULT_DURATION);
-            $mform->hideIf('sessionduration', 'sessionstart[enabled]', 'notchecked');
+            $mform->addElement('date_time_selector', 'sessionend', get_string('sessionend', 'jitsi'));
+            $mform->addHelpButton('sessionend', 'sessionend', 'jitsi');
+            $mform->setDefault('sessionend', time() + HOURSECS);
+            $mform->hideIf('sessionend', 'sessionstart[enabled]', 'notchecked');
         }
 
         // ── Security options ─────────────────────────────────────────────────

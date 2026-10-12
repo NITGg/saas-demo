@@ -99,6 +99,7 @@ class fcm_test extends \advanced_testcase {
      * FCM is switched on wherever airnotifier was, in site defaults and in users' own preferences.
      */
     public function test_mirror_airnotifier(): void {
+        global $DB;
         $user = $this->getDataGenerator()->create_user();
         $other = $this->getDataGenerator()->create_user();
         set_config('airnotifier_provider_x_y_locked', '1', 'message');
@@ -113,8 +114,10 @@ class fcm_test extends \advanced_testcase {
         $this->assertSame('1', get_config('message', 'fcm_provider_x_y_locked'));
         $this->assertSame('popup,airnotifier,fcm', get_config('message', 'message_provider_x_y_enabled'));
         $this->assertSame('popup', get_config('message', 'message_provider_x_z_enabled'));
-        $this->assertSame('airnotifier,fcm', get_user_preferences('message_provider_x_y_enabled', null, $user));
-        $this->assertSame('none', get_user_preferences('message_provider_x_y_enabled', null, $other));
+        // Read the table: get_user_preferences() keeps this request's copy for 2 minutes.
+        $pref = fn($u) => $DB->get_field('user_preferences', 'value', ['userid' => $u->id, 'name' => 'message_provider_x_y_enabled']);
+        $this->assertSame('airnotifier,fcm', $pref($user));
+        $this->assertSame('none', $pref($other));
     }
 
     /**

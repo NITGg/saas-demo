@@ -338,7 +338,9 @@ class monitor {
             $where[] = 's.start_time >= :dfrom AND s.start_time < :dto';
             $params += ['dfrom' => $from, 'dto' => $to];
         } else {
-            $where[] = "s.start_time <= :wfrom AND s.start_time + s.duration * 60 >= :wto AND s.status <> 'cancelled'";
+            // A session still live past its end (a course session running over) stays on the wall.
+            $where[] = "s.start_time <= :wfrom AND (s.start_time + s.duration * 60 >= :wto OR s.status = 'live')
+                        AND s.status <> 'cancelled'";
             $params += ['wfrom' => $now + self::BEFORE, 'wto' => $now - self::AFTER];
         }
         if ($courseids !== null) {
@@ -420,9 +422,11 @@ class monitor {
             $teacherin = !empty($s->teacher_joined_at);
             $firstjoin = (int) ($s->teacher_first_join ?? 0);
 
+            // A course session runs over while a teacher is in the call.
+            $runningover = $teacherin && $s->status !== 'ended' && session_manager::is_course_session($s);
             if ($s->status === 'cancelled') {
                 $status = self::CANCELLED;
-            } else if ($s->status === 'ended' || $now > $end) {
+            } else if ($s->status === 'ended' || ($now > $end && !$runningover)) {
                 $status = self::ENDED;
             } else if ($teacherin) {
                 $status = self::RUNNING;
@@ -530,7 +534,8 @@ class monitor {
     }
 
     /**
-     * Until when an open stretch counts: now, or the end of an ended session.
+     * Until when an open stretch counts: now, or the end of an ended session (a course
+     * session running over with a teacher in it: now).
      *
      * @param \stdClass $s
      * @param int $now
@@ -539,6 +544,9 @@ class monitor {
     private static function until(\stdClass $s, int $now): int {
         if (!empty($s->ended_at)) {
             return min($now, (int) $s->ended_at);
+        }
+        if (session_manager::is_course_session($s) && !empty($s->teacher_joined_at) && $s->status !== 'ended') {
+            return $now;
         }
         return min($now, self::end_time($s));
     }

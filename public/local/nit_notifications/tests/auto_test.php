@@ -105,7 +105,7 @@ final class auto_test extends \advanced_testcase {
         $now = time();
         $this->setUser($teacher);
         $room = $gen->create_module('jitsi', ['course' => $course->id, 'name' => 'Algebra',
-            'sessionstart' => $now + 30 * MINSECS, 'sessionduration' => 45]);
+            'sessionstart' => $now + 30 * MINSECS, 'sessionend' => $now + 75 * MINSECS]);
 
         auto::send_session_reminders($now);
         $notif = $DB->get_record('local_nit_notif', ['source' => 'session_reminder'], '*', MUST_EXIST);

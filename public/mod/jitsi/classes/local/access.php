@@ -38,7 +38,8 @@ defined('MOODLE_INTERNAL') || die();
  * for the whole course: every user enrolled in it gets in (a student enrolled after it
  * was scheduled is added to its list on the way in), and whoever holds
  * mod/jitsi:moderate hosts it, like a standalone room; the time window and "the
- * teacher is in" still apply.
+ * teacher is in" still apply, except that it runs over its end while a teacher is
+ * still in the call (session_lifecycle ends it after they leave).
  * A standalone room (no session) keeps Moodle's rules: mod/jitsi:moderate moderates, and
  * only users enrolled in the course get in (not a guest).
  *
@@ -138,7 +139,11 @@ class access {
         if ($now < $opens) {
             return $result(self::NOT_OPEN, (int) ceil(($opens - $now) / MINSECS));
         }
-        if ($now > (int) $session->start_time + (int) $session->duration * MINSECS) {
+        // Past its end: closed, except a course session while a teacher is still in the call
+        // (it runs over, and ends once they leave).
+        if ($now > (int) $session->start_time + (int) $session->duration * MINSECS
+                && !(\local_academysessions\session_manager::is_course_session($session)
+                    && !empty($session->teacher_joined_at))) {
             return $result(self::ENDED);
         }
         // Other Moodle restrictions on the activity (dates, groups) still apply. Checked

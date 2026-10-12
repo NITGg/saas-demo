@@ -316,7 +316,7 @@ final class monitor_test extends \advanced_testcase {
         global $DB;
         $this->setUser($this->teacher);
         $room = $this->getDataGenerator()->create_module('jitsi', ['course' => $this->course->id, 'name' => 'Algebra',
-            'sessionstart' => $this->now - MINSECS, 'sessionduration' => 30]);
+            'sessionstart' => $this->now - MINSECS, 'sessionend' => $this->now + 29 * MINSECS]);
         \mod_jitsi\local\roomlog::joined((int) $room->id, (int) $this->student->id, false, $this->now);
         $sessionid = (int) $DB->get_field('academy_live_sessions', 'id', ['jitsiid' => $room->id]);
 
@@ -324,5 +324,24 @@ final class monitor_test extends \advanced_testcase {
         $this->assertArrayHasKey('s' . $sessionid, $cards);
         $this->assertArrayNotHasKey('r' . $room->id, $cards);
         $this->assertSame(2, $cards['s' . $sessionid]['invited'], 'every student of the course');
+    }
+
+    public function test_a_course_session_running_over_with_its_teacher_in_stays_running(): void {
+        global $DB;
+        $this->setUser($this->teacher);
+        $room = $this->getDataGenerator()->create_module('jitsi', ['course' => $this->course->id, 'name' => 'Algebra',
+            'sessionstart' => $this->now - 2 * HOURSECS, 'sessionend' => $this->now - HOURSECS]);
+        $session = $DB->get_record('academy_live_sessions', ['jitsiid' => $room->id]);
+        $DB->update_record('academy_live_sessions', (object) ['id' => $session->id, 'status' => 'live',
+            'teacher_joined_at' => $this->now - 90 * MINSECS, 'teacher_first_join' => $this->now - 2 * HOURSECS]);
+        session_manager::record_attendance((int) $session->id, (int) $this->student->id);
+
+        $card = $this->cards()['s' . $session->id];
+        $this->assertSame(monitor::RUNNING, $card['status'], 'an hour past its end, still on');
+        $this->assertSame(1, $card['present']);
+
+        // The teacher left: over.
+        $DB->set_field('academy_live_sessions', 'teacher_joined_at', null, ['id' => $session->id]);
+        $this->assertArrayNotHasKey('s' . $session->id, $this->cards(['status' => monitor::RUNNING]));
     }
 }

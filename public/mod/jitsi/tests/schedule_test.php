@@ -77,7 +77,7 @@ final class schedule_test extends \advanced_testcase {
     private function room(int $start, int $duration = 45): \stdClass {
         $this->setUser($this->teacher);
         return $this->getDataGenerator()->create_module('jitsi', ['course' => $this->course->id, 'name' => 'Algebra live',
-            'sessionstart' => $start, 'sessionduration' => $duration]);
+            'sessionstart' => $start, 'sessionend' => $start ? $start + $duration * MINSECS : 0]);
     }
 
     /**
@@ -94,7 +94,7 @@ final class schedule_test extends \advanced_testcase {
         $data->instance = $jitsi->id;
         $data->coursemodule = $jitsi->cmid;
         $data->sessionstart = $start;
-        $data->sessionduration = $duration;
+        $data->sessionend = $start ? $start + $duration * MINSECS : 0;
         jitsi_update_instance($data);
     }
 
@@ -166,6 +166,8 @@ final class schedule_test extends \advanced_testcase {
         $this->assertTrue($cm->available);
         $this->assertStringContainsString(s(userdate($start, get_string('strftimedaydatetime', 'langconfig'))),
             $cm->afterlink);
+        $this->assertStringContainsString(s(userdate($start + 45 * MINSECS, get_string('strftimetime', 'langconfig'))),
+            $cm->afterlink, 'and when it ends');
         // The call itself is not open yet.
         $this->assertSame(access::NOT_OPEN, $this->check($jitsi, $this->student)->code);
     }
@@ -284,20 +286,67 @@ final class schedule_test extends \advanced_testcase {
         $this->assertTrue($DB->record_exists('academy_live_sessions', ['id' => $sessionid, 'jitsiid' => null]));
     }
 
-    public function test_the_form_refuses_a_time_already_over_and_a_length_of_zero(): void {
+    public function test_the_form_refuses_a_time_already_over_and_an_end_not_after_the_start(): void {
         $now = time();
+        $form = fn(int $start, int $end, array $more = []) => jitsi_schedule_errors(
+            $more + ['sessionstart' => $start, 'sessionend' => $end], $now);
         $this->assertSame([], jitsi_schedule_errors(['sessionstart' => 0], $now), 'no time: nothing to check');
-        $this->assertArrayHasKey('sessionduration',
-            jitsi_schedule_errors(['sessionstart' => $now + HOURSECS, 'sessionduration' => 0], $now));
+        $this->assertArrayHasKey('sessionend', $form($now + HOURSECS, $now + HOURSECS), 'ends when it starts');
+        $this->assertArrayHasKey('sessionend', $form($now + HOURSECS, $now), 'ends before it starts');
+        $this->assertArrayHasKey('sessionend', $form($now + HOURSECS, $now + 2 * DAYSECS), 'longer than a day');
         // Two days ago (the wrong day picked): refused.
-        $this->assertArrayHasKey('sessionstart',
-            jitsi_schedule_errors(['sessionstart' => $now - 2 * DAYSECS, 'sessionduration' => 60], $now));
+        $this->assertArrayHasKey('sessionstart', $form($now - 2 * DAYSECS, $now - 2 * DAYSECS + HOURSECS));
         // Started ten minutes ago, still on: fine.
-        $this->assertSame([], jitsi_schedule_errors(['sessionstart' => $now - 10 * MINSECS, 'sessionduration' => 60], $now));
+        $this->assertSame([], $form($now - 10 * MINSECS, $now + 50 * MINSECS));
         // A past session saved again with its own time (another setting changed): fine.
         $jitsi = $this->room($now - 2 * HOURSECS, 60);
-        $this->assertSame([], jitsi_schedule_errors(['instance' => $jitsi->id, 'sessionstart' => $now - 2 * HOURSECS,
-            'sessionduration' => 60], $now));
+        $this->assertSame([], $form($now - 2 * HOURSECS, $now - HOURSECS, ['instance' => $jitsi->id]));
+    }
+
+    public function test_the_end_time_is_stored_as_the_length(): void {
+        $start = time() + HOURSECS;
+        $jitsi = $this->room($start, 90);
+        $this->assertSame(90, (int) $this->session($jitsi)->duration);
+        $defaults = ['instance' => $jitsi->id];
+        jitsi_schedule_form_defaults($defaults);
+        $this->assertSame($start, $defaults['sessionstart']);
+        $this->assertSame($start + 90 * MINSECS, $defaults['sessionend'], 'the form shows the end again');
+    }
+
+    public function test_the_session_runs_over_while_a_teacher_is_in_and_ends_after_they_leave(): void {
+        global $DB;
+        $jitsi = $this->room(time() - 2 * HOURSECS, 60);  // Its time ended an hour ago.
+        $session = $this->session($jitsi);
+        $cm = get_coursemodule_from_id('jitsi', $jitsi->cmid);
+        presence::set($cm, (int) $this->teacher->id, true);
+        $task = new \local_academysessions\task\session_lifecycle();
+
+        // The teacher is still in: it stays on, and the students may still come in.
+        $this->expectOutputRegex('/now live/');
+        $task->execute();
+        $this->assertSame('live', $DB->get_field('academy_live_sessions', 'status', ['id' => $session->id]));
+        $this->assertTrue($this->check($jitsi, $this->student)->allowed);
+        $this->assertFalse(\local_academysessions\recordings::visible_to_students($this->session($jitsi)),
+            'its recording is not out yet');
+
+        // The teacher left: no one new comes in, and the next run ends it.
+        presence::set($cm, (int) $this->teacher->id, false);
+        $this->assertSame(access::ENDED, $this->check($jitsi, $this->student)->code);
+        $this->assertTrue($this->check($jitsi, $this->teacher)->allowed, 'the teacher may still come back');
+        $task->execute();
+        $this->assertSame('ended', $DB->get_field('academy_live_sessions', 'status', ['id' => $session->id]));
+    }
+
+    public function test_an_invited_session_still_ends_on_time_with_its_teacher_in(): void {
+        global $DB;
+        $jitsi = $this->getDataGenerator()->create_module('jitsi', ['course' => $this->course->id]);
+        $sessionid = (int) session_manager::create_session($this->course->id, $this->teacher->id, 'Invited',
+            time() - 2 * HOURSECS, [$this->student->id], '', 60, null, $jitsi->id);
+        presence::set(get_coursemodule_from_id('jitsi', $jitsi->cmid), (int) $this->teacher->id, true);
+        $this->assertSame(access::ENDED, $this->check($jitsi, $this->student)->code);
+        $this->expectOutputRegex('/has ended/');
+        (new \local_academysessions\task\session_lifecycle())->execute();
+        $this->assertSame('ended', $DB->get_field('academy_live_sessions', 'status', ['id' => $sessionid]));
     }
 
     public function test_recordings_after_the_call_follow_the_tab_rules(): void {
