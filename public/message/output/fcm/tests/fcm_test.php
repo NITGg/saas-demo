@@ -96,6 +96,36 @@ class fcm_test extends \advanced_testcase {
     }
 
     /**
+     * FCM is switched on wherever airnotifier was, in site defaults and in users' own preferences.
+     */
+    public function test_mirror_airnotifier(): void {
+        $user = $this->getDataGenerator()->create_user();
+        $other = $this->getDataGenerator()->create_user();
+        set_config('airnotifier_provider_x_y_locked', '1', 'message');
+        set_config('message_provider_x_y_enabled', 'popup,airnotifier', 'message');
+        set_config('message_provider_x_z_enabled', 'popup', 'message');
+        set_user_preference('message_provider_x_y_enabled', 'airnotifier', $user);
+        set_user_preference('message_provider_x_y_enabled', 'none', $other);
+
+        preferences::mirror_airnotifier();
+        preferences::mirror_airnotifier();
+
+        $this->assertSame('1', get_config('message', 'fcm_provider_x_y_locked'));
+        $this->assertSame('popup,airnotifier,fcm', get_config('message', 'message_provider_x_y_enabled'));
+        $this->assertSame('popup', get_config('message', 'message_provider_x_z_enabled'));
+        $this->assertSame('airnotifier,fcm', get_user_preferences('message_provider_x_y_enabled', null, $user));
+        $this->assertSame('none', get_user_preferences('message_provider_x_y_enabled', null, $other));
+    }
+
+    /**
+     * On a fresh site, notification-center messages go to FCM by default (the bug: only to the bell).
+     */
+    public function test_announcement_reaches_fcm(): void {
+        $processors = get_message_output_default_preferences()->message_provider_local_nit_notifications_announcement_enabled;
+        $this->assertContains('fcm', explode(',', $processors));
+    }
+
+    /**
      * Test send_message handles users with no registered devices gracefully.
      */
     public function test_send_message_no_devices(): void {
