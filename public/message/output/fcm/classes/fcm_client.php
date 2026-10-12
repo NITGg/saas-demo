@@ -262,10 +262,10 @@ class fcm_client {
         $decodedResp = json_decode($resp, true);
         $errorCode = $decodedResp['error']['details'][0]['errorCode'] ?? $decodedResp['error']['status'] ?? '';
 
+        // INVALID_ARGUMENT alone is not enough: FCM also returns it for a bad payload, which would wipe every device.
         if ($httpCode === 404 ||
             $errorCode === 'UNREGISTERED' ||
             $errorCode === 'NOT_FOUND' ||
-            $errorCode === 'INVALID_ARGUMENT' ||
             stripos($resp, 'registration-token-not-registered') !== false ||
             stripos($resp, 'not a valid FCM registration token') !== false ||
             stripos($resp, 'Requested entity was not found') !== false) {

@@ -74,3 +74,24 @@ $string['waiting_next_join'] = 'You will go in automatically when they join.';
 $string['waiting_next_button'] = 'The "Join the session" button appears here when they join.';
 $string['waiting_next_admit'] = 'Then the teacher lets you in.';
 $string['waiting_title_join'] = 'The teacher is not in the session right now.';
+
+// The room's own controls (templates/dock.mustache).
+$string['dock_blur'] = 'Blur my background';
+$string['dock_camera'] = 'Camera';
+$string['dock_chat'] = 'Chat';
+$string['dock_device_camera'] = 'Camera';
+$string['dock_device_mic'] = 'Microphone';
+$string['dock_device_speaker'] = 'Speaker';
+$string['dock_endall'] = 'End the session for everyone';
+$string['dock_fullscreen'] = 'Full screen';
+$string['dock_hand'] = 'Raise hand';
+$string['dock_leave'] = 'Leave';
+$string['dock_live'] = 'Live';
+$string['dock_mic'] = 'Microphone';
+$string['dock_muteall'] = 'Mute all';
+$string['dock_noise'] = 'Noise suppression';
+$string['dock_people'] = 'Participants';
+$string['dock_rec'] = 'Recording';
+$string['dock_screen'] = 'Share screen';
+$string['dock_settings'] = 'Settings';
+$string['dock_tile'] = 'Grid view';

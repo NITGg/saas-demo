@@ -34,6 +34,7 @@ require_once($CFG->dirroot . '/mod/jitsi/lib.php');
  * @covers     ::jitsi_room_name
  * @covers     ::jitsi_is_lesson_room
  * @covers     \mod_jitsi\local\access::waiting_room
+ * @covers     ::jitsi_dock_context
  */
 final class room_page_test extends \advanced_testcase {
 
@@ -115,6 +116,28 @@ final class room_page_test extends \advanced_testcase {
         $this->assertTrue(\mod_jitsi\local\access::waiting_room($room((int) $lessons->id)));
         // Other live sessions: Moodle's gate only, no lobby.
         $this->assertFalse(\mod_jitsi\local\access::waiting_room($room((int) $gen->create_course()->id)));
+    }
+
+    public function test_dock_buttons_per_role(): void {
+        $actions = fn(array $ctx) => array_column($ctx['buttons'], 'action');
+
+        // The host: everyone's list (with who knocks), grid view, mute all, end for all.
+        $host = jitsi_dock_context(true, false);
+        $this->assertSame(['mic', 'camera', 'screen', 'chat', 'hand', 'people', 'tile', 'muteall', 'settings',
+            'fullscreen'], $actions($host));
+        $this->assertTrue($host['ishost']);
+        // A student who sees the teacher only: no list, no grid view, no host tools.
+        $student = jitsi_dock_context(false, true);
+        $this->assertSame(['mic', 'camera', 'screen', 'chat', 'hand', 'settings', 'fullscreen'], $actions($student));
+        $this->assertFalse($student['ishost']);
+
+        // Every icon is there, as plain SVG with its two-tone layer.
+        foreach (array_merge($host['buttons'], [['icon' => $host['leaveicon']], ['icon' => $host['endallicon']]]) as $b) {
+            $this->assertStringStartsWith('<svg', $b['icon']);
+            $this->assertStringContainsString('class="duo"', $b['icon']);
+            $this->assertStringNotContainsString('<script', $b['icon']);
+        }
+        $this->assertStringStartsWith('<svg', $host['buttons'][0]['iconoff']);
     }
 
     public function test_recordings_tab_visibility(): void {

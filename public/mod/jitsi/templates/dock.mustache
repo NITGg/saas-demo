@@ -1,0 +1,77 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_jitsi/dock
+
+    The room's own controls over the call (Jitsi's toolbar is hidden): a status strip on
+    top and a floating dock at the bottom, driven by mod/jitsi/dock.js through the Jitsi
+    IFrame API. Icons: Phosphor duotone (branding/dock, MIT).
+
+    Context variables required for this template:
+    * buttons - [{action, label, icon, iconoff, host, badge, toggle}]
+    * leave, leaveicon, endall, endallicon, live, rec, ishost
+    * settings - {title, mic, camera, speaker, blur, noise}
+
+    Example context (json):
+    {
+        "buttons": [{"action": "mic", "label": "Mic", "icon": "<svg></svg>", "iconoff": "<svg></svg>", "toggle": true}],
+        "leave": "Leave", "leaveicon": "<svg></svg>", "endall": "End for all", "endallicon": "<svg></svg>",
+        "live": "Live", "rec": "Recording", "ishost": true,
+        "settings": {"title": "Settings", "mic": "Microphone", "camera": "Camera", "speaker": "Speaker",
+            "blur": "Blur my background", "noise": "Noise suppression"}
+    }
+}}
+<div class="nitdock-top" data-region="nitdock-top">
+    <span class="nitdock-chip nitdock-live"><span class="nitdock-dot"></span>{{live}} <b data-region="timer">00:00</b></span>
+    <span class="nitdock-chip nitdock-rec" data-region="rec" hidden><span class="nitdock-dot"></span>{{rec}}</span>
+</div>
+<div class="nitdock is-waiting" data-region="nitdock" role="toolbar" aria-label="{{leave}}">
+    <div class="nitdock-group">
+        {{#buttons}}
+        <button type="button" class="nitdock-btn" data-action="{{action}}" {{#toggle}}aria-pressed="false"{{/toggle}}
+                title="{{label}}" aria-label="{{label}}">
+            <span class="nitdock-ico">
+                <span class="nitdock-ico-on">{{{icon}}}</span>
+                {{#iconoff}}<span class="nitdock-ico-off">{{{iconoff}}}</span>{{/iconoff}}
+                {{#badge}}<span class="nitdock-badge" data-region="badge-{{action}}" hidden></span>{{/badge}}
+            </span>
+            <span class="nitdock-label">{{label}}</span>
+        </button>
+        {{/buttons}}
+    </div>
+    <div class="nitdock-leave-wrap">
+        <button type="button" class="nitdock-leave" data-action="leave" title="{{leave}}" aria-label="{{leave}}">
+            {{{leaveicon}}}<span>{{leave}}</span>
+        </button>
+        {{#ishost}}
+        <div class="nitdock-pop nitdock-leave-menu" data-region="leave-menu" hidden>
+            <button type="button" data-action="hangup">{{{leaveicon}}}<span>{{leave}}</span></button>
+            <button type="button" class="is-danger" data-action="endall">{{{endallicon}}}<span>{{endall}}</span></button>
+        </div>
+        {{/ishost}}
+    </div>
+    {{#settings}}
+    <div class="nitdock-pop nitdock-settings" data-region="settings" hidden>
+        <div class="nitdock-pop-title">{{title}}</div>
+        <label>{{mic}}<select data-device="audioInput"></select></label>
+        <label>{{camera}}<select data-device="videoInput"></select></label>
+        <label data-region="speaker-row">{{speaker}}<select data-device="audioOutput"></select></label>
+        <label class="nitdock-switch"><input type="checkbox" data-setting="blur"><span>{{blur}}</span></label>
+        <label class="nitdock-switch"><input type="checkbox" data-setting="noise"><span>{{noise}}</span></label>
+    </div>
+    {{/settings}}
+</div>

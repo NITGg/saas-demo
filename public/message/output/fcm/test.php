@@ -22,11 +22,14 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once(__DIR__ . '/../../config.php');
+require_once(__DIR__ . '/../../../config.php');
 require_once($CFG->libdir . '/adminlib.php');
 
-admin_externalpage_setup('messagesettingfcm');
-require_capability('moodle/site:config', context_system::instance());
+// messagesettingfcm is an admin_settingpage, so admin_externalpage_setup() would throw sectionerror.
+require_admin();
+$PAGE->set_context(context_system::instance());
+$PAGE->set_pagelayout('admin');
+navigation_node::override_active_url(new moodle_url('/admin/settings.php', ['section' => 'messagesettingfcm']));
 
 $PAGE->set_url(new moodle_url('/message/output/fcm/test.php'));
 $PAGE->set_title(get_string('test_page_title', 'message_fcm'));

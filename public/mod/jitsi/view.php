@@ -131,33 +131,12 @@ $lang_map = [
 $moodle_lang  = current_language();
 $jitsi_lang   = $lang_map[$moodle_lang] ?? 'en';
 
-// Teacher: full control panel.
-$toolbar_teacher = [
-    'microphone', 'camera', 'desktop',
-    'chat',
-    'invite',
-    'raisehand', 'participants-pane', 'mute-everyone',
-    'whiteboard', 'etherpad',
-    'select-background', 'noisesuppression',
-    'tileview', 'filmstrip', 'videoquality', 'stats',
-    'security', 'closedcaptions', 'shortcuts',
-    'fullscreen', 'hangup',
-];
-// Students: useful personal controls only.
-$toolbar_student = [
-    'microphone', 'camera', 'desktop',
-    'chat', 'raisehand', 'whiteboard',
-    'select-background', 'noisesuppression',
-    'tileview', 'videoquality',
-    'fullscreen', 'hangup',
-];
+// Jitsi's own toolbar is hidden: the room has its own controls in the site's style
+// (templates/dock.mustache + dock.js, through the Jitsi IFrame API).
+$toolbar = [];
 // A student sees the teacher only (not the other students), in every room: no tile view,
 // no filmstrip, the teacher pinned on the main video (see the script below).
 $isolate_students = !$is_teacher;
-if ($isolate_students) {
-    $toolbar_student = array_values(array_diff($toolbar_student, ['tileview']));
-}
-$toolbar         = $is_teacher ? $toolbar_teacher : $toolbar_student;
 $teacher_names   = jitsi_teacher_names($cm, $session);
 
 // Jitsi is now on HTTPS (mkcert cert, port 8443 → container 443).
@@ -193,6 +172,8 @@ echo $OUTPUT->header();
 // Load Jitsi External API as a static <script> tag (only once the user joins).
 if ($joining) {
     echo '<script src="' . s($jitsi_scheme . '://' . $jitsi_host . '/external_api.js') . '"></script>' . "\n";
+    $dockjs = new moodle_url('/mod/jitsi/dock.js', ['v' => filemtime(__DIR__ . '/dock.js')]);
+    echo '<script src="' . s($dockjs->out(false)) . '"></script>' . "\n";
 }
 
 // NOTE: no explicit $OUTPUT->heading() here — the theme's activity header
@@ -225,7 +206,8 @@ if ($is_teacher) {
 echo '</div>';
 
 // ── Jitsi External API container (or the "Join" step before it) ───────────
-echo '<div id="panel-video" style="position:relative;width:100%;height:' . ($joining ? '620px' : '360px')
+echo '<div id="panel-video"' . ($joining ? ' class="nitdock-panel"' : '')
+    . ' style="position:relative;width:100%;height:' . ($joining ? '620px' : '360px')
     . ';border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.15);">';
 if ($closed) {
     echo jitsi_closed_html($decision, $cm, $wantsjoin,
@@ -237,9 +219,12 @@ echo '<div id="jitsi-container" style="width:100%;height:100%;' . ($joining ? ''
 if ($isolate_students) {
     // Covers the video while the teacher is not in the call, so a student never sees
     // another student on the main video (it would show whoever is speaking).
-    echo '<div id="jitsi-teacher-away" style="display:none;position:absolute;inset:0 0 72px 0;align-items:center;'
-        . 'justify-content:center;text-align:center;padding:24px;background:#1b1f24;color:#fff;font-size:18px;">'
+    echo '<div id="jitsi-teacher-away" style="display:none;position:absolute;inset:0;z-index:5;align-items:center;'
+        . 'justify-content:center;text-align:center;padding:24px 24px 110px;background:#0e335d;color:#fff;font-size:18px;">'
         . get_string('teacheraway', 'jitsi') . '</div>';
+}
+if ($joining) {
+    echo $OUTPUT->render_from_template('mod_jitsi/dock', jitsi_dock_context($is_teacher, $isolate_students));
 }
 echo '</div>';
 
@@ -436,6 +421,10 @@ echo <<<HTML
                 email: CFG.userEmail
             }
         });
+        // The room's own controls (dock.js), in place of Jitsi's toolbar.
+        if (window.NitJitsiDock) {
+            window.NitJitsiDock.init(api, document.getElementById('panel-video'), {isHost: CFG.isTeacher});
+        }
         // readyToClose fires when teacher clicks "End meeting for all" — ended=true marks the session.
         api.addEventListener('readyToClose', function() { onSessionLeft(true); });
         // videoConferenceLeft fires on plain leave — teacher leaving without ending doesn't mark session.

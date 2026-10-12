@@ -35,6 +35,69 @@ function jitsi_room_name($jitsi, $cm): string {
 }
 
 /**
+ * One icon of the room's own controls (branding/dock/<name>.svg: Phosphor duotone, MIT,
+ * cleaned to two plain paths; the lighter one has class "duo").
+ *
+ * @param string $name e.g. microphone
+ * @return string SVG markup ('' if missing)
+ */
+function jitsi_dock_icon(string $name): string {
+    $file = __DIR__ . '/branding/dock/' . clean_param($name, PARAM_ALPHANUMEXT) . '.svg';
+    return is_readable($file) ? trim((string) file_get_contents($file)) : '';
+}
+
+/**
+ * The room's own controls (templates/dock.mustache), in place of Jitsi's toolbar. A host
+ * also gets the people list (with who knocks), the grid view and "mute everyone", and
+ * can end the call for everyone; a student who only sees the teacher gets no grid view.
+ *
+ * @param bool $ishost
+ * @param bool $isolated a student who sees the teacher only
+ * @return array template context
+ */
+function jitsi_dock_context(bool $ishost, bool $isolated): array {
+    $s = fn(string $k) => get_string('dock_' . $k, 'jitsi');
+    $button = fn(string $action, string $icon, string $iconoff = '', bool $badge = false, bool $toggle = true) => [
+        'action' => $action, 'label' => $s($action), 'icon' => jitsi_dock_icon($icon),
+        'iconoff' => $iconoff !== '' ? jitsi_dock_icon($iconoff) : '', 'badge' => $badge, 'toggle' => $toggle,
+    ];
+    $buttons = [
+        $button('mic', 'microphone', 'microphone-slash'),
+        $button('camera', 'video-camera', 'video-camera-slash'),
+        $button('screen', 'screencast'),
+        $button('chat', 'chat-circle-dots', '', true),
+        $button('hand', 'hand-palm'),
+    ];
+    if ($ishost) {
+        $buttons[] = $button('people', 'users-three', '', true);
+        $buttons[] = $button('tile', 'squares-four');
+        $buttons[] = $button('muteall', 'speaker-simple-slash', '', false, false);
+    } else if (!$isolated) {
+        $buttons[] = $button('tile', 'squares-four');
+    }
+    $buttons[] = $button('settings', 'sliders-horizontal', '', false, false);
+    $buttons[] = $button('fullscreen', 'corners-out');
+    return [
+        'buttons' => $buttons,
+        'ishost' => $ishost,
+        'leave' => $s('leave'),
+        'leaveicon' => jitsi_dock_icon('phone-disconnect'),
+        'endall' => $s('endall'),
+        'endallicon' => jitsi_dock_icon('power'),
+        'live' => $s('live'),
+        'rec' => $s('rec'),
+        'settings' => [
+            'title' => $s('settings'),
+            'mic' => $s('device_mic'),
+            'camera' => $s('device_camera'),
+            'speaker' => $s('device_speaker'),
+            'blur' => $s('blur'),
+            'noise' => $s('noise'),
+        ],
+    ];
+}
+
+/**
  * One branded Jitsi icon (branding/icons/<Jitsi icon name>.svg), or null.
  *
  * @param string $name Jitsi's icon name, e.g. IconMic

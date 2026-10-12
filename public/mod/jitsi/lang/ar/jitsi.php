@@ -74,3 +74,24 @@ $string['waiting_next_join'] = 'ستدخل تلقائياً عند انضمام�
 $string['waiting_next_button'] = 'سيظهر لك هنا زر "انضم إلى الجلسة" عند انضمامه.';
 $string['waiting_next_admit'] = 'بعدها ينتظر طلبك حتى يسمح لك المعلم بالدخول.';
 $string['waiting_title_join'] = 'المعلم ليس في الحصة الآن.';
+
+// أزرار التحكم الخاصة بالغرفة (templates/dock.mustache).
+$string['dock_blur'] = 'تمويه الخلفية';
+$string['dock_camera'] = 'الكاميرا';
+$string['dock_chat'] = 'المحادثة';
+$string['dock_device_camera'] = 'الكاميرا';
+$string['dock_device_mic'] = 'الميكروفون';
+$string['dock_device_speaker'] = 'السماعة';
+$string['dock_endall'] = 'إنهاء الحصة للجميع';
+$string['dock_fullscreen'] = 'ملء الشاشة';
+$string['dock_hand'] = 'رفع اليد';
+$string['dock_leave'] = 'مغادرة';
+$string['dock_live'] = 'مباشر';
+$string['dock_mic'] = 'الميكروفون';
+$string['dock_muteall'] = 'كتم الجميع';
+$string['dock_noise'] = 'إزالة الضوضاء';
+$string['dock_people'] = 'المشاركون';
+$string['dock_rec'] = 'جارٍ التسجيل';
+$string['dock_screen'] = 'مشاركة الشاشة';
+$string['dock_settings'] = 'الإعدادات';
+$string['dock_tile'] = 'عرض الكل';
