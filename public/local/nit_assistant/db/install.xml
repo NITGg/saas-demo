@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/nit_assistant/db" VERSION="20261012" COMMENT="AI assistant: conversations, messages, audit, cost and limits"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
+>
+  <TABLES>
+    <TABLE NAME="local_nit_asst_conv" COMMENT="One chat conversation">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Signed-in user; 0 = visitor"/>
+        <FIELD NAME="sessionkey" TYPE="char" LENGTH="64" NOTNULL="false" SEQUENCE="false" COMMENT="Hash of the visitor's browser key (visitors only)"/>
+        <FIELD NAME="channel" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="web" SEQUENCE="false" COMMENT="web | app | whatsapp"/>
+        <FIELD NAME="mode" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="sales" SEQUENCE="false" COMMENT="sales | student | teacher (decided by the server)"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="open" SEQUENCE="false" COMMENT="open | waiting_human | human | closed"/>
+        <FIELD NAME="lang" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="ar" SEQUENCE="false"/>
+        <FIELD NAME="assignedto" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Staff user who took over"/>
+        <FIELD NAME="stateversion" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Bumped on every status change"/>
+        <FIELD NAME="turnlockuntil" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="An AI reply is being written until this time"/>
+        <FIELD NAME="summary" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="messagecount" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="tokensin" TYPE="int" LENGTH="20" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="tokensout" TYPE="int" LENGTH="20" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="iphash" TYPE="char" LENGTH="64" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="sourcepage" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="rating" TYPE="int" LENGTH="2" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="lastmessageat" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="statuslast" UNIQUE="false" FIELDS="status, lastmessageat"/>
+        <INDEX NAME="userid" UNIQUE="false" FIELDS="userid"/>
+        <INDEX NAME="sessionkey" UNIQUE="false" FIELDS="sessionkey"/>
+        <INDEX NAME="assignedto" UNIQUE="false" FIELDS="assignedto"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_nit_asst_msg" COMMENT="Messages of a conversation (tool rows are redacted)">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="convid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="role" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="visitor | assistant | staff | tool | system"/>
+        <FIELD NAME="content" TYPE="text" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="sent" SEQUENCE="false" COMMENT="sent | draft | discarded | failed"/>
+        <FIELD NAME="toolname" TYPE="char" LENGTH="100" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="tooluseid" TYPE="char" LENGTH="100" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="turnid" TYPE="char" LENGTH="40" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="staffid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="model" TYPE="char" LENGTH="100" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="tokensin" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="tokensout" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="latencyms" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="convid" TYPE="foreign" FIELDS="convid" REFTABLE="local_nit_asst_conv" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="convtime" UNIQUE="false" FIELDS="convid, timecreated"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_nit_asst_audit" COMMENT="Every tool call: who, what (redacted), result">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="convid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="turnid" TYPE="char" LENGTH="40" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="mode" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="tool" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="args" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Redacted JSON"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="ok | error"/>
+        <FIELD NAME="errorcode" TYPE="char" LENGTH="40" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="latencyms" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="convid" TYPE="foreign" FIELDS="convid" REFTABLE="local_nit_asst_conv" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="timecreated" UNIQUE="false" FIELDS="timecreated"/>
+        <INDEX NAME="userid" UNIQUE="false" FIELDS="userid"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_nit_asst_usage" COMMENT="Daily cost budget: reserved + spent = committed">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="day" TYPE="char" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="YYYY-MM-DD in the site timezone"/>
+        <FIELD NAME="reserved" TYPE="number" LENGTH="14" DECIMALS="6" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="spent" TYPE="number" LENGTH="14" DECIMALS="6" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="committed" TYPE="number" LENGTH="14" DECIMALS="6" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="tokensin" TYPE="int" LENGTH="20" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="tokensout" TYPE="int" LENGTH="20" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="cacheread" TYPE="int" LENGTH="20" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="cachewrite" TYPE="int" LENGTH="20" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="alerted" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="day" UNIQUE="true" FIELDS="day"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_nit_asst_event" COMMENT="One row per model call: cost per model, per user, per conversation">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="day" TYPE="char" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="kind" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="chat | brief | tags | followup"/>
+        <FIELD NAME="model" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="convid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="inputtokens" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="outputtokens" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="cacheread" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="cachewrite" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="cost" TYPE="number" LENGTH="14" DECIMALS="6" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="timecreated" UNIQUE="false" FIELDS="timecreated"/>
+        <INDEX NAME="convid" UNIQUE="false" FIELDS="convid"/>
+        <INDEX NAME="userid" UNIQUE="false" FIELDS="userid"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_nit_asst_idem" COMMENT="Idempotency: a write tool runs once per key">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="idemkey" TYPE="char" LENGTH="191" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="tool" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="result" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="idemkey" UNIQUE="true" FIELDS="idemkey"/>
+        <INDEX NAME="timecreated" UNIQUE="false" FIELDS="timecreated"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_nit_asst_rate" COMMENT="Fixed-window rate-limit counters">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="ratekey" TYPE="char" LENGTH="191" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="windowstart" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="hits" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="expires" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="keywindow" UNIQUE="true" FIELDS="ratekey, windowstart"/>
+        <INDEX NAME="expires" UNIQUE="false" FIELDS="expires"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>

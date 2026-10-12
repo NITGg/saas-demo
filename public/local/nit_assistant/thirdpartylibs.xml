@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<libraries>
+  <library>
+    <location>vendor/anthropic-ai/sdk</location>
+    <name>Anthropic PHP SDK</name>
+    <description>Official client for the Claude API (anthropic-ai/sdk). Bundled without examples/fixtures; HTTP goes through Moodle's own Guzzle.</description>
+    <version>0.57.0</version>
+    <license>MIT</license>
+    <repository>https://github.com/anthropics/anthropic-sdk-php</repository>
+    <copyrights>
+      <copyright>2023 Anthropic, PBC</copyright>
+    </copyrights>
+  </library>
+  <library>
+    <location>vendor/php-http/discovery</location>
+    <name>PHP-HTTP Discovery</name>
+    <description>Finds the PSR-18 client / PSR-17 factories (Moodle's Guzzle) for the SDK.</description>
+    <version>1.20.0</version>
+    <license>MIT</license>
+    <repository>https://github.com/php-http/discovery</repository>
+    <copyrights>
+      <copyright>2015-2016 PHP HTTP Team</copyright>
+    </copyrights>
+  </library>
+  <library>
+    <location>vendor/standard-webhooks</location>
+    <name>Standard Webhooks (PHP)</name>
+    <description>SDK dependency (webhook signature helpers). Only libraries/php is bundled.</description>
+    <version>1.0.2</version>
+    <license>Apache-2.0</license>
+    <repository>https://github.com/standard-webhooks/standard-webhooks</repository>
+    <copyrights>
+      <copyright>Standard Webhooks</copyright>
+    </copyrights>
+  </library>
+</libraries>
