@@ -25,7 +25,7 @@ class jitsi_jwt {
      * @return bool
      */
     public static function uses_public_secret(string $name): bool {
-        $value = (string) get_config('local_academysessions', $name);
+        $value = (string) \local_nit_core\helper\crypto::config_secret('local_academysessions', $name);
         return $value !== '' && isset(self::PUBLIC_SECRET_HASHES[$name])
             && hash_equals(self::PUBLIC_SECRET_HASHES[$name], hash('sha256', $value));
     }
@@ -43,7 +43,7 @@ class jitsi_jwt {
     public static function generate(string $room, string $name, string $email, bool $moderator): string {
         $app_id     = get_config('local_academysessions', 'jitsi_jwt_app_id')     ?: 'academy_jitsi';
         // No fallback: a secret written in the code is known to everyone who has the code.
-        $app_secret = (string) get_config('local_academysessions', 'jitsi_jwt_app_secret');
+        $app_secret = (string) \local_nit_core\helper\crypto::config_secret('local_academysessions', 'jitsi_jwt_app_secret');
         if ($app_secret === '') {
             throw new \moodle_exception('jitsinotconfigured', 'local_academysessions');
         }

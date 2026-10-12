@@ -36,7 +36,7 @@ class api_client {
      * @throws api_exception if no secret is configured
      */
     public function __construct(?string $secret = null, ?string $base = null) {
-        $this->secret = $secret ?? (string) get_config('local_vdocipher', 'apisecret');
+        $this->secret = $secret ?? (string) \local_nit_core\helper\crypto::config_secret('local_vdocipher', 'apisecret');
         $configbase   = $base ?? (string) get_config('local_vdocipher', 'apibase');
         $this->base   = rtrim($configbase ?: 'https://dev.vdocipher.com/api', '/');
 
@@ -47,7 +47,7 @@ class api_client {
 
     /** @return bool whether an API secret has been configured. */
     public static function is_configured(): bool {
-        return trim((string) get_config('local_vdocipher', 'apisecret')) !== '';
+        return trim((string) \local_nit_core\helper\crypto::config_secret('local_vdocipher', 'apisecret')) !== '';
     }
 
     // ── Public API ───────────────────────────────────────────────────────────
