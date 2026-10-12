@@ -278,4 +278,70 @@ final class monitor_test extends \advanced_testcase {
         $this->assertNull(monitor::detail($id, [(int) $this->getDataGenerator()->create_course()->id], $this->now));
         $this->assertNull(monitor::detail(999999, null, $this->now));
     }
+
+    public function test_a_jitsi_room_without_a_time_shows_while_someone_is_in(): void {
+        $gen = $this->getDataGenerator();
+        $this->setUser($this->teacher);
+        $room = $gen->create_module('jitsi', ['course' => $this->course->id, 'name' => 'Open room']);
+        $key = 'r' . $room->id;
+        $this->assertArrayNotHasKey($key, $this->cards(), 'nobody in: no card');
+
+        // A student came in first, then the teacher.
+        \mod_jitsi\local\roomlog::joined((int) $room->id, (int) $this->student->id, false, $this->now - 5 * MINSECS);
+        $card = $this->cards()[$key];
+        $this->assertSame(monitor::WAITING, $card['status']);
+        $this->assertSame(1, $card['present']);
+        $this->assertSame(2, $card['invited'], 'the course\'s students');
+        \mod_jitsi\local\roomlog::joined((int) $room->id, (int) $this->teacher->id, true, $this->now - 2 * MINSECS);
+        $card = $this->cards()[$key];
+        $this->assertSame(monitor::RUNNING, $card['status']);
+        $this->assertSame(fullname($this->teacher), $card['teacher']);
+        $this->assertSame(get_string('monitor_type_room', 'local_academysessions'), $card['type']);
+
+        // Filters: not an external link; another teacher's.
+        $this->assertArrayNotHasKey($key, $this->cards(['provider' => 'link']));
+        $this->assertArrayHasKey($key, $this->cards(['teacherid' => (int) $this->teacher->id]));
+        $this->assertArrayNotHasKey($key, $this->cards(['teacherid' => (int) $this->student2->id]));
+        // Not in the scope of a manager of another course.
+        $this->assertArrayNotHasKey($key, $this->cards([], [(int) $gen->create_course()->id]));
+
+        // Everyone left: gone from "now", still on the day's wall as ended.
+        \mod_jitsi\local\roomlog::left((int) $room->id, (int) $this->student->id, $this->now - MINSECS);
+        \mod_jitsi\local\roomlog::left((int) $room->id, (int) $this->teacher->id, $this->now - MINSECS);
+        $this->assertArrayNotHasKey($key, $this->cards());
+        $this->assertSame(monitor::ENDED, $this->cards(['view' => 'day'])[$key]['status']);
+    }
+
+    public function test_a_scheduled_jitsi_room_shows_once_as_its_session(): void {
+        global $DB;
+        $this->setUser($this->teacher);
+        $room = $this->getDataGenerator()->create_module('jitsi', ['course' => $this->course->id, 'name' => 'Algebra',
+            'sessionstart' => $this->now - MINSECS, 'sessionend' => $this->now + 29 * MINSECS]);
+        \mod_jitsi\local\roomlog::joined((int) $room->id, (int) $this->student->id, false, $this->now);
+        $sessionid = (int) $DB->get_field('academy_live_sessions', 'id', ['jitsiid' => $room->id]);
+
+        $cards = $this->cards();
+        $this->assertArrayHasKey('s' . $sessionid, $cards);
+        $this->assertArrayNotHasKey('r' . $room->id, $cards);
+        $this->assertSame(2, $cards['s' . $sessionid]['invited'], 'every student of the course');
+    }
+
+    public function test_a_course_session_running_over_with_its_teacher_in_stays_running(): void {
+        global $DB;
+        $this->setUser($this->teacher);
+        $room = $this->getDataGenerator()->create_module('jitsi', ['course' => $this->course->id, 'name' => 'Algebra',
+            'sessionstart' => $this->now - 2 * HOURSECS, 'sessionend' => $this->now - HOURSECS]);
+        $session = $DB->get_record('academy_live_sessions', ['jitsiid' => $room->id]);
+        $DB->update_record('academy_live_sessions', (object) ['id' => $session->id, 'status' => 'live',
+            'teacher_joined_at' => $this->now - 90 * MINSECS, 'teacher_first_join' => $this->now - 2 * HOURSECS]);
+        session_manager::record_attendance((int) $session->id, (int) $this->student->id);
+
+        $card = $this->cards()['s' . $session->id];
+        $this->assertSame(monitor::RUNNING, $card['status'], 'an hour past its end, still on');
+        $this->assertSame(1, $card['present']);
+
+        // The teacher left: over.
+        $DB->set_field('academy_live_sessions', 'teacher_joined_at', null, ['id' => $session->id]);
+        $this->assertArrayNotHasKey('s' . $session->id, $this->cards(['status' => monitor::RUNNING]));
+    }
 }

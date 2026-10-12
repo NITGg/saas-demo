@@ -31,6 +31,10 @@ require_once($CFG->dirroot . '/mod/jitsi/lib.php');
  * @covers     ::jitsi_prejoin_html
  * @covers     ::jitsi_show_recordings_tab
  * @covers     ::jitsi_closed_html
+ * @covers     ::jitsi_room_name
+ * @covers     ::jitsi_is_lesson_room
+ * @covers     \mod_jitsi\local\access::waiting_room
+ * @covers     ::jitsi_dock_context
  */
 final class room_page_test extends \advanced_testcase {
 
@@ -72,6 +76,68 @@ final class room_page_test extends \advanced_testcase {
         $this->assertStringContainsString('Available until 1 Jan', jitsi_closed_html($hidden, $cm));
         $cm->availableinfo = '';
         $this->assertStringContainsString(get_string('sessionended', 'jitsi'), jitsi_closed_html($hidden, $cm));
+    }
+
+    public function test_lesson_room_name_tells_the_recorder(): void {
+        $this->resetAfterTest();
+        set_config('lessons_courseid', 25, 'local_nit_lessons');
+        $jitsi = (object) ['id' => 7];
+        $lesson = (object) ['id' => 69, 'course' => 25];
+        $courseroom = (object) ['id' => 70, 'course' => 4];
+
+        $this->assertTrue(jitsi_is_lesson_room($lesson));
+        $this->assertFalse(jitsi_is_lesson_room($courseroom));
+        // nit_<slug>_<cmid>_<hash>: 12 hex for a lesson, 8 for a course room (the server's
+        // recorder script keeps only a course room's recording on the teacher).
+        $this->assertMatchesRegularExpression('/^nit_[a-z0-9-]+_69_[a-f0-9]{12}$/', jitsi_room_name($jitsi, $lesson));
+        $this->assertMatchesRegularExpression('/^nit_[a-z0-9-]+_70_[a-f0-9]{8}$/', jitsi_room_name($jitsi, $courseroom));
+
+        // No lessons course set: every room is a course room.
+        set_config('lessons_courseid', 0, 'local_nit_lessons');
+        $this->assertFalse(jitsi_is_lesson_room($lesson));
+    }
+
+    public function test_lesson_rooms_have_a_waiting_room(): void {
+        $this->resetAfterTest();
+        $gen = $this->getDataGenerator();
+        $teacher = $gen->create_user();
+        $student = $gen->create_user();
+        // A live session's room: in the lessons course (a private lesson) and elsewhere.
+        $room = function(int $courseid) use ($gen, $teacher, $student): \cm_info {
+            $jitsi = $gen->create_module('jitsi', ['course' => $courseid, 'lobby_enabled' => 0]);
+            \local_academysessions\session_manager::create_session($courseid, $teacher->id, 'Live', time(),
+                [$student->id], '', 60, null, $jitsi->id);
+            return get_fast_modinfo($courseid)->get_cm($jitsi->cmid);
+        };
+        $lessons = $gen->create_course();
+        set_config('lessons_courseid', $lessons->id, 'local_nit_lessons');
+
+        // The student asks, the teacher lets them in (the activity's own setting is off).
+        $this->assertTrue(\mod_jitsi\local\access::waiting_room($room((int) $lessons->id)));
+        // Other live sessions: Moodle's gate only, no lobby.
+        $this->assertFalse(\mod_jitsi\local\access::waiting_room($room((int) $gen->create_course()->id)));
+    }
+
+    public function test_dock_buttons_per_role(): void {
+        $actions = fn(array $ctx) => array_column($ctx['buttons'], 'action');
+
+        // The host: everyone's list (with who knocks), grid view, mute all, recording, end for all.
+        $host = jitsi_dock_context(true, false);
+        $this->assertSame(['mic', 'camera', 'screen', 'chat', 'hand', 'people', 'tile', 'muteall', 'record',
+            'settings', 'fullscreen'], $actions($host));
+        $this->assertTrue($host['ishost']);
+        // A student who sees the teacher only: no list, no grid view, no host tools.
+        $student = jitsi_dock_context(false, true);
+        $this->assertSame(['mic', 'camera', 'screen', 'chat', 'hand', 'settings', 'fullscreen'], $actions($student));
+        $this->assertFalse($student['ishost']);
+
+        // Every icon is there, as plain SVG with its two-tone layer.
+        foreach (array_merge($host['buttons'], [['icon' => $host['leaveicon']], ['icon' => $host['endallicon']]]) as $b) {
+            $this->assertStringStartsWith('<svg', $b['icon']);
+            $this->assertStringContainsString('class="duo"', $b['icon']);
+            $this->assertStringNotContainsString('<script', $b['icon']);
+        }
+        $this->assertStringStartsWith('<svg', $host['buttons'][0]['iconoff']);
     }
 
     public function test_recordings_tab_visibility(): void {

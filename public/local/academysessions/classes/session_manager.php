@@ -5,7 +5,13 @@ defined('MOODLE_INTERNAL') || die();
 
 class session_manager {
 
-    public static function create_session($courseid, $teacherid, $title, $starttime, $studentids, $meetinglink = '', $duration = 50, $googlemeetid = null, $jitsiid = null) {
+    /** @var string the session is for the students listed in academy_session_students. */
+    const AUDIENCE_INVITED = 'invited';
+    /** @var string the session is for every student of its course (a scheduled Jitsi activity). */
+    const AUDIENCE_COURSE = 'course';
+
+    public static function create_session($courseid, $teacherid, $title, $starttime, $studentids, $meetinglink = '', $duration = 50, $googlemeetid = null, $jitsiid = null,
+            string $audience = self::AUDIENCE_INVITED) {
         global $DB;
 
         $now = time();
@@ -19,6 +25,7 @@ class session_manager {
         $session->duration = $duration;
         $session->meeting_link = $meetinglink;
         $session->status = 'scheduled';
+        $session->audience = $audience === self::AUDIENCE_COURSE ? self::AUDIENCE_COURSE : self::AUDIENCE_INVITED;
         $session->timecreated = $now;
         $session->timemodified = $now;
 
@@ -31,7 +38,130 @@ class session_manager {
             $DB->insert_record('academy_session_students', $student);
         }
 
+        if ($session->audience === self::AUDIENCE_COURSE) {
+            $session->id = $sessionid;
+            self::sync_course_students($session);
+        }
+
         return $sessionid;
+    }
+
+    // ── Course sessions (audience = course) ───────────────────────────────────
+    // Every student of the course may attend, including one enrolled after the session
+    // was scheduled. The student list (academy_session_students) still holds them, so
+    // reminders, the monitoring wall and the reports count them like invited students:
+    // sync_course_students() keeps it in step with the course while the session is not
+    // over (on save, by the session_lifecycle task, and when a new student enters).
+
+    /**
+     * Whether a session is for every student of its course.
+     *
+     * @param \stdClass $session
+     * @return bool
+     */
+    public static function is_course_session(\stdClass $session): bool {
+        return ($session->audience ?? self::AUDIENCE_INVITED) === self::AUDIENCE_COURSE;
+    }
+
+    /**
+     * The students of a course: active enrolment and a student-type role in the course.
+     *
+     * @param int $courseid
+     * @return int[]
+     */
+    public static function course_student_ids(int $courseid): array {
+        global $DB;
+        $context = \context_course::instance($courseid, IGNORE_MISSING);
+        $roles = array_keys(get_archetype_roles('student'));
+        if (!$context || !$roles) {
+            return [];
+        }
+        [$esql, $eparams] = get_enrolled_sql($context, '', 0, true);
+        [$rsql, $rparams] = $DB->get_in_or_equal($roles, SQL_PARAMS_NAMED, 'sr');
+        return array_map('intval', $DB->get_fieldset_sql(
+            "SELECT DISTINCT e.id
+               FROM ($esql) e
+               JOIN {role_assignments} ra ON ra.userid = e.id AND ra.contextid = :ctxid
+              WHERE ra.roleid $rsql",
+            $eparams + $rparams + ['ctxid' => $context->id]));
+    }
+
+    /**
+     * Whether a user is a student of a course (see course_student_ids()).
+     *
+     * @param int $courseid
+     * @param int $userid
+     * @return bool
+     */
+    public static function is_course_student(int $courseid, int $userid): bool {
+        global $DB;
+        $context = \context_course::instance($courseid, IGNORE_MISSING);
+        $roles = array_keys(get_archetype_roles('student'));
+        if (!$context || !$roles || !is_enrolled($context, $userid, '', true)) {
+            return false;
+        }
+        [$rsql, $rparams] = $DB->get_in_or_equal($roles, SQL_PARAMS_NAMED, 'sr');
+        return $DB->record_exists_select('role_assignments', "userid = :uid AND contextid = :ctxid AND roleid $rsql",
+            $rparams + ['uid' => $userid, 'ctxid' => $context->id]);
+    }
+
+    /**
+     * Add one student to a session's list (nothing happens if they are on it).
+     *
+     * @param int $sessionid
+     * @param int $userid
+     */
+    public static function add_student(int $sessionid, int $userid): void {
+        global $DB;
+        if ($DB->record_exists('academy_session_students', ['sessionid' => $sessionid, 'userid' => $userid])) {
+            return;
+        }
+        try {
+            $DB->insert_record('academy_session_students', (object) ['sessionid' => $sessionid, 'userid' => $userid]);
+        } catch (\dml_write_exception $e) {
+            // Added by a parallel request (unique sessionid + userid).
+        }
+    }
+
+    /**
+     * Bring a course session's student list in line with its course: add the course's
+     * students, drop those who are no longer students and never came in. A session that
+     * is over keeps its list (it is what its reports are about).
+     *
+     * @param \stdClass $session academy_live_sessions row
+     */
+    public static function sync_course_students(\stdClass $session): void {
+        global $DB;
+        if (!self::is_course_session($session) || !in_array($session->status, ['scheduled', 'live'], true)) {
+            return;
+        }
+        $sessionid = (int) $session->id;
+        $students = self::course_student_ids((int) $session->courseid);
+        $listed = array_map('intval', $DB->get_fieldset_select('academy_session_students', 'userid',
+            'sessionid = ?', [$sessionid]));
+        foreach (array_diff($students, $listed) as $userid) {
+            self::add_student($sessionid, $userid);
+        }
+        $gone = array_diff($listed, $students);
+        if ($gone) {
+            $came = array_map('intval', $DB->get_fieldset_select('academy_session_attendance', 'userid',
+                'sessionid = ?', [$sessionid]));
+            foreach (array_diff($gone, $came) as $userid) {
+                $DB->delete_records('academy_session_students', ['sessionid' => $sessionid, 'userid' => $userid]);
+            }
+        }
+    }
+
+    /**
+     * Whether a session was held: someone came into it, or it has a recording.
+     *
+     * @param int $sessionid
+     * @return bool
+     */
+    public static function was_held(int $sessionid): bool {
+        global $DB;
+        return $DB->record_exists('academy_session_attendance', ['sessionid' => $sessionid])
+            || $DB->record_exists('academy_session_recordings', ['sessionid' => $sessionid]);
     }
 
     // NOTE: create_recording_activity() (Bunny embed + mod_sessionrecording) was

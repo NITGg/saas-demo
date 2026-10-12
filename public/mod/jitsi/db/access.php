@@ -10,7 +10,6 @@ $capabilities = [
             'editingteacher' => CAP_ALLOW,
             'teacher' => CAP_ALLOW,
             'student' => CAP_ALLOW,
-            'guest' => CAP_ALLOW,
         ],
     ],
     'mod/jitsi:addinstance' => [

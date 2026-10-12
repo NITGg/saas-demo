@@ -1,8 +1,43 @@
 
-// ── NIT academies: the recording shows the teacher only ─────────────────────
+// ── NIT academies: Jitsi customisations (moodle/server/jitsi/nit-rooms.js) ────
+// Appended to /config/custom-config.js (and the live /config/config.js) in the Jitsi web
+// container; everything below is ours and is replaced as one block on each update.
+
+// 1. The academy's look in its rooms: Jitsi's own dynamic branding, from the academy's
+// mod/jitsi/branding.php (colours, logo, icons), plus the site's font and pill shapes.
+// Only for the academies listed here (slug => site); the others keep Jitsi's look.
+(function () {
+    try {
+        var sites = {
+            'academy2026': 'https://academy2026.nitg-eg.com/bassthalk'
+        };
+        var room = String(window.location.pathname.split('/').pop() || '').toLowerCase();
+        var m = room.match(/^nit_([a-z0-9-]+)_[0-9]+_[a-f0-9]+$/);
+        var site = m ? sites[m[1]] : null;
+        if (!site) {
+            return;
+        }
+        config.dynamicBrandingUrl = site + '/mod/jitsi/branding.php';
+
+        var head = document.head || document.documentElement;
+        var font = document.createElement('link');
+        font.rel = 'stylesheet';
+        font.href = 'https://fonts.googleapis.com/css2?family=Almarai:wght@400;700&family=Tajawal:wght@400;500;700&display=swap';
+        head.appendChild(font);
+        var css = document.createElement('style');
+        css.textContent = 'body, button, input, textarea { font-family: "Almarai", "Tajawal", sans-serif !important; }'
+            + ' .toolbox-content-items { border-radius: 9999px !important; padding: 6px 12px !important; }'
+            + ' .toolbox-button .toolbox-icon { border-radius: 9999px !important; }';
+        head.appendChild(css);
+    } catch (e) { /* never break the page */ }
+})();
+
+// 2. The recording of a course room shows the teacher only.
 // Runs in Jibri's window only (Jibri opens the meeting with config.iAmRecorder=true in
-// the URL) and only in NIT academy rooms (nit_<slug>_<cmid>_<hash>). Everyone else's
-// screen, and the old academy's rooms (academy_jitsi_*), are untouched.
+// the URL) and only in NIT academy course rooms (nit_<slug>_<cmid>_<8-char hash>).
+// Everyone else's screen, the old academy's rooms (academy_jitsi_*) and private lesson
+// rooms (a 12-char hash, see mod/jitsi/lib.php jitsi_room_name(): one teacher and one
+// student, recorded as they are, screen shares included) are untouched.
 // In the recording: no thumbnails, no tile view, no notifications, and the main video is
 // the teacher (the room's moderator), or the teacher's screen while they share it. The
 // audio is everyone's.
@@ -16,7 +51,8 @@
     try {
         var hash = String(window.location.hash || '');
         var room = String(window.location.pathname.split('/').pop() || '').toLowerCase();
-        if (hash.indexOf('config.iAmRecorder=true') === -1 || room.indexOf('nit_') !== 0) {
+        if (hash.indexOf('config.iAmRecorder=true') === -1 || room.indexOf('nit_') !== 0
+                || room.split('_').pop().length >= 12) {
             return;
         }
         config.filmstrip = Object.assign({}, config.filmstrip, { disabled: true, disableStageFilmstrip: true });

@@ -20,6 +20,7 @@
         <FIELD NAME="ended_at" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Unix time the session was ended"/>
         <FIELD NAME="ended_by" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="User who ended it; null = the system (its time ran out)"/>
         <FIELD NAME="end_reason" TYPE="char" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="teacher, admin, schedule or lesson"/>
+        <FIELD NAME="audience" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="invited" SEQUENCE="false" COMMENT="invited = the students listed in academy_session_students; course = every student of the course (the list follows enrolments)"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
       </FIELDS>

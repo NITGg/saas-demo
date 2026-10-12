@@ -325,9 +325,13 @@ class auto {
                         $users[] = (int) $s->teacherid;
                     }
                     $course = (string) $DB->get_field('course', 'fullname', ['id' => $s->courseid]);
+                    // Straight to the session's room when it has one (a Jitsi activity), else the course.
+                    $cmid = $s->jitsiid ? (\local_academysessions\mobile_service::jitsi_cmids([(int) $s->jitsiid])[(int) $s->jitsiid] ?? 0) : 0;
+                    $url = $cmid ? new \moodle_url('/mod/jitsi/view.php', ['id' => $cmid])
+                        : new \moodle_url('/course/view.php', ['id' => $s->courseid]);
                     self::send('session_reminder', 'courses', $users, 'auto_session',
                         ['title' => $s->title, 'course' => $course, 'minutes' => $minutes], (int) $s->courseid,
-                        new \moodle_url('/course/view.php', ['id' => $s->courseid]), 'sessionreminder');
+                        $url, 'sessionreminder');
                     $count++;
                 });
             }

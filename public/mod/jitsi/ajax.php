@@ -33,8 +33,9 @@ if ($function === 'end_session') {
         \local_academysessions\mobile_service::require_session_owner($session);
     }
 
-    \local_academysessions\session_manager::end_session($sessionid,
-        (int) $session->teacherid === (int) $USER->id ? 'teacher' : 'admin', (int) $USER->id);
+    $byteacher = $jitsi ? \mod_jitsi\local\access::is_session_teacher($session, (int) $USER->id, $cm)
+        : (int) $session->teacherid === (int) $USER->id;
+    \local_academysessions\session_manager::end_session($sessionid, $byteacher ? 'teacher' : 'admin', (int) $USER->id);
 
     echo json_encode(['status' => 'success']);
     exit;
@@ -87,13 +88,19 @@ if ($function === 'room_presence') {
     exit;
 }
 
-// ── Recording endpoints (Bunny/MinIO) removed for the SaaS ──────────────────
-// Session recording moves to VdoCipher (local_vdocipher) in a later phase. Until
-// then these return an empty result so any lingering client poll is harmless.
+// ── get_session_recordings ─────────────────────────────────────────────────
+// The room's recordings for the panel shown after leaving the call (view.php), with the
+// "Session recordings" tab's rules (jitsi_recordings_for_user()).
 if ($function === 'get_session_recordings') {
-    echo json_encode(['status' => 'success', 'data' => []]);
+    $cmid = required_param('cmid', PARAM_INT);
+    [$course, $cm] = get_course_and_cm_from_cmid($cmid, 'jitsi');
+    require_login($course, false, $cm);
+    require_once(__DIR__ . '/lib.php');
+    $cminfo = get_fast_modinfo($course, (int) $USER->id)->get_cm($cm->id);
+    echo json_encode(['status' => 'success', 'data' => jitsi_recordings_for_user($cminfo, (int) $USER->id)]);
     exit;
 }
+// Bunny/MinIO recording status (removed for the SaaS): a lingering client poll is harmless.
 if ($function === 'check_recording_status') {
     echo json_encode(['status' => 'unavailable']);
     exit;

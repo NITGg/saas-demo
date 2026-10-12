@@ -13,6 +13,15 @@ class session_lifecycle extends \core\task\scheduled_task {
         global $DB;
         $now = time();
 
+        // Course sessions follow their course: a student enrolled since the last run is
+        // on the list (reminders, monitoring), one who left is off it.
+        $course = $DB->get_records_select('academy_live_sessions',
+            "audience = :audience AND status IN ('scheduled', 'live')",
+            ['audience' => \local_academysessions\session_manager::AUDIENCE_COURSE]);
+        foreach ($course as $session) {
+            \local_academysessions\session_manager::sync_course_students($session);
+        }
+
         $scheduled = $DB->get_records_select('academy_live_sessions',
             "status = 'scheduled' AND start_time <= :now",
             array('now' => $now)
@@ -29,6 +38,11 @@ class session_lifecycle extends \core\task\scheduled_task {
             array('now' => $now)
         );
         foreach ($live as $session) {
+            // A course session runs over while a teacher is still in the call: it ends at the
+            // first run after they leave (or when they end it for everyone).
+            if (\local_academysessions\session_manager::is_course_session($session) && !empty($session->teacher_joined_at)) {
+                continue;
+            }
             \local_academysessions\session_manager::end_session($session->id, 'schedule');
             mtrace("Session {$session->id} '{$session->title}' has ended.");
         }

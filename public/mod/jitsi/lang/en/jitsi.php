@@ -39,7 +39,28 @@ $string['security_header']       = 'Security Options';
 $string['roompassword']          = 'Room password';
 $string['roompassword_help']     = 'If set, participants must enter this password to join the session. Leave blank for no password.';
 $string['lobby_enabled']         = 'Students wait for the teacher to let them in';
-$string['lobby_enabled_help']    = 'When on, students can open the room only while a teacher of the course (or an admin) is in it, and then wait in the meeting\'s waiting room until the teacher lets them in from inside the meeting. Teachers and admins go straight in. Applies to rooms of a course, not to scheduled live sessions.';
+$string['lobby_enabled_help']    = 'When on, students can open the room only while a teacher of the course (or an admin) is in it, and then wait in the meeting\'s waiting room until the teacher lets them in from inside the meeting. Teachers and admins go straight in. Applies to the rooms of a course (scheduled or not), not to private lessons.';
+
+// Session time (the activity's settings).
+$string['schedule_header']       = 'Session time';
+$string['sessionstart']          = 'Starts at';
+$string['sessionstart_help']     = 'Turn on to schedule the session. Every student of the course (also those who enrol later) gets a reminder before it, the room opens to them 30 minutes before the start, and the session shows on the live monitoring wall and in the lessons report. The activity stays on the course page all the time, so its recording can be watched after the session. Leave off for a room that is always open.';
+$string['sessionstart_past']     = 'This time is already over. Check the day and the hour.';
+$string['sessionend']            = 'Ends at';
+$string['sessionend_help']       = 'After this time nobody new comes in, unless the teacher is still in the session: it stays open, and attendance keeps counting, until the teacher leaves or ends it for everyone; it then closes within a few minutes.';
+$string['sessionend_beforestart'] = 'The end must be after the start.';
+$string['sessionend_toolong']    = 'A session is at most 24 hours long.';
+$string['sessiontime']           = 'Session time';
+$string['sessiontime_text']      = '{$a->start} – {$a->end}';
+
+// After leaving the call (view.php).
+$string['ended_byteacher'] = 'You ended the session for everyone.';
+$string['ended_byhost']    = 'The teacher ended the session.';
+$string['ended_left']      = 'You left the session.';
+$string['ended_ending']    = 'Ending the session…';
+$string['ended_failed']    = 'The session could not be marked as ended. Try again from the room.';
+$string['ended_recnote']   = 'If the session was recorded, the recording appears under "Session recordings" a few minutes after it ends.';
+$string['ended_recfailed'] = 'Could not load the recordings right now.';
 
 // The room's attendance log.
 $string['attendancelog'] = 'Attendance log';
@@ -74,3 +95,25 @@ $string['waiting_next_join'] = 'You will go in automatically when they join.';
 $string['waiting_next_button'] = 'The "Join the session" button appears here when they join.';
 $string['waiting_next_admit'] = 'Then the teacher lets you in.';
 $string['waiting_title_join'] = 'The teacher is not in the session right now.';
+
+// The room's own controls (templates/dock.mustache).
+$string['dock_blur'] = 'Blur my background';
+$string['dock_camera'] = 'Camera';
+$string['dock_chat'] = 'Chat';
+$string['dock_device_camera'] = 'Camera';
+$string['dock_device_mic'] = 'Microphone';
+$string['dock_device_speaker'] = 'Speaker';
+$string['dock_endall'] = 'End the session for everyone';
+$string['dock_fullscreen'] = 'Full screen';
+$string['dock_hand'] = 'Raise hand';
+$string['dock_leave'] = 'Leave';
+$string['dock_live'] = 'Live';
+$string['dock_mic'] = 'Microphone';
+$string['dock_muteall'] = 'Mute all';
+$string['dock_noise'] = 'Noise suppression';
+$string['dock_people'] = 'Participants';
+$string['dock_rec'] = 'Recording';
+$string['dock_record'] = 'Record';
+$string['dock_screen'] = 'Share screen';
+$string['dock_settings'] = 'Settings';
+$string['dock_tile'] = 'Grid view';

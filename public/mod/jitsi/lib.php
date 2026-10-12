@@ -7,8 +7,14 @@ defined('MOODLE_INTERNAL') || die();
  * and cm/jitsi ids repeat across academies — so two tenants could land in the SAME
  * room. Salt the hash with this site's wwwroot so rooms are unique per academy.
  *
+ * A lesson room (jitsi_is_lesson_room()) gets a 12-character hash instead of 8: the one
+ * thing the Jitsi server sees that tells it apart. The recorder script on the server
+ * (server/jitsi/nit-rooms.js) keeps a course room's recording on the teacher
+ * only, and records a lesson (one teacher, one student) as it is, screen shares included.
+ * The Jibri finalize script accepts any hash length.
+ *
  * @param stdClass $jitsi the jitsi instance row (needs ->id)
- * @param cm_info|stdClass $cm the course module (needs ->id)
+ * @param cm_info|stdClass $cm the course module (needs ->id, ->course)
  * @return string
  */
 function jitsi_room_name($jitsi, $cm): string {
@@ -24,8 +30,136 @@ function jitsi_room_name($jitsi, $cm): string {
         $slug = explode('.', $host)[0];
     }
     $slug = preg_replace('/[^a-z0-9-]/', '', strtolower($slug)) ?: 'academy';
-    $hash = substr(md5($host . '|' . $jitsi->id . '|' . $cm->id), 0, 8);
+    $hash = substr(md5($host . '|' . $jitsi->id . '|' . $cm->id), 0, jitsi_is_lesson_room($cm) ? 12 : 8);
     return 'nit_' . $slug . '_' . $cm->id . '_' . $hash;
+}
+
+/**
+ * One icon of the room's own controls (branding/dock/<name>.svg: Phosphor duotone, MIT,
+ * cleaned to two plain paths; the lighter one has class "duo").
+ *
+ * @param string $name e.g. microphone
+ * @return string SVG markup ('' if missing)
+ */
+function jitsi_dock_icon(string $name): string {
+    $file = __DIR__ . '/branding/dock/' . clean_param($name, PARAM_ALPHANUMEXT) . '.svg';
+    return is_readable($file) ? trim((string) file_get_contents($file)) : '';
+}
+
+/**
+ * The room's own controls (templates/dock.mustache), in place of Jitsi's toolbar. A host
+ * also gets the people list (with who knocks), the grid view, "mute everyone" and the
+ * recording on/off (to start it again after Jibri stopped it), and can end the call for everyone; a student who only sees the teacher gets no grid view.
+ *
+ * @param bool $ishost
+ * @param bool $isolated a student who sees the teacher only
+ * @return array template context
+ */
+function jitsi_dock_context(bool $ishost, bool $isolated): array {
+    $s = fn(string $k) => get_string('dock_' . $k, 'jitsi');
+    $button = fn(string $action, string $icon, string $iconoff = '', bool $badge = false, bool $toggle = true) => [
+        'action' => $action, 'label' => $s($action), 'icon' => jitsi_dock_icon($icon),
+        'iconoff' => $iconoff !== '' ? jitsi_dock_icon($iconoff) : '', 'badge' => $badge, 'toggle' => $toggle,
+    ];
+    $buttons = [
+        $button('mic', 'microphone', 'microphone-slash'),
+        $button('camera', 'video-camera', 'video-camera-slash'),
+        $button('screen', 'screencast'),
+        $button('chat', 'chat-circle-dots', '', true),
+        $button('hand', 'hand-palm'),
+    ];
+    if ($ishost) {
+        $buttons[] = $button('people', 'users-three', '', true);
+        $buttons[] = $button('tile', 'squares-four');
+        $buttons[] = $button('muteall', 'speaker-simple-slash', '', false, false);
+        $buttons[] = $button('record', 'record');
+    } else if (!$isolated) {
+        $buttons[] = $button('tile', 'squares-four');
+    }
+    $buttons[] = $button('settings', 'sliders-horizontal', '', false, false);
+    $buttons[] = $button('fullscreen', 'corners-out');
+    return [
+        'buttons' => $buttons,
+        'ishost' => $ishost,
+        'leave' => $s('leave'),
+        'leaveicon' => jitsi_dock_icon('phone-disconnect'),
+        'endall' => $s('endall'),
+        'endallicon' => jitsi_dock_icon('power'),
+        'live' => $s('live'),
+        'rec' => $s('rec'),
+        'settings' => [
+            'title' => $s('settings'),
+            'mic' => $s('device_mic'),
+            'camera' => $s('device_camera'),
+            'speaker' => $s('device_speaker'),
+            'blur' => $s('blur'),
+            'noise' => $s('noise'),
+        ],
+    ];
+}
+
+/**
+ * One branded Jitsi icon (branding/icons/<Jitsi icon name>.svg), or null.
+ *
+ * @param string $name Jitsi's icon name, e.g. IconMic
+ * @return string|null the file path
+ */
+function jitsi_branding_icon_file(string $name): ?string {
+    if (!preg_match('/^Icon[A-Za-z0-9]+$/', $name)) {
+        return null;
+    }
+    $file = __DIR__ . '/branding/icons/' . $name . '.svg';
+    return is_readable($file) ? $file : null;
+}
+
+/**
+ * The academy's Jitsi branding (branding.php): Jitsi's dynamic-branding JSON. The colours
+ * are the site's (the blue of its header and buttons, its navy), the logo is the site's,
+ * every icon in branding/icons replaces Jitsi's icon of the same name.
+ *
+ * @param moodle_url|null $logo the site's logo
+ * @return array
+ */
+function jitsi_branding_data(?moodle_url $logo): array {
+    global $CFG;
+    $icons = [];
+    foreach (glob(__DIR__ . '/branding/icons/Icon*.svg') ?: [] as $file) {
+        $name = basename($file, '.svg');
+        $icons[$name] = (new moodle_url('/mod/jitsi/branding.php', ['icon' => $name]))->out(false);
+    }
+    $data = [
+        'backgroundColor' => '#0E335D',
+        'avatarBackgrounds' => ['#0080FF', '#0861C5', '#0E335D', '#0694FF'],
+        'logoClickUrl' => $CFG->wwwroot,
+        'customIcons' => $icons,
+        'customTheme' => [
+            'palette' => [
+                'action01' => '#0080FF',
+                'action01Hover' => '#0694FF',
+                'action01Active' => '#0861C5',
+                'focus01' => '#60FEFF',
+                'link01' => '#60FEFF',
+                'link01Hover' => '#B5ECFF',
+                'link01Active' => '#0694FF',
+            ],
+        ],
+    ];
+    if ($logo) {
+        $data['logoImageUrl'] = $logo->out(false);
+    }
+    return $data;
+}
+
+/**
+ * Is this room a private lesson's (local_nit_lessons)? Those rooms live in the lessons
+ * course (local_nit_lessons/lessons_courseid), one per lesson, opened from the lesson card.
+ *
+ * @param cm_info|stdClass $cm the course module (needs ->course)
+ * @return bool
+ */
+function jitsi_is_lesson_room($cm): bool {
+    $courseid = (int) get_config('local_nit_lessons', 'lessons_courseid');
+    return $courseid > 0 && (int) $cm->course === $courseid;
 }
 
 /**
@@ -46,14 +180,15 @@ function jitsi_extend_settings_navigation(settings_navigation $settingsnav, navi
 
 /**
  * The names of a room's teachers, to pin on a student's screen: the session's teacher
- * for a lesson room; for a course room, the users who host it (mod/jitsi:moderate).
+ * for a lesson room; for a course room (a course session too), the users who host it
+ * (mod/jitsi:moderate).
  *
  * @param cm_info|stdClass $cm
  * @param stdClass|null $session the linked live session
  * @return string[]
  */
 function jitsi_teacher_names($cm, $session): array {
-    if ($session) {
+    if ($session && !\local_academysessions\session_manager::is_course_session($session)) {
         $teacher = core_user::get_user((int) $session->teacherid);
         return $teacher ? [fullname($teacher)] : [];
     }
@@ -80,6 +215,34 @@ function jitsi_show_recordings_tab(bool $ishost, $session): bool {
         return true;
     }
     return \local_academysessions\recordings::visible_to_students($session ?: null);
+}
+
+/**
+ * The recordings a user may watch in a room (the panel after the call; same rules as the
+ * "Session recordings" tab): none for someone the room does not let in at all.
+ *
+ * @param cm_info $cm the room, loaded for $userid
+ * @param int $userid
+ * @return array[] {id, title, embed_url, timecreated}, newest first
+ */
+function jitsi_recordings_for_user(cm_info $cm, int $userid): array {
+    if (!class_exists('\local_academysessions\recordings')) {
+        return [];
+    }
+    $decision = \mod_jitsi\local\access::check($cm, $userid);
+    if ($decision->code === \mod_jitsi\local\access::NOT_ALLOWED) {
+        return [];
+    }
+    if (!jitsi_show_recordings_tab($decision->moderator, $decision->session)) {
+        return [];
+    }
+    $out = [];
+    foreach (\local_academysessions\recordings::list_for((int) $cm->id,
+            $decision->session ? (int) $decision->session->id : 0) as $rec) {
+        $out[] = ['id' => $rec['id'], 'title' => $rec['title'], 'embed_url' => $rec['embed_url'],
+            'timecreated' => $rec['timecreated']];
+    }
+    return $out;
 }
 
 /**
@@ -181,14 +344,18 @@ function jitsi_add_instance($data, $mform = null) {
         throw new \moodle_exception('featurelocked', 'jitsi');
     }
     $data->timemodified = time();
-    return $DB->insert_record('jitsi', $data);
+    $data->id = $DB->insert_record('jitsi', $data);
+    jitsi_save_schedule($data);
+    return $data->id;
 }
 
 function jitsi_update_instance($data, $mform = null) {
     global $DB;
     $data->id = $data->instance;
     $data->timemodified = time();
-    return $DB->update_record('jitsi', $data);
+    $DB->update_record('jitsi', $data);
+    jitsi_save_schedule($data);
+    return true;
 }
 
 function jitsi_delete_instance($id) {
@@ -196,9 +363,163 @@ function jitsi_delete_instance($id) {
     if (!$DB->get_record('jitsi', ['id' => $id])) {
         return false;
     }
+    if ($session = $DB->get_record('academy_live_sessions', ['jitsiid' => $id])) {
+        jitsi_release_session($session);
+    }
     $DB->delete_records('jitsi_presence', ['jitsiid' => $id]);
     $DB->delete_records('jitsi', ['id' => $id]);
     return true;
+}
+
+/**
+ * The room's session time, from the activity's settings ("Session time"): sessionstart
+ * (0 = not scheduled) and sessionend (stored as the session's length in minutes).
+ *
+ * A scheduled room is a course session (local_academysessions, audience = course): every
+ * student of the course is on it, it opens to them half an hour before the start, the
+ * reminders go out before it, and it shows on the monitoring wall and in the reports.
+ * Changing the time of a session that was already held schedules a new one (the old one
+ * stays in the reports); taking the time off releases the session (jitsi_release_session()).
+ * Lesson rooms are scheduled by their lesson, never here.
+ *
+ * @param stdClass $data the form data (id, course, name, coursemodule, sessionstart, sessionend)
+ */
+function jitsi_save_schedule(stdClass $data): void {
+    global $DB, $USER;
+    if (!property_exists($data, 'sessionstart') || !class_exists('\local_academysessions\session_manager')
+            || jitsi_is_lesson_room((object) ['course' => $data->course])) {
+        return;
+    }
+    $manager = '\local_academysessions\session_manager';
+    $start = (int) $data->sessionstart;
+    $duration = jitsi_schedule_minutes($start, (int) ($data->sessionend ?? 0));
+    $session = $DB->get_record('academy_live_sessions', ['jitsiid' => $data->id]);
+
+    if (!$start) {
+        if ($session) {
+            jitsi_release_session($session);
+        }
+        return;
+    }
+    $changed = !$session || (int) $session->start_time !== $start || (int) $session->duration !== $duration;
+    if ($session && in_array($session->status, ['ended', 'cancelled'], true) && $changed) {
+        // Held (or called off) already: a new time is a new session.
+        jitsi_release_session($session);
+        $session = null;
+    }
+    if (!$session) {
+        $manager::create_session((int) $data->course, (int) $USER->id, $data->name, $start, [], '', $duration,
+            null, (int) $data->id, $manager::AUDIENCE_COURSE);
+        // A room someone ended by hand before it was scheduled opens again.
+        unset_config('ended_' . (int) $data->coursemodule, 'mod_jitsi');
+        return;
+    }
+    $update = ['title' => $data->name, 'start_time' => $start, 'duration' => $duration];
+    if ($session->status === 'live' && $start > time()) {
+        $update['status'] = 'scheduled';  // Moved to later: not on yet.
+    }
+    $manager::update_session((int) $session->id, $update);
+    $manager::sync_course_students($DB->get_record('academy_live_sessions', ['id' => $session->id]));
+}
+
+/**
+ * Detach a session from its room: deleted when it was never held, else kept (its
+ * attendance and recordings stay in the reports) but no longer the room's.
+ *
+ * @param stdClass $session academy_live_sessions row
+ */
+function jitsi_release_session(stdClass $session): void {
+    global $DB;
+    $manager = '\local_academysessions\session_manager';
+    if (!$manager::was_held((int) $session->id) && !in_array($session->status, ['ended', 'cancelled'], true)) {
+        $manager::delete_session((int) $session->id);
+        return;
+    }
+    $DB->set_field('academy_live_sessions', 'jitsiid', null, ['id' => $session->id]);
+}
+
+/**
+ * A session's length in minutes, from its start and end times (0 when the end is not after the start).
+ *
+ * @param int $start
+ * @param int $end
+ * @return int
+ */
+function jitsi_schedule_minutes(int $start, int $end): int {
+    return $end > $start ? (int) round(($end - $start) / MINSECS) : 0;
+}
+
+/**
+ * When a room's session is, for people: "Monday, 12 October 2026, 10:00 AM – 11:00 AM" (the
+ * end with its date too when it is another day). HTML: each time is isolated (<bdi>), so its
+ * Latin "AM/PM" does not reorder an Arabic line.
+ *
+ * @param stdClass|null $session the linked session
+ * @return string '' when the room has no session
+ */
+function jitsi_session_time_html($session): string {
+    if (!$session) {
+        return '';
+    }
+    $start = (int) $session->start_time;
+    $end = $start + (int) $session->duration * MINSECS;
+    $daytime = get_string('strftimedaydatetime', 'langconfig');
+    $sameday = userdate($start, '%Y-%m-%d') === userdate($end, '%Y-%m-%d');
+    return get_string('sessiontime_text', 'jitsi', [
+        'start' => html_writer::tag('bdi', s(userdate($start, $daytime))),
+        'end' => html_writer::tag('bdi', s(userdate($end, $sameday ? get_string('strftimetime', 'langconfig') : $daytime))),
+    ]);
+}
+
+/** @var int the longest session, minutes (a day: the rule the app's create_session has too). */
+const JITSI_MAX_SESSION_MINUTES = 1440;
+
+/**
+ * The settings form's checks of the session time: an end after the start, at most a day
+ * later, and a time that is not already over (a wrong day), unless it is the time the session
+ * already had (editing other settings of a past session is fine).
+ *
+ * @param array $data the submitted form (instance, sessionstart, sessionend)
+ * @param int|null $now
+ * @return array field => error
+ */
+function jitsi_schedule_errors(array $data, ?int $now = null): array {
+    global $DB;
+    if (empty($data['sessionstart'])) {
+        return [];
+    }
+    $duration = jitsi_schedule_minutes((int) $data['sessionstart'], (int) ($data['sessionend'] ?? 0));
+    if ($duration <= 0) {
+        return ['sessionend' => get_string('sessionend_beforestart', 'jitsi')];
+    }
+    if ($duration > JITSI_MAX_SESSION_MINUTES) {
+        return ['sessionend' => get_string('sessionend_toolong', 'jitsi')];
+    }
+    $session = !empty($data['instance'])
+        ? $DB->get_record('academy_live_sessions', ['jitsiid' => $data['instance']]) : null;
+    $unchanged = $session && (int) $session->start_time === (int) $data['sessionstart']
+        && (int) $session->duration === $duration;
+    if (!$unchanged && (int) $data['sessionstart'] + $duration * MINSECS <= ($now ?? time())) {
+        return ['sessionstart' => get_string('sessionstart_past', 'jitsi')];
+    }
+    return [];
+}
+
+/**
+ * The activity's settings form: the session time of a scheduled room.
+ *
+ * @param array $defaults
+ */
+function jitsi_schedule_form_defaults(array &$defaults): void {
+    global $DB;
+    if (empty($defaults['instance'])) {
+        return;
+    }
+    $session = $DB->get_record('academy_live_sessions', ['jitsiid' => $defaults['instance']]);
+    if ($session) {
+        $defaults['sessionstart'] = (int) $session->start_time;
+        $defaults['sessionend'] = (int) $session->start_time + (int) $session->duration * MINSECS;
+    }
 }
 
 function jitsi_get_coursemodule_info($coursemodule) {
@@ -217,6 +538,8 @@ function jitsi_get_coursemodule_info($coursemodule) {
 
 /**
  * Dynamically hide Jitsi activity from students not enrolled in the linked session.
+ * A course session stays on the course page for everyone, before its time too: its page
+ * says when it is (the "Join" opens half an hour before the start).
  */
 function jitsi_cm_info_dynamic(cm_info $cm) {
     global $DB, $USER;
@@ -226,7 +549,7 @@ function jitsi_cm_info_dynamic(cm_info $cm) {
     }
 
     $session = $DB->get_record('academy_live_sessions', ['jitsiid' => $cm->instance]);
-    if (!$session) {
+    if (!$session || \local_academysessions\session_manager::is_course_session($session)) {
         return;
     }
 
@@ -247,4 +570,18 @@ function jitsi_cm_info_dynamic(cm_info $cm) {
     if ($now < $visible_from) {
         $cm->set_available(false, false, '');
     }
+}
+
+/**
+ * On the course page, under a scheduled room's name: when its session is.
+ *
+ * @param cm_info $cm
+ */
+function jitsi_cm_info_view(cm_info $cm) {
+    global $DB;
+    $session = $DB->get_record('academy_live_sessions', ['jitsiid' => $cm->instance]);
+    if (!$session || !\local_academysessions\session_manager::is_course_session($session)) {
+        return;
+    }
+    $cm->set_after_link(html_writer::div(jitsi_session_time_html($session), 'jitsi-sessiontime small text-muted'));
 }

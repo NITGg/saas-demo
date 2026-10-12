@@ -38,6 +38,7 @@ $messageproviders = [
             'popup' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
             'email' => MESSAGE_DISALLOWED,
             'airnotifier' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
+            'fcm' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
         ],
     ],
     'announcement_email' => [
@@ -45,6 +46,7 @@ $messageproviders = [
             'popup' => MESSAGE_DISALLOWED,
             'email' => MESSAGE_PERMITTED,
             'airnotifier' => MESSAGE_DISALLOWED,
+            'fcm' => MESSAGE_DISALLOWED,
         ],
     ],
     // Automatic notifications (\local_nit_notifications\auto): each kind has its own row
@@ -54,6 +56,7 @@ $messageproviders = [
             'popup' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
             'email' => MESSAGE_PERMITTED,
             'airnotifier' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
+            'fcm' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
         ],
     ],
     'newquiz' => [
@@ -61,6 +64,7 @@ $messageproviders = [
             'popup' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
             'email' => MESSAGE_PERMITTED,
             'airnotifier' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
+            'fcm' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
         ],
     ],
     'sessionreminder' => [
@@ -68,6 +72,7 @@ $messageproviders = [
             'popup' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
             'email' => MESSAGE_PERMITTED,
             'airnotifier' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
+            'fcm' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
         ],
     ],
 ];

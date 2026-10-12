@@ -22,10 +22,12 @@ defined('MOODLE_INTERNAL') || die();
  * The live monitoring wall: which lessons are on now (or on a given day), their
  * state, who is in, and what needs attention.
  *
- * One card per live session (academy_live_sessions: group sessions and started Flex
- * lessons), plus one per confirmed Flex lesson (nit_lesson) whose teacher has not
- * pressed Start yet. Nothing is stored: every state is worked out from the session
- * rows, the attendance rows and the clock.
+ * One card per live session (academy_live_sessions: group sessions, scheduled Jitsi
+ * activities and started Flex lessons), plus one per confirmed Flex lesson (nit_lesson)
+ * whose teacher has not pressed Start yet, plus one per Jitsi room without a time (no
+ * session) while someone is in it ("now") / that was used that day ("day"), from the
+ * room's attendance log (jitsi_presence). Nothing is stored: every state is worked out
+ * from the session rows, the attendance rows and the clock.
  *
  * Who is "in" comes from the attendance rows (a student's row is open while
  * left_at is empty; web and app send a leave), and the teacher's presence from
@@ -164,7 +166,8 @@ class monitor {
         $now = $now ?? time();
         $grace = self::grace_minutes();
         $cards = array_merge(self::session_cards($f, $courseids, $now, $grace),
-            self::pending_flex_cards($f, $courseids, $now, $grace));
+            self::pending_flex_cards($f, $courseids, $now, $grace),
+            self::room_cards($f, $courseids, $now));
 
         $counts = array_fill_keys(self::ORDER, 0);
         foreach ($cards as $c) {
@@ -335,7 +338,9 @@ class monitor {
             $where[] = 's.start_time >= :dfrom AND s.start_time < :dto';
             $params += ['dfrom' => $from, 'dto' => $to];
         } else {
-            $where[] = "s.start_time <= :wfrom AND s.start_time + s.duration * 60 >= :wto AND s.status <> 'cancelled'";
+            // A session still live past its end (a course session running over) stays on the wall.
+            $where[] = "s.start_time <= :wfrom AND (s.start_time + s.duration * 60 >= :wto OR s.status = 'live')
+                        AND s.status <> 'cancelled'";
             $params += ['wfrom' => $now + self::BEFORE, 'wto' => $now - self::AFTER];
         }
         if ($courseids !== null) {
@@ -417,9 +422,11 @@ class monitor {
             $teacherin = !empty($s->teacher_joined_at);
             $firstjoin = (int) ($s->teacher_first_join ?? 0);
 
+            // A course session runs over while a teacher is in the call.
+            $runningover = $teacherin && $s->status !== 'ended' && session_manager::is_course_session($s);
             if ($s->status === 'cancelled') {
                 $status = self::CANCELLED;
-            } else if ($s->status === 'ended' || $now > $end) {
+            } else if ($s->status === 'ended' || ($now > $end && !$runningover)) {
                 $status = self::ENDED;
             } else if ($teacherin) {
                 $status = self::RUNNING;
@@ -527,7 +534,8 @@ class monitor {
     }
 
     /**
-     * Until when an open stretch counts: now, or the end of an ended session.
+     * Until when an open stretch counts: now, or the end of an ended session (a course
+     * session running over with a teacher in it: now).
      *
      * @param \stdClass $s
      * @param int $now
@@ -536,6 +544,9 @@ class monitor {
     private static function until(\stdClass $s, int $now): int {
         if (!empty($s->ended_at)) {
             return min($now, (int) $s->ended_at);
+        }
+        if (session_manager::is_course_session($s) && !empty($s->teacher_joined_at) && $s->status !== 'ended') {
+            return $now;
         }
         return min($now, self::end_time($s));
     }
@@ -622,6 +633,131 @@ class monitor {
                 'joined' => 0,
                 'status' => $status,
                 'alerts' => $alerts,
+            ], $now);
+        }
+        return $cards;
+    }
+
+    /**
+     * Cards of Jitsi rooms with no time (not linked to a live session): "now" those with
+     * someone in the call, "day" those used that day. Built from the room's attendance
+     * log; the room's students are its course's students.
+     *
+     * @param \stdClass $f
+     * @param int[]|null $courseids
+     * @param int $now
+     * @return array[]
+     */
+    private static function room_cards(\stdClass $f, ?array $courseids, int $now): array {
+        global $DB;
+        if ($courseids === [] || $f->provider === 'link' || !$DB->get_manager()->table_exists('jitsi_presence')) {
+            return [];
+        }
+        // A stretch with no heartbeat for this long is gone (mod_jitsi closes it soon).
+        $since = $now - (class_exists('\mod_jitsi\local\roomlog') ? \mod_jitsi\local\roomlog::STALE_AFTER : 180);
+        if ($f->view === 'day') {
+            [$from, $to] = self::day_bounds($f->date);
+            $which = 'p.joined_at >= :from AND p.joined_at < :to';
+            $params = ['from' => $from, 'to' => $to];
+        } else {
+            // Rooms with someone in now; their card covers today's use of the room.
+            [$from, $to] = self::day_bounds(userdate($now, '%Y-%m-%d'));
+            $which = 'p.left_at IS NULL AND p.last_seen > :since';
+            $params = ['since' => $since];
+        }
+        $where = ["NOT EXISTS (SELECT 1 FROM {academy_live_sessions} s WHERE s.jitsiid = j.id)"];
+        if ($courseids !== null) {
+            [$in, $inparams] = $DB->get_in_or_equal($courseids, SQL_PARAMS_NAMED, 'rc');
+            $where[] = "j.course $in";
+            $params += $inparams;
+        }
+        if ($f->courseid) {
+            $where[] = 'j.course = :rcourse';
+            $params['rcourse'] = $f->courseid;
+        }
+        // Private lessons' rooms have their own cards.
+        $lessonscourse = (int) get_config('local_nit_lessons', 'lessons_courseid');
+        if ($lessonscourse) {
+            $where[] = 'j.course <> :rlessons';
+            $params['rlessons'] = $lessonscourse;
+        }
+        if ($f->q !== '') {
+            $where[] = $DB->sql_like('j.name', ':rq', false);
+            $params['rq'] = '%' . $DB->sql_like_escape($f->q) . '%';
+        }
+        $rooms = $DB->get_records_sql("SELECT DISTINCT j.id, j.course, j.name
+                                         FROM {jitsi} j
+                                         JOIN {jitsi_presence} p ON p.jitsiid = j.id
+                                        WHERE $which AND " . implode(' AND ', $where), $params, 0, self::MAXCARDS);
+        if (!$rooms) {
+            return [];
+        }
+        [$in, $inparams] = $DB->get_in_or_equal(array_keys($rooms), SQL_PARAMS_NAMED, 'rj');
+        $stretches = [];
+        foreach ($DB->get_recordset_select('jitsi_presence', "jitsiid $in AND joined_at >= :sfrom AND joined_at < :sto",
+                $inparams + ['sfrom' => $from, 'sto' => $to], 'joined_at, id') as $p) {
+            $stretches[(int) $p->jitsiid][] = $p;
+        }
+        $cmids = mobile_service::jitsi_cmids(array_keys($rooms));
+        $courses = $DB->get_records_list('course', 'id', array_unique(array_map(fn($r) => (int) $r->course, $rooms)),
+            '', 'id, fullname');
+        $userids = [];
+        foreach ($stretches as $mine) {
+            $userids = array_merge($userids, array_map(fn($p) => (int) $p->userid, $mine));
+        }
+        $names = self::names($userids);
+        $students = [];
+        $canjoin = is_siteadmin();
+
+        $cards = [];
+        foreach ($rooms as $room) {
+            $mine = $stretches[(int) $room->id] ?? [];
+            if (!$mine) {
+                continue;
+            }
+            $open = fn($p) => empty($p->left_at) && (int) $p->last_seen > $since;
+            $hosts = array_values(array_filter($mine, fn($p) => (int) $p->host === 1));
+            if ($f->teacherid && !in_array($f->teacherid, array_map(fn($p) => (int) $p->userid, $hosts), true)) {
+                continue;
+            }
+            $others = array_values(array_filter($mine, fn($p) => (int) $p->host !== 1));
+            $teacherin = (bool) array_filter($hosts, $open);
+            $innow = array_values(array_unique(array_map(fn($p) => (int) $p->userid, array_filter($others, $open))));
+            $came = array_values(array_unique(array_map(fn($p) => (int) $p->userid, $others)));
+            $live = $teacherin || $innow;
+            $start = (int) $mine[0]->joined_at;
+            $end = $start;
+            foreach ($mine as $p) {
+                $end = max($end, $open($p) ? $now : (int) ($p->left_at ?: $p->last_seen));
+            }
+            $courseid = (int) $room->course;
+            $students[$courseid] = $students[$courseid] ?? count(session_manager::course_student_ids($courseid));
+            $innames = array_map(fn($uid) => $names[$uid] ?? '—', $innow);
+            $cmid = $cmids[(int) $room->id] ?? 0;
+            $cards[] = self::card([
+                'key' => 'r' . $room->id,
+                'sessionid' => 0,
+                'title' => format_string($room->name),
+                'course' => isset($courses[$courseid]) ? format_string($courses[$courseid]->fullname) : '—',
+                'type' => self::str('type_room'),
+                'student' => '',
+                'provider' => self::str('provider_jitsi'),
+                'teacher' => $hosts ? ($names[(int) $hosts[0]->userid] ?? '—') : '—',
+                'teacherin' => $teacherin,
+                'start' => $start,
+                'end' => $end,
+                'actualstart' => $hosts ? (int) $hosts[0]->joined_at : 0,
+                'latemin' => 0,
+                'invited' => $students[$courseid],
+                'present' => count($innow),
+                'joined' => count($came),
+                'neverjoined' => max(0, $students[$courseid] - count($came)),
+                'presentnames' => implode(self::str('listsep'), array_slice($innames, 0, 3))
+                    . (count($innames) > 3 ? ' ' . self::str('andmore', count($innames) - 3) : ''),
+                'status' => !$live ? self::ENDED : ($teacherin ? self::RUNNING : self::WAITING),
+                'alerts' => [],
+                'joinurl' => $canjoin && $cmid && $live
+                    ? (new \moodle_url('/mod/jitsi/view.php', ['id' => $cmid]))->out(false) : '',
             ], $now);
         }
         return $cards;

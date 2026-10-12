@@ -109,6 +109,7 @@ $string['monitor_timein'] = 'مدة الحضور';
 $string['monitor_truncated'] = 'يُعرض أول 200 من {$a} حصة. استخدم الفلاتر لتضييق النتائج.';
 $string['monitor_type_flex'] = 'حصة خاصة';
 $string['monitor_type_group'] = 'حصة جماعية';
+$string['monitor_type_room'] = 'غرفة بدون موعد';
 $string['monitor_updated'] = 'آخر تحديث {$a}';
 $string['monitor_view'] = 'العرض';
 $string['monitor_view_day'] = 'يوم محدد';

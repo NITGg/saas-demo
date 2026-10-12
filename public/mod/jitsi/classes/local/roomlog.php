@@ -93,14 +93,15 @@ class roomlog {
      *
      * @param int $jitsiid
      * @param int|null $now
+     * @param int $except leave this user out (a host who is leaving: is anyone else in?)
      * @return bool
      */
-    public static function host_in(int $jitsiid, ?int $now = null): bool {
+    public static function host_in(int $jitsiid, ?int $now = null, int $except = 0): bool {
         global $DB;
         $now = $now ?? time();
         return $DB->record_exists_select('jitsi_presence',
-            'jitsiid = :j AND host = 1 AND left_at IS NULL AND last_seen > :since',
-            ['j' => $jitsiid, 'since' => $now - self::STALE_AFTER]);
+            'jitsiid = :j AND host = 1 AND left_at IS NULL AND last_seen > :since AND userid <> :except',
+            ['j' => $jitsiid, 'since' => $now - self::STALE_AFTER, 'except' => $except]);
     }
 
     /**
@@ -122,8 +123,10 @@ class roomlog {
             if (!$session || $session->status === 'ended' || !class_exists('\local_academysessions\session_manager')) {
                 continue;
             }
-            if ((int) $session->teacherid === (int) $p->userid && !empty($session->teacher_joined_at)) {
-                // The teacher is gone: close the student gate, as their "left" would have.
+            if (!empty($session->teacher_joined_at) && access::is_session_teacher($session, (int) $p->userid)
+                    && !(\local_academysessions\session_manager::is_course_session($session)
+                        && self::host_in((int) $p->jitsiid, $now, (int) $p->userid))) {
+                // The (last) teacher is gone: close the student gate, as their "left" would have.
                 $DB->update_record('academy_live_sessions', (object) ['id' => $session->id,
                     'teacher_joined_at' => null, 'teacher_last_leave' => $at]);
             }

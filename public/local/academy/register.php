@@ -115,14 +115,15 @@ $ic = [
 ];
 
 // text field with floating label
-function reg_text($name, $label, $icon, $hint = '', $type = 'text', $pw = false) {
+function reg_text($name, $label, $icon, $hint = '', $type = 'text', $pw = false, $extra = '') {
     $eye = $pw ? '<button type="button" class="reg-eye" tabindex="-1" onclick="var i=this.parentNode.querySelector(\'input\');var on=i.type===\'password\';i.type=on?\'text\':\'password\';">' . $GLOBALS['ic']['eye'] . '</button>' : '';
     $pwcls = $pw ? ' reg-haspw' : '';
     $h = $hint ? '<div class="reg-hint">' . s($hint) . '</div>' : '';
     $old = $pw ? '' : (string) ($GLOBALS['regold'][$name] ?? ''); // Refill after a failed submit.
     $val = $old !== '' ? ' value="' . s($old) . '"' : '';
+    $ext = $extra !== '' ? ' ' . $extra : '';
     return '<div class="reg-cell"><div class="reg-field' . $pwcls . '">'
-        . '<input type="' . $type . '" name="' . $name . '" id="f_' . $name . '" placeholder=" " autocomplete="off" required' . $val . '>'
+        . '<input type="' . $type . '" name="' . $name . '" id="f_' . $name . '" placeholder=" " autocomplete="off" required' . $val . $ext . '>'
         . '<span class="reg-lab">' . $icon . '<span>' . s($label) . '</span></span>'
         . $eye
         . '</div>' . $h . '<div class="reg-err"></div></div>';
@@ -288,9 +289,9 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
             <?php echo reg_text('thirdname', $t('Third name', 'الاسم الثالث'), $ic['user'], $hintname); ?>
             <?php echo reg_text('lastname', $t('Last name', 'الاسم الأخير'), $ic['user'], $hintname); ?>
           </div>
-          <div class="nit-reg-grid one nit-reg-row"><?php echo reg_text('phone', $t('Phone number', 'رقم الهاتف'), $ic['phone'], '', 'tel'); ?></div>
+          <div class="nit-reg-grid one nit-reg-row"><?php echo reg_text('phone', $t('Phone number', 'رقم الهاتف'), $ic['phone'], '', 'tel', false, 'inputmode="tel" maxlength="15"'); ?></div>
           <div class="nit-reg-grid one nit-reg-row"><?php echo reg_select('grade', $t('Choose your school year', 'اختر الصف الدراسي'), $gradeoptions); ?></div>
-          <div class="nit-reg-grid one nit-reg-row"><?php echo reg_text('national', $t('Student national ID', 'رقم الطالب القومي'), $ic['id'], $t('The student\'s own ID number, not the guardian\'s', 'رقم بطاقة الطالب نفسه، مش ولي الأمر')); ?></div>
+          <div class="nit-reg-grid one nit-reg-row"><?php echo reg_text('national', $t('Student national ID', 'رقم الطالب القومي'), $ic['id'], $t('The student\'s own ID number, not the guardian\'s', 'رقم بطاقة الطالب نفسه، مش ولي الأمر'), 'text', false, 'inputmode="numeric" maxlength="14"'); ?></div>
           <div class="nit-reg-btns"><button type="button" class="btn-next" data-next><?php echo s($t('Next', 'التالي')); ?></button></div>
           <div class="nit-reg-bottom"><?php echo s($t('Already have an account?', 'يوجد لديك حساب بالفعل؟')); ?> <a href="<?php echo $loginurl; ?>"><?php echo s($t('Log in now!', 'ادخل إلى حسابك الآن !')); ?></a></div>
         </div>
@@ -298,8 +299,8 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
         <!-- STEP 2 -->
         <div class="reg-step" data-step="2">
           <div class="nit-reg-grid">
-            <?php echo reg_text('fatherphone', $t("Father's phone", 'رقم هاتف الأب'), $ic['phone'], '', 'tel'); ?>
-            <?php echo reg_text('motherphone', $t("Mother's phone", 'رقم هاتف الأم'), $ic['phone'], '', 'tel'); ?>
+            <?php echo reg_text('fatherphone', $t("Father's phone", 'رقم هاتف الأب'), $ic['phone'], '', 'tel', false, 'inputmode="tel" maxlength="15"'); ?>
+            <?php echo reg_text('motherphone', $t("Mother's phone", 'رقم هاتف الأم'), $ic['phone'], '', 'tel', false, 'inputmode="tel" maxlength="15"'); ?>
           </div>
           <div class="nit-reg-grid nit-reg-row">
             <?php echo reg_text('school', $t('School name', 'اسم المدرسة'), $ic['school']); ?>
@@ -377,6 +378,11 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
       'required' => $t('This field is required', 'هذا الحقل مطلوب'),
       'email' => $t('Invalid email address', 'بريد إلكتروني غير صحيح'),
       'number' => $t('Enter a valid number (digits only)', 'ادخل رقمًا صحيحًا (أرقام فقط)'),
+      'national' => $t('The national ID must be 14 digits', 'الرقم القومي يجب أن يتكون من 14 رقمًا'),
+      'phone' => $t('Please enter a valid phone number (e.g. 01012345678)', 'يرجى إدخال رقم هاتف صحيح (مثال: 01012345678)'),
+      'name_letters' => $t('The name must not contain numbers', 'الاسم لا يمكن أن يحتوي على أرقام'),
+      'name_short' => $t('Name must be at least 2 characters', 'الاسم يجب أن يتكون من حرفين على الأقل'),
+      'text_short' => $t('Must be at least 2 characters', 'يجب إدخال حرفين على الأقل'),
       'pwshort' => $t('The password must be at least 8 characters', 'كلمة السر 8 أحرف على الأقل'),
       'pwmatch' => $t('The passwords do not match', 'كلمتا السر غير متطابقتين'),
       'agree' => $t('You must agree to the terms and conditions', 'لازم توافق على الشروط والأحكام'),
@@ -408,7 +414,33 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
     window.scrollTo(0,0);
   }
 
-  // ---- validation ----
+  // ---- helpers & validation ----
+  function toAsciiDigits(str){
+    var ar = '٠١٢٣٤٥٦٧٨٩';
+    return (str || '').replace(/[٠-٩]/g, function(d){ return ar.indexOf(d); });
+  }
+
+  function isValidPhone(val){
+    var clean = toAsciiDigits(val).replace(/[\s\-()]/g, '');
+    // Egyptian mobile: 010, 011, 012, 015 followed by 8 digits (11 digits total)
+    if (/^01[0125][0-9]{8}$/.test(clean)) {
+      return true;
+    }
+    // Egyptian mobile with country code (+20 or 0020 or 20)
+    if (/^(?:\+20|0020|20)0?1[0125][0-9]{8}$/.test(clean)) {
+      return true;
+    }
+    // International format (+ followed by 8 to 15 digits)
+    if (/^\+[1-9][0-9]{7,14}$/.test(clean)) {
+      return true;
+    }
+    // Other valid numbers (8 to 15 digits, not a broken 01x mobile number)
+    if (/^[0-9]{8,15}$/.test(clean) && !/^01/.test(clean)) {
+      return true;
+    }
+    return false;
+  }
+
   function setErr(field, msg){
     var cell = field.closest('.reg-cell') || field.closest('.reg-field') || field.parentNode;
     var f = field.closest('.reg-field'); if(f){ f.classList.add('invalid'); }
@@ -424,17 +456,83 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
     stepEl.querySelectorAll('input[required], select[required]').forEach(function(f){
       var v = (f.value||'').trim();
       var bad = '';
-      if(!v){ bad = L.required; }
-      else if(f.type==='email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){ bad = L.email; }
-      else if((f.type==='tel' || /phone|national/.test(f.name)) && !/^[0-9]{7,15}$/.test(v)){ bad = L.number; }
-      else if(f.id==='f_password' && v.length < 8){ bad = L.pwshort; }
-      else if(f.id==='f_password2'){ var p=document.getElementById('f_password'); if(p && v!==p.value){ bad = L.pwmatch; } }
-      if(bad){ ok=false; setErr(f, bad); if(!first){ first=f; } }
+
+      if (f.name === 'national') {
+        v = toAsciiDigits(v).replace(/\s+/g, '');
+        f.value = v;
+        if (!v) {
+          bad = L.required;
+        } else if (!/^[0-9]+$/.test(v)) {
+          bad = L.number;
+        } else if (v.length !== 14) {
+          bad = L.national;
+        }
+      } else if (f.name === 'phone' || f.name === 'fatherphone' || f.name === 'motherphone') {
+        v = toAsciiDigits(v).trim();
+        f.value = v;
+        if (!v) {
+          bad = L.required;
+        } else if (!isValidPhone(v)) {
+          bad = L.phone;
+        }
+      } else if (f.name === 'firstname' || f.name === 'secondname' || f.name === 'thirdname' || f.name === 'lastname') {
+        if (!v) {
+          bad = L.required;
+        } else if (/[0-9]/.test(v)) {
+          bad = L.name_letters;
+        } else if (v.length < 2) {
+          bad = L.name_short;
+        }
+      } else if (f.name === 'school' || f.name === 'guardianjob') {
+        if (!v) {
+          bad = L.required;
+        } else if (v.length < 2) {
+          bad = L.text_short;
+        }
+      } else if (f.type === 'email' || f.name === 'email') {
+        if (!v) {
+          bad = L.required;
+        } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v)) {
+          bad = L.email;
+        }
+      } else if (f.id === 'f_password') {
+        if (!v) {
+          bad = L.required;
+        } else if (v.length < 8) {
+          bad = L.pwshort;
+        }
+      } else if (f.id === 'f_password2') {
+        var p = document.getElementById('f_password');
+        if (!v) {
+          bad = L.required;
+        } else if (p && v !== p.value) {
+          bad = L.pwmatch;
+        }
+      } else {
+        if (!v) {
+          bad = L.required;
+        }
+      }
+
+      if (bad) {
+        ok = false;
+        setErr(f, bad);
+        if (!first) { first = f; }
+      }
     });
+
     // terms on last step
     var agree = stepEl.querySelector('#f_agree');
-    if(agree && !agree.checked){ ok=false; var ae=document.getElementById('agree-err'); if(ae){ ae.textContent=L.agree; } if(!first){ first=agree; } }
-    if(first){ first.focus(); try{ first.scrollIntoView({block:'center',behavior:'smooth'}); }catch(e){} }
+    if (agree && !agree.checked) {
+      ok = false;
+      var ae = document.getElementById('agree-err');
+      if (ae) { ae.textContent = L.agree; }
+      if (!first) { first = agree; }
+    }
+    if (first) {
+      first.focus();
+      try { first.scrollIntoView({block: 'center', behavior: 'smooth'}); } catch(e){}
+    }
     return ok;
   }
 
@@ -442,14 +540,65 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
     if(validateStep(steps[cur])){ show(cur+1); }
   }); });
   document.querySelectorAll('[data-prev]').forEach(function(b){ b.addEventListener('click', function(){ show(cur-1); }); });
-  // block final submit if last step invalid
+  // block final submit if any step invalid
   document.getElementById('regform').addEventListener('submit', function(ev){
-    if(!validateStep(steps[cur])){ ev.preventDefault(); }
+    for (var i = 0; i < steps.length; i++) {
+      if (!validateStep(steps[i])) {
+        ev.preventDefault();
+        show(i);
+        return;
+      }
+    }
   });
+
+  // Live input cleaning and formatting
+  var natInput = document.getElementById('f_national');
+  if (natInput) {
+    natInput.addEventListener('input', function() {
+      var converted = toAsciiDigits(this.value).replace(/\D/g, '').slice(0, 14);
+      if (this.value !== converted) {
+        this.value = converted;
+      }
+    });
+  }
+
+  ['f_phone', 'f_fatherphone', 'f_motherphone'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('input', function() {
+        var converted = toAsciiDigits(this.value).replace(/[^\d+]/g, '').slice(0, 15);
+        if (this.value !== converted) {
+          this.value = converted;
+        }
+      });
+    }
+  });
+
   // clear a field's error as the user fixes it
   document.querySelectorAll('.reg-field input, .reg-field select').forEach(function(f){
-    f.addEventListener('input', function(){ var c=f.closest('.reg-cell'); if(c){ c.classList.remove('invalid'); var e=c.querySelector('.reg-err'); if(e) e.textContent=''; } var ff=f.closest('.reg-field'); if(ff) ff.classList.remove('invalid'); });
+    function clearF() {
+      var c = f.closest('.reg-cell');
+      if (c) {
+        c.classList.remove('invalid');
+        var e = c.querySelector('.reg-err');
+        if (e) e.textContent = '';
+      }
+      var ff = f.closest('.reg-field');
+      if (ff) ff.classList.remove('invalid');
+    }
+    f.addEventListener('input', clearF);
+    f.addEventListener('change', clearF);
   });
+
+  var agreeBox = document.getElementById('f_agree');
+  if (agreeBox) {
+    agreeBox.addEventListener('change', function() {
+      if (this.checked) {
+        var ae = document.getElementById('agree-err');
+        if (ae) ae.textContent = '';
+      }
+    });
+  }
 
   // placeholder color for selects (show data-ph until a value is chosen)
   document.querySelectorAll('.reg-sel select').forEach(function(sel){

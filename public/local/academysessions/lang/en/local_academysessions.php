@@ -107,6 +107,7 @@ $string['monitor_timein'] = 'Time in';
 $string['monitor_truncated'] = 'Showing the first 200 of {$a} lessons. Use the filters to narrow down.';
 $string['monitor_type_flex'] = 'Private lesson';
 $string['monitor_type_group'] = 'Group session';
+$string['monitor_type_room'] = 'Room with no time';
 $string['monitor_updated'] = 'Updated {$a}';
 $string['monitor_view'] = 'Show';
 $string['monitor_view_day'] = 'A day';
