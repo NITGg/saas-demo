@@ -25,7 +25,10 @@
 defined('MOODLE_INTERNAL') || die();
 
 $string['pluginname'] = 'Firebase Cloud Messaging (FCM)';
-$string['serviceaccountfile'] = 'Service Account JSON path';
+$string['serviceaccountjson'] = 'Service Account key (JSON contents)';
+$string['serviceaccountjson_desc'] = 'Open the key file downloaded from Firebase (Project settings → Service accounts → Generate new private key) in a text editor, copy everything and paste it here. When this is set, the file path below is ignored.';
+$string['serviceaccountjson_invalid'] = 'This is not a valid Service Account key. Paste the whole JSON file, from the first to the last character.';
+$string['serviceaccountfile'] ='Service Account JSON path';
 $string['serviceaccountfile_desc'] = 'Path to the Firebase Service Account JSON credentials file. Can be absolute or relative to the Moodle installation root. Default: ../firebase-service-account.json';
 $string['project_id'] = 'Firebase Project ID';
 $string['project_id_desc'] = 'The Google Cloud / Firebase project ID. If left blank, it will be automatically extracted from the Service Account JSON file.';

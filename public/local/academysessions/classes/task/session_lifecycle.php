@@ -13,6 +13,15 @@ class session_lifecycle extends \core\task\scheduled_task {
         global $DB;
         $now = time();
 
+        // Course sessions follow their course: a student enrolled since the last run is
+        // on the list (reminders, monitoring), one who left is off it.
+        $course = $DB->get_records_select('academy_live_sessions',
+            "audience = :audience AND status IN ('scheduled', 'live')",
+            ['audience' => \local_academysessions\session_manager::AUDIENCE_COURSE]);
+        foreach ($course as $session) {
+            \local_academysessions\session_manager::sync_course_students($session);
+        }
+
         $scheduled = $DB->get_records_select('academy_live_sessions',
             "status = 'scheduled' AND start_time <= :now",
             array('now' => $now)

@@ -25,7 +25,10 @@
 defined('MOODLE_INTERNAL') || die();
 
 $string['pluginname'] = 'إشعارات فايربيس (FCM)';
-$string['serviceaccountfile'] = 'مسار ملف Service Account JSON';
+$string['serviceaccountjson'] = 'مفتاح Service Account (محتوى ملف JSON)';
+$string['serviceaccountjson_desc'] = 'افتح ملف المفتاح اللي نزّلته من Firebase (Project settings ← Service accounts ← Generate new private key) ببرنامج Notepad، وانسخ كل محتواه والصقه هنا. لو الخانة دي فيها مفتاح، مش هيتم استخدام الملف اللي تحت.';
+$string['serviceaccountjson_invalid'] = 'ده مش ملف Service Account صحيح. انسخ محتوى ملف الـJSON كله من أوله لآخره.';
+$string['serviceaccountfile'] ='مسار ملف Service Account JSON';
 $string['serviceaccountfile_desc'] = 'مسار ملف بيانات اعتماد Firebase Service Account JSON على السيرفر. يمكن أن يكون مساراً مطلقاً أو نسبياً لمجلد المنصة. الافتراضي: ../firebase-service-account.json';
 $string['project_id'] = 'معرف مشروع فايربيس (Project ID)';
 $string['project_id_desc'] = 'معرف مشروع Google Cloud / Firebase. إذا تُرِك فارغاً، سيتم استخراجه تلقائياً من ملف الـ JSON.';

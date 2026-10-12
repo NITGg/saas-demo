@@ -28,7 +28,7 @@ if ($ADMIN->fulltree) {
 
     // Status Banner
     $isConfigured = \message_fcm\fcm_client::is_configured();
-    $resolvedPath = \message_fcm\fcm_client::get_credentials_path();
+    $resolvedPath = \message_fcm\fcm_client::get_credentials_source();
     $projectId = \message_fcm\fcm_client::get_project_id();
 
     if ($isConfigured) {
@@ -47,6 +47,16 @@ if ($ADMIN->fulltree) {
         '',
         $OUTPUT->render($statusBanner)
     ));
+
+    // Service Account JSON pasted here, so the key needs no file on the server.
+    $setting = new \message_fcm\admin_setting_serviceaccountjson(
+        'message_fcm/serviceaccountjson',
+        get_string('serviceaccountjson', 'message_fcm'),
+        get_string('serviceaccountjson_desc', 'message_fcm'),
+        ''
+    );
+    $setting->set_updatedcallback('\message_fcm\fcm_client::reset_token_cache');
+    $settings->add($setting);
 
     // Service Account File Path
     $settings->add(new admin_setting_configtext(

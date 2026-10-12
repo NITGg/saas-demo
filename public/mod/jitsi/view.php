@@ -158,9 +158,10 @@ $end_ajax_url = (new moodle_url('/mod/jitsi/ajax.php'))->out(false);
 // Auto-start the recording when the host joins (Jibri records -> finalize.sh ->
 // Vimeo). Per-academy toggle: theme_nit/jitsi_autorecord (default ON), so an
 // academy can turn it off site-wide.
-// Only the lesson's own teacher starts it: a site admin dropping in must not.
+// Only the lesson's own teacher (a course session's teachers) starts it: a site admin
+// dropping in must not.
 $autorecord = (get_config('theme_nit', 'jitsi_autorecord') !== '0')
-    && (!$session || (int) $session->teacherid === (int) $USER->id);
+    && (!$session || \mod_jitsi\local\access::is_session_teacher($session, (int) $USER->id, $cm));
 
 $show_recs = jitsi_show_recordings_tab($is_teacher, $session);
 
@@ -184,6 +185,12 @@ if (!empty($jitsi->intro)) {
     echo $OUTPUT->box(format_module_intro('jitsi', $jitsi, $cm->id), 'generalbox mod_introbox');
 }
 
+// A scheduled room: when its session is.
+if ($session && \local_academysessions\session_manager::is_course_session($session)) {
+    echo html_writer::div(html_writer::tag('strong', get_string('sessiontime', 'jitsi') . ': ')
+        . s(jitsi_session_time_text($session)), 'jitsi-sessiontime alert alert-info', ['style' => 'margin:10px 0;']);
+}
+
 echo '<div id="jitsi-activity-container" style="margin:15px 0;">';
 
 // ── Tab bar ──────────────────────────────────────────────────────────────
@@ -201,7 +208,6 @@ if ($is_teacher) {
         . get_string('attendancelog', 'jitsi') . '</button>';
     echo '<span class="badge badge-info ml-auto" style="align-self:center;font-size:12px;">'
          . get_string('youarehost', 'jitsi') . '</span>';
-    // Recording (Jibri) is not wired in this phase — no Stop Recording button.
 }
 echo '</div>';
 
@@ -295,6 +301,16 @@ $js_config = json_encode([
     'cmid'              => (int)$cm->id,
     'teacherPresentUrl' => $CFG->wwwroot . '/mod/jitsi/teacher_present.php',
     'autoRecord'        => $autorecord,
+    'str' => [
+        'byTeacher' => get_string('ended_byteacher', 'jitsi'),
+        'byHost' => get_string('ended_byhost', 'jitsi'),
+        'left' => get_string('ended_left', 'jitsi'),
+        'ending' => get_string('ended_ending', 'jitsi'),
+        'failed' => get_string('ended_failed', 'jitsi'),
+        'recNote' => get_string('ended_recnote', 'jitsi'),
+        'recFailed' => get_string('ended_recfailed', 'jitsi'),
+        'recordings' => get_string('recordings', 'jitsi'),
+    ],
 ]);
 
 // Tab switcher (also before joining: the recordings / whiteboard tabs work without the call).
@@ -670,9 +686,10 @@ echo <<<HTML
         if (recPanel) { recPanel.style.display = 'none'; }
         document.getElementById('panel-ended').style.display = 'block';
 
+        var sub = document.getElementById('ended-sub');
         if (teacherEndedForAll && CFG.isTeacher && !_sessionEndCalled) {
             _sessionEndCalled = true;
-            document.getElementById('ended-sub').textContent = 'Ending session…';
+            sub.textContent = CFG.str.ending;
 
             // Determine which AJAX function to call:
             // end_session  — if there is a linked academy session
@@ -687,67 +704,70 @@ echo <<<HTML
                 body: body
             }).then(function(r) { return r.json(); })
             .then(function(data) {
-                document.getElementById('ended-sub').textContent =
-                    data.status === 'success'
-                        ? 'Session ended. Recordings will appear below once processed.'
-                        : 'Session could not be marked ended: ' + (data.error || '');
+                sub.textContent = data.status === 'success' ? CFG.str.byTeacher : CFG.str.failed;
                 loadRecordingsAjax();
             }).catch(function() {
-                document.getElementById('ended-sub').textContent =
-                    'Session ended (could not update server status).';
+                sub.textContent = CFG.str.failed;
                 loadRecordingsAjax();
             });
-        } else if (teacherEndedForAll && !CFG.isTeacher) {
-            // Student: teacher ended the meeting for all.
-            document.getElementById('ended-sub').textContent =
-                'The host has ended this session. Recordings will appear below once processed.';
-            loadRecordingsAjax();
         } else {
-            document.getElementById('ended-sub').textContent =
-                'You left the session. Recordings will appear below once processed.';
+            // A student when the teacher ended it for all; anyone who just left.
+            sub.textContent = teacherEndedForAll && !CFG.isTeacher ? CFG.str.byHost : CFG.str.left;
             loadRecordingsAjax();
         }
     }
 
+    // The room's recordings so far (the one just made appears a few minutes later, once
+    // Jibri has shipped it to Vimeo), with the same rules as the "Session recordings" tab.
     function loadRecordingsAjax() {
-        if (!CFG.sessionId) return;
-        var recParams = CFG.sessionId
-            ? 'sessionid=' + CFG.sessionId + '&cmid=' + CFG.cmId
-            : 'cmid=' + CFG.cmId;
-        fetch(CFG.endUrl + '?function=get_session_recordings&' + recParams
-              + '&sesskey=' + encodeURIComponent(CFG.sesskey))
-            .then(function(r){ return r.json(); })
-            .then(function(data) {
-                var box = document.getElementById('ended-recordings');
-                if (!data.data || data.data.length === 0) {
-                    box.innerHTML = '<p class="text-muted mt-3">No recordings available yet.</p>';
-                    return;
-                }
-                var html = '<h5 class="mt-4">Session Recordings</h5>';
-                data.data.forEach(function(rec) {
-                    html += '<div class="card mb-3" style="border-radius:8px;text-align:left;">';
-                    html += '<div class="card-body">';
-                    html += '<h6>' + (rec.title || 'Recording') + '</h6>';
-                    if (rec.embed_url) {
-                        html += '<div style="position:relative;padding-top:56.25%;border-radius:6px;overflow:hidden;">';
-                        html += '<iframe src="' + rec.embed_url + '" loading="lazy"'
-                            + ' style="border:none;position:absolute;top:0;left:0;height:100%;width:100%;"'
-                            + ' allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;"'
-                            + ' allowfullscreen></iframe></div>';
-                    } else {
-                        html += '<p class="text-muted">Recording is being processed.</p>';
-                    }
-                    if (rec.storage && CFG.isTeacher) {
-                        html += '<small class="text-muted">Storage: ' + rec.storage + '</small>';
-                    }
-                    html += '</div></div>';
-                });
-                box.innerHTML = html;
-            })
-            .catch(function() {
-                document.getElementById('ended-recordings').innerHTML =
-                    '<p class="text-muted">Could not load recordings right now.</p>';
+        var box = document.getElementById('ended-recordings');
+        var note = function() {
+            var p = document.createElement('p');
+            p.className = 'text-muted mt-3';
+            p.textContent = CFG.str.recNote;
+            return p;
+        };
+        fetch(CFG.endUrl, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: 'function=get_session_recordings&sesskey=' + encodeURIComponent(CFG.sesskey) + '&cmid=' + CFG.cmId
+        }).then(function(r) { return r.json(); })
+        .then(function(data) {
+            box.innerHTML = '';
+            box.appendChild(note());
+            if (!data.data || data.data.length === 0) {
+                return;
+            }
+            var heading = document.createElement('h5');
+            heading.className = 'mt-4';
+            heading.textContent = CFG.str.recordings;
+            box.appendChild(heading);
+            data.data.forEach(function(rec) {
+                var card = document.createElement('div');
+                card.className = 'card mb-3';
+                card.style.cssText = 'border-radius:8px;text-align:start;';
+                var body = document.createElement('div');
+                body.className = 'card-body';
+                var title = document.createElement('h6');
+                title.textContent = rec.title;
+                body.appendChild(title);
+                var frame = document.createElement('div');
+                frame.style.cssText = 'position:relative;padding-top:56.25%;border-radius:6px;overflow:hidden;';
+                var iframe = document.createElement('iframe');
+                iframe.src = rec.embed_url;
+                iframe.loading = 'lazy';
+                iframe.allow = 'autoplay; fullscreen; picture-in-picture';
+                iframe.allowFullscreen = true;
+                iframe.style.cssText = 'border:none;position:absolute;inset:0;height:100%;width:100%;';
+                frame.appendChild(iframe);
+                body.appendChild(frame);
+                card.appendChild(body);
+                box.appendChild(card);
             });
+        })
+        .catch(function() {
+            box.textContent = CFG.str.recFailed;
+        });
     }
 
 })();
@@ -758,7 +778,7 @@ HTML;
 echo $OUTPUT->footer();
 
 // -------------------------------------------------------------------------
-// Helper: render this activity's recordings, played from VdoCipher.
+// Helper: render this activity's recordings, played from Vimeo.
 // -------------------------------------------------------------------------
 function jitsi_print_recordings($session, $context, $is_teacher, $cmid = null, $heading = true) {
     global $DB, $OUTPUT, $USER, $cm;

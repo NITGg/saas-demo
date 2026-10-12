@@ -45,7 +45,7 @@ class presence {
     /**
      * A moderator came into (or left) the room.
      *
-     * For the session's own teacher it also moves the student entry gate
+     * For the session's teacher (access::is_session_teacher()) it also moves the student entry gate
      * (academy_live_sessions.teacher_joined_at: set while the teacher is in the call,
      * cleared when they leave), stamps their first join (teacher_first_join, never
      * changed afterwards: what lateness is measured from) and their last leave. A site
@@ -68,10 +68,15 @@ class presence {
         }
 
         $now = time();
-        if ((int) $session->teacherid === $userid) {
-            $session->teacher_joined_at = $present ? $now : null;
-            $DB->set_field('academy_live_sessions', 'teacher_joined_at',
-                $session->teacher_joined_at, ['id' => $session->id]);
+        if (access::is_session_teacher($session, $userid, $cm)) {
+            // A course session can have several teachers: the gate stays open while
+            // another one is still in the call.
+            if ($present || !\local_academysessions\session_manager::is_course_session($session)
+                    || !roomlog::host_in((int) $session->jitsiid, $now, $userid)) {
+                $session->teacher_joined_at = $present ? $now : null;
+                $DB->set_field('academy_live_sessions', 'teacher_joined_at',
+                    $session->teacher_joined_at, ['id' => $session->id]);
+            }
             if ($present) {
                 // Only stamped while still empty (in SQL, so two racing "joined" pings
                 // cannot overwrite it).

@@ -64,6 +64,38 @@ class fcm_test extends \advanced_testcase {
     }
 
     /**
+     * A key pasted in the settings page is used instead of the file, and a new key drops the cached token.
+     */
+    public function test_pasted_key_wins_over_file(): void {
+        $key = ['type' => 'service_account', 'project_id' => 'pasted-project',
+            'private_key' => 'not-a-real-key', 'client_email' => 'push@pasted-project.iam.gserviceaccount.com'];
+        set_config('cached_token_data', json_encode(['token' => 'old', 'expires_at' => time() + 3600]), 'message_fcm');
+        set_config('serviceaccountjson', json_encode($key, JSON_PRETTY_PRINT), 'message_fcm');
+        fcm_client::reset_token_cache();
+
+        $this->assertSame('pasted-project', fcm_client::get_project_id());
+        $this->assertSame('push@pasted-project.iam.gserviceaccount.com', fcm_client::get_credentials_data()['client_email']);
+        $this->assertSame(get_string('serviceaccountjson', 'message_fcm'), fcm_client::get_credentials_source());
+        $this->assertFalse(get_config('message_fcm', 'cached_token_data'));
+    }
+
+    /**
+     * The pasted-key setting accepts an empty value or a key, and rejects anything else.
+     */
+    public function test_serviceaccountjson_validation(): void {
+        global $CFG;
+        require_once($CFG->libdir . '/adminlib.php');
+        $setting = new admin_setting_serviceaccountjson('message_fcm/serviceaccountjson', 'k', 'd', '');
+        $invalid = get_string('serviceaccountjson_invalid', 'message_fcm');
+
+        $this->assertTrue($setting->validate(''));
+        $this->assertSame($invalid, $setting->validate('hello'));
+        $this->assertSame($invalid, $setting->validate('{"project_id":"x"}'));
+        $this->assertTrue($setting->validate(json_encode(['project_id' => 'x', 'private_key' => 'k',
+            'client_email' => 'a@x.iam.gserviceaccount.com'])));
+    }
+
+    /**
      * Test send_message handles users with no registered devices gracefully.
      */
     public function test_send_message_no_devices(): void {

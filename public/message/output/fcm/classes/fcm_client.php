@@ -77,6 +77,12 @@ class fcm_client {
      * @return array|null Decoded JSON array or null on error.
      */
     public static function get_credentials_data(): ?array {
+        // The key pasted in the settings page wins over a file on disk.
+        $pasted = trim((string)get_config('message_fcm', 'serviceaccountjson'));
+        if ($pasted !== '') {
+            return self::parse_credentials($pasted);
+        }
+
         $path = self::get_credentials_path();
         if (!$path || !is_readable($path)) {
             return null;
@@ -87,12 +93,41 @@ class fcm_client {
             return null;
         }
 
-        $data = json_decode($content, true);
+        return self::parse_credentials($content);
+    }
+
+    /**
+     * Decodes a Service Account JSON key.
+     *
+     * @param string $json Contents of the key file.
+     * @return array|null Decoded key, or null when it is not a usable service account key.
+     */
+    public static function parse_credentials(string $json): ?array {
+        $data = json_decode($json, true);
         if (!is_array($data) || empty($data['private_key']) || empty($data['client_email'])) {
             return null;
         }
 
         return $data;
+    }
+
+    /**
+     * Describes where the credentials come from, for the settings and test pages.
+     *
+     * @return string|null 'Settings page', the file path, or null when there are none.
+     */
+    public static function get_credentials_source(): ?string {
+        if (trim((string)get_config('message_fcm', 'serviceaccountjson')) !== '') {
+            return get_string('serviceaccountjson', 'message_fcm');
+        }
+        return self::get_credentials_path();
+    }
+
+    /**
+     * Drops the cached OAuth token, so a new key is used straight away.
+     */
+    public static function reset_token_cache(): void {
+        unset_config('cached_token_data', 'message_fcm');
     }
 
     /**

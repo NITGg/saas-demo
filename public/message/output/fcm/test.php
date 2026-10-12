@@ -103,7 +103,7 @@ if (!empty($notice)) {
 
 // Diagnostics Summary Card
 $isConfigured = \message_fcm\fcm_client::is_configured();
-$credPath = \message_fcm\fcm_client::get_credentials_path();
+$credPath = \message_fcm\fcm_client::get_credentials_source();
 $projectId = \message_fcm\fcm_client::get_project_id();
 $token = $isConfigured ? \message_fcm\fcm_client::get_access_token() : null;
 $totalDevices = $DB->count_records('user_devices');

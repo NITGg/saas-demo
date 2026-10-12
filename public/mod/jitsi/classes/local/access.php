@@ -34,7 +34,13 @@ defined('MOODLE_INTERNAL') || die();
  *  - an ended or cancelled session is closed for everyone;
  *  - a student gets in from OPEN_BEFORE seconds before the start until the end, and
  *    only while the teacher is in the call (teacher_joined_at is set).
- * A standalone room (no session) keeps Moodle's rules: mod/jitsi:moderate moderates.
+ * A course session (a Jitsi activity scheduled from its settings, audience = course) is
+ * for the whole course: every user enrolled in it gets in (a student enrolled after it
+ * was scheduled is added to its list on the way in), and whoever holds
+ * mod/jitsi:moderate hosts it, like a standalone room; the time window and "the
+ * teacher is in" still apply.
+ * A standalone room (no session) keeps Moodle's rules: mod/jitsi:moderate moderates, and
+ * only users enrolled in the course get in (not a guest).
  *
  * @package    mod_jitsi
  * @copyright  2026 NIT
@@ -88,6 +94,11 @@ class access {
             return $result(self::ENDED);
         }
         if (!$session) {
+            // The course's own members only: a guest (guest access, or the guest user) may
+            // see the course but not join its calls.
+            if (!$moderator && !is_enrolled(\context_course::instance($cm->course), $userid, '', true)) {
+                return $result(self::NOT_ALLOWED);
+            }
             if (!$cm->available && !$moderator) {
                 return $result(self::UNAVAILABLE);
             }
@@ -103,7 +114,18 @@ class access {
 
         $invited = $DB->record_exists('academy_session_students',
             ['sessionid' => $session->id, 'userid' => $userid]);
-        if ((int) $session->teacherid !== $userid && !$invited && !is_siteadmin($userid)) {
+        $member = $invited;
+        if (\local_academysessions\session_manager::is_course_session($session)) {
+            $member = $invited || $moderator
+                || is_enrolled(\context_course::instance((int) $session->courseid), $userid, '', true);
+            // A student enrolled after the session was scheduled: on its list from now on
+            // (attendance, reports), without waiting for the next sync.
+            if (!$invited && !$moderator && in_array($session->status, ['scheduled', 'live'], true)
+                    && \local_academysessions\session_manager::is_course_student((int) $session->courseid, $userid)) {
+                \local_academysessions\session_manager::add_student((int) $session->id, $userid);
+            }
+        }
+        if ((int) $session->teacherid !== $userid && !$member && !is_siteadmin($userid)) {
             return $result(self::NOT_ALLOWED);
         }
         if ($session->status === 'ended' || $session->status === 'cancelled') {
@@ -132,8 +154,8 @@ class access {
 
     /**
      * Whether a user moderates a room. For a linked room only the session's teacher
-     * (and a site admin who is not one of its invited students); for a standalone room
-     * whoever holds mod/jitsi:moderate.
+     * (and a site admin who is not one of its invited students); for a course session or
+     * a standalone room whoever holds mod/jitsi:moderate.
      *
      * @param \stdClass|\cm_info $cm the room (needs ->id, ->instance)
      * @param int $userid
@@ -145,14 +167,41 @@ class access {
         if ($session === false) {
             $session = presence::linked_session($cm);
         }
-        if (!$session) {
-            return has_capability('mod/jitsi:moderate', \context_module::instance($cm->id), $userid);
-        }
-        if ((int) $session->teacherid === $userid) {
+        if ((int) ($session->teacherid ?? 0) === $userid) {
             return true;
+        }
+        if (!$session || \local_academysessions\session_manager::is_course_session($session)) {
+            return has_capability('mod/jitsi:moderate', \context_module::instance($cm->id), $userid);
         }
         return is_siteadmin($userid) && !$DB->record_exists('academy_session_students',
             ['sessionid' => $session->id, 'userid' => $userid]);
+    }
+
+    /**
+     * Whether a user is a teacher of a linked session: the one whose arrival lets the
+     * students in, who starts the recording, and whose lateness the reports measure. The
+     * session's own teacher; for a course session also any other teacher of the course who
+     * hosts the room (enrolled, with mod/jitsi:moderate). A site admin or manager dropping
+     * in is not.
+     *
+     * @param \stdClass $session academy_live_sessions row
+     * @param int $userid
+     * @param \stdClass|\cm_info|null $cm the room (null = looked up from the session)
+     * @return bool
+     */
+    public static function is_session_teacher(\stdClass $session, int $userid, $cm = null): bool {
+        if ((int) $session->teacherid === $userid) {
+            return true;
+        }
+        if (!\local_academysessions\session_manager::is_course_session($session) || empty($session->jitsiid)) {
+            return false;
+        }
+        $cmid = $cm ? (int) $cm->id
+            : (\local_academysessions\mobile_service::jitsi_cmids([(int) $session->jitsiid])[(int) $session->jitsiid] ?? 0);
+        if (!$cmid || !is_enrolled(\context_course::instance((int) $session->courseid), $userid, '', true)) {
+            return false;
+        }
+        return has_capability('mod/jitsi:moderate', \context_module::instance($cmid), $userid);
     }
 
     /**
@@ -169,7 +218,7 @@ class access {
     }
 
     /**
-     * Whether a room uses a waiting room (Jitsi lobby): a course room (not linked to a live
+     * Whether a room uses a waiting room (Jitsi lobby): a course room (standalone, or a course
      * session) with its "students wait for the teacher" setting on, and every private lesson
      * room (the student asks and the teacher lets them in). Other live-session rooms do not:
      * Moodle already lets in only the session's teacher, its invited students and admins.
@@ -183,7 +232,8 @@ class access {
         if (jitsi_is_lesson_room($cm)) {
             return true;
         }
-        if (presence::linked_session($cm)) {
+        $session = presence::linked_session($cm);
+        if ($session && !\local_academysessions\session_manager::is_course_session($session)) {
             return false;
         }
         return (bool) $DB->get_field('jitsi', 'lobby_enabled', ['id' => $cm->instance]);

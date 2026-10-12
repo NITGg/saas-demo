@@ -39,7 +39,26 @@ $string['security_header']       = 'Security Options';
 $string['roompassword']          = 'Room password';
 $string['roompassword_help']     = 'If set, participants must enter this password to join the session. Leave blank for no password.';
 $string['lobby_enabled']         = 'Students wait for the teacher to let them in';
-$string['lobby_enabled_help']    = 'When on, students can open the room only while a teacher of the course (or an admin) is in it, and then wait in the meeting\'s waiting room until the teacher lets them in from inside the meeting. Teachers and admins go straight in. Applies to rooms of a course, not to scheduled live sessions.';
+$string['lobby_enabled_help']    = 'When on, students can open the room only while a teacher of the course (or an admin) is in it, and then wait in the meeting\'s waiting room until the teacher lets them in from inside the meeting. Teachers and admins go straight in. Applies to the rooms of a course (scheduled or not), not to private lessons.';
+
+// Session time (the activity's settings).
+$string['schedule_header']       = 'Session time';
+$string['sessionstart']          = 'Starts at';
+$string['sessionstart_help']     = 'Turn on to schedule the session. Every student of the course (also those who enrol later) gets a reminder before it, the room opens to them 30 minutes before the start and closes at the end, and the session shows on the live monitoring wall and in the lessons report. The activity stays on the course page all the time, so its recording can be watched after the session. Leave off for a room that is always open.';
+$string['sessionstart_past']     = 'This time is already over. Check the day and the hour.';
+$string['sessionduration']       = 'Length (minutes)';
+$string['sessionduration_invalid'] = 'Enter the length in minutes (more than 0).';
+$string['sessiontime']           = 'Session time';
+$string['sessiontime_text']      = '{$a->date} · {$a->minutes} minutes';
+
+// After leaving the call (view.php).
+$string['ended_byteacher'] = 'You ended the session for everyone.';
+$string['ended_byhost']    = 'The teacher ended the session.';
+$string['ended_left']      = 'You left the session.';
+$string['ended_ending']    = 'Ending the session…';
+$string['ended_failed']    = 'The session could not be marked as ended. Try again from the room.';
+$string['ended_recnote']   = 'If the session was recorded, the recording appears under "Session recordings" a few minutes after it ends.';
+$string['ended_recfailed'] = 'Could not load the recordings right now.';
 
 // The room's attendance log.
 $string['attendancelog'] = 'Attendance log';
