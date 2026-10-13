@@ -39,9 +39,16 @@ final class check {
         }
         $started = microtime(true);
         try {
+            // The same request a visitor's chat sends (prompt, context and tools), so any part of it
+            // Anthropic refuses shows up here — not only the key.
             $res = \core\di::get(client::class)->call([
-                'model' => config::chat_model(), 'system' => 'Reply with the single word OK.', 'volatile' => '',
-                'messages' => [['role' => 'user', 'text' => 'Connection test']], 'tools' => [], 'maxtokens' => 16,
+                'model' => config::chat_model(),
+                'system' => \local_nit_assistant\knowledge\prompt::system('sales', format_string(get_site()->fullname)),
+                'volatile' => \local_nit_assistant\knowledge\prompt::volatile(time(), 'en', false, null) . "\n"
+                    . 'This is a connection test: reply with the single word OK and do not use any tool.',
+                'messages' => [['role' => 'user', 'text' => 'Connection test']],
+                'tools' => (new \local_nit_assistant\tools\registry())->definitions('sales'),
+                'maxtokens' => 256,
                 'effort' => 'low',
             ]);
         } catch (\Throwable $e) {
