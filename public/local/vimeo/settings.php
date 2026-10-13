@@ -16,7 +16,7 @@ if ($hassiteconfig) {
     // provisioner writes it per-package at academy-create / tier-change time. It
     // is stored unmasked in config but never sent to any client — only the server
     // uses it as "Authorization: bearer <token>".
-    $settings->add(new admin_setting_configpasswordunmask(
+    $settings->add(new \local_nit_core\admin\admin_setting_encryptedpasswordunmask(
         'local_vimeo/access_token',
         get_string('access_token', 'local_vimeo'),
         get_string('access_token_desc', 'local_vimeo'),
@@ -33,7 +33,7 @@ if ($hassiteconfig) {
         PARAM_RAW_TRIMMED
     ));
 
-    $settings->add(new admin_setting_configpasswordunmask(
+    $settings->add(new \local_nit_core\admin\admin_setting_encryptedpasswordunmask(
         'local_vimeo/client_secret',
         get_string('client_secret', 'local_vimeo'),
         get_string('client_secret_desc', 'local_vimeo'),

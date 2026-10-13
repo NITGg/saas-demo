@@ -128,6 +128,13 @@ payments** providers, **SMTP password**, reCAPTCHA secret, registration-hub secr
 → **Protection:** TDE covers them at rest; prefer keeping the most sensitive in **`config.php` /
 environment** rather than the DB where practical. These are secrets — rotate on exposure.
 
+The ones we encrypt in the DB (vdocipher `apisecret`; vimeo `access_token`/`client_secret`;
+academysessions `jitsi_jwt_app_secret`/`jibri_notify_key`; kashier `live/test_api_key` +
+`live/test_secret_key`) use **`\local_nit_core\admin\admin_setting_encryptedpasswordunmask`** in
+their `settings.php`: the DB stores `ENC1:…` ciphertext, but the admin settings page **decrypts for
+display** — pressing the eye/unmask button shows the real secret — and **encrypts on save**, so
+editing one in the UI keeps it encrypted at rest (no `encrypt_config_secrets.php` re-run needed).
+
 ### 🟡 Personal data (PII) — rely on TDE + access control + GDPR tools, NOT column-level
 
 | Columns | Why not column-encrypt |

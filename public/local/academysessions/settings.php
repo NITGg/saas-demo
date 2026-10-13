@@ -43,7 +43,7 @@ if ($hassiteconfig) {
         }
     }
 
-    $settings->add(new admin_setting_configpasswordunmask(
+    $settings->add(new \local_nit_core\admin\admin_setting_encryptedpasswordunmask(
         'local_academysessions/jitsi_jwt_app_secret',
         'Jitsi JWT App Secret',
         'The shared HS256 secret configured on the Jitsi server. Required: without it nobody can enter a live session.',
@@ -57,7 +57,7 @@ if ($hassiteconfig) {
         'meet.jitsi'
     ));
 
-    $settings->add(new admin_setting_configpasswordunmask(
+    $settings->add(new \local_nit_core\admin\admin_setting_encryptedpasswordunmask(
         'local_academysessions/jibri_notify_key',
         'Jibri Recording Notify Key',
         'Shared secret the Jibri finalize script sends (X-Notify-Key) to record_notify.php after uploading a recording. Must match the finalize script\'s MOODLE_NOTIFY_KEY. Empty = recordings are refused.',

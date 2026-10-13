@@ -97,6 +97,19 @@ $secret = crypto::config_secret('vdocipher', 'apisecret');
 // → returns the config.php forced value if set, else the DB value (decrypted if encrypted).
 ```
 
+For option B, define the secret field in the plugin's `settings.php` with
+`\local_nit_core\admin\admin_setting_encryptedpasswordunmask` instead of the stock
+`admin_setting_configpasswordunmask`. It **encrypts on save** and **decrypts for display**,
+so the DB always holds `ENC1:…` ciphertext while an admin who presses the eye/unmask button
+sees the real secret — and editing it in the UI keeps it encrypted (no CLI re-run needed):
+```php
+$settings->add(new \local_nit_core\admin\admin_setting_encryptedpasswordunmask(
+    'local_vdocipher/apisecret', get_string('apisecret', 'local_vdocipher'),
+    get_string('apisecret_desc', 'local_vdocipher'), ''));
+```
+It uses the same (empty) context as `config_secret()`, so values already backfilled by
+`cli/encrypt_config_secrets.php` keep working unchanged.
+
 So each project just sets the key once in `config.php`, puts its hottest API secrets in
 `forced_plugin_settings`, and anything sensitive that still lives in the DB goes through `crypto`.
 

@@ -25,9 +25,9 @@ if ($hassiteconfig) {
         get_string('heading_live', 'paymentprovider_kashier'), ''));
     $settings->add(new admin_setting_configtext('paymentprovider_kashier/live_merchant_id',
         get_string('merchant_id', 'paymentprovider_kashier'), '', '', PARAM_TEXT));
-    $settings->add(new admin_setting_configpasswordunmask('paymentprovider_kashier/live_api_key',
+    $settings->add(new \local_nit_core\admin\admin_setting_encryptedpasswordunmask('paymentprovider_kashier/live_api_key',
         get_string('api_key', 'paymentprovider_kashier'), '', ''));
-    $settings->add(new admin_setting_configpasswordunmask('paymentprovider_kashier/live_secret_key',
+    $settings->add(new \local_nit_core\admin\admin_setting_encryptedpasswordunmask('paymentprovider_kashier/live_secret_key',
         get_string('secret_key', 'paymentprovider_kashier'), '', ''));
     $settings->add(new admin_setting_configtext('paymentprovider_kashier/live_base_url',
         get_string('base_url', 'paymentprovider_kashier'), '', 'https://api.kashier.io', PARAM_URL));
@@ -40,9 +40,9 @@ if ($hassiteconfig) {
         get_string('heading_test', 'paymentprovider_kashier'), ''));
     $settings->add(new admin_setting_configtext('paymentprovider_kashier/test_merchant_id',
         get_string('merchant_id', 'paymentprovider_kashier'), '', '', PARAM_TEXT));
-    $settings->add(new admin_setting_configpasswordunmask('paymentprovider_kashier/test_api_key',
+    $settings->add(new \local_nit_core\admin\admin_setting_encryptedpasswordunmask('paymentprovider_kashier/test_api_key',
         get_string('api_key', 'paymentprovider_kashier'), '', ''));
-    $settings->add(new admin_setting_configpasswordunmask('paymentprovider_kashier/test_secret_key',
+    $settings->add(new \local_nit_core\admin\admin_setting_encryptedpasswordunmask('paymentprovider_kashier/test_secret_key',
         get_string('secret_key', 'paymentprovider_kashier'), '', ''));
     $settings->add(new admin_setting_configtext('paymentprovider_kashier/test_base_url',
         get_string('base_url', 'paymentprovider_kashier'), '', 'https://test-api.kashier.io', PARAM_URL));
