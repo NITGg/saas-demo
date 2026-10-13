@@ -83,6 +83,7 @@ final class service {
             return 'invalid';
         }
         $conv = $DB->get_record('local_nit_asst_conv', ['id' => $conv->id], '*', MUST_EXIST);
+        $conv = conversation::follow_lang($conv, $text); // Reply in the language they just wrote in.
         if ((int) $conv->messagecount >= config::LIMITS['maxconvmessages']) {
             $emit('error', ['code' => 'full']);
             return 'full';

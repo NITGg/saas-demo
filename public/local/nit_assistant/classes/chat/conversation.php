@@ -208,6 +208,39 @@ final class conversation {
     }
 
     /**
+     * The language a message is written in: Arabic letters → ar, Latin letters → en,
+     * otherwise (emoji, digits, a link) the language so far.
+     *
+     * @param string $text
+     * @param string $fallback
+     * @return string ar | en
+     */
+    public static function detect_lang(string $text, string $fallback): string {
+        $text = preg_replace('#https?://\S+#iu', '', $text); // A pasted link says nothing about the language.
+        if (preg_match('/\p{Arabic}/u', $text)) {
+            return 'ar';
+        }
+        return preg_match('/[A-Za-z]/', $text) ? 'en' : $fallback;
+    }
+
+    /**
+     * Follow the language of the user's latest message (replies and tool texts use it).
+     *
+     * @param \stdClass $conv
+     * @param string $text
+     * @return \stdClass the conversation
+     */
+    public static function follow_lang(\stdClass $conv, string $text): \stdClass {
+        global $DB;
+        $lang = self::detect_lang($text, (string) $conv->lang);
+        if ($lang !== $conv->lang) {
+            $DB->set_field(self::TABLE, 'lang', $lang, ['id' => $conv->id]);
+            $conv->lang = $lang;
+        }
+        return $conv;
+    }
+
+    /**
      * Has an open conversation gone quiet for too long?
      *
      * @param \stdClass $conv

@@ -120,7 +120,8 @@ PROMPT;
             : 'no — for account questions, ask them to sign in';
         $lines = [
             'Current date: ' . date('Y-m-d', $now),
-            'User\'s language: ' . ($lang === 'ar' ? 'Arabic' : 'English') . ' — reply in it unless they switch',
+            'Language of the user\'s latest message: ' . ($lang === 'ar' ? 'Arabic' : 'English')
+                . ' — reply in that language (the site\'s language does not matter; if they switch, switch too)',
             'User signed in: ' . ($signedin ? 'yes' : $notsigned),
         ];
         if ($whatsapp) {

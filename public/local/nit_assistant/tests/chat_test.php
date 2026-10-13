@@ -135,6 +135,24 @@ final class chat_test extends \advanced_testcase {
         $this->assertNull(conversation::find(0, self::KEY, 'web', $later));
     }
 
+    public function test_the_reply_follows_the_language_of_each_message_not_the_site(): void {
+        global $DB;
+        $conv = conversation::find_or_create(0, self::KEY, ['lang' => 'ar']); // The site is in Arabic.
+        $this->llm->script = [fake_client::text('Hello!'), fake_client::text('أهلًا!'), fake_client::text('OK')];
+
+        (new service())->send($conv, 'what are the courses?', $this->emit());
+        $this->assertSame('en', $DB->get_field('local_nit_asst_conv', 'lang', ['id' => $conv->id]));
+        $this->assertStringContainsString('latest message: English', $this->llm->requests[0]['volatile']);
+
+        (new service())->send($conv, 'ايه الكورسات المتاحة؟', $this->emit());
+        $this->assertStringContainsString('latest message: Arabic', $this->llm->requests[1]['volatile']);
+
+        // Digits or an emoji alone keep the language so far.
+        (new service())->send($conv, '👍 2', $this->emit());
+        $this->assertSame('ar', $DB->get_field('local_nit_asst_conv', 'lang', ['id' => $conv->id]));
+        $this->assertSame('en', conversation::detect_lang('see https://مثال.com and tell me', 'ar'));
+    }
+
     public function test_the_assistant_answers_and_the_reply_is_stored(): void {
         global $DB;
         $this->llm->script = [fake_client::text('Welcome! We have maths courses.')];
@@ -272,8 +290,13 @@ final class chat_test extends \advanced_testcase {
         $this->assertTrue($r['ok']);
         $this->assertSame('OK', $r['reply']);
 
-        $this->llm->script = [new \moodle_exception('error_model', 'local_nit_assistant', '', null,
-            'Anthropic\Core\Exceptions\AuthenticationException: invalid x-api-key')];
+        $this->llm->script = [new \moodle_exception(
+            'error_model',
+            'local_nit_assistant',
+            '',
+            null,
+            'Anthropic\Core\Exceptions\AuthenticationException: invalid x-api-key'
+        )];
         $r = llm\check::run();
         $this->assertFalse($r['ok']);
         $this->assertStringContainsString('invalid x-api-key', $r['error'], 'the real reason, not the generic message');

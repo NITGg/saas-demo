@@ -100,7 +100,8 @@ final class inbound {
         $userid = identity::active($m['from'], $now);
         $mode = $userid ? access::mode($userid) : 'sales';
         $conv = self::conversation($m['from'], (int) $userid, $mode, $text, $now);
-        $lang = preg_match('/\p{Arabic}/u', $text) ? 'ar' : ($text !== '' ? 'en' : $conv->lang);
+        $conv = conversation::follow_lang($conv, $text); // Reply in the language they just wrote in.
+        $lang = $conv->lang;
         $withperson = in_array($conv->status, [state::WAITING, state::HUMAN], true);
 
         // Pictures, voice notes, stickers…: text only for now.
