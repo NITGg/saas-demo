@@ -61,6 +61,10 @@ final class provider implements
             'userid' => 'privacy:metadata:ticket:userid', 'subject' => 'privacy:metadata:ticket:subject',
             'description' => 'privacy:metadata:ticket:description',
         ], 'privacy:metadata:ticket');
+        $collection->add_database_table('local_nit_asst_followup', [
+            'userid' => 'privacy:metadata:followup:userid', 'title' => 'privacy:metadata:followup:title',
+            'body' => 'privacy:metadata:followup:body', 'timesent' => 'privacy:metadata:followup:timesent',
+        ], 'privacy:metadata:followup');
         $collection->add_external_location_link('anthropic', [
             'messages' => 'privacy:metadata:anthropic:messages',
         ], 'privacy:metadata:anthropic');
@@ -79,6 +83,7 @@ final class provider implements
                 || $DB->record_exists('local_nit_asst_event', ['userid' => $userid])
                 || $DB->record_exists('local_nit_asst_lead', ['userid' => $userid])
                 || $DB->record_exists('local_nit_asst_ticket', ['userid' => $userid])
+                || $DB->record_exists('local_nit_asst_followup', ['userid' => $userid])
         ) {
             $list->add_system_context();
         }
@@ -94,7 +99,7 @@ final class provider implements
         }
         foreach (
             ['local_nit_asst_conv', 'local_nit_asst_audit', 'local_nit_asst_event', 'local_nit_asst_lead',
-                'local_nit_asst_ticket'] as $table
+                'local_nit_asst_ticket', 'local_nit_asst_followup'] as $table
         ) {
             $userlist->add_from_sql('userid', "SELECT userid FROM {{$table}} WHERE userid > 0", []);
         }
@@ -110,6 +115,7 @@ final class provider implements
             if (!$context instanceof \context_system) {
                 continue;
             }
+            self::export_followups($context, $userid);
             foreach ($DB->get_records('local_nit_asst_conv', ['userid' => $userid], 'timecreated') as $conv) {
                 [$insql, $params] = $DB->get_in_or_equal(['visitor', 'assistant', 'staff'], SQL_PARAMS_NAMED);
                 $msgs = $DB->get_records_select(
@@ -144,6 +150,27 @@ final class provider implements
     }
 
     /**
+     * Export the follow-up messages sent to a user.
+     *
+     * @param \context $context
+     * @param int $userid
+     * @return void
+     */
+    private static function export_followups(\context $context, int $userid): void {
+        global $DB;
+        $sent = $DB->get_records('local_nit_asst_followup', ['userid' => $userid, 'status' => 'sent'], 'timesent');
+        if ($sent) {
+            writer::with_context($context)->export_data(
+                [get_string('privacy:followups', 'local_nit_assistant')],
+                (object) ['messages' => array_values(array_map(static fn($f) => [
+                    'title' => $f->title, 'text' => $f->body,
+                    'sent' => \core_privacy\local\request\transform::datetime($f->timesent),
+                ], $sent))]
+            );
+        }
+    }
+
+    /**
      * {@inheritDoc}
      */
     public static function delete_data_for_all_users_in_context(\context $context): void {
@@ -157,6 +184,7 @@ final class provider implements
         $DB->delete_records('local_nit_asst_event');
         $DB->delete_records('local_nit_asst_lead');
         $DB->delete_records('local_nit_asst_ticket');
+        $DB->delete_records('local_nit_asst_followup');
     }
 
     /**
@@ -204,5 +232,6 @@ final class provider implements
         $DB->delete_records_select('local_nit_asst_event', "userid {$insql}", $params);
         $DB->delete_records_select('local_nit_asst_lead', "userid {$insql}", $params);
         $DB->delete_records_select('local_nit_asst_ticket', "userid {$insql}", $params);
+        $DB->delete_records_select('local_nit_asst_followup', "userid {$insql}", $params);
     }
 }

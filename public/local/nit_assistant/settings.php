@@ -45,6 +45,12 @@ $ADMIN->add('local_nit_assistant_cat', new admin_externalpage(
     'local/nit_assistant:viewinbox'
 ));
 $ADMIN->add('local_nit_assistant_cat', new admin_externalpage(
+    'local_nit_assistant_followups',
+    get_string('followups', 'local_nit_assistant'),
+    new moodle_url('/local/nit_assistant/followups.php'),
+    'local/nit_assistant:viewinbox'
+));
+$ADMIN->add('local_nit_assistant_cat', new admin_externalpage(
     'local_nit_assistant_usage',
     get_string('usage', 'local_nit_assistant'),
     new moodle_url('/local/nit_assistant/usage.php'),
@@ -144,6 +150,26 @@ if ($hassiteconfig || has_capability('local/nit_assistant:manage', context_syste
         '30',
         PARAM_INT,
         6
+    ));
+
+    $settings->add(new admin_setting_heading(
+        'local_nit_assistant/followupsheading',
+        get_string('followups', 'local_nit_assistant'),
+        get_string('followupsheading_desc', 'local_nit_assistant')
+    ));
+    $settings->add(new admin_setting_configcheckbox(
+        'local_nit_assistant/followups',
+        get_string('followupson', 'local_nit_assistant'),
+        get_string('followupson_desc', 'local_nit_assistant'),
+        0
+    ));
+    $settings->add(new admin_setting_configtext(
+        'local_nit_assistant/followupcooldown',
+        get_string('followupcooldown', 'local_nit_assistant'),
+        get_string('followupcooldown_desc', 'local_nit_assistant'),
+        '7',
+        PARAM_INT,
+        4
     ));
 
     $ADMIN->add('local_nit_assistant_cat', $settings);

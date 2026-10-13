@@ -187,6 +187,32 @@
         <INDEX NAME="userid" UNIQUE="false" FIELDS="userid"/>
       </INDEXES>
     </TABLE>
+    <TABLE NAME="local_nit_asst_followup" COMMENT="Follow-up messages drafted daily; staff approve each before it is sent">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Who the message is for"/>
+        <FIELD NAME="kind" TYPE="char" LENGTH="30" NOTNULL="true" SEQUENCE="false" COMMENT="checkout_unpaid | winback | chat_interest | flex_idle"/>
+        <FIELD NAME="refkey" TYPE="char" LENGTH="191" NOTNULL="true" SEQUENCE="false" COMMENT="What it is about; one draft per refkey ever"/>
+        <FIELD NAME="title" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="body" TYPE="text" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="url" TYPE="char" LENGTH="1333" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="convid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="The chat it came from (chat_interest)"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="draft" SEQUENCE="false" COMMENT="draft | sent | dismissed | failed"/>
+        <FIELD NAME="decidedby" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="timedecided" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timesent" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="refkey" UNIQUE="true" FIELDS="refkey"/>
+        <INDEX NAME="statuscreated" UNIQUE="false" FIELDS="status, timecreated"/>
+        <INDEX NAME="usersent" UNIQUE="false" FIELDS="userid, timesent"/>
+      </INDEXES>
+    </TABLE>
     <TABLE NAME="local_nit_asst_ticket" COMMENT="Support tickets students opened through the assistant">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>

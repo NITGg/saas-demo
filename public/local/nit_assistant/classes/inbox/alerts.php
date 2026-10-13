@@ -60,6 +60,20 @@ final class alerts {
     }
 
     /**
+     * A daily digest for staff: follow-up drafts or leads waiting.
+     *
+     * @param string $kind followups | leadswaiting
+     * @param int $count
+     * @param string $path the staff page
+     * @return void
+     */
+    public static function digest(string $kind, int $count, string $path): void {
+        if ($count > 0) {
+            self::send($kind, $count, self::recipients(), '', (new \moodle_url($path))->out(false));
+        }
+    }
+
+    /**
      * A student opened a support ticket.
      *
      * @param \stdClass $ticket
@@ -97,17 +111,18 @@ final class alerts {
     /**
      * Send one alert.
      *
-     * @param string $kind handoff | lead | message
-     * @param int $convid
+     * @param string $kind handoff | lead | message | ticket | followups | leadswaiting
+     * @param int $convid the conversation (or the count, for a digest) — the strings' {$a}
      * @param int[] $userids
      * @param string $detail
+     * @param string|null $url where the alert links (default: the conversation)
      * @return void
      */
-    private static function send(string $kind, int $convid, array $userids, string $detail): void {
+    private static function send(string $kind, int $convid, array $userids, string $detail, ?string $url = null): void {
         if (!$userids) {
             return;
         }
-        $url = (new \moodle_url('/local/nit_assistant/view.php', ['id' => $convid]))->out(false);
+        $url ??= (new \moodle_url('/local/nit_assistant/view.php', ['id' => $convid]))->out(false);
         $text = static function (string $lang) use ($kind, $convid, $detail): array {
             $sm = get_string_manager();
             $title = $sm->get_string("alert_{$kind}", 'local_nit_assistant', $convid, $lang);

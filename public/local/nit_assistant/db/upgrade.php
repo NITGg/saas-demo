@@ -82,5 +82,32 @@ function xmldb_local_nit_assistant_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026101301, 'local', 'nit_assistant');
     }
 
+    if ($oldversion < 2026101303) {
+        // Follow-up drafts (phase 4).
+        $table = new xmldb_table('local_nit_asst_followup');
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('kind', XMLDB_TYPE_CHAR, '30', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('refkey', XMLDB_TYPE_CHAR, '191', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('title', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('body', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
+        $table->add_field('url', XMLDB_TYPE_CHAR, '1333', null, null, null, null);
+        $table->add_field('convid', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('status', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, 'draft');
+        $table->add_field('decidedby', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('timedecided', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timesent', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_index('refkey', XMLDB_INDEX_UNIQUE, ['refkey']);
+        $table->add_index('statuscreated', XMLDB_INDEX_NOTUNIQUE, ['status', 'timecreated']);
+        $table->add_index('usersent', XMLDB_INDEX_NOTUNIQUE, ['userid', 'timesent']);
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+        upgrade_plugin_savepoint(true, 2026101303, 'local', 'nit_assistant');
+    }
+
     return true;
 }

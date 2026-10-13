@@ -49,6 +49,11 @@ final class ui {
             new \moodle_url('/local/nit_assistant/tickets.php'),
             get_string('tickets', 'local_nit_assistant')
         );
+        $tabs[] = new \tabobject(
+            'followups',
+            new \moodle_url('/local/nit_assistant/followups.php'),
+            get_string('followups', 'local_nit_assistant')
+        );
         if (has_capability('local/nit_assistant:manage', $ctx)) {
             $tabs[] = new \tabobject(
                 'usage',

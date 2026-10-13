@@ -258,3 +258,32 @@ withdrawals — it explains the step and links the page. Never gives students' c
 
 **Tests:** teacher-tool tests (another teacher's lessons/earnings never show, accounts masked).
 **Evals:** 12 teacher cases in `tests/evals/teacher_cases.json`.
+
+---
+
+## 12. Phase 4 — what was built (proactive follow-ups)
+
+The academy already reminds students automatically before a subscription or a Flex package
+expires, so follow-ups cover what nothing else does. Each morning (task
+`local_nit_assistant\task\followups`, 09:00) the assistant drafts a short message, in the student's
+own language, when:
+
+| Kind | When |
+|---|---|
+| `checkout_unpaid` | a payment failed / expired / was cancelled 1–7 days ago and they haven't bought the item since (link: try again) |
+| `winback` | their subscription ended 3–30 days ago and they have no plan now (link: plans) |
+| `chat_interest` | the assistant gave them a buying link 2–7 days ago and they haven't bought it (link: the item) |
+| `flex_idle` | an active package has credits left and they haven't asked for a lesson in 14 days (link: book) |
+
+**Nothing is sent without staff approval:** the Follow-ups page lists the drafts; staff may edit
+the title and text, then Send (bell, app push, email — as each student's notification preferences
+allow, provider `local_nit_assistant/followup`) or Dismiss. Each subject gets at most one draft
+ever; nobody gets more than one follow-up per cooldown (default 7 days); suspended or unconfirmed
+accounts are skipped. Staff get a daily alert when drafts are waiting, and when leads have not
+been contacted for 2 days.
+
+**Settings:** follow-ups on/off (off by default), days between follow-ups. **Privacy:** sent
+follow-ups are exported and deleted with the user's data.
+
+**Tests:** 7 follow-up tests (who gets one and who must not, language, single send, cooldown,
+dismiss, the daily task); 78 in total.
