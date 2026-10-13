@@ -34,7 +34,7 @@ final class config {
         'maxturninput' => 30000,
         'maxturnoutput' => 1500,
         'maxconvmessages' => 60,
-        'turntimeout' => 30,
+        'turntimeout' => 60,
     ];
 
     /** Messages of history sent to the model. */
@@ -78,6 +78,10 @@ final class config {
         $detail = $e instanceof \moodle_exception && !empty($e->debuginfo) ? $e->debuginfo : $e->getMessage();
         $detail = \local_nit_assistant\security\redaction::text(\core_text::substr(trim((string) $detail), 0, 500));
         set_config('lasterror', json_encode(['time' => time(), 'message' => $detail]), 'local_nit_assistant');
+        // Also in the PHP error log (docker logs / the web server's error log), one line per failure —
+        // debugging() would hide it unless developer debugging is on.
+        // phpcs:ignore moodle.PHP.ForbiddenFunctions.FoundWithAlternative
+        error_log('local_nit_assistant: AI call failed: ' . preg_replace('/\s+/', ' ', $detail));
     }
 
     /**

@@ -84,6 +84,6 @@ $conv = access::sync_mode(conversation::find_or_create($userid, $key ?: null, [
 // (and save) the reply even if the browser goes away.
 \core\session\manager::write_close();
 ignore_user_abort(true);
-core_php_time_limit::raise(120);
+core_php_time_limit::raise(300);
 
 (new service())->send($conv, $message, $emit, $page ?: null);

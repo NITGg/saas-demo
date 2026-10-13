@@ -56,10 +56,13 @@ final class anthropic_client implements client {
      */
     public function __construct(string $apikey, float $timeout = 30.0, ?ClientInterface $transporter = null) {
         sdk_loader::register();
-        $transporter ??= new \core\http_client(['timeout' => $timeout, 'connect_timeout' => 10]);
+        // A reply streams for a while (tool calls, then a long answer): give the whole response time,
+        // and cut only when nothing arrives for $timeout seconds.
+        $total = max(120.0, $timeout * 2);
+        $transporter ??= new \core\http_client(['timeout' => $total, 'read_timeout' => $timeout, 'connect_timeout' => 10]);
         $this->sdk = new AnthropicClient(
             apiKey: $apikey,
-            requestOptions: ['transporter' => $transporter, 'maxRetries' => 1, 'timeout' => $timeout],
+            requestOptions: ['transporter' => $transporter, 'maxRetries' => 1, 'timeout' => $total],
         );
     }
 
