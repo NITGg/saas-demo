@@ -174,7 +174,7 @@
             who.textContent = S.chat_team;
             node.appendChild(who);
         }
-        var body = el('div', 'nit-asst-body');
+        var body = el('div', 'nit-asst-body', {dir: 'auto'}); // Arabic and English each read the right way.
         body.innerHTML = format(text);
         node.appendChild(body);
         log.appendChild(node);

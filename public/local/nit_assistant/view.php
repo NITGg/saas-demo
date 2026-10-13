@@ -124,7 +124,7 @@ foreach ($messages as $m) {
     $class = $m->role === 'visitor' ? 'bg-light' : ($m->role === 'staff' ? 'border border-success' : 'border');
     echo html_writer::div(
         html_writer::div($label . ' · ' . $time, 'small text-muted mb-1')
-            . format_text($m->content, FORMAT_PLAIN, ['context' => $context]),
+            . html_writer::div(format_text($m->content, FORMAT_PLAIN, ['context' => $context]), '', ['dir' => 'auto']),
         'p-2 mb-2 rounded ' . $class
     );
 }
