@@ -51,7 +51,10 @@ final class launcher {
             if (!self::should_show($PAGE->pagelayout)) {
                 return;
             }
-            $hook->add_html(self::html());
+            // The settings go in Moodle's page JS data, not an element in the page: some layouts (the
+            // theme's home page) replace the main region after load and would take the element with it.
+            // chat.js builds the widget on <body>.
+            $PAGE->requires->data_for_js('nitAssistantConfig', self::data());
             $PAGE->requires->js(new \moodle_url('/local/nit_assistant/js/chat.js'));
         } catch (\Throwable $e) {
             debugging('local_nit_assistant: launcher failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
@@ -76,17 +79,17 @@ final class launcher {
     }
 
     /**
-     * The widget's root element; chat.js builds the rest.
+     * What chat.js needs to build the widget (endpoints, greeting, strings, direction).
      *
-     * @return string
+     * @return array
      */
-    public static function html(): string {
+    public static function data(): array {
         $lang = conversation::lang(current_language());
         $strings = [];
         foreach (self::STRINGS as $id) {
             $strings[$id] = get_string($id, 'local_nit_assistant');
         }
-        $data = [
+        return [
             'chat' => (new \moodle_url('/local/nit_assistant/chat.php'))->out(false),
             'api' => (new \moodle_url('/local/nit_assistant/api.php'))->out(false),
             'greeting' => config::greeting($lang),
@@ -95,10 +98,5 @@ final class launcher {
             'rtl' => right_to_left(),
             'strings' => $strings,
         ];
-        return \html_writer::div('', 'nit-asst', [
-            'id' => 'nit-assistant',
-            'data-config' => json_encode($data, JSON_UNESCAPED_UNICODE),
-            'dir' => right_to_left() ? 'rtl' : 'ltr',
-        ]);
     }
 }

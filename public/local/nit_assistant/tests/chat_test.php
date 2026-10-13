@@ -260,9 +260,10 @@ final class chat_test extends \advanced_testcase {
         set_config('dailybudget', '0', 'local_nit_assistant');
         $this->assertFalse(launcher::should_show('standard'));
 
-        $html = launcher::html();
-        $this->assertStringContainsString('id="nit-assistant"', $html);
-        $this->assertStringContainsString('chat.php', $html);
+        $data = launcher::data();
+        $this->assertStringContainsString('/local/nit_assistant/chat.php', $data['chat']);
+        $this->assertNotSame('', $data['greeting']);
+        $this->assertArrayHasKey('chat_open', $data['strings']);
     }
 
     public function test_the_app_gets_the_whole_reply_and_the_history(): void {
