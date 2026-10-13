@@ -122,10 +122,6 @@ final class sales_tools_test extends \advanced_testcase {
     }
 
     public function test_packages_carry_the_checkout_quote(): void {
-        global $CFG;
-        // The Flex entities (local_nit_core\base\entity::get_id() is public) are refused by \core\persistent under
-        // developer debugging — a known issue of the Flex entities, not of this plugin.
-        $CFG->debugdeveloper = false;
         \local_nit_flex\api\packages::create((object) ['name' => 'Ten lessons', 'flex_count' => 10, 'price_minor' => 100000,
             'expiration_days' => 60, 'status' => 'active']);
         $r = $this->call('list_packages');

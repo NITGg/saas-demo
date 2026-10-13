@@ -39,11 +39,12 @@ abstract class entity extends \core\persistent implements identifiable, auditabl
     /**
      * Return the record id, or null when not yet persisted.
      *
+     * Deliberately not named get_id(): \core\persistent::verify_protected_methods() (run under developer
+     * debugging) refuses a public get_<property>() for any defined property, and every persistent defines id.
+     *
      * @return int|null
      */
-    public function get_id(): ?int {
-        // Use raw_get, not get('id'): \core\persistent::get() auto-dispatches to a get_<property>()
-        // method when one exists, so calling $this->get('id') here would re-enter get_id() forever.
+    public function get_entity_id(): ?int {
         $id = (int) $this->raw_get('id');
         return $id > 0 ? $id : null;
     }

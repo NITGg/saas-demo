@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_nit_core';
-$plugin->version   = 2026080405;        // YYYYMMDDXX.
+$plugin->version   = 2026101300;        // Entity id accessor renamed to get_entity_id().
 $plugin->requires  = 2024100700;        // Moodle 4.5 LTS baseline (approx; pinned per CI matrix).
 $plugin->supported = [405, 502];        // Supported branch range: 4.5 LTS .. 5.2.
 $plugin->maturity  = MATURITY_ALPHA;    // SDK API is v0.x (unstable) until sdk-v1.0.0.

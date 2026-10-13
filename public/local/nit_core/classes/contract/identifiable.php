@@ -29,5 +29,5 @@ interface identifiable {
      *
      * @return int|null
      */
-    public function get_id(): ?int;
+    public function get_entity_id(): ?int;
 }

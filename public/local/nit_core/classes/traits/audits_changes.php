@@ -64,7 +64,7 @@ trait audits_changes {
      * @return void
      */
     protected function before_delete() {
-        $this->auditdeletedid = $this->get_id();
+        $this->auditdeletedid = $this->get_entity_id();
     }
 
     /**
