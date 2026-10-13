@@ -51,6 +51,12 @@ $ADMIN->add('local_nit_assistant_cat', new admin_externalpage(
     'local/nit_assistant:viewinbox'
 ));
 $ADMIN->add('local_nit_assistant_cat', new admin_externalpage(
+    'local_nit_assistant_whatsapp',
+    get_string('wa_heading', 'local_nit_assistant'),
+    new moodle_url('/local/nit_assistant/whatsapp.php'),
+    'local/nit_assistant:manage'
+));
+$ADMIN->add('local_nit_assistant_cat', new admin_externalpage(
     'local_nit_assistant_usage',
     get_string('usage', 'local_nit_assistant'),
     new moodle_url('/local/nit_assistant/usage.php'),
@@ -170,6 +176,62 @@ if ($hassiteconfig || has_capability('local/nit_assistant:manage', context_syste
         '7',
         PARAM_INT,
         4
+    ));
+
+    $settings->add(new admin_setting_heading(
+        'local_nit_assistant/waheading',
+        get_string('wa_heading', 'local_nit_assistant'),
+        get_string('wa_heading_desc', 'local_nit_assistant', (new moodle_url('/local/nit_assistant/whatsapp.php'))->out(false))
+    ));
+    $settings->add(new admin_setting_configcheckbox(
+        'local_nit_assistant/wa_ai',
+        get_string('wa_ai', 'local_nit_assistant'),
+        get_string('wa_ai_desc', 'local_nit_assistant'),
+        0
+    ));
+    $settings->add(new admin_setting_configtext(
+        'local_nit_assistant/wa_phonenumberid',
+        get_string('wa_phonenumberid', 'local_nit_assistant'),
+        get_string('wa_phonenumberid_desc', 'local_nit_assistant'),
+        '',
+        PARAM_ALPHANUM,
+        24
+    ));
+    $settings->add(new admin_setting_configtext(
+        'local_nit_assistant/wa_wabaid',
+        get_string('wa_wabaid', 'local_nit_assistant'),
+        get_string('wa_wabaid_desc', 'local_nit_assistant'),
+        '',
+        PARAM_ALPHANUM,
+        24
+    ));
+    $settings->add(new \local_nit_assistant\admin\setting_secret(
+        'local_nit_assistant/wa_token',
+        get_string('wa_token', 'local_nit_assistant'),
+        get_string('wa_token_desc', 'local_nit_assistant'),
+        ''
+    ));
+    $settings->add(new \local_nit_assistant\admin\setting_secret(
+        'local_nit_assistant/wa_appsecret',
+        get_string('wa_appsecret', 'local_nit_assistant'),
+        get_string('wa_appsecret_desc', 'local_nit_assistant'),
+        ''
+    ));
+    $settings->add(new admin_setting_configtext(
+        'local_nit_assistant/wa_verifytoken',
+        get_string('wa_verifytoken', 'local_nit_assistant'),
+        get_string('wa_verifytoken_desc', 'local_nit_assistant'),
+        '',
+        PARAM_ALPHANUMEXT,
+        40
+    ));
+    $settings->add(new admin_setting_configtext(
+        'local_nit_assistant/wa_graphversion',
+        get_string('wa_graphversion', 'local_nit_assistant'),
+        get_string('wa_graphversion_desc', 'local_nit_assistant'),
+        \local_nit_assistant\whatsapp\cloud::DEFAULT_VERSION,
+        PARAM_ALPHANUMEXT,
+        10
     ));
 
     $ADMIN->add('local_nit_assistant_cat', $settings);

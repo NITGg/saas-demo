@@ -94,8 +94,8 @@ final class turn {
         $ctx = new context((int) $conv->id, $turnid, $conv->mode, $conv->channel, $conv->lang, (int) $conv->userid, $now);
 
         $system = prompt::system($conv->mode, format_string($SITE->fullname));
-        $volatile = prompt::volatile($now, $conv->lang, $conv->userid > 0, $page);
-        $defs = $this->tools->definitions($conv->mode);
+        $volatile = prompt::volatile($now, $conv->lang, $conv->userid > 0, $page, $conv->channel);
+        $defs = $this->tools->definitions($conv->mode, $conv->channel);
         $messages = self::history($convid);
 
         $usage = new usage();

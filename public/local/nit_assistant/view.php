@@ -86,6 +86,11 @@ $facts = [
     get_string('col_lang', 'local_nit_assistant') => $conv->lang,
     get_string('col_page', 'local_nit_assistant') => s((string) $conv->sourcepage),
 ];
+if ($conv->channel === 'whatsapp') {
+    $open = manager::whatsapp_window_open($conv);
+    $facts['WhatsApp'] = s((string) $conv->phone) . ' · '
+        . get_string($open ? 'wa_windowopen' : 'wa_windowclosed', 'local_nit_assistant');
+}
 if ((int) $conv->userid > 0) {
     $facts[get_string('col_account', 'local_nit_assistant')] = html_writer::link(
         new moodle_url('/user/profile.php', ['id' => $conv->userid]),
@@ -122,8 +127,10 @@ foreach ($messages as $m) {
         default => get_string('assistant', 'local_nit_assistant'),
     };
     $class = $m->role === 'visitor' ? 'bg-light' : ($m->role === 'staff' ? 'border border-success' : 'border');
+    $failed = $m->status === 'failed'
+        ? ' ' . html_writer::span(get_string('notdelivered', 'local_nit_assistant'), 'badge bg-danger') : '';
     echo html_writer::div(
-        html_writer::div($label . ' · ' . $time, 'small text-muted mb-1')
+        html_writer::div($label . ' · ' . $time . $failed, 'small text-muted mb-1')
             . html_writer::div(format_text($m->content, FORMAT_PLAIN, ['context' => $context]), '', ['dir' => 'auto']),
         'p-2 mb-2 rounded ' . $class
     );
@@ -141,6 +148,9 @@ if ($canreply && $conv->status !== state::CLOSED) {
     $mine = $conv->status === state::HUMAN && (int) $conv->assignedto === (int) $USER->id;
     if ($conv->status !== state::HUMAN || !$mine) {
         echo html_writer::div(get_string('reply_takes_over', 'local_nit_assistant'), 'small text-muted mb-2');
+    }
+    if ($conv->channel === 'whatsapp') {
+        echo html_writer::div(get_string('wa_replyhint', 'local_nit_assistant'), 'small text-muted mb-2');
     }
     echo html_writer::start_tag('form', ['method' => 'post', 'action' => $url->out(false), 'class' => 'mb-3']);
     echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);

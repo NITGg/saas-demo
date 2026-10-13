@@ -113,12 +113,20 @@ PROMPT;
      * @param string|null $page
      * @return string
      */
-    public static function volatile(int $now, string $lang, bool $signedin, ?string $page): string {
+    public static function volatile(int $now, string $lang, bool $signedin, ?string $page, string $channel = 'web'): string {
+        $whatsapp = $channel === 'whatsapp';
+        $notsigned = $whatsapp
+            ? 'no — for account questions, offer to link their account with link_whatsapp_account (an email code)'
+            : 'no — for account questions, ask them to sign in';
         $lines = [
             'Current date: ' . date('Y-m-d', $now),
             'User\'s language: ' . ($lang === 'ar' ? 'Arabic' : 'English') . ' — reply in it unless they switch',
-            'User signed in: ' . ($signedin ? 'yes' : 'no — for account questions, ask them to sign in'),
+            'User signed in: ' . ($signedin ? 'yes' : $notsigned),
         ];
+        if ($whatsapp) {
+            $lines[] = 'Channel: WhatsApp — plain text only (no markdown, no tables), short messages; links are sent '
+                . 'as plain URLs after your reply.';
+        }
         if ($page) {
             $lines[] = 'User is on page: ' . $page;
         }

@@ -287,3 +287,43 @@ follow-ups are exported and deleted with the user's data.
 
 **Tests:** 7 follow-up tests (who gets one and who must not, language, single send, cooldown,
 dismiss, the daily task); 78 in total.
+
+---
+
+## 13. WhatsApp per academy — what was built
+
+Each academy answers on **its own WhatsApp number** (Meta WhatsApp Cloud API), set up in the
+plugin settings — the same design as nit2.
+
+**Settings:** AI answers on WhatsApp (off → messages go straight to the AI Inbox), phone number ID,
+WhatsApp Business Account ID, access token and app secret (both stored encrypted), verify token,
+Graph API version. **WhatsApp status page** (Site admin → … → AI assistant → WhatsApp): a set-up
+checklist, the webhook URL + verify token to paste into Meta, a live token check, whether the
+WhatsApp account is linked to the app (with a **Link** button — Meta delivers nothing until it is),
+and a test message (`hello_world` template).
+
+**Webhook** (`/local/nit_assistant/webhook.php`): Meta's handshake; every POST must carry a valid
+`X-Hub-Signature-256` (else 401, nothing stored); messages for another number id are ignored; a
+message id is handled once (Meta retries); Meta gets 200 at once, the reply follows.
+
+**Incoming messages** run the same assistant as the website: one conversation per number, the same
+abuse limits (per number), text only (media → a short notice), blue ticks, and nothing from the AI
+while a person has the chat. Replies are plain text with the links appended.
+
+**Accounts:** a number alone never identifies anyone. The assistant asks for the account email
+(`link_whatsapp_account`, WhatsApp only); a 6-digit code is emailed to that account (same answer
+whether it exists or not; 3 codes/hour, 5 tries, 15 minutes). The code is checked **before** the
+model and never stored (only its hash while pending). Once verified, the number is linked for 90
+days and the user gets the student/teacher help with their own data.
+
+**Staff replies** from the AI Inbox are sent on WhatsApp, only within 24 hours of the user's last
+message (Meta's rule); a failed send is shown on the message ("Not delivered").
+
+**Meta set-up for each academy:** a Meta business + app with WhatsApp, the academy's number
+added and verified, a permanent System User token (whatsapp_business_messaging +
+whatsapp_business_management), the webhook URL + verify token, the "messages" field subscribed,
+then **Link** on the status page.
+
+**Tests:** 10 WhatsApp tests (signatures, payloads, the reply flow, a person's chats, AI off,
+media, linking by code — and the code never stored —, staff replies and the 24-hour window);
+88 in total.

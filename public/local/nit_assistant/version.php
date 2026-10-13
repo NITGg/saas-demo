@@ -26,11 +26,11 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_nit_assistant';
-$plugin->version   = 2026101303;        // YYYYMMDDXX.
+$plugin->version   = 2026101304;        // YYYYMMDDXX.
 $plugin->requires  = 2024100700;        // Moodle 4.5 LTS baseline.
 $plugin->supported = [405, 502];
 $plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.5.0 (phase 4)';
+$plugin->release   = '0.6.0 (whatsapp)';
 $plugin->dependencies = [
     'local_nit_core' => ANY_VERSION, // Crypto for the academy's API key.
 ];

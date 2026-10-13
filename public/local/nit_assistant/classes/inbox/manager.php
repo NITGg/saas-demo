@@ -93,7 +93,7 @@ final class manager {
         global $DB;
         return array_values($DB->get_records_select(
             'local_nit_asst_msg',
-            "convid = ? AND id > ? AND status = 'sent'",
+            "convid = ? AND id > ? AND status IN ('sent', 'failed')",
             [$convid, $afterid],
             'id ASC'
         ));
@@ -134,7 +134,45 @@ final class manager {
         if ($conv->status !== state::HUMAN || (int) $conv->assignedto !== $staffid) {
             throw new \moodle_exception('error_notowner', 'local_nit_assistant');
         }
-        return conversation::add_message($conv, 'staff', $text, ['staffid' => $staffid]);
+        if ($conv->channel === 'whatsapp' && !self::whatsapp_window_open($conv)) {
+            throw new \moodle_exception('error_wawindow', 'local_nit_assistant');
+        }
+        $id = conversation::add_message($conv, 'staff', $text, ['staffid' => $staffid]);
+        if ($conv->channel === 'whatsapp') {
+            // The reply goes out on WhatsApp; a failure is shown on the message.
+            try {
+                $cloud = \local_nit_assistant\whatsapp\cloud::instance();
+                if (!$cloud) {
+                    throw new \moodle_exception('error_wanotset', 'local_nit_assistant');
+                }
+                $cloud->send_text((string) $conv->phone, $text);
+            } catch (\Throwable $e) {
+                $DB->set_field('local_nit_asst_msg', 'status', 'failed', ['id' => $id]);
+                throw new \moodle_exception('error_wasend', 'local_nit_assistant', '', $e->getMessage());
+            }
+        }
+        return $id;
+    }
+
+    /**
+     * Can the team still write to this WhatsApp number freely? Meta allows it for 24 hours
+     * after the user's last message (after that only approved templates).
+     *
+     * @param \stdClass $conv
+     * @param int|null $now
+     * @return bool
+     */
+    public static function whatsapp_window_open(\stdClass $conv, ?int $now = null): bool {
+        global $DB;
+        $now ??= time();
+        $last = (int) $DB->get_field_sql(
+            "SELECT MAX(m.timecreated)
+               FROM {local_nit_asst_msg} m
+               JOIN {local_nit_asst_conv} c ON c.id = m.convid
+              WHERE c.channel = 'whatsapp' AND c.phone = ? AND m.role = 'visitor'",
+            [$conv->phone]
+        );
+        return $last > $now - DAYSECS;
     }
 
     /**

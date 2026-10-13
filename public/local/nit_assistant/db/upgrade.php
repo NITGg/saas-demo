@@ -109,5 +109,36 @@ function xmldb_local_nit_assistant_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026101303, 'local', 'nit_assistant');
     }
 
+    if ($oldversion < 2026101304) {
+        // WhatsApp channel: the number on a conversation, a pending verification, verified numbers.
+        $table = new xmldb_table('local_nit_asst_conv');
+        $field = new xmldb_field('phone', XMLDB_TYPE_CHAR, '20', null, null, null, null, 'timemodified');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        $field = new xmldb_field('verification', XMLDB_TYPE_TEXT, null, null, null, null, null, 'phone');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        $index = new xmldb_index('phone', XMLDB_INDEX_NOTUNIQUE, ['phone']);
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        $table = new xmldb_table('local_nit_asst_waid');
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('phone', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('verifiedat', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('expiresat', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_index('phone', XMLDB_INDEX_UNIQUE, ['phone']);
+        $table->add_index('userid', XMLDB_INDEX_NOTUNIQUE, ['userid']);
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+        upgrade_plugin_savepoint(true, 2026101304, 'local', 'nit_assistant');
+    }
+
     return true;
 }

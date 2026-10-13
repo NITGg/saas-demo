@@ -42,6 +42,7 @@ final class provider implements
         $collection->add_database_table('local_nit_asst_conv', [
             'userid' => 'privacy:metadata:conv:userid', 'lang' => 'privacy:metadata:conv:lang',
             'summary' => 'privacy:metadata:conv:summary', 'timecreated' => 'privacy:metadata:conv:timecreated',
+            'phone' => 'privacy:metadata:conv:phone',
         ], 'privacy:metadata:conv');
         $collection->add_database_table('local_nit_asst_msg', [
             'content' => 'privacy:metadata:msg:content', 'timecreated' => 'privacy:metadata:msg:timecreated',
@@ -65,6 +66,13 @@ final class provider implements
             'userid' => 'privacy:metadata:followup:userid', 'title' => 'privacy:metadata:followup:title',
             'body' => 'privacy:metadata:followup:body', 'timesent' => 'privacy:metadata:followup:timesent',
         ], 'privacy:metadata:followup');
+        $collection->add_database_table('local_nit_asst_waid', [
+            'phone' => 'privacy:metadata:waid:phone', 'userid' => 'privacy:metadata:waid:userid',
+            'verifiedat' => 'privacy:metadata:waid:verifiedat',
+        ], 'privacy:metadata:waid');
+        $collection->add_external_location_link('whatsapp', [
+            'phone' => 'privacy:metadata:whatsapp:phone', 'messages' => 'privacy:metadata:whatsapp:messages',
+        ], 'privacy:metadata:whatsapp');
         $collection->add_external_location_link('anthropic', [
             'messages' => 'privacy:metadata:anthropic:messages',
         ], 'privacy:metadata:anthropic');
@@ -84,6 +92,7 @@ final class provider implements
                 || $DB->record_exists('local_nit_asst_lead', ['userid' => $userid])
                 || $DB->record_exists('local_nit_asst_ticket', ['userid' => $userid])
                 || $DB->record_exists('local_nit_asst_followup', ['userid' => $userid])
+                || $DB->record_exists('local_nit_asst_waid', ['userid' => $userid])
         ) {
             $list->add_system_context();
         }
@@ -99,7 +108,7 @@ final class provider implements
         }
         foreach (
             ['local_nit_asst_conv', 'local_nit_asst_audit', 'local_nit_asst_event', 'local_nit_asst_lead',
-                'local_nit_asst_ticket', 'local_nit_asst_followup'] as $table
+                'local_nit_asst_ticket', 'local_nit_asst_followup', 'local_nit_asst_waid'] as $table
         ) {
             $userlist->add_from_sql('userid', "SELECT userid FROM {{$table}} WHERE userid > 0", []);
         }
@@ -185,6 +194,7 @@ final class provider implements
         $DB->delete_records('local_nit_asst_lead');
         $DB->delete_records('local_nit_asst_ticket');
         $DB->delete_records('local_nit_asst_followup');
+        $DB->delete_records('local_nit_asst_waid');
     }
 
     /**
@@ -233,5 +243,6 @@ final class provider implements
         $DB->delete_records_select('local_nit_asst_lead', "userid {$insql}", $params);
         $DB->delete_records_select('local_nit_asst_ticket', "userid {$insql}", $params);
         $DB->delete_records_select('local_nit_asst_followup', "userid {$insql}", $params);
+        $DB->delete_records_select('local_nit_asst_waid', "userid {$insql}", $params);
     }
 }

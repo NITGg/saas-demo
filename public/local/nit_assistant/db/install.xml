@@ -26,6 +26,8 @@
         <FIELD NAME="lastmessageat" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="phone" TYPE="char" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="WhatsApp number (E.164), WhatsApp conversations only"/>
+        <FIELD NAME="verification" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Pending account verification (JSON: userid, at) — never the code"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
@@ -34,6 +36,7 @@
         <INDEX NAME="statuslast" UNIQUE="false" FIELDS="status, lastmessageat"/>
         <INDEX NAME="userid" UNIQUE="false" FIELDS="userid"/>
         <INDEX NAME="sessionkey" UNIQUE="false" FIELDS="sessionkey"/>
+        <INDEX NAME="phone" UNIQUE="false" FIELDS="phone"/>
         <INDEX NAME="assignedto" UNIQUE="false" FIELDS="assignedto"/>
       </INDEXES>
     </TABLE>
@@ -184,6 +187,22 @@
       </KEYS>
       <INDEXES>
         <INDEX NAME="statuscreated" UNIQUE="false" FIELDS="status, timecreated"/>
+        <INDEX NAME="userid" UNIQUE="false" FIELDS="userid"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_nit_asst_waid" COMMENT="WhatsApp numbers verified (by an email code) as belonging to an account">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="phone" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="E.164"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="verifiedat" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="expiresat" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The link lasts 90 days"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="phone" UNIQUE="true" FIELDS="phone"/>
         <INDEX NAME="userid" UNIQUE="false" FIELDS="userid"/>
       </INDEXES>
     </TABLE>

@@ -68,6 +68,15 @@ abstract class tool {
     abstract public function run(context $ctx, array $input): array;
 
     /**
+     * Channels it is offered on.
+     *
+     * @return string[] subset of web | app | whatsapp
+     */
+    public function channels(): array {
+        return ['web', 'app', 'whatsapp'];
+    }
+
+    /**
      * Writes something? Writing tools are refused once a person owns the conversation.
      *
      * @return bool

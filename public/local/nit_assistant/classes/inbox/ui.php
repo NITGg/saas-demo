@@ -82,7 +82,8 @@ final class ui {
                 return s(fullname($user));
             }
         }
-        $name = !empty($conv->leadname) ? $conv->leadname : get_string('visitor', 'local_nit_assistant', (int) $conv->id);
+        $name = !empty($conv->leadname) ? $conv->leadname
+            : (!empty($conv->phone) ? 'WhatsApp ' . $conv->phone : get_string('visitor', 'local_nit_assistant', (int) $conv->id));
         return s($name);
     }
 
