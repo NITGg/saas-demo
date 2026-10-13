@@ -59,6 +59,28 @@ class site_defaults {
         set_config('timezone', self::TIMEZONE);
     }
 
+    /** Wrong passwords that lock an account (Moodle's lockout, off by default). */
+    const LOCKOUT_THRESHOLD = 10;
+
+    /** Lockout window and duration: 30 minutes (Moodle's own defaults). */
+    const LOCKOUT_MINUTES = 30;
+
+    /**
+     * Turn on Moodle's account lockout (BUG-019): LOCKOUT_THRESHOLD wrong passwords
+     * within 30 minutes lock the account for 30 minutes, and the user is emailed an
+     * unlock link. It covers the website and the app sign-in (both use Moodle's
+     * authenticate_user_login). Only when the lockout is off: an admin's own values
+     * stay — Site administration → Security → Site security settings.
+     */
+    public static function login_lockout(): void {
+        if (!empty(get_config('core', 'lockoutthreshold'))) {
+            return;
+        }
+        set_config('lockoutthreshold', self::LOCKOUT_THRESHOLD);
+        set_config('lockoutwindow', self::LOCKOUT_MINUTES * MINSECS);
+        set_config('lockoutduration', self::LOCKOUT_MINUTES * MINSECS);
+    }
+
     /**
      * Turn on Moodle's email self-registration, so a new student confirms their
      * email before signing in (registration::confirmation_required()). Core's own

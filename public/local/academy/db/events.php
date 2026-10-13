@@ -5,6 +5,11 @@ defined('MOODLE_INTERNAL') || die();
  * Event observers for local_academy.
  */
 $observers = [
+    [
+        // BUG-047: a teacher's question is saved without script (Moodle shows questions uncleaned).
+        'eventname' => '\core\event\question_created',
+        'callback'  => '\local_academy\local\question_cleaner::question_created',
+    ],
     // There is no core "user confirmed" event (auth_email just sets confirmed=1),
     // so we use the user's first successful login as the "just confirmed" signal
     // and send the welcome message once.

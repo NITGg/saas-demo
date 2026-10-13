@@ -35,3 +35,19 @@ defined('MOODLE_INTERNAL') || die();
 function local_academy_override_webservice_execution($function, $params) {
     return \local_academy\local\student_messaging::override_webservice($function, $params);
 }
+
+/**
+ * Check the files of a file lesson (File / Folder activity) before it is saved:
+ * documents and images only, up to the size set by an admin (BUG-039).
+ *
+ * @param moodleform_mod $formwrapper
+ * @param array $data the submitted form data
+ * @return array errors keyed by form field
+ */
+function local_academy_coursemodule_validation($formwrapper, $data) {
+    global $USER;
+    $current = $formwrapper->get_current();
+    $cm = $formwrapper->get_coursemodule();
+    $modname = !empty($current->modulename) ? (string) $current->modulename : ($cm->modname ?? '');
+    return \local_academy\local\file_lessons::validate($modname, (array) $data, (int) $USER->id);
+}

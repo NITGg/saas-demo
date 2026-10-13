@@ -26,6 +26,7 @@ sets how many Flex one live lesson costs (§3.7). The
 | 11 | Flex price per live lesson | `/local/nit_lessons/api.php`: `get_teachers` (+`lesson_flex`), `get_teacher_profile` (+`lesson_flex`), `update_teacher_profile` (+optional `lesson_flex`), every lesson (+`flex_count`), `request_lesson` (new errorcode `notenoughflex`) | **Yes**: show the price, a "Flex per lesson" box for teachers, handle `notenoughflex` (§3.7) |
 | 12 | Push Notifications (Firebase FCM) | Direct Firebase Cloud Messaging (HTTP v1) replaced Airnotifier. FCM token registered via `core_user_add_user_device` | **Yes**: Add Firebase to mobile app and register FCM token on login (§6) |
 | 13 | Course Jitsi activities with a session time | Session rows (+`audience`: `invited` / `course`); `get_student_sessions` also returns course sessions; the session reminder links to the activity; a user not enrolled in the course can't join any room | No (§3.8) |
+| 14 | Registration, profile and forgot-password rules (QA run 1) | `register_student` (stricter names / phones, phone and national ID unique), `update_my_profile` (new errorcodes `namedigits`, `nameshort`, `textshort`, `phonetaken`, `nationalidtaken`), `request_password_otp` (code arrives within a minute) | **Check**: show the new messages; say on the OTP screen that the code may take a minute (§3.9) |
 
 ---
 
@@ -444,6 +445,50 @@ with a new field **`audience`**:
 - `set_teacher_present` (app API) still accepts the session's own teacher only; the other teachers of a
   `course` session are recorded by `room_presence`.
 - **App action:** none required. Show `audience=course` sessions in the student's list like the others.
+
+### 3.9 Registration, profile and forgot-password rules (QA run 1, 12/10)
+
+The server now applies the same rules as the registration form, so the app gets the same answers as the
+website.
+
+**`register_student`:** the same `invalidregistration` error, with these new per-field messages:
+
+| Field(s) | New rule |
+|---|---|
+| `firstname`, `secondname`, `thirdname`, `lastname` | letters only (no digits), at least 2 characters |
+| `school`, `guardianjob` | at least 2 characters |
+| `phone`, `fatherphone`, `motherphone` | an Egyptian mobile `010/011/012/015` + 8 digits (also with `+20` / `0020` / `20`), or `+` and 8–15 digits, or another 8–15 digit number that does not start with `01`. Spaces, `-` and `()` are ignored. (Before: any 7–25 digits.) |
+| `phone` | not already the phone of another account (`010…` and `+2010…` count as the same number) |
+| `national` | not already the national ID of another account |
+
+**`update_my_profile`:** new errorcodes `namedigits`, `nameshort`, `textshort`, `phonetaken`,
+`nationalidtaken`. `invalidphone` follows the stricter phone rule above. A value is checked **only when it
+changes**: an older account whose saved phone or national ID does not fit the rules can still save its
+other fields.
+
+**`request_password_otp`:** the answer is the same, but the code is now created and emailed by a background
+job, so it arrives **within about a minute** (cron), not instantly. `toomanyrequests` (3 per 15 minutes)
+now applies to every email, registered or not. `verify_password_otp` answers `otpexpired` until the code
+has been sent, as for a wrong email.
+
+- **App action:** show the new messages (they come translated in `errors` / `error`). On the OTP screen,
+  tell the user the code may take a minute.
+
+### 3.10 Students see a room's recordings at any time (12/10)
+
+Before, a student got a room's recordings only once its session was over. Now a student gets them **at
+any time**, also while the session is still on (the room's earlier sessions, or a part recorded before
+the teacher left and came back). Same calls and fields:
+
+- `get_session_recordings` (`/local/academysessions/api.php`): `available` is `true` for a student who may
+  see the room, and `recordings` is filled.
+- `mod_jitsi_get_session_info`: `recordings` is filled for students too.
+- Live lessons (Flex): the lesson's recordings reach the student during the lesson as well.
+
+Who may see a room at all is unchanged (`notallowed` for someone outside it).
+
+- **App action:** none required. If the app hid the recordings section while a session is live, show it.
+  A recording made a minute ago may still be processing at Vimeo (its player says so for a few minutes).
 
 ---
 

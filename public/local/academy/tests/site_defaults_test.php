@@ -46,6 +46,31 @@ final class site_defaults_test extends \advanced_testcase {
         $this->assertSame('Cairo', format_string('{mlang ar}القاهرة{mlang}{mlang en}Cairo{mlang}'));
     }
 
+    public function test_login_lockout_locks_after_ten_wrong_passwords(): void {
+        // BUG-019: unlimited password guessing (Moodle's lockout is off on a fresh site).
+        global $CFG;
+        require_once($CFG->libdir . '/authlib.php');
+        set_config('lockoutthreshold', 0);
+        $this->redirectEmails(); // The "account locked" email with the unlock link.
+        $user = $this->getDataGenerator()->create_user(['username' => 'student1', 'password' => 'Right@1234']);
+
+        site_defaults::login_lockout();
+
+        for ($i = 0; $i < site_defaults::LOCKOUT_THRESHOLD; $i++) {
+            $this->assertFalse(authenticate_user_login('student1', 'wrong' . $i, false, $reason));
+        }
+        $this->assertFalse(authenticate_user_login('student1', 'Right@1234', false, $reason));
+        $this->assertSame(AUTH_LOGIN_LOCKOUT, $reason);
+        $this->assertTrue(login_is_lockedout($user));
+        $this->assertEquals(30 * MINSECS, get_config('core', 'lockoutduration'));
+    }
+
+    public function test_login_lockout_keeps_an_admins_own_threshold(): void {
+        set_config('lockoutthreshold', 5);
+        site_defaults::login_lockout();
+        $this->assertEquals(5, get_config('core', 'lockoutthreshold'));
+    }
+
     public function test_email_confirmation_turns_on_moodle_email_self_registration(): void {
         set_config('registerauth', '');
         set_config('auth', '');

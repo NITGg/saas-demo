@@ -184,7 +184,8 @@ class user_fields {
                 'locked' => 0,
                 // The student and the staff see it; other users do not.
                 'visible' => PROFILE_VISIBLE_PRIVATE,
-                'forceunique' => 0,
+                // One account per national ID, also on Moodle's own profile forms.
+                'forceunique' => $shortname === 'nationalid' ? 1 : 0,
                 'signup' => 0,
                 'defaultdata' => '',
                 'defaultdataformat' => 0,

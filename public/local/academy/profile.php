@@ -93,32 +93,32 @@ if (data_submitted() && confirm_sesskey()) {
     if ($div !== '' && ($sys === '' || !in_array($div, $sysmap[$sys] ?? [], true))) {
         $custom[\local_academy\local\academic_structure::USER_DIVISION] = '';
     }
-    foreach (['fatherphone' => $t('father phone', 'هاتف الأب'), 'motherphone' => $t('mother phone', 'هاتف الأم')] as $key => $label) {
-        $v = $custom[$key] ?? '';
-        if ($v !== '' && (!preg_match('/^[+]?[0-9\s\-()]{7,25}$/', $v) || strlen(preg_replace('/\D+/', '', $v)) < 7)) {
-            redirect($pageurl, $t('Please enter a valid ' . $label . ' (e.g. 01012345678).', 'يرجى إدخال رقم ' . $label . ' صحيح (مثال: 01012345678).'),
-                null, \core\output\notification::NOTIFY_ERROR);
+    // Names, phones and the national ID follow the registration rules, and the student's own
+    // phone and national ID may not be another account's (\local_academy\local\student_rules).
+    // Only changed values are checked, so older saved data does not block other changes.
+    $rules = \local_academy\local\student_rules::class;
+    $upd->phone1 = $rules::ascii_digits($upd->phone1);
+    $parentphone = $rules::ascii_digits($parentphone);
+    foreach (['nationalid', 'fatherphone', 'motherphone'] as $key) {
+        if (isset($custom[$key])) {
+            $custom[$key] = $rules::ascii_digits($custom[$key]);
         }
     }
-    if (($custom['nationalid'] ?? '') !== '' && !preg_match('/^[0-9]{14}$/', $custom['nationalid'])) {
-        redirect($pageurl, $t('The national ID is 14 digits.', 'الرقم القومي 14 رقم.'),
+    $saved = $DB->get_record('user', ['id' => $USER->id], 'firstname, lastname, phone1', MUST_EXIST);
+    $profileerrors = $rules::profile_errors((int) $USER->id,
+        $custom + ['firstname' => $upd->firstname, 'lastname' => $upd->lastname, 'phone' => $upd->phone1,
+            'parentphone' => $parentphone],
+        \local_academy\local\user_fields::values((int) $USER->id) + ['firstname' => (string) $saved->firstname,
+            'lastname' => (string) $saved->lastname, 'phone' => (string) $saved->phone1]);
+    if ($profileerrors) {
+        // "Field: problem", so the student sees which of the fields to fix.
+        $key = key($profileerrors);
+        $labels = ['firstname' => get_string('firstname'), 'lastname' => get_string('lastname'), 'phone' => get_string('phone'),
+            'parentphone' => $t("Guardian's phone", 'رقم هاتف ولي الأمر')];
+        $fieldname = $DB->get_field('user_info_field', 'name', ['shortname' => $key]);
+        $label = $labels[$key] ?? ($fieldname ? format_string($fieldname) : $key);
+        redirect($pageurl, $label . ': ' . get_string(reset($profileerrors), 'local_academy'),
             null, \core\output\notification::NOTIFY_ERROR);
-    }
-
-    // Validate phone fields: reject strings and invalid numbers.
-    if ($upd->phone1 !== '') {
-        $digits = preg_replace('/\D+/', '', $upd->phone1);
-        if (!preg_match('/^[+]?[0-9\s\-()]{7,25}$/', $upd->phone1) || strlen($digits) < 7) {
-            redirect($pageurl, $t('Please enter a valid phone number (e.g. 01012345678).', 'يرجى إدخال رقم هاتف صحيح (مثال: 01012345678).'),
-                null, \core\output\notification::NOTIFY_ERROR);
-        }
-    }
-    if ($parentphone !== '') {
-        $parentdigits = preg_replace('/\D+/', '', $parentphone);
-        if (!preg_match('/^[+]?[0-9\s\-()]{7,25}$/', $parentphone) || strlen($parentdigits) < 7) {
-            redirect($pageurl, $t('Please enter a valid parent phone number (e.g. 01012345678).', 'يرجى إدخال رقم هاتف ولي أمر صحيح (مثال: 01012345678).'),
-                null, \core\output\notification::NOTIFY_ERROR);
-        }
     }
 
     if ($upd->firstname !== '' && $upd->lastname !== '') {

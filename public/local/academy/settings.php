@@ -43,6 +43,13 @@ if ($hassiteconfig) {
     $settings->add(new admin_setting_configcheckbox('local_academy/registration',
         get_string('registration_enabled', 'local_academy'), get_string('registration_enabled_desc', 'local_academy'), 1));
 
+    // File lessons (File / Folder activities): documents and images up to this size.
+    $settings->add(new admin_setting_heading('local_academy/filelessonsheading',
+        get_string('filelessons_heading', 'local_academy'), ''));
+    $settings->add(new admin_setting_configtext('local_academy/filelessonmaxmb',
+        get_string('filelessonmaxmb', 'local_academy'), get_string('filelessonmaxmb_desc', 'local_academy'),
+        \local_academy\local\file_lessons::DEFAULT_MAX_MB, PARAM_INT, 6));
+
     // Years, study systems and their divisions — the options of the course and
     // student dropdown fields (see \local_academy\local\academic_structure).
     $academic = new admin_settingpage('local_academy_academic', get_string('academic_page', 'local_academy'));

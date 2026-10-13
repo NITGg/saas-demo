@@ -34,35 +34,32 @@ class student_rules {
     const COUNTRY_CODE = '20';
 
     /**
-     * Error for a person's name part ('' when valid): required, no digits, 2+ characters.
+     * What is wrong with a person's name part: required, no digits, 2+ characters.
      *
      * @param string $value trimmed value
-     * @return string
+     * @return string local_academy string id of the error, '' when valid
      */
     public static function name_error(string $value): string {
         if ($value === '') {
-            return get_string('reg_required', 'local_academy');
+            return 'reg_required';
         }
         if (preg_match('/\d/u', $value)) {
-            return get_string('err_namedigits', 'local_academy');
+            return 'err_namedigits';
         }
-        if (\core_text::strlen($value) < 2) {
-            return get_string('err_nameshort', 'local_academy');
-        }
-        return '';
+        return \core_text::strlen($value) < 2 ? 'err_nameshort' : '';
     }
 
     /**
-     * Error for a free-text answer such as the school or guardian job ('' when valid).
+     * What is wrong with a free-text answer such as the school or guardian job.
      *
      * @param string $value trimmed value
-     * @return string
+     * @return string local_academy string id of the error, '' when valid
      */
     public static function text_error(string $value): string {
         if ($value === '') {
-            return get_string('reg_required', 'local_academy');
+            return 'reg_required';
         }
-        return \core_text::strlen($value) < 2 ? get_string('err_textshort', 'local_academy') : '';
+        return \core_text::strlen($value) < 2 ? 'err_textshort' : '';
     }
 
     /**
@@ -176,6 +173,29 @@ class student_rules {
     }
 
     /**
+     * Hook: a user saving their own account anywhere else — Moodle's own Edit
+     * profile page (/user/edit.php) included — cannot set an invalid phone or
+     * another account's phone. Staff who may edit users are not limited.
+     *
+     * @param \core_user\hook\before_user_updated $hook
+     * @throws \moodle_exception err_invalidphone / err_phonetaken
+     */
+    public static function before_user_updated(\core_user\hook\before_user_updated $hook): void {
+        global $USER;
+        $user = $hook->user;
+        if (!isset($user->phone1) || empty($hook->currentuserdata) || empty($USER->id)
+                || (int) $user->id !== (int) $USER->id
+                || has_capability('moodle/user:update', \context_system::instance())) {
+            return;
+        }
+        $errors = self::profile_errors((int) $user->id, ['phone' => trim((string) $user->phone1)],
+            ['phone' => (string) $hook->currentuserdata->phone1]);
+        if ($errors) {
+            throw new \moodle_exception(reset($errors), 'local_academy');
+        }
+    }
+
+    /**
      * Check the values a student changes on their profile (web page or app).
      * A value is checked only when it differs from the saved one, so an older
      * account whose saved data predates these rules can still save other changes.
@@ -185,7 +205,7 @@ class student_rules {
      *        the profile fields secondname, thirdname, nationalid, school, guardianjob,
      *        fatherphone, motherphone, parentphone — trimmed values
      * @param array $current the saved values under the same keys
-     * @return array<string, string> key => error message (empty = valid)
+     * @return array<string, string> key => local_academy string id of the error (empty = valid)
      */
     public static function profile_errors(int $userid, array $changes, array $current): array {
         $errors = [];
@@ -202,15 +222,15 @@ class student_rules {
                 $error = $value === '' ? '' : self::text_error($value);
             } else if (in_array($key, ['phone', 'fatherphone', 'motherphone', 'parentphone'], true)) {
                 if ($value !== '' && !self::valid_phone($value)) {
-                    $error = get_string('err_invalidphone', 'local_academy');
+                    $error = 'err_invalidphone';
                 } else if ($key === 'phone' && $value !== '' && self::phone_taken($value, $userid)) {
-                    $error = get_string('err_phonetaken', 'local_academy');
+                    $error = 'err_phonetaken';
                 }
             } else if ($key === 'nationalid' && $value !== '') {
                 if (!self::valid_nationalid($value)) {
-                    $error = get_string('err_invalidnationalid', 'local_academy');
+                    $error = 'err_invalidnationalid';
                 } else if (self::nationalid_taken($value, $userid)) {
-                    $error = get_string('err_nationalidtaken', 'local_academy');
+                    $error = 'err_nationalidtaken';
                 }
             }
             if ($error !== '') {

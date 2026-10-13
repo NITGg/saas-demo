@@ -32,4 +32,14 @@ $callbacks = [
         'hook' => \core\hook\after_config::class,
         'callback' => [\local_academy\local\registration::class, 'after_config'],
     ],
+    [
+        // login/forgot_password.php: the same quick answer for every email; the email goes out in the background.
+        'hook' => \core\hook\after_config::class,
+        'callback' => [\local_academy\local\forgot_password::class, 'after_config'],
+    ],
+    [
+        // A student's own phone stays valid and unique on every page that saves the account.
+        'hook' => \core_user\hook\before_user_updated::class,
+        'callback' => [\local_academy\local\student_rules::class, 'before_user_updated'],
+    ],
 ];

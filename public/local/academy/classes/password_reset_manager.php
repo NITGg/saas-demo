@@ -36,25 +36,40 @@ class password_reset_manager {
     }
 
     /**
-     * Step 1 — request an OTP. Always returns a generic success (it never reveals
-     * whether the email belongs to an account), but only actually emails a code
-     * when the account exists and uses a resettable auth method.
+     * Step 1 — request an OTP. Always returns a generic success and does the same
+     * work for every email (BUG-020): the rate limit counts every email, and the
+     * code is created and emailed by a background task (password_reset_email), so
+     * neither the answer nor its timing shows whether the email has an account.
      */
     public static function request_otp(string $email): array {
-        global $DB, $CFG;
-
         $email = \core_text::strtolower(trim($email));
         if ($email === '' || !validate_email($email)) {
             throw new \moodle_exception('err_invalidemail', 'local_academy');
         }
 
-        // Rate limit per email.
-        $recent = $DB->count_records_select('academy_password_otps',
-            'email = :email AND timecreated > :since',
-            ['email' => $email, 'since' => time() - self::REQUEST_WINDOW]);
-        if ($recent >= self::REQUEST_MAX) {
+        // Rate limit per email, whether or not it belongs to an account.
+        $cache = \cache::make_from_params(\cache_store::MODE_APPLICATION, 'local_academy', 'pwresetrequests');
+        $key = sha1($email);
+        $now = time();
+        $hits = array_filter((array) ($cache->get($key) ?: []), static fn(int $t): bool => $t > $now - self::REQUEST_WINDOW);
+        if (count($hits) >= self::REQUEST_MAX) {
             throw new \moodle_exception('err_toomanyrequests', 'local_academy');
         }
+        $hits[] = $now;
+        $cache->set($key, array_values($hits));
+
+        \local_academy\task\password_reset_email::queue('otp', '', $email);
+        return ['sent' => true, 'expiresin' => self::OTP_TTL];
+    }
+
+    /**
+     * Create and email a code when the email belongs to an account that can reset
+     * its password (run by the password_reset_email task; nothing happens otherwise).
+     *
+     * @param string $email lower-case email
+     */
+    public static function send_otp(string $email): void {
+        global $DB, $CFG;
 
         $user = $DB->get_record('user', [
             'email' => $email, 'deleted' => 0, 'suspended' => 0,
@@ -79,8 +94,6 @@ class password_reset_manager {
             ]);
             self::email_otp($user, $otp);
         }
-
-        return ['sent' => true, 'expiresin' => self::OTP_TTL];
     }
 
     /**

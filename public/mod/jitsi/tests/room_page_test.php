@@ -150,8 +150,8 @@ final class room_page_test extends \advanced_testcase {
 
         // The host: always.
         $this->assertTrue(jitsi_show_recordings_tab(true, $live));
-        // A student: not while the linked session runs, once it ended or its time passed.
-        $this->assertFalse(jitsi_show_recordings_tab(false, $live));
+        // A student: at any time, also while the linked session runs.
+        $this->assertTrue(jitsi_show_recordings_tab(false, $live));
         $this->assertTrue(jitsi_show_recordings_tab(false, $ended));
         $this->assertTrue(jitsi_show_recordings_tab(false, $over));
         // A standalone course room (no session): always.

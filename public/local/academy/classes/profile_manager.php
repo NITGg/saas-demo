@@ -153,14 +153,13 @@ class profile_manager {
     }
 
     /**
-     * Validate a phone number (the same rule as the web profile page).
+     * Validate a phone number (the registration form's rule, see student_rules).
      *
      * @param string $phone
      * @return bool
      */
     public static function valid_phone(string $phone): bool {
-        return (bool) preg_match('/^[+]?[0-9\s\-()]{7,25}$/', $phone)
-            && strlen(preg_replace('/\D+/', '', $phone)) >= 7;
+        return \local_academy\local\student_rules::valid_phone($phone);
     }
 
     /**
@@ -178,7 +177,7 @@ class profile_manager {
         require_once($CFG->dirroot . '/user/lib.php');
         require_once($CFG->dirroot . '/user/profile/lib.php');
 
-        $DB->get_record('user', ['id' => $userid], 'id', MUST_EXIST);
+        $saved = $DB->get_record('user', ['id' => $userid], 'id, firstname, lastname, phone1', MUST_EXIST);
         $upd = (object) ['id' => $userid];
         foreach (['firstname', 'lastname'] as $key) {
             if (array_key_exists($key, $data)) {
@@ -190,11 +189,8 @@ class profile_manager {
             }
         }
         if (array_key_exists('phone', $data)) {
-            $phone = trim(clean_param((string) $data['phone'], PARAM_TEXT));
-            if ($phone !== '' && !self::valid_phone($phone)) {
-                throw new \moodle_exception('err_invalidphone', 'local_academy', '', 'phone');
-            }
-            $upd->phone1 = $phone;
+            $upd->phone1 = \local_academy\local\student_rules::ascii_digits(
+                trim(clean_param((string) $data['phone'], PARAM_TEXT)));
         }
         if (array_key_exists('bio', $data)) {
             $upd->description = clean_param((string) $data['bio'], PARAM_TEXT);
@@ -217,6 +213,9 @@ class profile_manager {
                 continue; // Unknown, or staff-managed.
             }
             $value = trim(clean_param((string) $value, PARAM_TEXT));
+            if (in_array($shortname, ['nationalid', 'fatherphone', 'motherphone', 'parentphone'], true)) {
+                $value = \local_academy\local\student_rules::ascii_digits($value);
+            }
             if ($defs[$shortname]['type'] === 'menu' && $value !== ''
                     && !in_array($value, \local_academy\local\user_fields::menu_options($shortname), true)) {
                 throw new \moodle_exception('err_invalidoption', 'local_academy', '', $shortname);
@@ -236,13 +235,19 @@ class profile_manager {
                 $custom[$divfield] = ''; // The system changed: the old division no longer fits.
             }
         }
-        foreach (['fatherphone', 'motherphone', 'parentphone'] as $key) {
-            if (($custom[$key] ?? '') !== '' && !self::valid_phone($custom[$key])) {
-                throw new \moodle_exception('err_invalidphone', 'local_academy', '', $key);
+        // Names, phones and the national ID follow the registration rules; the student's own
+        // phone and national ID may not be another account's. Only changed values are checked.
+        $changes = $custom;
+        foreach (['firstname' => 'firstname', 'lastname' => 'lastname', 'phone1' => 'phone'] as $field => $key) {
+            if (isset($upd->$field)) {
+                $changes[$key] = $upd->$field;
             }
         }
-        if (($custom['nationalid'] ?? '') !== '' && !preg_match('/^[0-9]{14}$/', $custom['nationalid'])) {
-            throw new \moodle_exception('err_invalidnationalid', 'local_academy');
+        $errors = \local_academy\local\student_rules::profile_errors($userid, $changes, $current + [
+            'firstname' => (string) $saved->firstname, 'lastname' => (string) $saved->lastname,
+            'phone' => (string) $saved->phone1]);
+        if ($errors) {
+            throw new \moodle_exception(reset($errors), 'local_academy', '', key($errors));
         }
 
         if (count((array) $upd) > 1) {

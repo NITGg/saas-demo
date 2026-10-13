@@ -207,7 +207,7 @@ final class mobile_service_test extends \advanced_testcase {
         }
     }
 
-    public function test_recordings_hidden_from_students_until_session_over(): void {
+    public function test_students_see_recordings_while_the_session_is_on(): void {
         global $DB;
         $this->resetAfterTest();
         [, $teacher, $student, $sessionid, $cmid] = $this->fixture();
@@ -221,9 +221,9 @@ final class mobile_service_test extends \advanced_testcase {
         $this->assertSame('https://player.vimeo.com/video/123', $staff['recordings'][0]['playback_url']);
 
         $this->setUser($student);
-        $before = mobile_service::recordings((int) $student->id, $sessionid);
-        $this->assertFalse($before['available']);
-        $this->assertSame([], $before['recordings']);
+        $during = mobile_service::recordings((int) $student->id, $sessionid);
+        $this->assertTrue($during['available']);
+        $this->assertCount(1, $during['recordings']);
 
         session_manager::end_session($sessionid);
         $this->assertCount(1, mobile_service::recordings((int) $student->id, $sessionid)['recordings']);
@@ -233,7 +233,7 @@ final class mobile_service_test extends \advanced_testcase {
         $now = 1000000;
         $this->assertTrue(recordings::visible_to_students(null, $now));
         $live = (object) ['status' => 'live', 'start_time' => $now - 60, 'duration' => 50];
-        $this->assertFalse(recordings::visible_to_students($live, $now));
+        $this->assertTrue(recordings::visible_to_students($live, $now), 'also while it is on');
         $past = (object) ['status' => 'live', 'start_time' => $now - 3600, 'duration' => 50];
         $this->assertTrue(recordings::visible_to_students($past, $now));
         $ended = (object) ['status' => 'ended', 'start_time' => $now, 'duration' => 50];
