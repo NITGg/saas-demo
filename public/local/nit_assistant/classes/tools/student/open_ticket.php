@@ -59,7 +59,7 @@ final class open_ticket extends tool {
      * {@inheritDoc}
      */
     public function modes(): array {
-        return ['student'];
+        return ['student', 'teacher'];
     }
 
     /**

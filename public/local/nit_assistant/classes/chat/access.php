@@ -42,9 +42,9 @@ final class access {
     }
 
     /**
-     * The assistant's mode for a user, decided on every message: "student" for a
-     * signed-in learner (a student role in any course, an active subscription or
-     * Flex package), otherwise "sales". The teacher mode arrives in phase 3.
+     * The assistant's mode for a user, decided on every message: "teacher" for
+     * someone who teaches here, "student" for a signed-in learner (a student role
+     * in any course, an active subscription or Flex package), otherwise "sales".
      *
      * @param int $userid
      * @return string sales | student | teacher
@@ -53,6 +53,9 @@ final class access {
         global $DB;
         if ($userid <= 0 || isguestuser($userid)) {
             return 'sales';
+        }
+        if (self::is_teacher($userid)) {
+            return 'teacher';
         }
         $student = $DB->record_exists_sql(
             "SELECT 1
@@ -72,6 +75,28 @@ final class access {
             }
         }
         return $student ? 'student' : 'sales';
+    }
+
+    /**
+     * Does the user teach here (a teacher role in any course, or teacher earnings / wallet)?
+     *
+     * @param int $userid
+     * @return bool
+     */
+    public static function is_teacher(int $userid): bool {
+        global $DB;
+        $role = $DB->record_exists_sql(
+            "SELECT 1
+               FROM {role_assignments} ra
+               JOIN {role} r ON r.id = ra.roleid
+              WHERE ra.userid = :userid AND r.archetype IN ('teacher', 'editingteacher')",
+            ['userid' => $userid]
+        );
+        if ($role) {
+            return true;
+        }
+        return class_exists('\local_nit_finance\local\earnings_page')
+            && \local_nit_finance\local\earnings_page::is_teacher($userid);
     }
 
     /**

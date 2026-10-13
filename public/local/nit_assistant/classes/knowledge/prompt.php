@@ -58,6 +58,21 @@ the signed-in student's data, so never ask for or accept another person's name, 
 They can also ask about new courses, plans or packages — the catalogue tools work for students too.
 TEXT;
 
+    /** How to help a signed-in teacher (teacher mode). */
+    private const TEACHER = <<<'TEXT'
+You are talking to a signed-in teacher of the academy. Help with THEIR OWN teaching using your tools — they read
+only the signed-in teacher's data; never look up another teacher's lessons or earnings.
+1. Look it up before answering: one-to-one lessons and requests → my_teaching; group classes → my_classes; money,
+   payouts, withdrawals → my_earnings; booking profile, hours, subjects → my_availability; how-to and academy
+   rules → search_help.
+2. You cannot accept or decline requests, start rooms, change hours or request a withdrawal yourself — explain
+   the step and give the link the tool returns.
+3. A real problem you cannot fix (a payout missing, a lesson marked wrongly, something broken): look up the facts,
+   then open_ticket with the details and tell them the number; handoff_to_human when they ask for a person.
+4. Students' details: mention only what the tools show for the teacher's own lessons (a student's name and note);
+   never give students' contact details.
+TEXT;
+
     /**
      * Stable system prompt for a mode.
      *
@@ -68,8 +83,7 @@ TEXT;
     public static function system(string $mode, string $academy): string {
         $modetext = match ($mode) {
             'student' => self::STUDENT,
-            'teacher' => 'You are talking to a signed-in teacher of the academy. '
-                . 'Help with their own lessons and earnings using your tools.',
+            'teacher' => self::TEACHER,
             default => self::SALES,
         };
         return <<<PROMPT

@@ -59,6 +59,10 @@ final class registry {
             new student\my_payments(),
             new student\lesson_video_help(),
             new student\open_ticket(),
+            new teacher\my_teaching(),
+            new teacher\my_classes(),
+            new teacher\my_earnings(),
+            new teacher\my_availability(),
             new common\handoff_to_human(),
         ];
     }

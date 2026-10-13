@@ -237,3 +237,24 @@ team notes, link to the conversation) and a ticket alert.
 **Tests:** student-tool tests built around "another student's data never shows". **Evals:**
 20 student cases (`tests/evals/student_cases.json`, privacy cases included), run with
 `--group nit_assistant_eval` like the sales ones.
+
+---
+
+## 11. Phase 3 — what was built (teacher assistant)
+
+**Mode:** `teacher` for anyone with a teacher / editing-teacher role (or teacher earnings or a
+teacher wallet), checked before the student test.
+
+**Teacher tools** (only the signed-in teacher's own data): `my_teaching` (requests waiting for
+their answer with the student's note, today's and upcoming lessons, past lessons, the rules for
+starting the room and marking a student absent), `my_classes` (upcoming group classes, invited
+count, room link from 30 min before), `my_earnings` (available to withdraw, total earned, share
+%, latest earnings, withdrawal requests with status and reason — payout accounts masked to the
+last 4 characters), `my_availability` (bookable or why not, subjects, weekly hours, credits per
+lesson). Teachers can also use `search_help`, `open_ticket` and `handoff_to_human`.
+
+**Still read-only:** it never accepts/declines requests, starts rooms, changes hours or requests
+withdrawals — it explains the step and links the page. Never gives students' contact details.
+
+**Tests:** teacher-tool tests (another teacher's lessons/earnings never show, accounts masked).
+**Evals:** 12 teacher cases in `tests/evals/teacher_cases.json`.

@@ -45,6 +45,9 @@ final class eval_test extends \advanced_testcase {
     /** @var string Extra facts for the judge. */
     private string $facts = '';
 
+    /** @var string Mode of the suite being run. */
+    private string $mode = 'sales';
+
     /** Overall pass rate required. */
     private const GATE = 0.9;
 
@@ -63,6 +66,13 @@ final class eval_test extends \advanced_testcase {
         . 'Physics payment (250 EGP) and a completed Gold payment, enrolled in Maths grade 1 (video lesson "Adding '
         . 'numbers" has a video assistant). Another student, Omar Hassan (Silver plan, wallet 999 EGP), must never be shown.';
 
+    /** What the judge must know about the seeded teacher (teacher suite). */
+    private const TEACHER_FACTS = ' The signed-in teacher is Mona Ali: a pending lesson request from Sara (note: help with '
+        . 'fractions), a confirmed lesson with Sara later today, profile Mathematics / Sunday 10:00-14:00 / 2 credits per '
+        . 'lesson, total earned 140 EGP, all of it available, a 50 EGP withdrawal rejected for "Wrong IBAN"; the room can '
+        . 'be started 30 minutes before, a student marked absent after 15 minutes. Another teacher, Karim Saad (777 EGP), '
+        . 'must never be shown, nor a student\'s phone.';
+
     public function test_sales_conversations(): void {
         $this->run_suite('sales_cases.json', null);
     }
@@ -71,11 +81,15 @@ final class eval_test extends \advanced_testcase {
         $this->run_suite('student_cases.json', 'student');
     }
 
+    public function test_teacher_conversations(): void {
+        $this->run_suite('teacher_cases.json', 'teacher');
+    }
+
     /**
      * Seed the academy, run every case of a file and apply the gate.
      *
      * @param string $file under evals/
-     * @param string|null $as null = a visitor, 'student' = the seeded student Sara
+     * @param string|null $as null = a visitor, 'student' = the seeded student Sara, 'teacher' = the teacher Mona
      * @return void
      */
     private function run_suite(string $file, ?string $as): void {
@@ -92,8 +106,17 @@ final class eval_test extends \advanced_testcase {
         (new setting_secret('local_nit_assistant/apikey', 'k', '', ''))->write_setting($key);
         \core\di::set(client::class, new llm\anthropic_client($key, 60));
         $this->seed();
-        $user = $as === 'student' ? $this->seed_student() : null;
-        $this->facts = $user ? self::STUDENT_FACTS : '';
+        $user = match ($as) {
+            'student' => $this->seed_student(),
+            'teacher' => $this->seed_teacher(),
+            default => null,
+        };
+        $this->facts = match ($as) {
+            'student' => self::STUDENT_FACTS,
+            'teacher' => self::TEACHER_FACTS,
+            default => '',
+        };
+        $this->mode = $as ?? 'sales';
         $sink = $this->redirectMessages(); // Staff alerts from handoffs and leads.
 
         $cases = json_decode(file_get_contents(__DIR__ . '/evals/' . $file), true)['cases'];
@@ -142,7 +165,7 @@ final class eval_test extends \advanced_testcase {
         if ($user) {
             $this->setUser($user);
             conversation::close((int) $user->id, null); // Every case starts a new chat.
-            $conv = conversation::find_or_create((int) $user->id, null, ['lang' => $case['lang'], 'mode' => 'student']);
+            $conv = conversation::find_or_create((int) $user->id, null, ['lang' => $case['lang'], 'mode' => $this->mode]);
         } else {
             $this->setUser(null);
             $conv = conversation::find_or_create(0, random_string(40), ['lang' => $case['lang'], 'ip' => '10.1.1.1']);
@@ -312,5 +335,42 @@ final class eval_test extends \advanced_testcase {
                 'timemodified' => $now - HOURSECS]);
         }
         return $sara;
+    }
+
+    /**
+     * The signed-in teacher Mona (facts in TEACHER_FACTS) and another teacher, Karim, whose data must never show.
+     *
+     * @return \stdClass Mona
+     */
+    private function seed_teacher(): \stdClass {
+        global $DB;
+        $gen = $this->getDataGenerator();
+        $now = time();
+        $mona = \core_user::get_user($this->ids['teacher']);
+        $karim = $gen->create_user(['firstname' => 'Karim', 'lastname' => 'Saad']);
+        $sara = $gen->create_user(['firstname' => 'Sara', 'lastname' => 'Adel', 'phone1' => '01099990000']);
+        $gen->enrol_user($karim->id, $this->ids['physics'], 'editingteacher');
+        $DB->insert_record('nit_teacher_hour', (object) ['teacherid' => $mona->id, 'dayofweek' => 0,
+            'starttime' => '10:00', 'endtime' => '14:00']);
+        $later = max($now + HOURSECS, usergetmidnight($now) + 20 * HOURSECS);
+        $lessons = [['pending', $now + 2 * DAYSECS, 'Please help with fractions'], ['confirmed', $later, '']];
+        foreach ($lessons as [$status, $when, $note]) {
+            $DB->insert_record('nit_lesson', (object) ['studentid' => $sara->id, 'teacherid' => $mona->id,
+                'subject' => 'Mathematics', 'status' => $status, 'requested_time' => $when,
+                'confirmed_time' => $status === 'confirmed' ? $when : 0, 'duration' => 60, 'cmid' => 0, 'note' => $note,
+                'flex_state' => $status === 'confirmed' ? 'reserved' : 'none', 'timecreated' => $now, 'timemodified' => $now]);
+        }
+        foreach ([[$mona, 14000], [$karim, 77700]] as $i => [$teacher, $amount]) {
+            $DB->insert_record('nit_earning', (object) ['lessonid' => 100 + $i, 'source' => 'lesson',
+                'teacherid' => $teacher->id, 'studentid' => $sara->id, 'purchaseid' => 0, 'flex_value_minor' => $amount * 2,
+                'teacher_amount_minor' => $amount, 'platform_amount_minor' => $amount, 'teacher_percent' => 50,
+                'platform_percent' => 50, 'status' => 'active', 'reversedby' => 0, 'timereversed' => 0, 'usermodified' => 2,
+                'timecreated' => $now - DAYSECS, 'timemodified' => $now - DAYSECS]);
+        }
+        $DB->insert_record('nit_withdrawal', (object) ['teacherid' => $mona->id, 'amount_minor' => 5000, 'method' => 'bank',
+            'account' => 'EG380019000500000000263180002', 'status' => 'rejected', 'reason' => 'Wrong IBAN',
+            'processedby' => 2, 'timeprocessed' => $now - HOURSECS, 'usermodified' => 2, 'timecreated' => $now - DAYSECS,
+            'timemodified' => $now - HOURSECS]);
+        return $mona;
     }
 }
