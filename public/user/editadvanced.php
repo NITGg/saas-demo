@@ -79,6 +79,8 @@ if ($id == -1) {
     // Editing existing user.
     require_capability('moodle/user:update', $systemcontext);
     $user = $DB->get_record('user', array('id' => $id), '*', MUST_EXIST);
+    // NIT enc-email (test): decrypt stored email so the edit form shows/edits the real address.
+    \local_nit_core\helper\crypto::decrypt_user_email_in($user);
     $PAGE->set_context(context_user::instance($user->id));
     $PAGE->navbar->includesettingsbase = true;
     if ($user->id != $USER->id) {

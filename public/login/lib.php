@@ -114,13 +114,17 @@ function core_login_process_password_reset($username, $email) {
                                  AND suspended = 0
                                  AND " . $DB->sql_equal('email', ':email2', false, false) . ")";
 
+        // NIT enc-email (test): match the deterministically-encrypted email column.
+        $nitemail = \local_nit_core\helper\crypto::encrypt_user_email($email);
         $params = array(
-            'email1' => $email,
-            'email2' => $email,
+            'email1' => $nitemail,
+            'email2' => $nitemail,
             'mnethostid' => $CFG->mnet_localhost_id,
         );
 
         $user = $DB->get_record_sql($sql, $params, IGNORE_MULTIPLE);
+        // NIT enc-email (test): decrypt stored email on the returned record.
+        \local_nit_core\helper\crypto::decrypt_user_email_in($user);
     }
 
     // Target user details have now been identified, or we know that there is no such account.

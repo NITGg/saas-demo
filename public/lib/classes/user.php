@@ -131,7 +131,9 @@ class user {
                 return self::get_support_user();
                 break;
             default:
-                return $DB->get_record('user', ['id' => $userid], $fields, $strictness);
+                // NIT enc-email (test): decrypt stored email on the returned record.
+                return \local_nit_core\helper\crypto::decrypt_user_email_in(
+                    $DB->get_record('user', ['id' => $userid], $fields, $strictness));
         }
     }
 
@@ -156,6 +158,10 @@ class user {
             $mnethostid = $CFG->mnet_localhost_id;
         }
 
+        // NIT enc-email (test): email is stored deterministically encrypted, so
+        // encrypt the search value to match the ciphertext column by exact equality.
+        $email = \local_nit_core\helper\crypto::encrypt_user_email($email);
+
         // Build SQL query to prioritise active users.
         $sql = "SELECT $fields
                   FROM {user}
@@ -163,7 +169,9 @@ class user {
               ORDER BY suspended ASC, timecreated DESC";
         $params = ['email' => $email, 'mnethostid' => $mnethostid];
         // Return the first user matching the query criteria.
-        return $DB->get_record_sql($sql, $params, $strictness);
+        // NIT enc-email (test): decrypt stored email on the returned record.
+        return \local_nit_core\helper\crypto::decrypt_user_email_in(
+            $DB->get_record_sql($sql, $params, $strictness));
     }
 
     /**
@@ -187,7 +195,9 @@ class user {
             $mnethostid = $CFG->mnet_localhost_id;
         }
 
-        return $DB->get_record('user', ['username' => $username, 'mnethostid' => $mnethostid], $fields, $strictness);
+        // NIT enc-email (test): decrypt stored email on the returned record.
+        return \local_nit_core\helper\crypto::decrypt_user_email_in(
+            $DB->get_record('user', ['username' => $username, 'mnethostid' => $mnethostid], $fields, $strictness));
     }
 
     /**
@@ -215,10 +225,11 @@ class user {
             $mnethostid = $CFG->mnet_localhost_id;
         }
 
-        return $DB->get_record('user', [
+        // NIT enc-email (test): decrypt stored email on the returned record.
+        return \local_nit_core\helper\crypto::decrypt_user_email_in($DB->get_record('user', [
             'idnumber' => $idnumber,
             'mnethostid' => $mnethostid,
-        ], $fields, $strictness);
+        ], $fields, $strictness));
     }
 
     /**

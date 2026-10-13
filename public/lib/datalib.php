@@ -555,12 +555,19 @@ function get_users_listing($sort='lastaccess', $dir='ASC', $page=0, $recordsperp
     }
 
     // warning: will return UNCONFIRMED USERS
-    return $DB->get_records_sql("SELECT u.id $selects
+    $users = $DB->get_records_sql("SELECT u.id $selects
                                    FROM {user} u
                                         $joins
                                   WHERE $select
                                   $sort", array_merge($params, $joinparams), $page, $recordsperpage);
 
+    // NIT enc-email (test): decrypt stored email for display in the admin user list.
+    // (Note: the email partial-search above runs on ciphertext and will not match —
+    // search by username or name instead.)
+    foreach ($users as $u) {
+        \local_nit_core\helper\crypto::decrypt_user_email_in($u);
+    }
+    return $users;
 }
 
 

@@ -205,6 +205,8 @@ class user_edit_form extends moodleform {
 
         $usernew = (object)$usernew;
         $user    = $DB->get_record('user', array('id' => $usernew->id));
+        // NIT enc-email (test): decrypt the stored email so the comparisons below use plaintext.
+        \local_nit_core\helper\crypto::decrypt_user_email_in($user);
 
         // Validate email.
         if (!isset($usernew->email)) {
@@ -215,7 +217,8 @@ class user_edit_form extends moodleform {
             // Make a case-insensitive query for the given email address.
             $select = $DB->sql_equal('email', ':email', false) . ' AND mnethostid = :mnethostid AND id <> :userid';
             $params = array(
-                'email' => $usernew->email,
+                // NIT enc-email (test): match the deterministically-encrypted column.
+                'email' => \local_nit_core\helper\crypto::encrypt_user_email($usernew->email),
                 'mnethostid' => $CFG->mnet_localhost_id,
                 'userid' => $usernew->id
             );

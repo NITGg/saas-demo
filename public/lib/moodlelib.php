@@ -4504,6 +4504,12 @@ function get_complete_user_data($field, $value, $mnethostid = null, $throwexcept
         $value = core_text::strtolower($value);
     }
 
+    // NIT enc-email (test): email is stored deterministically encrypted — encrypt the
+    // lookup value so it matches the ciphertext column (keeps forgot-password working).
+    if ($field == 'email') {
+        $value = \local_nit_core\helper\crypto::encrypt_user_email($value);
+    }
+
     // Build the WHERE clause for an SQL query.
     $params = array('fieldval' => $value);
 
@@ -4550,6 +4556,9 @@ function get_complete_user_data($field, $value, $mnethostid = null, $throwexcept
             return false;
         }
     }
+
+    // NIT enc-email (test): decrypt the stored email so $USER->email is plaintext everywhere.
+    \local_nit_core\helper\crypto::decrypt_user_email_in($user);
 
     // Get various settings and preferences.
 
@@ -5719,6 +5728,13 @@ function email_to_user($user, $from, $subject, $messagetext, $messagehtml = '', 
     if (empty($user->email)) {
         debugging('Can not send email to user without email: '.$user->id, DEBUG_DEVELOPER);
         return false;
+    }
+
+    // NIT enc-email (test): decrypt a stored (encrypted) email before sending, on a
+    // clone so the caller's object is not mutated.
+    if (\local_nit_core\helper\crypto::is_encrypted((string) $user->email)) {
+        $user = clone($user);
+        $user->email = \local_nit_core\helper\crypto::decrypt_user_email($user->email);
     }
 
     if (!empty($user->deleted)) {

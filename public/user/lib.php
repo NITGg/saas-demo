@@ -118,8 +118,21 @@ function user_create_user($user, $updatepassword = true, $triggerevent = true) {
         }
     }
 
+    // NIT enc-email (test): encrypt email at rest just before storing. Done AFTER
+    // core_user::validate() (which needs the plaintext) and the caller's plaintext
+    // is restored right after insert so nothing downstream sees ciphertext.
+    $nitplainemail = $user->email ?? null;
+    if (isset($user->email) && $user->email !== '') {
+        $user->email = \local_nit_core\helper\crypto::encrypt_user_email($user->email);
+    }
+
     // Insert the user into the database.
     $newuserid = $DB->insert_record('user', $user);
+
+    // NIT enc-email (test): restore plaintext on the caller's object.
+    if ($nitplainemail !== null) {
+        $user->email = $nitplainemail;
+    }
 
     // Create USER context for this user.
     $usercontext = context_user::instance($newuserid);
@@ -215,6 +228,15 @@ function user_update_user($user, $updatepassword = true, $triggerevent = true) {
         }
     }
 
+    // NIT enc-email (test): encrypt email at rest AFTER validation (which needs the
+    // plaintext). Deterministic, so comparing it against the stored ciphertext below
+    // still correctly detects whether the email actually changed.
+    $nitplainemail = null;
+    if (isset($user->email) && $user->email !== '' && !\local_nit_core\helper\crypto::is_encrypted($user->email)) {
+        $nitplainemail = $user->email;
+        $user->email = \local_nit_core\helper\crypto::encrypt_user_email($user->email);
+    }
+
     $changedattributes = [];
     foreach ($user as $attributekey => $attributevalue) {
         // We explicitly want to ignore 'timemodified' attribute for checking, if an update is needed.
@@ -230,6 +252,11 @@ function user_update_user($user, $updatepassword = true, $triggerevent = true) {
         $updaterecord = (object) $changedattributes;
         $updaterecord->id = $currentrecord->id;
         $DB->update_record('user', $updaterecord);
+    }
+
+    // NIT enc-email (test): restore plaintext on the caller's object.
+    if ($nitplainemail !== null) {
+        $user->email = $nitplainemail;
     }
 
     if ($updatepassword) {
@@ -528,7 +555,8 @@ function user_get_user_details($user, $course = null, array $userfields = array(
             ))
             or in_array('email', $showuseridentityfields)
        )) {
-        $userdetails['email'] = $user->email;
+        // NIT enc-email (test): decrypt stored email for display / web services.
+        $userdetails['email'] = \local_nit_core\helper\crypto::decrypt_user_email((string) $user->email);
     }
 
     if (in_array('interests', $userfields)) {

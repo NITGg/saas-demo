@@ -61,6 +61,9 @@ if (!$user = $DB->get_record('user', array('id' => $userid))) {
     throw new \moodle_exception('invaliduserid');
 }
 
+// NIT enc-email (test): decrypt stored email so the edit form shows/edits the real address.
+\local_nit_core\helper\crypto::decrypt_user_email_in($user);
+
 // Guest can not be edited.
 if (isguestuser($user)) {
     throw new \moodle_exception('guestnoeditprofile');

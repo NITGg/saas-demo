@@ -1199,9 +1199,11 @@ function signup_validate_data($data, $files) {
                                WHERE " . $DB->sql_equal('email', ':email2', false, false) . "
                                  AND mnethostid = :mnethostid)";
 
+        // NIT enc-email (test): match the deterministically-encrypted email column.
+        $nitemail = \local_nit_core\helper\crypto::encrypt_user_email($data['email']);
         $params = array(
-            'email1' => $data['email'],
-            'email2' => $data['email'],
+            'email1' => $nitemail,
+            'email2' => $nitemail,
             'mnethostid' => $CFG->mnet_localhost_id,
         );
 

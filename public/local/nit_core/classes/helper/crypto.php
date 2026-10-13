@@ -44,6 +44,9 @@ class crypto {
     /** Marker + format version, so we can detect encrypted values and rotate algorithms later. */
     private const PREFIX = 'ENC1:';
 
+    /** AAD/context bound to encrypted core user email values (deterministic). */
+    public const USER_EMAIL_CONTEXT = 'core_user.email';
+
     /** @var string|null Cached raw 32-byte key. */
     private static $key = null;
 
@@ -81,6 +84,44 @@ class crypto {
     }
 
     /**
+     * Deterministic encryption: the SAME plaintext (for the same context) always
+     * produces the SAME ciphertext, so encrypted values can still be matched with
+     * `WHERE col = :val` (exact equality) — unlike {@see encrypt()}, which uses a
+     * random nonce and so produces a different ciphertext every time.
+     *
+     * Use it for fields that must stay searchable by exact value (e.g. user email,
+     * so forgot-password / duplicate checks keep working) while being unreadable in
+     * a DB dump. Trade-off: equal plaintexts are visibly equal in the DB (equality
+     * leakage) and it does NOT enable partial / LIKE / sorted search. Never use it
+     * where equality leakage matters.
+     *
+     * Construction: AES-256-GCM with a SYNTHETIC IV derived as a PRF of the
+     * plaintext+context (HMAC-SHA256 under a separate sub-key). Because the IV is a
+     * function of the plaintext, identical inputs reuse the same IV (same
+     * ciphertext) and distinct inputs get distinct IVs — so GCM's "never reuse an
+     * IV for two different messages" rule still holds. Output: "ENC1:d.<base64>".
+     *
+     * @param string|null $plaintext
+     * @param string $context Associated data; MUST match on decrypt.
+     * @return string|null
+     */
+    public static function encrypt_deterministic(?string $plaintext, string $context = ''): ?string {
+        if ($plaintext === null) {
+            return null;
+        }
+        $key = self::key();
+        // Separate sub-key for the synthetic IV, so the IV PRF and the cipher don't share the raw key.
+        $ivkey = hash_hmac('sha256', 'nit-crypto-det-iv-v1', $key, true);
+        $iv = substr(hash_hmac('sha256', $context . "\0" . $plaintext, $ivkey, true), 0, 12);
+        $tag = '';
+        $cipher = openssl_encrypt($plaintext, 'aes-256-gcm', $key, OPENSSL_RAW_DATA, $iv, $tag, $context);
+        if ($cipher === false) {
+            throw new \RuntimeException('local_nit_core crypto: deterministic encryption failed');
+        }
+        return self::PREFIX . 'd.' . base64_encode($iv . $tag . $cipher);
+    }
+
+    /**
      * Decrypt a value produced by {@see encrypt()}.
      *
      * If the value is NOT in our format (i.e. a legacy plaintext row written
@@ -107,7 +148,8 @@ class crypto {
             $nn = SODIUM_CRYPTO_AEAD_XCHACHA20POLY1305_IETF_NPUBBYTES;
             $plain = sodium_crypto_aead_xchacha20poly1305_ietf_decrypt(
                 substr($raw, $nn), $context, substr($raw, 0, $nn), $key);
-        } else if ($algo === 'o.') {
+        } else if ($algo === 'o.' || $algo === 'd.') {
+            // 'o.' = random-IV GCM, 'd.' = deterministic (synthetic-IV) GCM — same on-disk layout.
             $iv = substr($raw, 0, 12);
             $tag = substr($raw, 12, 16);
             $plain = openssl_decrypt(substr($raw, 28), 'aes-256-gcm', $key, OPENSSL_RAW_DATA, $iv, $tag, $context);
@@ -144,6 +186,64 @@ class crypto {
         } catch (\Throwable $e) {
             return false;
         }
+    }
+
+    /**
+     * Encrypt a user email for storage/lookup.
+     *
+     * Lowercases + trims first (core treats email case-insensitively), then
+     * encrypts DETERMINISTICALLY so the stored ciphertext can still be matched by
+     * exact equality (login-by-email / forgot-password / dedupe keep working).
+     *
+     * Fail-safe: null/empty, an already-encrypted value, or no configured key →
+     * returned unchanged, so nothing breaks before the key/backfill are in place.
+     *
+     * @param string|null $email
+     * @return string|null
+     */
+    public static function encrypt_user_email(?string $email): ?string {
+        if ($email === null || $email === '' || self::is_encrypted($email) || !self::is_configured()) {
+            return $email;
+        }
+        $normalised = \core_text::strtolower(trim($email));
+        return self::encrypt_deterministic($normalised, self::USER_EMAIL_CONTEXT);
+    }
+
+    /**
+     * Decrypt a stored user email for display/use.
+     *
+     * Fail-safe: legacy plaintext, empty, no key, or an unreadable value → returned
+     * unchanged rather than throwing, so pages never fatal on a bad/absent key.
+     *
+     * @param string|null $value
+     * @return string|null
+     */
+    public static function decrypt_user_email(?string $value): ?string {
+        if ($value === null || $value === '' || !self::is_encrypted($value) || !self::is_configured()) {
+            return $value;
+        }
+        try {
+            return self::decrypt($value, self::USER_EMAIL_CONTEXT);
+        } catch (\Throwable $e) {
+            return $value;
+        }
+    }
+
+    /**
+     * Decrypt the 'email' property of a user record (object or array) in place, if
+     * present and encrypted. Returns the same record for convenience; null/false
+     * pass through. Used at core read choke points.
+     *
+     * @param mixed $record
+     * @return mixed
+     */
+    public static function decrypt_user_email_in($record) {
+        if (is_object($record) && isset($record->email)) {
+            $record->email = self::decrypt_user_email((string) $record->email);
+        } else if (is_array($record) && isset($record['email'])) {
+            $record['email'] = self::decrypt_user_email((string) $record['email']);
+        }
+        return $record;
     }
 
     /**
