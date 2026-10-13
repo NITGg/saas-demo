@@ -266,6 +266,20 @@ final class chat_test extends \advanced_testcase {
         $this->assertArrayHasKey('chat_open', $data['strings']);
     }
 
+    public function test_admins_can_test_the_ai_connection_and_see_the_last_error(): void {
+        $this->llm->script = [fake_client::text('OK')];
+        $r = llm\check::run();
+        $this->assertTrue($r['ok']);
+        $this->assertSame('OK', $r['reply']);
+
+        $this->llm->script = [new \moodle_exception('error_model', 'local_nit_assistant', '', null,
+            'Anthropic\Core\Exceptions\AuthenticationException: invalid x-api-key')];
+        $r = llm\check::run();
+        $this->assertFalse($r['ok']);
+        $this->assertStringContainsString('invalid x-api-key', $r['error'], 'the real reason, not the generic message');
+        $this->assertStringContainsString('invalid x-api-key', config::last_error()['message']);
+    }
+
     public function test_the_app_gets_the_whole_reply_and_the_history(): void {
         $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);

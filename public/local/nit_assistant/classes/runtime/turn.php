@@ -139,6 +139,7 @@ final class turn {
                 });
             } catch (\Throwable $e) {
                 $error = 'model_unavailable';
+                config::record_error($e); // Shown to admins on the Usage & cost page.
                 debugging('local_nit_assistant: model call failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
             } finally {
                 budget::settle(

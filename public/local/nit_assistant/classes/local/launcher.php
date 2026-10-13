@@ -37,7 +37,8 @@ final class launcher {
     /** Strings the widget needs. */
     private const STRINGS = ['chat_title', 'chat_open', 'chat_close', 'chat_send', 'chat_placeholder', 'chat_new',
         'chat_ai_note', 'chat_team', 'chat_you', 'chat_waiting', 'chat_human', 'chat_error_busy', 'chat_error_full',
-        'chat_error_ratelimited', 'chat_error_generic', 'chat_error_session', 'msg_fallback', 'chat_thinking'];
+        'chat_error_ratelimited', 'chat_error_generic', 'chat_error_session', 'msg_fallback', 'chat_thinking',
+        'chat_admin_hint'];
 
     /**
      * Hook: add the widget.
@@ -97,6 +98,9 @@ final class launcher {
             'signedin' => isloggedin() && !isguestuser(),
             'rtl' => right_to_left(),
             'strings' => $strings,
+            // Admins see where the reason is when the AI can't answer.
+            'adminhelp' => has_capability('local/nit_assistant:manage', \context_system::instance())
+                ? (new \moodle_url('/local/nit_assistant/usage.php'))->out(false) : '',
         ];
     }
 }

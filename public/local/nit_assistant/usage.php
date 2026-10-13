@@ -32,6 +32,13 @@ use local_nit_assistant\inbox\ui;
 use local_nit_assistant\runtime\budget;
 
 admin_externalpage_setup('local_nit_assistant_usage');
+$url = new moodle_url('/local/nit_assistant/usage.php');
+
+$check = null;
+if (optional_param('check', 0, PARAM_BOOL)) {
+    require_sesskey();
+    $check = \local_nit_assistant\llm\check::run();
+}
 
 $usage = manager::usage(30);
 $money = static fn(float $v): string => '$' . number_format($v, 2);
@@ -39,6 +46,26 @@ $money = static fn(float $v): string => '$' . number_format($v, 2);
 echo $OUTPUT->header();
 echo $OUTPUT->heading(get_string('usage', 'local_nit_assistant'));
 echo ui::tabs('usage');
+
+// Is the AI reachable? The test result, the last error the chat met, and the test button.
+if ($check !== null) {
+    echo $check['ok']
+        ? $OUTPUT->notification(get_string('check_ok', 'local_nit_assistant', (object) $check), 'success', false)
+        : $OUTPUT->notification(get_string('check_failed', 'local_nit_assistant', s($check['error'])), 'error', false);
+}
+$lasterror = config::last_error();
+if ($lasterror && $check === null) {
+    echo $OUTPUT->notification(get_string('lasterror', 'local_nit_assistant', (object) [
+        'time' => userdate($lasterror['time'], get_string('strftimedatetimeshort', 'langconfig')),
+        'message' => s($lasterror['message']),
+    ]), 'warning', false);
+}
+echo $OUTPUT->single_button(
+    new moodle_url($url, ['check' => 1, 'sesskey' => sesskey()]),
+    get_string('check_button', 'local_nit_assistant'),
+    'post',
+    ['type' => 'secondary']
+);
 
 $budget = config::daily_budget();
 $cards = [

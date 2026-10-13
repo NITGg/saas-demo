@@ -69,6 +69,28 @@ final class config {
     }
 
     /**
+     * Remember why the last model call failed, for admins (Usage & cost page).
+     *
+     * @param \Throwable $e
+     * @return void
+     */
+    public static function record_error(\Throwable $e): void {
+        $detail = $e instanceof \moodle_exception && !empty($e->debuginfo) ? $e->debuginfo : $e->getMessage();
+        $detail = \local_nit_assistant\security\redaction::text(\core_text::substr(trim((string) $detail), 0, 500));
+        set_config('lasterror', json_encode(['time' => time(), 'message' => $detail]), 'local_nit_assistant');
+    }
+
+    /**
+     * The last model error, if any.
+     *
+     * @return array|null ['time', 'message']
+     */
+    public static function last_error(): ?array {
+        $e = json_decode((string) get_config('local_nit_assistant', 'lasterror'), true);
+        return is_array($e) && !empty($e['message']) ? $e : null;
+    }
+
+    /**
      * May visitors (not signed in) chat?
      *
      * @return bool

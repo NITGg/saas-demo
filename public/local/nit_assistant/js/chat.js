@@ -96,8 +96,11 @@
             return node;
         }
 
-        var ICON_CHAT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-5 4v-4H4'
-            + 'a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" fill="currentColor"/></svg>';
+        // AI sparkles: one large star and two small ones.
+        var ICON_CHAT = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">'
+            + '<path d="M10 2.5l1.9 5.6 5.6 1.9-5.6 1.9L10 17.5l-1.9-5.6L2.5 10l5.6-1.9z"/>'
+            + '<path d="M18.5 13l.95 2.55 2.55.95-2.55.95-.95 2.55-.95-2.55L15 16.5l2.55-.95z"/>'
+            + '<path d="M18 2l.7 1.8 1.8.7-1.8.7L18 7l-.7-1.8-1.8-.7 1.8-.7z"/></svg>';
         var ICON_CLOSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" '
             + 'stroke-width="2" stroke-linecap="round"/></svg>';
         var ICON_NEW = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" '
@@ -393,6 +396,14 @@
                         gotError = true;
                         reply.remove();
                         notice(errorText(data.code), true);
+                        // Admins: say where the reason is (Usage & cost shows the last AI error).
+                        if (cfg.adminhelp && ['unavailable', 'budget_exhausted', 'model_unavailable'].indexOf(data.code) !== -1) {
+                            var hint = el('div', 'nit-asst-notice');
+                            var a = el('a', '', {href: cfg.adminhelp});
+                            a.textContent = S.chat_admin_hint + ' (' + data.code + ')';
+                            hint.appendChild(a);
+                            log.appendChild(hint);
+                        }
                     }
                 });
             }).catch(function() {
