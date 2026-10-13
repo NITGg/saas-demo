@@ -58,5 +58,29 @@ function xmldb_local_nit_assistant_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026101202, 'local', 'nit_assistant');
     }
 
+    if ($oldversion < 2026101301) {
+        // Support tickets opened by the student assistant (phase 2).
+        $table = new xmldb_table('local_nit_asst_ticket');
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('convid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('category', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('subject', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('description', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
+        $table->add_field('status', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, 'open');
+        $table->add_field('notes', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('assignedto', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('convid', XMLDB_KEY_FOREIGN, ['convid'], 'local_nit_asst_conv', ['id']);
+        $table->add_index('statuscreated', XMLDB_INDEX_NOTUNIQUE, ['status', 'timecreated']);
+        $table->add_index('userid', XMLDB_INDEX_NOTUNIQUE, ['userid']);
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+        upgrade_plugin_savepoint(true, 2026101301, 'local', 'nit_assistant');
+    }
+
     return true;
 }

@@ -50,6 +50,15 @@ final class registry {
             new sales\find_teachers(),
             new sales\start_checkout(),
             new sales\capture_lead(),
+            new student\my_subscription(),
+            new student\my_flex(),
+            new student\my_lessons(),
+            new student\my_live_sessions(),
+            new student\my_courses(),
+            new student\my_wallet(),
+            new student\my_payments(),
+            new student\lesson_video_help(),
+            new student\open_ticket(),
             new common\handoff_to_human(),
         ];
     }

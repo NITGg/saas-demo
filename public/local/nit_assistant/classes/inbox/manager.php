@@ -31,6 +31,9 @@ final class manager {
     /** Lead statuses. */
     public const LEAD_STATUSES = ['new', 'contacted', 'won', 'lost'];
 
+    /** Ticket statuses. */
+    public const TICKET_STATUSES = ['open', 'in_progress', 'resolved', 'closed'];
+
     /** Longest staff reply (characters). */
     public const MAXREPLY = 4000;
 
@@ -187,6 +190,51 @@ final class manager {
         $DB->get_record('local_nit_asst_lead', ['id' => $leadid], 'id', MUST_EXIST);
         $DB->update_record('local_nit_asst_lead', (object) [
             'id' => $leadid, 'status' => $status, 'notes' => \core_text::substr(trim($notes), 0, 2000),
+            'assignedto' => $staffid, 'timemodified' => time(),
+        ]);
+    }
+
+    /**
+     * Tickets, open ones first, newest first.
+     *
+     * @param string $status '' = all but closed
+     * @param int $page
+     * @param int $perpage
+     * @return array [rows, total]
+     */
+    public static function tickets(string $status, int $page, int $perpage): array {
+        global $DB;
+        [$where, $params] = $status !== '' ? ['status = :status', ['status' => $status]] : ["status <> 'closed'", []];
+        $total = $DB->count_records_select('local_nit_asst_ticket', $where, $params);
+        $rows = $DB->get_records_select(
+            'local_nit_asst_ticket',
+            $where,
+            $params,
+            "CASE WHEN status = 'open' THEN 0 ELSE 1 END, timecreated DESC, id DESC",
+            '*',
+            $page * $perpage,
+            $perpage
+        );
+        return [array_values($rows), $total];
+    }
+
+    /**
+     * Update a ticket's status and notes.
+     *
+     * @param int $ticketid
+     * @param string $status
+     * @param string $notes
+     * @param int $staffid
+     * @return void
+     */
+    public static function update_ticket(int $ticketid, string $status, string $notes, int $staffid): void {
+        global $DB;
+        if (!in_array($status, self::TICKET_STATUSES, true)) {
+            throw new \moodle_exception('invalidparameter', 'debug');
+        }
+        $DB->get_record('local_nit_asst_ticket', ['id' => $ticketid], 'id', MUST_EXIST);
+        $DB->update_record('local_nit_asst_ticket', (object) [
+            'id' => $ticketid, 'status' => $status, 'notes' => \core_text::substr(trim($notes), 0, 2000),
             'assignedto' => $staffid, 'timemodified' => time(),
         ]);
     }

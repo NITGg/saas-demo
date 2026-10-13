@@ -60,6 +60,16 @@ final class alerts {
     }
 
     /**
+     * A student opened a support ticket.
+     *
+     * @param \stdClass $ticket
+     * @return void
+     */
+    public static function ticket(\stdClass $ticket): void {
+        self::send('ticket', (int) $ticket->convid, self::recipients(), "#{$ticket->id} [{$ticket->category}] {$ticket->subject}");
+    }
+
+    /**
      * The user wrote while the team has the conversation (throttled per conversation).
      *
      * @param \stdClass $conv

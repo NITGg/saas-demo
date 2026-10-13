@@ -75,9 +75,10 @@ if (!service::allow($sender)) {
     exit;
 }
 
-$conv = conversation::find_or_create($userid, $key ?: null, [
-    'channel' => 'web', 'lang' => current_language(), 'mode' => access::mode($userid), 'ip' => $ip, 'page' => $page,
-]);
+$mode = access::mode($userid);
+$conv = access::sync_mode(conversation::find_or_create($userid, $key ?: null, [
+    'channel' => 'web', 'lang' => current_language(), 'mode' => $mode, 'ip' => $ip, 'page' => $page,
+]), $mode);
 
 // The reply can take a while: free the session for the user's other tabs, and finish
 // (and save) the reply even if the browser goes away.

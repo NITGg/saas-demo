@@ -211,3 +211,29 @@ hours, and give the staff role `local/nit_assistant:viewinbox` + `:reply`.
 
 **Known:** Flex entities (`local_nit_core\base\entity::get_id()` is public) throw under developer
 debugging — a separate fix; the assistant's Flex tests switch developer debugging off meanwhile.
+
+---
+
+## 10. Phase 2 — what was built (student support)
+
+**Mode, decided by the server on every message:** `student` when the signed-in user has a
+student role in any course, an active subscription or an active Flex package; otherwise `sales`
+(teacher mode comes in phase 3). A visitor who buys a plan is helped as a student from the next
+message.
+
+**Student tools** (each reads only the signed-in student's own data — the model never passes a
+user id): `my_subscription` (active plan, end date, days left, courses it opens, past plans),
+`my_flex` (credits available/held, package expiry, last movements), `my_lessons` (requests,
+upcoming with the join link once the teacher started the room, past; the cancellation and
+absence rules), `my_live_sessions` (group classes; link from 30 min before), `my_courses`
+(completion %, watched %, last lesson, certificates), `my_wallet`, `my_payments` (status in
+plain words, invoice number, try-again link for failed ones), `lesson_video_help` (points to
+the lesson's own video assistant), `open_ticket` (write; 3 per student per day; card numbers
+masked). Students can still use the catalogue tools, `start_checkout` and `handoff_to_human`.
+
+**Staff side:** a Tickets page (open first; status open / in progress / resolved / closed,
+team notes, link to the conversation) and a ticket alert.
+
+**Tests:** student-tool tests built around "another student's data never shows". **Evals:**
+20 student cases (`tests/evals/student_cases.json`, privacy cases included), run with
+`--group nit_assistant_eval` like the sales ones.

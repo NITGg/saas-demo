@@ -39,6 +39,12 @@ $ADMIN->add('local_nit_assistant_cat', new admin_externalpage(
     'local/nit_assistant:viewinbox'
 ));
 $ADMIN->add('local_nit_assistant_cat', new admin_externalpage(
+    'local_nit_assistant_tickets',
+    get_string('tickets', 'local_nit_assistant'),
+    new moodle_url('/local/nit_assistant/tickets.php'),
+    'local/nit_assistant:viewinbox'
+));
+$ADMIN->add('local_nit_assistant_cat', new admin_externalpage(
     'local_nit_assistant_usage',
     get_string('usage', 'local_nit_assistant'),
     new moodle_url('/local/nit_assistant/usage.php'),

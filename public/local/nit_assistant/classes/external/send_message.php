@@ -67,9 +67,10 @@ class send_message extends external_api {
             $out['error'] = 'ratelimited';
             return $out;
         }
-        $conv = conversation::find_or_create($userid, null, [
-            'channel' => 'app', 'lang' => current_language(), 'mode' => access::mode($userid), 'ip' => getremoteaddr(),
-        ]);
+        $mode = access::mode($userid);
+        $conv = access::sync_mode(conversation::find_or_create($userid, null, [
+            'channel' => 'app', 'lang' => current_language(), 'mode' => $mode, 'ip' => getremoteaddr(),
+        ]), $mode);
         $out['outcome'] = (new service())->send($conv, $message, static function (string $event, array $data) use (&$out): void {
             match ($event) {
                 'delta' => $out['reply'] .= $data['text'],
