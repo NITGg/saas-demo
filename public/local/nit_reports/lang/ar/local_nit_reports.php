@@ -488,6 +488,7 @@ $string['help_teacher_dues_percent'] = 'نسبة المدرس في الحصص و
 $string['help_teacher_dues_activities'] = 'اللي كسبه من الدروس المدفوعة في الفترة.';
 $string['help_teacher_dues_lessons'] = 'اللي كسبه من الحصص الخاصة في الفترة.';
 $string['help_teacher_dues_earned'] = 'كل اللي كسبه في الفترة، ومنه اللي اترجع بعد كده.';
+$string['help_earned_inyourcourses'] = 'اللي كسبه المدرس في الفترة من الدروس المدفوعة في الكورسات اللي إنت مسؤول عنها بس. الحصص الخاصة والمبالغ اللي اتصرفت له وطلبات السحب والمحفظة مش مربوطة بكورس، فبيشوفها مدير الموقع بس.';
 $string['help_teacher_dues_platform'] = 'نصيب المنصة من نفس العمليات، ومنه القيمة كلها في الحصص اللي من غير أجر.';
 $string['help_teacher_dues_reversed'] = 'أرباح اترجعت في الفترة (مثلاً بعد استرداد فلوس طالب).';
 $string['help_teacher_dues_paid'] = 'الفلوس اللي اتحولت للمدرس في الفترة.';

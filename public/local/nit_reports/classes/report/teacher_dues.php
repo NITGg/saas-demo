@@ -52,7 +52,7 @@ class teacher_dues extends base {
     }
 
     public function columns(): array {
-        return [
+        $cols = [
             'teacher' => self::str('col_teacher'),
             'operations' => self::str('col_operations'),
             'unpaid' => self::str('col_unpaidlessons'),
@@ -67,6 +67,29 @@ class teacher_dues extends base {
             'requested' => self::str('col_requested'),
             'balance' => self::str('col_balance'),
         ];
+        if ($this->s->course_money_only()) {
+            // A category manager: only what was earned from their courses (see scope::course_money_only()).
+            $cols = array_diff_key($cols, array_flip(self::NOT_IN_COURSES));
+        }
+        return $cols;
+    }
+
+    /** @var string[] Columns that belong to no course: hidden from a category manager. */
+    private const NOT_IN_COURSES = ['unpaid', 'lessons', 'paid', 'lastpaid', 'requested', 'balance'];
+
+    public function help(): array {
+        $help = parent::help();
+        if ($this->s->course_money_only()) {
+            $help['earned'] = self::str('help_earned_inyourcourses');
+        }
+        return $help;
+    }
+
+    public function card_help(array $card): ?string {
+        if ($this->s->course_money_only() && ($card['id'] ?? '') === 'col_earned') {
+            return self::str('help_earned_inyourcourses');
+        }
+        return parent::card_help($card);
     }
 
     public function sortable(): array {
@@ -115,10 +138,13 @@ class teacher_dues extends base {
             return [];
         }
         [$in, $params] = $DB->get_in_or_equal($ids, SQL_PARAMS_NAMED, 'td');
+        // A category manager counts only the earnings from their courses (BUG-043).
+        [$esql, $ep] = $this->s->earning_sql();
+        $params += $ep;
         [$period, $pp] = $this->f->period_sql('timecreated');
         $earned = [];
         foreach ($DB->get_recordset_sql("SELECT teacherid, source, SUM(teacher_amount_minor) AS total FROM {nit_earning}
-                WHERE teacherid $in AND $period GROUP BY teacherid, source", $params + $pp) as $r) {
+                WHERE teacherid $in AND $esql AND $period GROUP BY teacherid, source", $params + $pp) as $r) {
             $earned[(int) $r->teacherid][$r->source] = (int) $r->total;
         }
         // Count, share range and the platform's part of the same earnings (taken-back ones included, like "earned").
@@ -130,19 +156,23 @@ class teacher_dues extends base {
                     MIN(CASE WHEN teacher_percent > 0 THEN teacher_percent END) AS minpct,
                     MAX(CASE WHEN teacher_percent > 0 THEN teacher_percent END) AS maxpct,
                     SUM(platform_amount_minor) AS platform
-               FROM {nit_earning} WHERE teacherid $in AND $speriod GROUP BY teacherid", $params + $sp);
-        $lastpaid = $DB->get_records_sql_menu("SELECT teacherid, MAX(timeprocessed) FROM {nit_withdrawal}
-            WHERE teacherid $in AND status = 'paid' GROUP BY teacherid", $params);
+               FROM {nit_earning} WHERE teacherid $in AND $esql AND $speriod GROUP BY teacherid", $params + $sp);
         [$rperiod, $rp] = $this->f->period_sql('timereversed', 'r');
         $reversed = $DB->get_records_sql_menu("SELECT teacherid, SUM(teacher_amount_minor) FROM {nit_earning}
-            WHERE teacherid $in AND status = 'reversed' AND $rperiod GROUP BY teacherid", $params + $rp);
-        [$wperiod, $wp] = $this->f->period_sql('timeprocessed', 'w');
-        $paid = $DB->get_records_sql_menu("SELECT teacherid, SUM(amount_minor) FROM {nit_withdrawal}
-            WHERE teacherid $in AND status = 'paid' AND $wperiod GROUP BY teacherid", $params + $wp);
-        $requested = $DB->get_records_sql_menu("SELECT teacherid, SUM(amount_minor) FROM {nit_withdrawal}
-            WHERE teacherid $in AND status IN ('pending', 'approved') GROUP BY teacherid", $params);
-        $balance = $DB->get_records_sql_menu("SELECT userid, SUM(balance_minor) FROM {nit_wallet}
-            WHERE userid $in AND ownertype = 'teacher' GROUP BY userid", $params);
+            WHERE teacherid $in AND $esql AND status = 'reversed' AND $rperiod GROUP BY teacherid", $params + $rp);
+        $lastpaid = $paid = $requested = $balance = [];
+        // Payouts, requests and the wallet belong to no course: not read for a category manager.
+        if (!$this->s->course_money_only()) {
+            $lastpaid = $DB->get_records_sql_menu("SELECT teacherid, MAX(timeprocessed) FROM {nit_withdrawal}
+                WHERE teacherid $in AND status = 'paid' GROUP BY teacherid", $params);
+            [$wperiod, $wp] = $this->f->period_sql('timeprocessed', 'w');
+            $paid = $DB->get_records_sql_menu("SELECT teacherid, SUM(amount_minor) FROM {nit_withdrawal}
+                WHERE teacherid $in AND status = 'paid' AND $wperiod GROUP BY teacherid", $params + $wp);
+            $requested = $DB->get_records_sql_menu("SELECT teacherid, SUM(amount_minor) FROM {nit_withdrawal}
+                WHERE teacherid $in AND status IN ('pending', 'approved') GROUP BY teacherid", $params);
+            $balance = $DB->get_records_sql_menu("SELECT userid, SUM(balance_minor) FROM {nit_wallet}
+                WHERE userid $in AND ownertype = 'teacher' GROUP BY userid", $params);
+        }
         $out = [];
         foreach ($ids as $id) {
             $e = $earned[$id] ?? [];
@@ -169,12 +199,14 @@ class teacher_dues extends base {
     public function summary(): array {
         $fig = $this->figures($this->teacher_ids());
         $sum = fn($k) => array_sum(array_column($fig, $k));
-        return [
-            ['id' => 'col_earned', 'label' => self::str('col_earned'), 'value' => data::minor($sum('earned'))],
-            ['id' => 'col_paidout', 'label' => self::str('col_paidout'), 'value' => data::minor($sum('paid'))],
-            ['id' => 'col_requested', 'label' => self::str('col_requested'), 'value' => data::minor($sum('requested'))],
-            ['id' => 'col_balance', 'label' => self::str('col_balance'), 'value' => data::minor($sum('balance'))],
-        ];
+        $cards = [['id' => 'col_earned', 'label' => self::str('col_earned'), 'value' => data::minor($sum('earned'))]];
+        if (!$this->s->course_money_only()) {
+            $cards[] = ['id' => 'col_paidout', 'label' => self::str('col_paidout'), 'value' => data::minor($sum('paid'))];
+            $cards[] = ['id' => 'col_requested', 'label' => self::str('col_requested'),
+                'value' => data::minor($sum('requested'))];
+            $cards[] = ['id' => 'col_balance', 'label' => self::str('col_balance'), 'value' => data::minor($sum('balance'))];
+        }
+        return $cards;
     }
 
     public function rows(int $page, int $perpage): array {
@@ -195,6 +227,10 @@ class teacher_dues extends base {
             }
             $row['_sort'] = array_intersect_key($f, array_flip(array_merge($money, ['operations', 'unpaid', 'lastpaid'])))
                 + ['percent' => $f['maxpct'] ?? -1.0];
+            if ($this->s->course_money_only()) {
+                $row = array_diff_key($row, array_flip(self::NOT_IN_COURSES));
+                $row['_sort'] = array_diff_key($row['_sort'], array_flip(self::NOT_IN_COURSES));
+            }
             $rows[] = $row;
         }
         return $this->finish($rows, $page, $perpage);

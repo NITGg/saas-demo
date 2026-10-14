@@ -109,6 +109,37 @@ class scope {
     }
 
     /**
+     * Whether a teacher's money is cut to the courses the user manages: a category or
+     * course manager sees what a teacher earned from those courses only — never the
+     * teacher's private lessons, payouts, withdrawal requests or wallet, which belong to
+     * no course (BUG-043). Site-wide viewers and a teacher looking at their own line see it all.
+     *
+     * @return bool
+     */
+    public function course_money_only(): bool {
+        return !$this->sitewide && !empty($this->managed);
+    }
+
+    /**
+     * A SQL condition limiting {nit_earning} rows to the ones the user may see.
+     *
+     * @param string $alias table alias ('' = none)
+     * @param string $prefix param name prefix
+     * @return array{0:string, 1:array} ["1 = 1" when the user sees every earning]
+     */
+    public function earning_sql(string $alias = '', string $prefix = 'es'): array {
+        global $DB;
+        if (!$this->course_money_only()) {
+            return ['1 = 1', []];
+        }
+        $a = $alias === '' ? '' : $alias . '.';
+        [$insql, $params] = $DB->get_in_or_equal($this->managed, SQL_PARAMS_NAMED, $prefix);
+        // Only activities sold on their own carry a course (lessonid = cmid); private lessons do not.
+        return ["({$a}source = 'cm' AND {$a}lessonid IN (SELECT escm.id FROM {course_modules} escm WHERE escm.course $insql))",
+            $params];
+    }
+
+    /**
      * The courses of a level: null = every course.
      *
      * @param string $level

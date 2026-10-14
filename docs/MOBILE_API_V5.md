@@ -29,6 +29,7 @@ sets how many Flex one live lesson costs (§3.7). The
 | 14 | Registration, profile and forgot-password rules (QA run 1) | `register_student` (stricter names / phones, phone and national ID unique), `update_my_profile` (new errorcodes `namedigits`, `nameshort`, `textshort`, `phonetaken`, `nationalidtaken`), `request_password_otp` (code arrives within a minute) | **Check**: show the new messages; say on the OTP screen that the code may take a minute (§3.9) |
 | 15 | Prices, revenue and Arabic search (QA run 1, phase 3) | `save_course_price` (errorcodes `priceformat`, `pricemax`), `get_revenue_report` (top-ups not revenue, wallet purchases are; new `wallet_*` fields), `get_courses` / `get_articles` / `get_teachers` (Arabic spellings folded) | **Check**: show the two price messages (§3.10) |
 | 16 | Live rooms: waiting room in lesson rooms, new look (12–14/10) | `mod_jitsi_get_session_info` → `lobby` is now `true` in lesson (Flex) rooms too; new public `/mod/jitsi/branding.php`; the web room has its own controls | **Yes**: the waiting-room steps now apply to lesson rooms; optional new look (§3.11) |
+| 17 | Reports: category manager and teacher money (QA run 1, BUG-043) | `get_report` → `teacher_dues` for a category/course manager: money only from their courses; the payout / wallet / lesson columns and cards are gone | No if the table is built from `columns` (§3.13) |
 
 ---
 
@@ -540,6 +541,21 @@ longer returns a dead `cmid`:
 
 **App action:** always take `cmid` from this response (never cache it from an earlier call) and show the two
 errors' messages.
+
+### 3.13 Reports: a category manager sees teacher money from their courses only (QA run 1, BUG-043, 14/10)
+
+`get_report` (`/local/nit_reports/api.php`, §5) for a manager of a category or course (not a site manager):
+- **`teacher_dues`:** `earned`, `activities`, `platform`, `reversed`, `operations` and `percent` count only the
+  activities sold in the courses they manage. The columns `unpaid`, `lessons`, `paid`, `lastpaid`, `requested`
+  and `balance` are **no longer in `columns` or `rows`** (private lessons, payouts, withdrawal requests and the
+  wallet are not tied to a course), and the only card is `col_earned`.
+- **`teachers`** (web only, not in the app): same rule — `earned` is from their courses; `paid`, `wallet`,
+  `pending` and the `card_paidout` card are gone.
+- The `earned` column's `help` says so.
+
+Unchanged: site managers/admins see everything; a teacher still sees their own whole line. Same call, same shape.
+
+**App action:** none if the app builds the table from `columns` (never a fixed column list).
 
 ## 4. Device limit — `local_nit_devices` (new)
 

@@ -105,10 +105,14 @@ final class file_lessons_test extends \advanced_testcase {
         global $CFG, $PAGE;
         require_once($CFG->dirroot . '/course/modlib.php');
         require_once($CFG->dirroot . '/mod/resource/mod_form.php');
-        [, $context, $cw, $cm, $data] = prepare_new_moduleinfo_data($course, 'resource', 0);
-        $PAGE->set_context($context);
-        $PAGE->set_url('/course/modedit.php', ['add' => 'resource', 'course' => $course->id]);
-        return [new \mod_resource_mod_form($data, $cw->section, $cm, $course), (array) $data];
+        [, , $cw, $cm, $data] = prepare_new_moduleinfo_data($course, 'resource', 0);
+        if ((int) $PAGE->course->id !== (int) $course->id) {
+            $PAGE->set_course($course);
+            $PAGE->set_url('/course/modedit.php', ['add' => 'resource', 'course' => $course->id]);
+        }
+        $form = new \mod_resource_mod_form($data, $cw->section, $cm, $course);
+        $form->set_data($data);
+        return [$form, (array) $data];
     }
 
     public function test_the_real_file_activity_form_refuses_the_file(): void {
@@ -122,7 +126,8 @@ final class file_lessons_test extends \advanced_testcase {
         $submit = function(array $files) use ($course): \mod_resource_mod_form {
             [, $hidden] = $this->resource_form($course);
             \mod_resource_mod_form::mock_submit($hidden + ['name' => 'Lesson', 'files' => $this->draft($files),
-                'introeditor' => ['text' => '', 'format' => FORMAT_HTML, 'itemid' => 0], 'submitbutton2' => 'Save']);
+                'introeditor' => ['text' => '', 'format' => FORMAT_HTML, 'itemid' => 0], 'cmidnumber' => '',
+                'availabilityconditionsjson' => '', 'submitbutton2' => 'Save']);
             [$form] = $this->resource_form($course);
             return $form;
         };

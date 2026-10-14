@@ -62,11 +62,29 @@ class teachers extends base {
         $cols['lastaccess'] = self::str('col_lastaccess');
         if ($t['finance']) {
             $cols['earned'] = self::str('col_earned');
-            $cols['paid'] = self::str('col_paidout');
-            $cols['wallet'] = self::str('col_balance');
-            $cols['pending'] = self::str('col_requested');
+            // Payouts, the wallet and requests belong to no course: site-wide viewers only (BUG-043).
+            if (!$this->s->course_money_only()) {
+                $cols['paid'] = self::str('col_paidout');
+                $cols['wallet'] = self::str('col_balance');
+                $cols['pending'] = self::str('col_requested');
+            }
         }
         return $cols;
+    }
+
+    public function help(): array {
+        $help = parent::help();
+        if (isset($help['earned']) && $this->s->course_money_only()) {
+            $help['earned'] = self::str('help_earned_inyourcourses');
+        }
+        return $help;
+    }
+
+    public function card_help(array $card): ?string {
+        if ($this->s->course_money_only() && ($card['id'] ?? '') === 'card_earned') {
+            return self::str('help_earned_inyourcourses');
+        }
+        return parent::card_help($card);
     }
 
     public function sortable(): array {
@@ -117,13 +135,17 @@ class teachers extends base {
             'value' => self::num($DB->count_records_sql("SELECT COUNT(1) $from", $params))]];
         if (self::tables()['finance']) {
             [$period, $pparams] = $this->f->period_sql('e.timecreated');
+            [$esql, $eparams] = $this->s->earning_sql('e');
             $earned = (int) $DB->get_field_sql("SELECT COALESCE(SUM(e.teacher_amount_minor), 0) FROM {nit_earning} e
-                WHERE e.status = 'active' AND $period AND e.teacherid IN (SELECT u.id $from)", $pparams + $params);
-            [$wperiod, $wparams] = $this->f->period_sql('w.timeprocessed', 'w');
-            $paid = (int) $DB->get_field_sql("SELECT COALESCE(SUM(w.amount_minor), 0) FROM {nit_withdrawal} w
-                WHERE w.status = 'paid' AND $wperiod AND w.teacherid IN (SELECT u.id $from)", $wparams + $params);
+                WHERE e.status = 'active' AND $esql AND $period AND e.teacherid IN (SELECT u.id $from)",
+                $eparams + $pparams + $params);
             $cards[] = ['id' => 'card_earned', 'label' => self::str('card_earned'), 'value' => data::minor($earned)];
-            $cards[] = ['id' => 'card_paidout', 'label' => self::str('card_paidout'), 'value' => data::minor($paid)];
+            if (!$this->s->course_money_only()) {
+                [$wperiod, $wparams] = $this->f->period_sql('w.timeprocessed', 'w');
+                $paid = (int) $DB->get_field_sql("SELECT COALESCE(SUM(w.amount_minor), 0) FROM {nit_withdrawal} w
+                    WHERE w.status = 'paid' AND $wperiod AND w.teacherid IN (SELECT u.id $from)", $wparams + $params);
+                $cards[] = ['id' => 'card_paidout', 'label' => self::str('card_paidout'), 'value' => data::minor($paid)];
+            }
         }
         return $cards;
     }
@@ -193,10 +215,15 @@ class teachers extends base {
         }
 
         $earned = $paid = $wallets = $pending = [];
+        $fullmoney = !$this->s->course_money_only();
         if ($t['finance']) {
             [$period, $eparams] = $this->f->period_sql('timecreated');
+            [$esql, $esparams] = $this->s->earning_sql();
             $earned = $DB->get_records_sql_menu("SELECT teacherid, SUM(teacher_amount_minor) FROM {nit_earning}
-                WHERE status = 'active' AND $period AND teacherid $usql GROUP BY teacherid", $eparams + $uparams);
+                WHERE status = 'active' AND $esql AND $period AND teacherid $usql GROUP BY teacherid",
+                $esparams + $eparams + $uparams);
+        }
+        if ($t['finance'] && $fullmoney) {
             [$wperiod, $wparams] = $this->f->period_sql('timeprocessed', 'w');
             $paid = $DB->get_records_sql_menu("SELECT teacherid, SUM(amount_minor) FROM {nit_withdrawal}
                 WHERE status = 'paid' AND $wperiod AND teacherid $usql GROUP BY teacherid", $wparams + $uparams);
@@ -238,8 +265,11 @@ class teachers extends base {
                     'lastaccess' => $last],
             ];
             if ($t['finance']) {
-                $money = ['earned' => (int) ($earned[$id] ?? 0), 'paid' => (int) ($paid[$id] ?? 0),
-                    'wallet' => (int) ($wallets[$id] ?? 0), 'pending' => (int) ($pending[$id] ?? 0)];
+                $money = ['earned' => (int) ($earned[$id] ?? 0)];
+                if ($fullmoney) {
+                    $money += ['paid' => (int) ($paid[$id] ?? 0), 'wallet' => (int) ($wallets[$id] ?? 0),
+                        'pending' => (int) ($pending[$id] ?? 0)];
+                }
                 $row += array_map(fn($v) => data::minor($v), $money);
                 $row['_sort'] += $money;
             }

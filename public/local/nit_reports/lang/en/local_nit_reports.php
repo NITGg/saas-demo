@@ -488,6 +488,7 @@ $string['help_teacher_dues_percent'] = 'The teacher\'s share in percent of the l
 $string['help_teacher_dues_activities'] = 'Earned from paid activities in the period.';
 $string['help_teacher_dues_lessons'] = 'Earned from private lessons in the period.';
 $string['help_teacher_dues_earned'] = 'Everything earned in the period, including what was later taken back.';
+$string['help_earned_inyourcourses'] = 'Only what the teacher earned in the period from paid activities in the courses you manage. Their private lessons, payouts, withdrawal requests and wallet are not tied to a course, so only site managers see them.';
 $string['help_teacher_dues_platform'] = 'The platform\'s part of the same earnings, including the whole value of the unpaid lessons.';
 $string['help_teacher_dues_reversed'] = 'Earnings taken back in the period (for example after a refund).';
 $string['help_teacher_dues_paid'] = 'Money transferred to the teacher in the period.';
