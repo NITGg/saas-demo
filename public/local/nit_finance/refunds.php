@@ -51,6 +51,7 @@ if (data_submitted() && confirm_sesskey()) {
 
 $date = static fn(int $time): string => userdate($time, get_string('strftimedatetimeshort', 'langconfig'));
 $days = \local_nit_finance\config::refund_days();
+\local_nit_finance\local\refunds_ui::require_js();
 
 echo $OUTPUT->header();
 
@@ -70,8 +71,9 @@ if ($days <= 0) {
         foreach ($items as $item) {
             $confirm = get_string('refundconfirm', 'local_nit_finance',
                 ['item' => $item['itemname'], 'amount' => money::format($item['refund_minor'])]);
-            $form = html_writer::start_tag('form', ['method' => 'post', 'action' => $url->out(false),
-                'onsubmit' => 'return confirm(' . json_encode($confirm) . ')']);
+            $form = html_writer::start_tag('form', ['method' => 'post', 'action' => $url->out(false)]
+                + \local_nit_finance\local\refunds_ui::confirm_attributes(get_string('requestrefund', 'local_nit_finance'),
+                    $confirm, get_string('requestrefund', 'local_nit_finance')));
             $form .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
             $form .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'key', 'value' => $item['key']]);
             $form .= html_writer::empty_tag('input', ['type' => 'text', 'name' => 'reason', 'class' => 'form-control mb-1',

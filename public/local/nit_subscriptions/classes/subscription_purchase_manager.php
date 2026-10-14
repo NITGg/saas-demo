@@ -556,6 +556,11 @@ class subscription_purchase_manager {
             if (!$ctx) {
                 continue;
             }
+            // Bought from the wallet or with a code (local_nit_finance): keep the access they paid for.
+            if ($DB->get_manager()->table_exists('nit_purchase') && $DB->record_exists('nit_purchase',
+                    ['userid' => (int) $purchase->userid, 'courseid' => (int) $cid, 'status' => 'active'])) {
+                continue;
+            }
             if (is_enrolled($ctx, (int) $purchase->userid, '', true)) {
                 $plugin->unenrol_user($instance, (int) $purchase->userid);
             }

@@ -140,6 +140,22 @@ final class refunds_test extends \advanced_testcase {
         $this->assertFalse($this->enrolled($student));
     }
 
+    public function test_the_same_lesson_bought_again_after_a_refund_can_be_refunded_again(): void {
+        global $DB;
+        $cm = $this->getDataGenerator()->create_module('page', ['course' => $this->course->id]);
+        purchases::set_price((int) $cm->cmid, (int) $this->course->id, 5000);
+        $student = $this->student(10000);
+        purchases::buy_with_wallet($student, (int) $cm->cmid);
+        refunds::process((int) get_admin()->id,
+            (int) refunds::request($student, $this->only_refundable($student)['key'])->id, 'approve');
+
+        // Bought again later: nit_purchase re-uses its row, but it is a new purchase.
+        $this->waitForSecond();
+        purchases::buy_with_wallet($student, (int) $cm->cmid);
+        $this->assertSame(1, $DB->count_records('nit_purchase', ['userid' => $student]));
+        $this->assertSame(4500, $this->only_refundable($student)['refund_minor']);
+    }
+
     public function test_rejection_needs_a_reason_and_keeps_the_purchase(): void {
         $student = $this->student(30000);
         wallet_checkout::buy_course($student, (int) $this->course->id);

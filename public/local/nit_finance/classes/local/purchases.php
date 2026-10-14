@@ -192,6 +192,31 @@ final class purchases {
     }
 
     /**
+     * Observer: an enrolment was removed (an admin unenrolled the student).
+     * Once the student has no enrolment left in the course, their purchases
+     * there no longer count, so they can buy again; {@see self::grant()}
+     * reuses the revoked row. The teacher keeps the earnings of the old one.
+     *
+     * @param \core\event\user_enrolment_deleted $event
+     * @return void
+     */
+    public static function user_enrolment_deleted(\core\event\user_enrolment_deleted $event): void {
+        global $DB;
+        $userid = (int) $event->relateduserid;
+        $courseid = (int) $event->courseid;
+        $stillenrolled = $DB->record_exists_sql(
+            "SELECT 1 FROM {user_enrolments} ue JOIN {enrol} e ON e.id = ue.enrolid
+              WHERE ue.userid = :userid AND e.courseid = :courseid",
+            ['userid' => $userid, 'courseid' => $courseid]);
+        if ($stillenrolled) {
+            return;
+        }
+        $DB->execute("UPDATE {nit_purchase} SET status = 'revoked', timemodified = :now
+                       WHERE userid = :userid AND courseid = :courseid AND status = 'active'",
+            ['now' => time(), 'userid' => $userid, 'courseid' => $courseid]);
+    }
+
+    /**
      * Enrol after a committed payment. The money is already settled, so a
      * failure here only logs: the buy page retries the enrolment the next
      * time the student opens the item.

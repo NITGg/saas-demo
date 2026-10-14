@@ -78,7 +78,7 @@ final class refunds {
         $open = self::open_keys($userid);
         $out = [];
         foreach ($items as $item) {
-            if (isset($open[$item['key']]) || $item['amount_minor'] <= 0) {
+            if (isset($open[$item['key'] . '@' . $item['paidtime']]) || $item['amount_minor'] <= 0) {
                 continue;
             }
             [$fee, $refund] = self::split($item['amount_minor'], config::refund_fee_percent());
@@ -464,8 +464,9 @@ final class refunds {
     }
 
     /**
-     * Keys of the student's purchases that already have a request (one request per purchase:
-     * a rejected one is not asked again).
+     * The student's purchases that already have a request (one request per purchase: a
+     * rejected one is not asked again), as "key@paidtime". The paid time tells a purchase
+     * apart from the same item bought again after a refund (nit_purchase re-uses its row).
      *
      * @param int $userid
      * @return array<string, true>
@@ -476,7 +477,7 @@ final class refunds {
         $rows = $DB->get_records('nit_refund_request', ['userid' => $userid]);
         foreach ($rows as $r) {
             $id = $r->source === self::SOURCE_ONLINE ? $r->transactionid : $r->purchaseid;
-            $out[$r->source . ':' . $r->itemtype . ':' . $id] = true;
+            $out[$r->source . ':' . $r->itemtype . ':' . $id . '@' . $r->paidtime] = true;
         }
         return $out;
     }

@@ -27,6 +27,7 @@ require(__DIR__ . '/../../config.php');
 
 use local_nit_finance\local\money;
 use local_nit_finance\local\refunds;
+use local_nit_finance\local\refunds_ui;
 
 require_login();
 $context = context_system::instance();
@@ -52,6 +53,7 @@ if ($action !== '' && $id > 0 && confirm_sesskey()) {
     }
 }
 
+refunds_ui::require_js();
 echo $OUTPUT->header();
 
 // Status filter.
@@ -84,10 +86,16 @@ if (!$requests) {
         $student = $students[$r->userid] ?? null;
         $actions = '';
         if ($r->status === refunds::PENDING) {
+            $a = ['student' => $student ? fullname($student) : '', 'item' => $r->itemname,
+                'amount' => money::format((int) $r->refund_minor)];
             $actions = local_nit_finance_refund_button($url, (int) $r->id, 'approve',
-                    get_string('approve', 'local_nit_finance'), 'btn-primary')
+                    get_string('approve', 'local_nit_finance'), 'btn-primary',
+                    refunds_ui::confirm_attributes(get_string('refundapprovetitle', 'local_nit_finance'),
+                        get_string('refundapproveconfirm', 'local_nit_finance', $a), get_string('approve', 'local_nit_finance')))
                 . local_nit_finance_refund_button($url, (int) $r->id, 'reject',
-                    get_string('reject', 'local_nit_finance'), 'btn-outline-danger');
+                    get_string('reject', 'local_nit_finance'), 'btn-outline-danger',
+                    refunds_ui::reason_attributes(get_string('refundrejecttitle', 'local_nit_finance', $a),
+                        get_string('refundrejectprompt', 'local_nit_finance'), get_string('reject', 'local_nit_finance')));
         } else {
             $actions = s((string) $r->adminreason) . ($r->timeprocessed ? html_writer::div($date((int) $r->timeprocessed), 'small text-muted') : '');
         }
@@ -112,21 +120,20 @@ if (!$requests) {
 echo $OUTPUT->footer();
 
 /**
- * An approve / reject button (reject asks for the reason).
+ * An approve / reject button; refunds_ui shows the confirmation (or asks the reason) in a modal.
  *
  * @param moodle_url $url
  * @param int $id
  * @param string $action
  * @param string $label
  * @param string $class
+ * @param array $attributes from refunds_ui::confirm_attributes() / reason_attributes()
  * @return string
  */
-function local_nit_finance_refund_button(moodle_url $url, int $id, string $action, string $label, string $class): string {
-    $onsubmit = $action === 'reject'
-        ? 'this.reason.value=prompt(' . json_encode(get_string('refundrejectprompt', 'local_nit_finance')) . ")||'';return this.reason.value!==''"
-        : 'return confirm(' . json_encode(get_string('approve', 'local_nit_finance') . '?') . ')';
+function local_nit_finance_refund_button(moodle_url $url, int $id, string $action, string $label, string $class,
+        array $attributes): string {
     $out = html_writer::start_tag('form', ['method' => 'post', 'action' => $url->out(false),
-        'style' => 'display:inline', 'onsubmit' => $onsubmit]);
+        'style' => 'display:inline'] + $attributes);
     foreach (['action' => $action, 'id' => $id, 'reason' => '', 'sesskey' => sesskey()] as $name => $value) {
         $out .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => $name, 'value' => $value]);
     }

@@ -334,3 +334,6 @@ $string['privacy:metadata:nit_refund_request:userid'] = 'The student who asked f
 $string['privacy:metadata:nit_refund_request:reason'] = 'The reason the student gave.';
 $string['privacy:metadata:nit_refund_request:refund_minor'] = 'The amount refunded to the wallet.';
 $string['privacy:metadata:nit_refund_request:timecreated'] = 'When the refund was requested.';
+$string['refundapprovetitle'] = 'Approve the refund';
+$string['refundapproveconfirm'] = 'Approve the refund of "{$a->item}" for {$a->student}? {$a->amount} goes to their wallet, the teacher\'s share is taken back and the student loses access to it.';
+$string['refundrejecttitle'] = 'Reject the refund of "{$a->item}"';

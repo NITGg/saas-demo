@@ -334,3 +334,6 @@ $string['privacy:metadata:nit_refund_request:userid'] = 'الطالب اللي �
 $string['privacy:metadata:nit_refund_request:reason'] = 'السبب اللي الطالب كتبه.';
 $string['privacy:metadata:nit_refund_request:refund_minor'] = 'المبلغ اللي رجع للمحفظة.';
 $string['privacy:metadata:nit_refund_request:timecreated'] = 'وقت طلب الاسترداد.';
+$string['refundapprovetitle'] = 'الموافقة على الاسترداد';
+$string['refundapproveconfirm'] = 'توافق على استرداد "{$a->item}" لـ {$a->student}؟ {$a->amount} هيرجعوا لمحفظته، وحصة المدرس هتتسحب، والطالب هيفقد الوصول ليه.';
+$string['refundrejecttitle'] = 'رفض استرداد "{$a->item}"';

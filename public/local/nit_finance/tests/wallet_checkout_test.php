@@ -139,6 +139,37 @@ final class wallet_checkout_test extends \advanced_testcase {
         $this->assertSame(30000, wallets::balance(wallets::STUDENT, $student));
     }
 
+    public function test_course_can_be_bought_again_after_admin_unenrols(): void {
+        global $DB;
+        $student = $this->student(50000);
+        $first = wallet_checkout::buy_course($student, (int) $this->course->id);
+        $this->setAdminUser();
+        $instance = $DB->get_record('enrol', ['courseid' => $this->course->id, 'enrol' => 'manual'], '*', MUST_EXIST);
+        enrol_get_plugin('manual')->unenrol_user($instance, $student);
+
+        $this->assertSame('revoked', $DB->get_field('nit_purchase', 'status', ['id' => $first->id]));
+        $this->assertFalse(wallet_checkout::has_course($student, (int) $this->course->id));
+
+        $again = wallet_checkout::buy_course($student, (int) $this->course->id);
+        $this->assertSame((int) $first->id, (int) $again->id);
+        $this->assertSame('active', $DB->get_field('nit_purchase', 'status', ['id' => $first->id]));
+        $this->assertSame(10000, wallets::balance(wallets::STUDENT, $student));
+        $this->assertTrue(is_enrolled(\context_course::instance($this->course->id), $student, '', true));
+    }
+
+    public function test_subscription_cancel_keeps_course_bought_from_wallet(): void {
+        global $DB;
+        $student = $this->student(50000);
+        wallet_checkout::buy_course($student, (int) $this->course->id);
+        $sub = wallet_checkout::buy_subscription($student, $this->plan(100));
+
+        \local_nit_subscriptions\subscription_purchase_manager::unsubscribe((int) $sub->id);
+
+        $this->assertTrue(is_enrolled(\context_course::instance($this->course->id), $student, '', true));
+        $this->assertTrue($DB->record_exists('nit_purchase',
+            ['userid' => $student, 'itemid' => $this->course->id, 'status' => 'active']));
+    }
+
     public function test_student_with_single_lessons_can_buy_the_whole_course(): void {
         $cm = $this->getDataGenerator()->create_module('page', ['course' => $this->course->id]);
         catalog::set_price((int) $cm->cmid, (int) $this->course->id, 3000);
