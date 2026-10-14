@@ -24,7 +24,9 @@ use local_nit_reports\scope;
  * every transaction, or grouped by item, by payment method or by month — with
  * cards for the revenue, refunds and failures, and for the money that did not go
  * through the gateway (codes sold, offline package payments, subscriptions an
- * admin assigned). Revenue counts completed (and partially refunded) payments.
+ * admin assigned). Revenue is what was sold: completed (and partially refunded) online payments
+ * plus purchases paid from wallet balance, less refunds back to the wallet; a wallet top-up is
+ * not revenue (it counts when spent) and is shown apart, with all the money collected online.
  *
  * @package    local_nit_reports
  * @copyright  2026 NIT
@@ -37,6 +39,9 @@ class sales extends base {
 
     /** LIKE pattern of a wallet top-up payment (local_payments metadata item_type). */
     private const TOPUP_LIKE = '%"item\_type":"wallet\_topup"%';
+
+    /** The currency of wallet balances (amounts in piastres, see data::minor()). */
+    private const WALLET_CURRENCY = 'EGP';
 
     public static function key(): string {
         return 'sales';
@@ -193,6 +198,48 @@ class sales extends base {
     }
 
     /**
+     * Revenue from wallet balance in the period (BUG-064): what students bought with their
+     * wallet (ledger kind "purchase"), less what went back to the wallet as a refund of such a
+     * purchase (kind "adjustment" with the purchase). The top-up itself is not revenue.
+     * Same filters as the payments: period, course, student search; a status filter other
+     * than "completed" leaves no wallet line.
+     *
+     * @return \stdClass[] id, timecreated, amount (revenue, major units, refunds negative), kind, itemtype,
+     *         itemid, purchaseid, note
+     */
+    private function wallet_lines(): array {
+        global $DB;
+        if (!$DB->get_manager()->table_exists('nit_wallet_txn')
+                || !in_array($this->f->status, ['', 'completed'], true)) {
+            return [];
+        }
+        [$period, $params] = $this->f->period_sql('wt.timecreated', 'wp');
+        $where = ["(wt.kind = 'purchase' OR (wt.kind = 'adjustment' AND wt.purchaseid > 0 AND wt.amount_minor > 0))",
+            $period];
+        if ($this->f->courseid) {
+            $where[] = "((wt.itemtype = 'course' AND wt.itemid = :wcourse)
+                        OR (wt.itemtype = 'cm' AND wt.itemid IN (SELECT cm.id FROM {course_modules} cm WHERE cm.course = :wcourse2)))";
+            $params += ['wcourse' => $this->f->courseid, 'wcourse2' => $this->f->courseid];
+        }
+        if ($this->f->q !== '') {
+            [$usearch, $up] = data::user_search_sql('u', $this->f->q);
+            $where[] = $usearch;
+            $params += $up;
+        }
+        $rows = $DB->get_records_sql("SELECT wt.id, wt.timecreated, wt.amount_minor, wt.kind, wt.itemtype, wt.itemid,
+                                             wt.purchaseid, wt.note
+                                        FROM {nit_wallet_txn} wt
+                                        JOIN {nit_wallet} w ON w.id = wt.walletid AND w.ownertype = 'student'
+                                        JOIN {user} u ON u.id = w.userid
+                                       WHERE " . implode(' AND ', $where) . "
+                                    ORDER BY wt.timecreated", $params);
+        foreach ($rows as $r) {
+            $r->amount = -((int) $r->amount_minor) / 100;
+        }
+        return $rows;
+    }
+
+    /**
      * What a transaction sold: [type label, item name].
      *
      * @param \stdClass $t transaction (metadata, courseid)
@@ -246,9 +293,15 @@ class sales extends base {
         $bystatus = $DB->get_records_sql_menu("SELECT t.status, COUNT(1) $all GROUP BY t.status", $aparams);
         $refunded = $DB->get_records_sql("SELECT t.currency, SUM(t.amount) AS total $all AND t.status = 'refunded'
                                           GROUP BY t.currency", $aparams);
+        // Revenue = what was sold: online sales (no top-ups) + purchases paid from wallet balance.
+        $revenue = array_map(fn($r) => (float) $r->total, $paid);
+        $wallet = array_sum(array_map(fn($r) => $r->amount, $this->wallet_lines()));
+        if ($wallet != 0) {
+            $revenue[self::WALLET_CURRENCY] = ($revenue[self::WALLET_CURRENCY] ?? 0) + $wallet;
+        }
         $cards = [
             ['id' => 'card_paidcount', 'label' => self::str('card_paidcount'), 'value' => self::num(array_sum(array_map(fn($r) => $r->n, $paid)))],
-            ['id' => 'card_revenue', 'label' => self::str('card_revenue'), 'value' => self::moneys(array_map(fn($r) => $r->total, $paid))],
+            ['id' => 'card_revenue', 'label' => self::str('card_revenue'), 'value' => self::moneys($revenue)],
             ['id' => 'card_refunded', 'label' => self::str('card_refunded'), 'value' => self::num($bystatus['refunded'] ?? 0) . ' — '
                 . self::moneys(array_map(fn($r) => $r->total, $refunded))],
             ['id' => 'card_failed', 'label' => self::str('card_failed'), 'value' => self::num(($bystatus['failed'] ?? 0) + ($bystatus['cancelled'] ?? 0)
@@ -258,14 +311,10 @@ class sales extends base {
         // Money that did not go through the gateway.
         $dbman = $DB->get_manager();
         if ($dbman->table_exists('nit_wallet_txn')) {
-            // Courses, lessons, subscriptions and packages paid from a student's wallet balance.
-            [$period, $pp] = $this->f->period_sql('wt.timecreated');
-            $walletsales = -(int) $DB->get_field_sql("SELECT COALESCE(SUM(wt.amount_minor), 0)
-                  FROM {nit_wallet_txn} wt
-                  JOIN {nit_wallet} w ON w.id = wt.walletid AND w.ownertype = 'student'
-                 WHERE wt.kind = 'purchase' AND $period", $pp);
+            // The wallet part of the revenue: courses, lessons, subscriptions and packages paid from
+            // a student's wallet balance, less refunds back to the wallet.
             $cards[] = ['id' => 'card_walletsales', 'label' => self::str('card_walletsales'),
-                'value' => data::minor($walletsales)];
+                'value' => data::minor((int) round($wallet * 100))];
         }
         if ($dbman->table_exists('nit_access_code')) {
             // A code that only adds balance to the wallet is not a sale (the purchase from the wallet is).
@@ -283,6 +332,12 @@ class sales extends base {
         $cards[] = ['id' => 'card_topups', 'label' => self::str('card_topups'),
             'value' => self::num(array_sum(array_map(fn($r) => $r->n, $topups))) . ' — '
                 . self::moneys(array_map(fn($r) => $r->total, $topups))];
+        // All the money that reached the gateway: online sales + top-ups.
+        $collected = array_map(fn($r) => (float) $r->total, $paid);
+        foreach ($topups as $cur => $r) {
+            $collected[$cur] = ($collected[$cur] ?? 0) + (float) $r->total;
+        }
+        $cards[] = ['id' => 'card_collected', 'label' => self::str('card_collected'), 'value' => self::moneys($collected)];
         if ($dbman->table_exists('nit_payment')) {
             [$period, $pp] = $this->f->period_sql('timecreated');
             $offline = (int) $DB->get_field_sql("SELECT COALESCE(SUM(amount_minor), 0) FROM {nit_payment}
@@ -301,10 +356,14 @@ class sales extends base {
     public function chart(): ?\core\chart_base {
         global $DB;
         [$from, $params] = $this->from(true);
-        $rows = $DB->get_records_sql("SELECT t.id, t.timecreated, t.amount $from ORDER BY t.timecreated", $params);
+        $rows = array_values($DB->get_records_sql("SELECT t.id, t.timecreated, t.amount $from ORDER BY t.timecreated",
+            $params));
+        // Revenue includes what was paid from wallet balance.
+        $rows = array_merge($rows, array_values($this->wallet_lines()));
         if (!$rows) {
             return null;
         }
+        usort($rows, fn($a, $b) => (int) $a->timecreated <=> (int) $b->timecreated);
         $first = reset($rows)->timecreated;
         $last = end($rows)->timecreated;
         $daily = ($last - $first) <= 62 * DAYSECS;
@@ -408,6 +467,40 @@ class sales extends base {
             }
             $groups[$key]['n'] = ($groups[$key]['n'] ?? 0) + 1;
             $groups[$key]['money'][$t->currency] = ($groups[$key]['money'][$t->currency] ?? 0) + (float) $t->amount;
+        }
+        // What was paid from wallet balance is revenue too; a refund back to the wallet takes it off.
+        $wallet = $this->wallet_lines();
+        $walletcourses = data::course_names(array_map(fn($w) => $w->itemtype === 'course' ? (int) $w->itemid : 0, $wallet));
+        $purchasenotes = [];
+        foreach ($wallet as $w) {
+            if ($w->kind === 'purchase') {
+                $purchasenotes[(int) $w->purchaseid] = (string) $w->note;
+            }
+        }
+        foreach ($wallet as $w) {
+            $refund = $w->kind !== 'purchase';
+            if ($view === 'item') {
+                $type = ['course' => 'item_course', 'cm' => 'item_activity', 'subscription' => 'item_subscription',
+                    'package' => 'item_package'][$w->itemtype] ?? 'item_other';
+                $type = self::str($type);
+                $name = $w->itemtype === 'course' ? ($walletcourses[(int) $w->itemid] ?? '')
+                    : ($refund ? ($purchasenotes[(int) $w->purchaseid] ?? '') : (string) $w->note);
+                $item = $name !== '' ? self::cname($name) : '—';
+                $key = $type . '|' . $item;
+                $groups[$key]['type'] = $type;
+                $groups[$key]['item'] = $item;
+            } else if ($view === 'provider') {
+                $key = self::str('paymethod_wallet');
+                $groups[$key]['provider'] = $key;
+            } else {
+                $key = userdate((int) $w->timecreated, '%Y-%m', 99, false);
+                $groups[$key]['month'] = $key;
+            }
+            $groups[$key]['n'] = ($groups[$key]['n'] ?? 0) + ($refund ? 0 : 1);
+            $groups[$key]['money'][self::WALLET_CURRENCY] = ($groups[$key]['money'][self::WALLET_CURRENCY] ?? 0) + $w->amount;
+            if ($refund && $view === 'item') {
+                $groups[$key]['refunded'] = ($groups[$key]['refunded'] ?? 0) + 1;
+            }
         }
         if ($view === 'item') {
             // Refunded count per item (shown next to the sales).

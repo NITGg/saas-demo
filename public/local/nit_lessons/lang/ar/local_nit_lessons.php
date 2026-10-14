@@ -272,6 +272,7 @@ $string['err_badhours'] = 'كل فترة تحتاج يومًا ووقت بداي
 $string['err_badsubject'] = 'اختر موادك من القائمة.';
 $string['err_nolessonscourse'] = 'غرف الحصص المباشرة غير مُعدّة بعد. تواصل مع الإدارة.';
 $string['err_roomnotready'] = 'غرفة الحصة لم تُفتح بعد. يجب أن يبدأ المدرس الحصة.';
+$string['err_roomgone'] = 'غرفة الحصة لم تعد متاحة. يجب أن يدخل المدرس الحصة مرة أخرى لفتح غرفة جديدة.';
 
 // Privacy.
 $string['privacy:metadata:nit_lesson'] = 'الحصص المباشرة بين الطالب والمدرس.';

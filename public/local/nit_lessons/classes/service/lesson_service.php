@@ -227,6 +227,44 @@ class lesson_service extends service {
         ]);
     }
 
+    /**
+     * The room of a started lesson, for its teacher or student. A room whose activity was removed
+     * (e.g. the lessons course was deleted) opens again when the teacher joins; until then the
+     * student is told to wait for the teacher.
+     *
+     * @param int $userid
+     * @param int $lessonid
+     * @return array {cmid, sessionid, is_teacher, join_url}
+     */
+    public function open_room(int $userid, int $lessonid): array {
+        $lesson = $this->owned_lesson($lessonid);
+        $isteacher = (int) $lesson->get('teacherid') === $userid;
+        if (!$isteacher && (int) $lesson->get('studentid') !== $userid) {
+            throw new lesson_exception('err_forbidden');
+        }
+        if ($lesson->get('status') !== lesson::STATUS_IN_PROGRESS) {
+            throw new lesson_exception('err_roomnotready');
+        }
+        $room = room_factory::instance();
+        $payload = $room->session_payload($lesson, $userid);
+        if (empty($payload['join_url'])) {
+            if (!$isteacher) {
+                throw new lesson_exception('err_roomgone');
+            }
+            $created = $room->create_for_lesson($lesson);
+            $lesson->set('sessionid', (int) $created->sessionid);
+            $lesson->set('cmid', (int) $created->cmid);
+            $lesson->update();
+            $payload = ['join_url' => $created->join_url];
+        }
+        return [
+            'cmid' => (int) $lesson->get('cmid'),
+            'sessionid' => (int) $lesson->get('sessionid'),
+            'is_teacher' => $isteacher,
+            'join_url' => (string) $payload['join_url'],
+        ];
+    }
+
     // ── US-LS-3-2: complete → consume + distribute ──────────────────────────
 
     /**

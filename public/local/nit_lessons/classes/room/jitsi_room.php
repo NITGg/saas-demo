@@ -123,15 +123,17 @@ class jitsi_room implements room_interface {
     }
 
     /**
-     * Where a participant joins: the Jitsi activity page.
+     * Where a participant joins: the Jitsi activity page. Null when the lesson has no room, or its
+     * activity was removed (e.g. the lessons course was deleted).
      *
      * @param lesson $lesson
      * @param int $viewerid
      * @return array|null
      */
     public function session_payload(lesson $lesson, int $viewerid): ?array {
+        global $DB;
         $cmid = (int) $lesson->get('cmid');
-        if ($cmid <= 0) {
+        if ($cmid <= 0 || !$DB->record_exists('course_modules', ['id' => $cmid])) {
             return null;
         }
         return ['join_url' => self::join_url($cmid)];

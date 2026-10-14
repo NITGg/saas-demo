@@ -183,6 +183,21 @@ final class admin_api_test extends \advanced_testcase {
         $this->assertSame(1, $report['failed_count']);
         $this->assertCount(2, $report['revenue_by_currency']);
         $this->assertSame(45000, $report['revenue_by_currency'][0]['revenue_minor']);
+
+        // What a student buys with wallet balance is revenue (EGP); the top-up was not.
+        if (class_exists(\local_nit_finance\local\wallets::class)) {
+            $wallets = \local_nit_finance\local\wallets::class;
+            $wallets::move($wallets::STUDENT, (int) $user->id, 5000, $wallets::KIND_TOPUP);
+            $wallets::move($wallets::STUDENT, (int) $user->id, -2500, $wallets::KIND_PURCHASE,
+                ['itemtype' => 'course', 'itemid' => (int) $course->id, 'purchaseid' => 1]);
+            $report = report_manager::get_revenue_report();
+            $this->assertSame(485.0, $report['total_revenue']);
+            $this->assertSame(1, $report['wallet_purchases']);
+            $this->assertSame(2500, $report['wallet_revenue_minor']);
+            $egp = array_values(array_filter($report['revenue_by_currency'], fn($r) => $r['currency'] === 'EGP'))[0];
+            $this->assertSame(47500, $egp['revenue_minor']);
+            $this->assertSame(3, $report['total_transactions']); // Gateway payments only.
+        }
         $this->assertCount(2, $report['top_courses']); // subscription (courseid 0) is not a course.
 
         $all = report_manager::get_transactions([], 0, 2);

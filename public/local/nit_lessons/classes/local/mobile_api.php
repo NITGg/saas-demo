@@ -294,18 +294,8 @@ final class mobile_api {
      * @return array
      */
     public static function get_lesson_join(int $userid, int $lessonid): array {
-        $l = lessons::get($userid, $lessonid);
-        if ($l['status'] !== lesson::STATUS_IN_PROGRESS || (int) $l['cmid'] <= 0) {
-            throw new lesson_exception('err_roomnotready');
-        }
-        $record = lesson::get_record(['id' => $lessonid]);
-        return [
-            'lessonid' => $lessonid,
-            'cmid' => (int) $l['cmid'],
-            'sessionid' => (int) $record->get('sessionid'),
-            'is_teacher' => $l['my_role'] === 'teacher',
-            'join_url' => (new \moodle_url('/mod/jitsi/view.php', ['id' => $l['cmid']]))->out(false),
-        ];
+        lessons::get($userid, $lessonid); // Its teacher or student only.
+        return ['lessonid' => $lessonid] + (new \local_nit_lessons\service\lesson_service())->open_room($userid, $lessonid);
     }
 
     // ── Teacher profile ──────────────────────────────────────────────────────

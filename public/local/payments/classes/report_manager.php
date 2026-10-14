@@ -54,6 +54,26 @@ class report_manager {
     }
 
     /**
+     * Revenue from wallet balance (local_nit_finance): purchases paid from a student's wallet,
+     * less refunds of such purchases back to the wallet. Wallet amounts are in EGP.
+     *
+     * @return array{0:int, 1:float} number of purchases, revenue in pounds
+     */
+    private static function wallet_revenue(): array {
+        global $DB;
+        if (!$DB->get_manager()->table_exists('nit_wallet_txn')) {
+            return [0, 0.0];
+        }
+        $r = $DB->get_record_sql("SELECT COALESCE(SUM(CASE WHEN wt.kind = 'purchase' THEN 1 ELSE 0 END), 0) AS n,
+                                         COALESCE(SUM(wt.amount_minor), 0) AS total
+                                    FROM {nit_wallet_txn} wt
+                                    JOIN {nit_wallet} w ON w.id = wt.walletid AND w.ownertype = 'student'
+                                   WHERE wt.kind = 'purchase'
+                                      OR (wt.kind = 'adjustment' AND wt.purchaseid > 0 AND wt.amount_minor > 0)");
+        return [(int) $r->n, -((int) $r->total) / 100];
+    }
+
+    /**
      * The revenue report — the same totals and breakdowns as /local/payments/report.php, with
      * per-currency totals added (the web total sums across currencies).
      *
@@ -109,9 +129,25 @@ class report_manager {
             'by_provider' => [],
             'top_courses' => [],
         ];
+        // Revenue is what was sold: purchases paid from wallet balance count too (EGP), less refunds
+        // back to the wallet (BUG-064). They are not gateway transactions, so not in the counts.
+        [$walletcount, $walletrevenue] = self::wallet_revenue();
+        $out['total_revenue'] = round($out['total_revenue'] + $walletrevenue, 2);
+        $out['wallet_purchases'] = $walletcount;
+        $out['wallet_revenue'] = round($walletrevenue, 2);
+        $out['wallet_revenue_minor'] = (int) round($walletrevenue * 100);
+        $added = false;
         foreach ($bycurrency as $r) {
+            $revenue = (float) $r->revenue;
+            if ($r->currency === 'EGP') {
+                $revenue += $walletrevenue;
+                $added = true;
+            }
             $out['revenue_by_currency'][] = ['count' => (int) $r->cnt]
-                + self::money($r->revenue, (string) $r->currency, 'revenue');
+                + self::money($revenue, (string) $r->currency, 'revenue');
+        }
+        if (!$added && $walletrevenue != 0) {
+            $out['revenue_by_currency'][] = ['count' => 0] + self::money($walletrevenue, 'EGP', 'revenue');
         }
         foreach ($bycountry as $r) {
             $out['by_country'][] = ['country' => (string) $r->country, 'count' => (int) $r->cnt]

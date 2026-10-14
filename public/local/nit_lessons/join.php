@@ -38,10 +38,10 @@ $back = new moodle_url('/local/nit_lessons/student.php', ['tab' => $isteacher ? 
 if (!$record || (!$isteacher && (int) $record->get('studentid') !== $userid)) {
     throw new moodle_exception('err_forbidden', 'local_nit_lessons');
 }
-$payload = $record->get('status') === lesson::STATUS_IN_PROGRESS
-    ? \local_nit_lessons\room\room_factory::instance()->session_payload($record, $userid) : null;
-if (!$payload || empty($payload['join_url'])) {
-    redirect($back, get_string('err_roomnotready', 'local_nit_lessons'), null, \core\output\notification::NOTIFY_WARNING);
+try {
+    $room = (new \local_nit_lessons\service\lesson_service())->open_room($userid, $id);
+} catch (\local_nit_lessons\exception\lesson_exception $e) {
+    redirect($back, $e->getMessage(), null, \core\output\notification::NOTIFY_WARNING);
 }
 // The lesson card's "Join" is the user's choice already: straight into the call (join=1).
-redirect(new moodle_url($payload['join_url'], ['join' => 1]));
+redirect(new moodle_url($room['join_url'], ['join' => 1]));

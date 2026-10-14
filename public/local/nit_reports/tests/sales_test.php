@@ -92,24 +92,53 @@ final class sales_test extends \advanced_testcase {
         wallets::move(wallets::STUDENT, (int) $student->id, 5000, wallets::KIND_TOPUP);
         // 30 EGP of that balance spent on a course — this is the sale.
         wallets::move(wallets::STUDENT, (int) $student->id, -3000, wallets::KIND_PURCHASE,
-            ['itemtype' => 'course', 'itemid' => (int) $course->id]);
+            ['itemtype' => 'course', 'itemid' => (int) $course->id, 'purchaseid' => 1]);
+        // 15 EGP of it spent on a package, then 5 EGP of that refunded back to the wallet.
+        wallets::move(wallets::STUDENT, (int) $student->id, -1500, wallets::KIND_PURCHASE,
+            ['itemtype' => 'package', 'itemid' => 9, 'purchaseid' => 2, 'note' => 'Package A']);
+        wallets::move(wallets::STUDENT, (int) $student->id, 500, wallets::KIND_ADJUSTMENT,
+            ['itemtype' => 'package', 'itemid' => 9, 'purchaseid' => 2, 'note' => 'Refund']);
+        // An admin's manual adjustment (no purchase) is not a refund of a sale.
+        wallets::move(wallets::STUDENT, (int) $student->id, 700, wallets::KIND_ADJUSTMENT, ['note' => 'Gift']);
         // Codes: one opens a course (a sale), one only tops up the wallet (not a sale).
         $this->used_code('course', 4000, (int) $student->id);
         $this->used_code('wallet', 2000, (int) $student->id);
 
+        // Revenue = what was sold: 100 by card + 30 + 15 − 5 from the wallet = 140.
         $cards = $this->cards();
         $this->assertSame('1', $cards['card_paidcount']);
-        $this->assertSame(format_float(100, 2) . ' EGP', $cards['card_revenue']);
-        $this->assertSame(data::minor(3000), $cards['card_walletsales']);
+        $this->assertSame(format_float(140, 2) . ' EGP', $cards['card_revenue']);
+        $this->assertSame(data::minor(4000), $cards['card_walletsales']);
         $this->assertSame(data::minor(4000), $cards['card_codesales']);
         $this->assertStringContainsString(format_float(50, 2), $cards['card_topups']);
+        // Collected online = 100 sold by card + 50 top-up.
+        $this->assertSame(format_float(150, 2) . ' EGP', $cards['card_collected']);
 
-        // The grouped "by item" view and the chart hold sales only.
-        $_GET = ['view' => 'item'];
+        // The chart and the grouped views follow the revenue.
+        $report = $this->report('item');
+        $this->assertSame([140.0], array_values($report->chart()->get_series()[0]->get_values()));
+        $rows = $report->rows(0, 0)['rows'];
+        $types = array_column($rows, 'type');
+        $this->assertNotContains(get_string('item_wallet_topup', 'local_nit_reports'), $types);
+        $package = array_values(array_filter($rows, fn($r) => $r['item'] === 'Package A'))[0];
+        $this->assertSame(format_float(10, 2) . ' EGP', $package['revenue']);
+        $this->assertSame('1', $package['refunded']);
+
+        $methods = array_column($this->report('provider')->rows(0, 0)['rows'], 'revenue', 'provider');
+        $this->assertSame(format_float(40, 2) . ' EGP', $methods[get_string('paymethod_wallet', 'local_nit_reports')]);
+        $this->assertSame([format_float(140, 2) . ' EGP'], array_column($this->report('month')->rows(0, 0)['rows'], 'revenue'));
+    }
+
+    /**
+     * The sales report in one view.
+     *
+     * @param string $view
+     * @return report\sales
+     */
+    private function report(string $view): report\sales {
+        $_GET = ['view' => $view];
         $report = new report\sales(filters::from_request(), scope::for_user());
         $_GET = [];
-        $types = array_column($report->rows(0, 0)['rows'], 'type');
-        $this->assertNotContains(get_string('item_wallet_topup', 'local_nit_reports'), $types);
-        $this->assertSame([100.0], array_values($report->chart()->get_series()[0]->get_values()));
+        return $report;
     }
 }

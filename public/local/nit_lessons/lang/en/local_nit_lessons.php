@@ -272,6 +272,7 @@ $string['err_badhours'] = 'Each time range needs a day and a start and end at le
 $string['err_badsubject'] = 'Choose your subjects from the list.';
 $string['err_nolessonscourse'] = 'Live lesson rooms are not set up yet. Ask the administrator.';
 $string['err_roomnotready'] = 'The lesson room is not open yet. The teacher has to start the lesson.';
+$string['err_roomgone'] = 'The lesson room is no longer available. The teacher has to join the lesson again to open a new room.';
 
 // Privacy.
 $string['privacy:metadata:nit_lesson'] = 'Live lessons between a student and a teacher.';

@@ -95,6 +95,96 @@ final class file_lessons_test extends \advanced_testcase {
             $errors['files']);
     }
 
+    /**
+     * The File activity form of a new activity, built as course/modedit.php builds it.
+     *
+     * @param \stdClass $course
+     * @return array [form, the form's hidden data]
+     */
+    private function resource_form(\stdClass $course): array {
+        global $CFG, $PAGE;
+        require_once($CFG->dirroot . '/course/modlib.php');
+        require_once($CFG->dirroot . '/mod/resource/mod_form.php');
+        [, $context, $cw, $cm, $data] = prepare_new_moduleinfo_data($course, 'resource', 0);
+        $PAGE->set_context($context);
+        $PAGE->set_url('/course/modedit.php', ['add' => 'resource', 'course' => $course->id]);
+        return [new \mod_resource_mod_form($data, $cw->section, $cm, $course), (array) $data];
+    }
+
+    public function test_the_real_file_activity_form_refuses_the_file(): void {
+        // What a teacher does on course/modedit.php: Moodle's form must call our check
+        // (production saved an .exe because Moodle never called it).
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        $teacher = $this->getDataGenerator()->create_and_enrol($course, 'editingteacher');
+        $this->setUser($teacher);
+
+        $submit = function(array $files) use ($course): \mod_resource_mod_form {
+            [, $hidden] = $this->resource_form($course);
+            \mod_resource_mod_form::mock_submit($hidden + ['name' => 'Lesson', 'files' => $this->draft($files),
+                'introeditor' => ['text' => '', 'format' => FORMAT_HTML, 'itemid' => 0], 'submitbutton2' => 'Save']);
+            [$form] = $this->resource_form($course);
+            return $form;
+        };
+
+        $form = $submit(['setup.exe' => "MZ\x90\x00" . str_repeat("\x00", 60)]);
+        $this->assertNull($form->get_data());
+        $this->assertStringContainsString(s(get_string('err_filelessontype', 'local_academy',
+            ['file' => 'setup.exe', 'types' => implode(', ', array_keys(file_lessons::TYPES))])), $form->render());
+
+        $this->assertNotNull($submit(['syllabus.pdf' => self::PDF])->get_data());
+    }
+
+    public function test_the_file_picker_shows_the_lesson_limit(): void {
+        $this->resetAfterTest();
+        set_config('filelessonmaxmb', 1, 'local_academy');
+        $course = $this->getDataGenerator()->create_course();
+        $limit = get_string('maxfilesize', 'moodle', display_size(1024 * 1024, 0));
+
+        $this->setUser($this->getDataGenerator()->create_and_enrol($course, 'editingteacher'));
+        [$form] = $this->resource_form($course);
+        $this->assertStringContainsString($limit, $form->render());
+
+        $this->setAdminUser();
+        [$form] = $this->resource_form($course);
+        $this->assertStringNotContainsString($limit, $form->render());
+    }
+
+    public function test_drag_and_drop_on_the_course_page_refuses_the_file(): void {
+        // course/dndupload.php makes a File activity without the form.
+        global $SCRIPT;
+        $this->resetAfterTest();
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->setUser($teacher);
+        $upload = function(string $name, string $content, string $module = 'resource'): string {
+            global $SCRIPT;
+            $SCRIPT = '/course/dndupload.php';
+            $tmp = make_request_directory() . '/upload';
+            file_put_contents($tmp, $content);
+            $_POST = ['type' => 'Files', 'module' => $module];
+            $_FILES = ['repo_upload_file' => ['name' => $name, 'type' => 'application/octet-stream',
+                'tmp_name' => $tmp, 'error' => UPLOAD_ERR_OK, 'size' => strlen($content)]];
+            return file_lessons::dnd_upload_problem();
+        };
+
+        $this->assertSame(get_string('err_filelessontype', 'local_academy',
+            ['file' => 'setup.exe', 'types' => implode(', ', array_keys(file_lessons::TYPES))]),
+            $upload('setup.exe', "MZ\x90\x00" . str_repeat("\x00", 60)));
+        $this->assertSame(get_string('err_filelessonfake', 'local_academy', ['file' => 'fake.pdf', 'type' => 'pdf']),
+            $upload('fake.pdf', 'just some text, not a PDF'));
+        $this->assertSame('', $upload('syllabus.pdf', self::PDF));
+        $this->assertSame('', $upload('page.html', '<script>alert(1)</script>', 'page')); // Not a file lesson.
+
+        $this->setAdminUser();
+        $this->assertSame('', $upload('setup.exe', "MZ\x90\x00"));
+
+        // Moodle runs it on every request.
+        $callbacks = array_column(\core\di::get(\core\hook\manager::class)
+            ->get_callbacks_for_hook(\core\hook\after_config::class), 'callback');
+        $this->assertContains(file_lessons::class . '::after_config', $callbacks);
+        $SCRIPT = null;
+    }
+
     public function test_site_admin_and_other_activities_are_not_limited(): void {
         $this->resetAfterTest();
         $this->setAdminUser();

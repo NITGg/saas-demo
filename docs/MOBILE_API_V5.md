@@ -27,7 +27,7 @@ sets how many Flex one live lesson costs (§3.7). The
 | 12 | Push Notifications (Firebase FCM) | Direct Firebase Cloud Messaging (HTTP v1) replaced Airnotifier. FCM token registered via `core_user_add_user_device` | **Yes**: Add Firebase to mobile app and register FCM token on login (§6) |
 | 13 | Course Jitsi activities with a session time | Session rows (+`audience`: `invited` / `course`); `get_student_sessions` also returns course sessions; the session reminder links to the activity; a user not enrolled in the course can't join any room | No (§3.8) |
 | 14 | Registration, profile and forgot-password rules (QA run 1) | `register_student` (stricter names / phones, phone and national ID unique), `update_my_profile` (new errorcodes `namedigits`, `nameshort`, `textshort`, `phonetaken`, `nationalidtaken`), `request_password_otp` (code arrives within a minute) | **Check**: show the new messages; say on the OTP screen that the code may take a minute (§3.9) |
-| 15 | Prices, revenue and Arabic search (QA run 1, phase 3) | `save_course_price` (errorcodes `priceformat`, `pricemax`), `get_revenue_report` (top-ups not revenue), `get_courses` / `get_articles` / `get_teachers` (Arabic spellings folded) | **Check**: show the two price messages (§3.10) |
+| 15 | Prices, revenue and Arabic search (QA run 1, phase 3) | `save_course_price` (errorcodes `priceformat`, `pricemax`), `get_revenue_report` (top-ups not revenue, wallet purchases are; new `wallet_*` fields), `get_courses` / `get_articles` / `get_teachers` (Arabic spellings folded) | **Check**: show the two price messages (§3.10) |
 | 16 | Live rooms: waiting room in lesson rooms, new look (12–14/10) | `mod_jitsi_get_session_info` → `lobby` is now `true` in lesson (Flex) rooms too; new public `/mod/jitsi/branding.php`; the web room has its own controls | **Yes**: the waiting-room steps now apply to lesson rooms; optional new look (§3.11) |
 
 ---
@@ -499,9 +499,13 @@ Who may see a room at all is unchanged (`notallowed` for someone outside it).
   e.g. `10.999`, `12abc`, `1,500`, `1e6`) and `pricemax` (more than 99,999,999.99). `pricepositive` as before.
   Arabic-Indic digits and a decimal comma are accepted (`١٤٩,٥` = 149.50). Same rule as the lesson price
   (`set_lesson_price`), which is unchanged.
-- **Revenue report (`/local/payments/api.php` → `get_revenue_report`):** wallet top-ups are no longer counted
-  in `total_transactions`, `total_revenue`, `revenue_by_currency`, `by_country`, `by_provider` (they are the
-  student's own balance, not a sale). `get_transactions` still lists them (`item_type` = `wallet_topup`).
+- **Revenue report (`/local/payments/api.php` → `get_revenue_report`):** revenue = what was sold. Wallet
+  top-ups are no longer counted in `total_transactions`, `total_revenue`, `revenue_by_currency`, `by_country`,
+  `by_provider` (they are the student's own balance, not a sale). What students buy **with their wallet
+  balance** is now in `total_revenue` and in the `EGP` line of `revenue_by_currency` (less refunds back to the
+  wallet); new fields `wallet_purchases` (count), `wallet_revenue` / `wallet_revenue_minor` (EGP). It is not in
+  `total_transactions` (gateway payments only). `get_transactions` still lists the top-ups (`item_type` =
+  `wallet_topup`).
 - **Arabic search:** the catalogue search (`/local/nit_category/api.php` → `get_courses`, `q`), the articles
   search (`/local/nit_pages/api.php` → `get_articles`, `q` / `search`) and the teacher subject filter
   (`/local/nit_lessons/api.php` → `get_teachers`, `subject`) now treat أ/إ/آ/ا, ة/ه, ى/ي, ؤ/و, ئ/ي as the same
@@ -524,6 +528,18 @@ Who may see a room at all is unchanged (`notallowed` for someone outside it).
   `branding.php?icon=<Jitsi icon name>` (one SVG, e.g. `IconMic`). For the native SDK see the guide below.
 - **The web room page has its own controls** (Jitsi's toolbar is hidden). How to give the app the same look, with
   the colours, icons and the native SDK's limits: [`apis/jitsi-ui-mobile-guide.md`](apis/jitsi-ui-mobile-guide.md).
+
+### 3.12 `get_lesson_join`: a removed lesson room (14/10)
+
+If the room of a started lesson was removed (e.g. an admin deleted the lessons course), `get_lesson_join` no
+longer returns a dead `cmid`:
+- **Teacher:** a new room is opened and returned — `cmid` and `sessionid` are new (same response shape). If the
+  admin has not chosen a lessons course yet, the error is `nolessonscourse`.
+- **Student:** new error `roomgone` ("the teacher has to join the lesson again"); once the teacher has joined,
+  the call works again.
+
+**App action:** always take `cmid` from this response (never cache it from an earlier call) and show the two
+errors' messages.
 
 ## 4. Device limit — `local_nit_devices` (new)
 
