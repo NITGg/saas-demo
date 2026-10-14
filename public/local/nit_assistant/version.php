@@ -26,7 +26,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_nit_assistant';
-$plugin->version   = 2026101306;        // YYYYMMDDXX.
+$plugin->version   = 2026101400;        // YYYYMMDDXX.
 $plugin->requires  = 2024100700;        // Moodle 4.5 LTS baseline.
 $plugin->supported = [405, 502];
 $plugin->maturity  = MATURITY_ALPHA;

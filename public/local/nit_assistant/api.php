@@ -15,7 +15,13 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * The chat widget's JSON calls (sesskey on every call):
+ * The chat's JSON calls.
+ *
+ * Mobile app (`function=…`, token-authenticated, the academy's usual app API envelope):
+ * get_config, send_message, get_messages, new_conversation — see \local_nit_assistant\chat\app_api
+ * and docs/apis/ai-assistant-mobile-api.md.
+ *
+ * Website widget (`action=…`, sesskey on every call):
  * - action=history&key=&after= : the caller's messages after an id, and the conversation status
  * - action=reset&key=          : close the conversation (POST) so the next message starts a new one
  *
@@ -24,7 +30,13 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-define('AJAX_SCRIPT', true);
+// The app calls with `function` and a token, without cookies; the website widget with `action` and its session.
+$isapp = isset($_GET['function']) || isset($_POST['function']); // phpcs:ignore moodle.Files.MoodleInternal
+if ($isapp) {
+    define('NO_MOODLE_COOKIES', true);
+} else {
+    define('AJAX_SCRIPT', true);
+}
 define('NO_DEBUG_DISPLAY', true);
 
 // phpcs:ignore moodle.Files.RequireLogin.Missing -- visitors chat signed out; access::userid() decides who may.
@@ -32,6 +44,11 @@ require(__DIR__ . '/../../config.php');
 
 use local_nit_assistant\chat\access;
 use local_nit_assistant\chat\conversation;
+
+if ($isapp) {
+    $PAGE->set_context(context_system::instance());
+    \local_nit_assistant\chat\app_api::handle();
+}
 
 $PAGE->set_context(context_system::instance());
 $PAGE->set_url(new moodle_url('/local/nit_assistant/api.php'));
