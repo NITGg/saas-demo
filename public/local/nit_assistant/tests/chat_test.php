@@ -303,6 +303,50 @@ final class chat_test extends \advanced_testcase {
         $this->assertStringContainsString('invalid x-api-key', config::last_error()['message']);
     }
 
+    public function test_the_app_api_chats_for_visitors_by_device_key_and_for_users_by_token(): void {
+        // A visitor (shared pre-login token → guest) with the app's device key.
+        $this->setGuestUser();
+        $config = chat\app_api::get_config(access::userid());
+        $this->assertTrue($config['available']);
+        $this->assertTrue($config['needs_key']);
+        $this->llm->script = [fake_client::text('Welcome to the app!')];
+        $out = chat\app_api::send_message(0, self::KEY, 'hi from the app');
+        $this->assertSame('replied', $out['outcome']);
+        $this->assertSame('Welcome to the app!', $out['reply']);
+        $this->assertSame('open', $out['status']);
+        $this->assertGreaterThan(0, $out['message_id']);
+        $hist = chat\app_api::get_messages(0, self::KEY, 0);
+        $this->assertSame(['visitor', 'assistant'], array_column($hist['messages'], 'role'));
+        $this->assertSame([], chat\app_api::get_messages(0, self::KEY, $out['message_id'])['messages'], 'nothing new');
+        $this->assertSame([], chat\app_api::get_messages(0, 'b' . substr(self::KEY, 1), 0)['messages'], 'another device');
+        $this->assertSame('app', conversation::find(0, self::KEY, 'app')->channel);
+        $this->assertNull(conversation::find(0, self::KEY, 'web'), 'the website chat is separate');
+
+        // A signed-in user (their own token).
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $config = chat\app_api::get_config(access::userid());
+        $this->assertTrue($config['signed_in']);
+        $this->assertFalse($config['needs_key']);
+        $this->llm->script = [fake_client::text('Hello, signed-in user.')];
+        $this->assertSame('Hello, signed-in user.', chat\app_api::send_message((int) $user->id, null, 'hello')['reply']);
+
+        // Too many messages: refused without calling the model.
+        set_config('hourlylimit', 1, 'local_nit_assistant');
+        $this->assertSame('ratelimited', chat\app_api::send_message((int) $user->id, null, 'again')['error']);
+    }
+
+    public function test_the_app_api_tells_the_user_when_the_team_takes_over(): void {
+        $this->setGuestUser();
+        $sink = $this->redirectMessages();
+        $this->llm->script = [fake_client::tools([['handoff_to_human', ['note' => 'Wants to talk to a person']]])];
+        $out = chat\app_api::send_message(0, self::KEY, 'I want a person');
+        $this->assertSame('handoff', $out['outcome']);
+        $this->assertSame('waiting_human', $out['status']);
+        $this->assertNotSame('', $out['reply'], 'the handoff message is the reply');
+        $sink->close();
+    }
+
     public function test_the_app_gets_the_whole_reply_and_the_history(): void {
         $user = $this->getDataGenerator()->create_user();
         $this->setUser($user);
