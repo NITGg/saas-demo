@@ -146,6 +146,7 @@ final class content_cleaner_test extends \advanced_testcase {
 
     public function test_lesson_essay_feedback_is_cleaned(): void {
         global $DB;
+        $this->setUser($this->teacher);
         $lesson = $this->getDataGenerator()->create_module('lesson', ['course' => $this->course->id]);
         $lgen = $this->getDataGenerator()->get_plugin_generator('mod_lesson');
         $page = $lgen->create_question_essay($lesson);
