@@ -80,6 +80,28 @@ class article_manager {
     }
 
     /**
+     * SQL that matches the search text in the Arabic and English title and summary.
+     * Arabic spellings are folded (أحمد / احمد, مدرسة / مدرسه — BUG-056) and % or _
+     * typed by the visitor are plain characters, not wildcards.
+     *
+     * @param string $search trimmed search text
+     * @param string $prefix table alias with its dot ('' or 'a.')
+     * @return array{0:string, 1:array} condition and params
+     */
+    private static function search_sql(string $search, string $prefix = ''): array {
+        global $DB;
+        $fold = '\local_nit_core\helper\arabic';
+        $like = '%' . $DB->sql_like_escape($fold::fold($search)) . '%';
+        $parts = [];
+        $params = [];
+        foreach (['title_ar', 'title_en', 'summary_ar', 'summary_en'] as $i => $column) {
+            $parts[] = $DB->sql_like($fold::sql_fold($prefix . $column), ':aq' . $i, false);
+            $params['aq' . $i] = $like;
+        }
+        return ['(' . implode(' OR ', $parts) . ')', $params];
+    }
+
+    /**
      * Search and paginate articles.
      *
      * @param int $page zero-based page index
@@ -102,14 +124,8 @@ class article_manager {
 
         $search = trim($search);
         if ($search !== '') {
-            $conditions[] = '(' . $DB->sql_like('title_ar', ':q1', false) .
-                            ' OR ' . $DB->sql_like('title_en', ':q2', false) .
-                            ' OR ' . $DB->sql_like('summary_ar', ':q3', false) .
-                            ' OR ' . $DB->sql_like('summary_en', ':q4', false) . ')';
-            $params['q1'] = '%' . $search . '%';
-            $params['q2'] = '%' . $search . '%';
-            $params['q3'] = '%' . $search . '%';
-            $params['q4'] = '%' . $search . '%';
+            [$conditions[], $sp] = self::search_sql($search);
+            $params += $sp;
         }
 
         $where = $conditions ? 'WHERE ' . implode(' AND ', $conditions) : '';
@@ -332,14 +348,8 @@ class article_manager {
             $params['status'] = $status;
         }
         if ($search !== '') {
-            $conditions[] = '(' . $DB->sql_like('a.title_ar', ':q1', false) .
-                            ' OR ' . $DB->sql_like('a.title_en', ':q2', false) .
-                            ' OR ' . $DB->sql_like('a.summary_ar', ':q3', false) .
-                            ' OR ' . $DB->sql_like('a.summary_en', ':q4', false) . ')';
-            $params['q1'] = '%' . $search . '%';
-            $params['q2'] = '%' . $search . '%';
-            $params['q3'] = '%' . $search . '%';
-            $params['q4'] = '%' . $search . '%';
+            [$conditions[], $sp] = self::search_sql($search, 'a.');
+            $params += $sp;
         }
 
         $where = $conditions ? 'WHERE ' . implode(' AND ', $conditions) : '';

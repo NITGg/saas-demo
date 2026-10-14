@@ -393,7 +393,7 @@ class catalogue {
             $courses = self::public_courses($courses);
         }
 
-        $q = \core_text::strtolower(trim((string) ($params['q'] ?? '')));
+        $q = self::normalise_query((string) ($params['q'] ?? ''));
         $matched = [];
         foreach ($courses as $course) {
             if ($q !== '' && !self::matches_text($course, $q)) {
@@ -478,20 +478,21 @@ class catalogue {
     }
 
     /**
-     * Case-insensitive text match on the course names and summary.
+     * Text match on the course names and summary: case-insensitive, Arabic spellings folded.
      *
      * @param core_course_list_element $course
      * @param string $q lower-cased needle
      * @return bool
      */
     protected static function matches_text(core_course_list_element $course, string $q): bool {
-        $hay = \core_text::strtolower(implode(' ', [
+        // Both sides folded, so أحمد / احمد, مدرسة / مدرسه, على / علي match (BUG-056).
+        $hay = \local_nit_core\helper\arabic::fold(implode(' ', [
             $course->get_formatted_name(),
             (string) $course->fullname,
             (string) $course->shortname,
             strip_tags((string) ($course->summary ?? '')),
         ]));
-        return strpos($hay, $q) !== false;
+        return strpos($hay, \local_nit_core\helper\arabic::fold($q)) !== false;
     }
 
     /**

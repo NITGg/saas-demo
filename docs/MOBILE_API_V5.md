@@ -27,6 +27,8 @@ sets how many Flex one live lesson costs (§3.7). The
 | 12 | Push Notifications (Firebase FCM) | Direct Firebase Cloud Messaging (HTTP v1) replaced Airnotifier. FCM token registered via `core_user_add_user_device` | **Yes**: Add Firebase to mobile app and register FCM token on login (§6) |
 | 13 | Course Jitsi activities with a session time | Session rows (+`audience`: `invited` / `course`); `get_student_sessions` also returns course sessions; the session reminder links to the activity; a user not enrolled in the course can't join any room | No (§3.8) |
 | 14 | Registration, profile and forgot-password rules (QA run 1) | `register_student` (stricter names / phones, phone and national ID unique), `update_my_profile` (new errorcodes `namedigits`, `nameshort`, `textshort`, `phonetaken`, `nationalidtaken`), `request_password_otp` (code arrives within a minute) | **Check**: show the new messages; say on the OTP screen that the code may take a minute (§3.9) |
+| 15 | Prices, revenue and Arabic search (QA run 1, phase 3) | `save_course_price` (errorcodes `priceformat`, `pricemax`), `get_revenue_report` (top-ups not revenue), `get_courses` / `get_articles` / `get_teachers` (Arabic spellings folded) | **Check**: show the two price messages (§3.10) |
+| 16 | Live rooms: waiting room in lesson rooms, new look (12–14/10) | `mod_jitsi_get_session_info` → `lobby` is now `true` in lesson (Flex) rooms too; new public `/mod/jitsi/branding.php`; the web room has its own controls | **Yes**: the waiting-room steps now apply to lesson rooms; optional new look (§3.11) |
 
 ---
 
@@ -490,7 +492,38 @@ Who may see a room at all is unchanged (`notallowed` for someone outside it).
 - **App action:** none required. If the app hid the recordings section while a session is live, show it.
   A recording made a minute ago may still be processing at Vimeo (its player says so for a few minutes).
 
+### 3.10 Prices, revenue and Arabic search (QA run 1, phase 3, 14/10)
+
+- **Course price (`/local/payments/api.php` → `save_course_price`):** `price` is now checked as typed and
+  never silently changed. New errorcodes: `priceformat` (not a plain amount, or more than 2 decimals —
+  e.g. `10.999`, `12abc`, `1,500`, `1e6`) and `pricemax` (more than 99,999,999.99). `pricepositive` as before.
+  Arabic-Indic digits and a decimal comma are accepted (`١٤٩,٥` = 149.50). Same rule as the lesson price
+  (`set_lesson_price`), which is unchanged.
+- **Revenue report (`/local/payments/api.php` → `get_revenue_report`):** wallet top-ups are no longer counted
+  in `total_transactions`, `total_revenue`, `revenue_by_currency`, `by_country`, `by_provider` (they are the
+  student's own balance, not a sale). `get_transactions` still lists them (`item_type` = `wallet_topup`).
+- **Arabic search:** the catalogue search (`/local/nit_category/api.php` → `get_courses`, `q`), the articles
+  search (`/local/nit_pages/api.php` → `get_articles`, `q` / `search`) and the teacher subject filter
+  (`/local/nit_lessons/api.php` → `get_teachers`, `subject`) now treat أ/إ/آ/ا, ة/ه, ى/ي, ؤ/و, ئ/ي as the same
+  letter and ignore diacritics and the tatweel: `احمد` finds `أحمد`, `مدرسه` finds `مدرسة`. In articles, `%`
+  and `_` are plain characters now.
+- **App action:** show the two new price errorcodes' messages; nothing else.
+
 ---
+
+### 3.11 Live rooms: waiting room in lesson rooms, the new look, branding (12–14/10)
+
+- **Lesson (Flex) rooms now have a waiting room.** `mod_jitsi_get_session_info` returns `lobby: true` in lesson
+  rooms too (it was `false`). The student knocks and the teacher lets them in, exactly like a course room with a
+  waiting room (§3.5). **App action:** use the §3.5 "Host, when `lobby` is true" steps for lesson rooms as well;
+  the line "Host, when `lobby` is false (lesson rooms)" no longer applies to them.
+- **Lesson room names changed** (a longer last part). No app change if the app always joins the `room` it gets
+  from `get_session_info` (never builds the name itself).
+- **New public endpoint `GET /mod/jitsi/branding.php`** (no token, open to any origin): Jitsi's dynamic-branding
+  JSON for this academy (background, logo, avatar colours, theme colours, `customIcons`), and
+  `branding.php?icon=<Jitsi icon name>` (one SVG, e.g. `IconMic`). For the native SDK see the guide below.
+- **The web room page has its own controls** (Jitsi's toolbar is hidden). How to give the app the same look, with
+  the colours, icons and the native SDK's limits: [`apis/jitsi-ui-mobile-guide.md`](apis/jitsi-ui-mobile-guide.md).
 
 ## 4. Device limit — `local_nit_devices` (new)
 

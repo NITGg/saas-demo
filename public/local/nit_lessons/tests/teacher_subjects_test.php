@@ -64,6 +64,17 @@ final class teacher_subjects_test extends \advanced_testcase {
         $this->assertSame(['Physics', 'Chemistry'], (new teacher_service())->profile($tid)['subjects']);
     }
 
+    public function test_subject_search_folds_arabic_spellings(): void {
+        // BUG-056: "اللغه العربيه" did not find a teacher of "اللغة العربية".
+        set_config('subjects', "اللغة العربية\nالفيزياء", 'local_nit_lessons');
+        $tid = $this->teacher();
+        (new teacher_service())->save($tid, true, '', ['اللغة العربية'], []);
+        foreach (['اللغه العربيه', 'العربية', 'لغة'] as $typed) {
+            $this->assertSame([$tid], array_column((new teacher_service())->browse($typed), 'id'), $typed);
+        }
+        $this->assertSame([], (new teacher_service())->browse('الفيزياء'));
+    }
+
     public function test_profile_card_only_for_teachers_with_flex_on(): void {
         $student = (int) $this->getDataGenerator()->create_user()->id;
         $this->assertFalse(profile_section::applies($student));

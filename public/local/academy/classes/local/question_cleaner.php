@@ -78,26 +78,7 @@ class question_cleaner {
      * @return bool whether a row changed
      */
     private static function clean_rows(string $table, array $conditions, array $columns, array $htmlonly = []): bool {
-        global $DB;
-        $changed = false;
-        foreach ($DB->get_records($table, $conditions) as $row) {
-            $update = [];
-            foreach ($columns as $column => $formatcolumn) {
-                $format = (int) ($row->$formatcolumn ?? FORMAT_HTML);
-                if (in_array($column, $htmlonly, true) && $format !== FORMAT_HTML) {
-                    continue;
-                }
-                $clean = self::clean((string) ($row->$column ?? ''), $format);
-                if ($clean !== (string) ($row->$column ?? '')) {
-                    $update[$column] = $clean;
-                }
-            }
-            if ($update) {
-                $DB->update_record($table, (object) (['id' => $row->id] + $update));
-                $changed = true;
-            }
-        }
-        return $changed;
+        return content_cleaner::clean_rows($table, $conditions, $columns, $htmlonly);
     }
 
     /**

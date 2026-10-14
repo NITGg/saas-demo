@@ -35,6 +35,9 @@ class sales extends base {
     /** Statuses that count as revenue. */
     private const PAID = ['completed', 'partially_refunded'];
 
+    /** LIKE pattern of a wallet top-up payment (local_payments metadata item_type). */
+    private const TOPUP_LIKE = '%"item\_type":"wallet\_topup"%';
+
     public static function key(): string {
         return 'sales';
     }
@@ -164,6 +167,10 @@ class sales extends base {
             [$in, $sp] = $DB->get_in_or_equal(self::PAID, SQL_PARAMS_NAMED, 'ps');
             $where[] = "t.status $in";
             $params += $sp;
+            // Revenue: a wallet top-up is the student's own balance, not a sale (BUG-064); the
+            // sale is counted when the balance is spent (card_walletsales).
+            $where[] = $DB->sql_like('t.metadata', ':notopup', true, true, true);
+            $params['notopup'] = self::TOPUP_LIKE;
         } else if ($this->f->status !== '') {
             $where[] = 't.status = :st';
             $params['st'] = $this->f->status;
@@ -250,12 +257,32 @@ class sales extends base {
 
         // Money that did not go through the gateway.
         $dbman = $DB->get_manager();
+        if ($dbman->table_exists('nit_wallet_txn')) {
+            // Courses, lessons, subscriptions and packages paid from a student's wallet balance.
+            [$period, $pp] = $this->f->period_sql('wt.timecreated');
+            $walletsales = -(int) $DB->get_field_sql("SELECT COALESCE(SUM(wt.amount_minor), 0)
+                  FROM {nit_wallet_txn} wt
+                  JOIN {nit_wallet} w ON w.id = wt.walletid AND w.ownertype = 'student'
+                 WHERE wt.kind = 'purchase' AND $period", $pp);
+            $cards[] = ['id' => 'card_walletsales', 'label' => self::str('card_walletsales'),
+                'value' => data::minor($walletsales)];
+        }
         if ($dbman->table_exists('nit_access_code')) {
+            // A code that only adds balance to the wallet is not a sale (the purchase from the wallet is).
             [$period, $pp] = $this->f->period_sql('timeused');
             $codes = (int) $DB->get_field_sql("SELECT COALESCE(SUM(amount_minor), 0) FROM {nit_access_code}
-                                                WHERE status = 'used' AND $period", $pp);
+                                                WHERE status = 'used' AND itemtype <> 'wallet' AND $period", $pp);
             $cards[] = ['id' => 'card_codesales', 'label' => self::str('card_codesales'), 'value' => data::minor($codes)];
         }
+        // Wallet top-ups paid online: shown apart, not revenue.
+        [$all, $aparams] = $this->from();
+        $topups = $DB->get_records_sql("SELECT t.currency, COUNT(1) AS n, SUM(t.amount) AS total $all
+                                           AND t.status IN ('completed', 'partially_refunded')
+                                           AND " . $DB->sql_like('t.metadata', ':istopup') . "
+                                      GROUP BY t.currency", $aparams + ['istopup' => self::TOPUP_LIKE]);
+        $cards[] = ['id' => 'card_topups', 'label' => self::str('card_topups'),
+            'value' => self::num(array_sum(array_map(fn($r) => $r->n, $topups))) . ' — '
+                . self::moneys(array_map(fn($r) => $r->total, $topups))];
         if ($dbman->table_exists('nit_payment')) {
             [$period, $pp] = $this->f->period_sql('timecreated');
             $offline = (int) $DB->get_field_sql("SELECT COALESCE(SUM(amount_minor), 0) FROM {nit_payment}

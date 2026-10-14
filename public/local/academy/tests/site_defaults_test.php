@@ -50,6 +50,7 @@ final class site_defaults_test extends \advanced_testcase {
         // BUG-019: unlimited password guessing (Moodle's lockout is off on a fresh site).
         global $CFG;
         require_once($CFG->libdir . '/authlib.php');
+        $_SERVER['HTTP_USER_AGENT'] = 'phpunit'; // Moodle logs it with each failed login.
         set_config('lockoutthreshold', 0);
         $this->redirectEmails(); // The "account locked" email with the unlock link.
         $user = $this->getDataGenerator()->create_user(['username' => 'student1', 'password' => 'Right@1234']);

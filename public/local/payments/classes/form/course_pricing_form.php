@@ -46,9 +46,9 @@ class course_pricing_form extends \moodleform {
 
         // Price.
         $mform->addElement('text', 'price', get_string('price', 'local_payments'));
-        $mform->setType('price', PARAM_FLOAT);
+        // Kept as typed and checked in validation(), so a malformed price is refused, not converted (BUG-035).
+        $mform->setType('price', PARAM_RAW_TRIMMED);
         $mform->addRule('price', null, 'required', null, 'client');
-        $mform->addRule('price', null, 'numeric', null, 'client');
 
         // Is default. The first price added to a course is the default by default.
         global $DB;
@@ -72,8 +72,8 @@ class course_pricing_form extends \moodleform {
     public function validation($data, $files) {
         $errors = parent::validation($data, $files);
 
-        if (empty($data['price']) || $data['price'] <= 0) {
-            $errors['price'] = get_string('error_price_positive', 'local_payments');
+        if (($error = \local_payments\local\price_input::form_error($data['price'] ?? '')) !== '') {
+            $errors['price'] = $error;
         }
 
         // Validate only one default per course.

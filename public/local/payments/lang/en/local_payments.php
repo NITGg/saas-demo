@@ -57,6 +57,8 @@ $string['actions'] = 'Actions';
 
 // Validation.
 $string['error_price_positive'] = 'Price must be greater than zero.';
+$string['error_price_format'] = 'Enter the price in numbers only, with at most 2 decimals, e.g. 150 or 149.50.';
+$string['error_price_max'] = 'The price cannot be more than {$a}.';
 $string['error_sale_price_lower'] = 'Sale price must be lower than the regular price.';
 $string['error_end_after_start'] = 'End date must be after start date.';
 $string['error_one_default'] = 'Only one default price is allowed per course.';
@@ -185,6 +187,8 @@ $string['err_pricenotfound']       = 'Pricing rule not found.';
 $string['err_invalidcountry']      = 'Unknown country code. Use a two-letter code, or * for the default price.';
 $string['err_invalidcurrency']     = 'This currency is not supported.';
 $string['err_pricepositive']       = 'Price must be greater than zero.';
+$string['err_priceformat']         = 'Enter the price in numbers only, with at most 2 decimals, e.g. 150 or 149.50.';
+$string['err_pricemax']            = 'The price cannot be more than {$a}.';
 $string['err_onedefault']          = 'Only one default price is allowed per course.';
 $string['err_oneactivepercountry'] = 'There is already an active pricing rule for this country. Deactivate it first, or edit that rule instead.';
 $string['err_invalidstatus']       = 'Unknown transaction status.';

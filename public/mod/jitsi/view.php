@@ -282,6 +282,10 @@ $js_config = json_encode([
     'isolateStudents' => (bool) $isolate_students,
     'awayText'        => get_string('teacheraway', 'jitsi'),
     'awayKnock'       => get_string('waitingadmit', 'jitsi'),
+    // The teacher rejected the knock (BUG-061): say so and offer to knock again.
+    'rejectedText'    => get_string('lobbyrejected', 'jitsi'),
+    'askAgainText'    => get_string('lobbyaskagain', 'jitsi'),
+    'askAgainUrl'     => (new moodle_url('/mod/jitsi/view.php', ['id' => $cm->id, 'join' => 1]))->out(false),
     'teacherNames'    => $teacher_names,
     'presenceUrl'     => (new moodle_url('/mod/jitsi/ajax.php'))->out(false),
     'cmid'              => (int)$cm->id,
@@ -456,6 +460,44 @@ echo <<<HTML
             window.addEventListener('pagehide', studentLeft);
         }
 
+        // A student the teacher rejected in the waiting room (BUG-061). Jitsi refuses them
+        // (conference.connectionError.accessDenied) but the page kept saying "waiting for the
+        // teacher to let you in". Close the call, say so, and offer to ask again (a new knock).
+        if (!CFG.isTeacher && CFG.lobbyEnabled) {
+            api.addEventListener('errorOccurred', function(e) {
+                var err = (e && e.error) || e || {};
+                if (err.name !== 'conference.connectionError.accessDenied' || window.jitsiRejected) {
+                    return;
+                }
+                window.jitsiRejected = true;
+                if (typeof studentLeft === 'function') {
+                    studentLeft();
+                }
+                try {
+                    api.dispose();
+                } catch (x) {
+                    // Already gone.
+                }
+                var panel = document.getElementById('panel-video');
+                Array.prototype.forEach.call(panel.children, function(child) {
+                    child.style.display = 'none';
+                });
+                var box = document.createElement('div');
+                box.setAttribute('role', 'alert');
+                box.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;gap:18px;align-items:center;'
+                    + 'justify-content:center;text-align:center;padding:24px;background:#0e335d;color:#fff;font-size:18px;';
+                var text = document.createElement('div');
+                text.textContent = CFG.rejectedText;
+                var again = document.createElement('a');
+                again.href = CFG.askAgainUrl;
+                again.className = 'btn btn-light';
+                again.textContent = CFG.askAgainText;
+                box.appendChild(text);
+                box.appendChild(again);
+                panel.appendChild(box);
+            });
+        }
+
         // Lesson room host (teacher or admin): whoever knocks (a lobby someone turned on,
         // e.g. from the app) is let in at once. Reaching this room needs a key Moodle only
         // gives its teacher, its invited students and admins, so nobody asks anybody.
@@ -532,6 +574,10 @@ echo <<<HTML
                 }
             });
             var keepTeacherOnly = function() {
+                // Rejected from the waiting room: the call is closed and the page says so.
+                if (window.jitsiRejected) {
+                    return;
+                }
                 // Not in the call yet: still connecting, or knocking in the waiting room
                 // (the teacher has to let them in), so not "the teacher is away".
                 if (!myId) {

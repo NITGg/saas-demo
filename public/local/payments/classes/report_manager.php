@@ -61,34 +61,37 @@ class report_manager {
      */
     public static function get_revenue_report(): array {
         global $DB;
-        $completed = ['status' => status_machine::COMPLETED];
+        // A wallet top-up is the student's own balance, not revenue (BUG-064).
+        $completed = ['status' => status_machine::COMPLETED, 'notopup' => '%"item\_type":"wallet\_topup"%'];
+        $sale = ' AND ' . $DB->sql_like('metadata', ':notopup', true, true, true);
+        $tsale = ' AND ' . $DB->sql_like('t.metadata', ':notopup', true, true, true);
 
         $total = $DB->get_record_sql(
             "SELECT COUNT(*) AS total_transactions, SUM(amount) AS total_revenue
-               FROM {local_payments_transactions} WHERE status = :status", $completed);
+               FROM {local_payments_transactions} WHERE status = :status $sale", $completed);
 
         $bycurrency = $DB->get_records_sql(
             "SELECT currency, COUNT(*) AS cnt, SUM(amount) AS revenue
-               FROM {local_payments_transactions} WHERE status = :status
+               FROM {local_payments_transactions} WHERE status = :status $sale
            GROUP BY currency ORDER BY revenue DESC", $completed);
 
         $bycountry = $DB->get_recordset_sql(
             "SELECT country, currency, COUNT(*) AS cnt, SUM(amount) AS revenue
-               FROM {local_payments_transactions} WHERE status = :status
+               FROM {local_payments_transactions} WHERE status = :status $sale
            GROUP BY country, currency ORDER BY revenue DESC", $completed);
 
         $byprovider = $DB->get_recordset_sql(
             "SELECT p.id AS providerid, p.display_name, t.currency, COUNT(*) AS cnt, SUM(t.amount) AS revenue
                FROM {local_payments_transactions} t
                JOIN {local_payments_providers} p ON p.id = t.provider_id
-              WHERE t.status = :status
+              WHERE t.status = :status $tsale
            GROUP BY p.id, p.display_name, t.currency ORDER BY revenue DESC", $completed);
 
         $topcourses = $DB->get_recordset_sql(
             "SELECT c.id AS courseid, c.fullname, t.currency, COUNT(*) AS purchases, SUM(t.amount) AS revenue
                FROM {local_payments_transactions} t
                JOIN {course} c ON c.id = t.courseid
-              WHERE t.status = :status
+              WHERE t.status = :status $tsale
            GROUP BY c.id, c.fullname, t.currency ORDER BY revenue DESC", $completed, 0, 20);
 
         $out = [

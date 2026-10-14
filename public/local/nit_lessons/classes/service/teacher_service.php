@@ -241,9 +241,11 @@ class teacher_service extends service {
         $where = '';
         $subject = trim($subject);
         if ($subject !== '') {
+            // Arabic spellings folded on both sides: فيزياء / الفيزيا, لغة / لغه (BUG-056).
+            $fold = '\local_nit_core\helper\arabic';
             $where = ' AND EXISTS (SELECT 1 FROM {nit_teacher_subject} s2 WHERE s2.teacherid = u.id AND '
-                . $DB->sql_like('s2.subject', ':subject', false) . ')';
-            $params['subject'] = '%' . $DB->sql_like_escape($subject) . '%';
+                . $DB->sql_like($fold::sql_fold('s2.subject'), ':subject', false) . ')';
+            $params['subject'] = '%' . $DB->sql_like_escape($fold::fold($subject)) . '%';
         }
         $fields = \core_user\fields::for_userpic()->get_sql('u', false, '', '', false)->selects;
         $rows = $DB->get_records_sql(

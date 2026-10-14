@@ -212,6 +212,25 @@ final class catalogue_test extends \advanced_testcase {
         $this->assertCount(3, $courses(catalogue::root_nodes($cat, $cat->get_children(), null, $filters + ['q' => ''])));
     }
 
+    public function test_arabic_spellings_find_the_same_courses(): void {
+        // BUG-056: احمد did not find أحمد, مدرسه did not find مدرسة, علي did not find على.
+        $this->resetAfterTest();
+        $gen = $this->getDataGenerator();
+        $cat = $gen->create_category();
+        $gen->create_course(['category' => $cat->id, 'fullname' => 'مراجعة أحمد في الفيزياء']);
+        $gen->create_course(['category' => $cat->id, 'fullname' => 'Chemistry', 'summary' => 'شرح على المنهج كاملاً']);
+        $this->setAdminUser();
+
+        foreach (['احمد' => 'مراجعة أحمد في الفيزياء', 'مراجعه' => 'مراجعة أحمد في الفيزياء',
+                'علي المنهج' => 'Chemistry', 'كاملا' => 'Chemistry'] as $typed => $expected) {
+            $found = catalogue::search(['q' => $typed, 'categoryid' => $cat->id], 0, 10, (int) get_admin()->id)['courses'];
+            $this->assertSame([$expected], array_column($found, 'fullname'), $typed);
+            $this->assertSame(1, catalogue::suggest($typed)['total'], $typed);
+        }
+        // The text shown back to the visitor is what they typed.
+        $this->assertSame('احمد', catalogue::suggest('احمد')['q']);
+    }
+
     public function test_suggest_lists_the_first_matches_and_links_to_the_catalogue(): void {
         $this->resetAfterTest();
         $gen = $this->getDataGenerator();

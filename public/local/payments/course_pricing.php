@@ -68,7 +68,7 @@ if ($action === 'edit' || $action === 'add') {
             'courseid' => $courseid,
             'country' => $formdata->country,
             'currency' => $formdata->currency,
-            'price' => $formdata->price,
+            'price' => \local_payments\local\price_input::value($formdata->price),
             'is_default' => ($isfirst || !empty($formdata->is_default)) ? 1 : 0,
             'is_active' => !empty($formdata->is_active) ? 1 : 0,
             'timemodified' => time(),

@@ -465,6 +465,17 @@ $nit-navpanel-divider: var(--nit-navbarpanelborder, #dedede); // light row divid
         top: calc(100% + 12px) !important;
         margin-top: 0 !important;
 
+        // Phones: Moodle makes the panel fixed to the screen here, so "100%" is the whole
+        // screen and the panel opened below it, invisible (BUG-026). Pin it under the bar.
+        @media (max-width: 480px) {
+            top: 96px !important;
+            left: 8px !important;
+            right: 8px !important;
+            bottom: 8px !important;
+            width: auto !important;
+            height: auto !important;
+        }
+
         // Header: "Notifications" title + action icons (mark-all-read / gear /
         // close), on a divider that matches the row look.
         .popover-region-header-container {

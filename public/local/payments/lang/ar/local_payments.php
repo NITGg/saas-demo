@@ -52,6 +52,8 @@ $string['actions'] = 'الإجراءات';
 
 // Validation.
 $string['error_price_positive'] = 'يجب أن يكون السعر أكبر من صفر.';
+$string['error_price_format'] = 'اكتب السعر بالأرقام فقط، وبحد أقصى رقمين بعد العلامة العشرية، مثل 150 أو 149.50.';
+$string['error_price_max'] = 'السعر لا يمكن أن يزيد عن {$a}.';
 $string['error_sale_price_lower'] = 'يجب أن يكون سعر التخفيض أقل من السعر العادي.';
 $string['error_end_after_start'] = 'يجب أن يكون تاريخ النهاية بعد تاريخ البداية.';
 $string['error_one_default'] = 'مسموح بسعر افتراضي واحد فقط لكل دورة.';
@@ -177,6 +179,8 @@ $string['err_pricenotfound']       = 'قاعدة التسعير غير موجو�
 $string['err_invalidcountry']      = 'رمز الدولة غير معروف. استخدم رمزاً من حرفين، أو * للسعر الافتراضي.';
 $string['err_invalidcurrency']     = 'هذه العملة غير مدعومة.';
 $string['err_pricepositive']       = 'يجب أن يكون السعر أكبر من صفر.';
+$string['err_priceformat']         = 'اكتب السعر بالأرقام فقط، وبحد أقصى رقمين بعد العلامة العشرية، مثل 150 أو 149.50.';
+$string['err_pricemax']            = 'السعر لا يمكن أن يزيد عن {$a}.';
 $string['err_onedefault']          = 'مسموح بسعر افتراضي واحد فقط لكل كورس.';
 $string['err_oneactivepercountry'] = 'توجد قاعدة تسعير مفعّلة لهذه الدولة بالفعل. ألغِ تفعيلها أولاً أو عدّلها.';
 $string['err_invalidstatus']       = 'حالة المعاملة غير معروفة.';

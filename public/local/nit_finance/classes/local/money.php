@@ -33,14 +33,9 @@ final class money {
      * @return int|null null when it is not a valid non-negative amount
      */
     public static function to_minor($major): ?int {
-        $text = trim((string) $major);
-        // Arabic-Indic digits and the Arabic decimal separator.
-        $text = strtr($text, ['٠' => '0', '١' => '1', '٢' => '2', '٣' => '3', '٤' => '4', '٥' => '5',
-            '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9', '٫' => '.', ',' => '.']);
-        if ($text === '' || !preg_match('/^\d+(\.\d{1,2})?$/', $text)) {
-            return null;
-        }
-        return (int) round(((float) $text) * 100);
+        // The shared price rule (Arabic-Indic digits, at most 2 decimals).
+        $text = \local_nit_core\helper\price::parse($major);
+        return $text === null ? null : (int) round(((float) $text) * 100);
     }
 
     /**

@@ -119,7 +119,7 @@ class course_form {
         // Default-country price.
         $mform->addElement('text', 'lp_price_home',
             get_string('price_home', 'local_payments', $homename), ['size' => 10]);
-        $mform->setType('lp_price_home', PARAM_FLOAT);
+        $mform->setType('lp_price_home', PARAM_RAW_TRIMMED); // Checked as typed (BUG-035).
         $mform->disabledIf('lp_price_home', 'lp_paid', 'notchecked');
 
         $mform->addElement('select', 'lp_currency_home',
@@ -130,7 +130,7 @@ class course_form {
         // Other-countries price.
         $mform->addElement('text', 'lp_price_other',
             get_string('price_other', 'local_payments'), ['size' => 10]);
-        $mform->setType('lp_price_other', PARAM_FLOAT);
+        $mform->setType('lp_price_other', PARAM_RAW_TRIMMED);
         $mform->disabledIf('lp_price_other', 'lp_paid', 'notchecked');
 
         $mform->addElement('select', 'lp_currency_other',
@@ -182,20 +182,29 @@ class course_form {
      * @param \core_course\hook\after_form_validation $hook
      */
     public static function after_form_validation(\core_course\hook\after_form_validation $hook): void {
-        $data = $hook->get_data();
+        if (($errors = self::price_errors($hook->get_data()))) {
+            $hook->add_errors($errors);
+        }
+    }
+
+    /**
+     * The errors of the two prices of a paid course, as typed (BUG-035: "10.999" or
+     * "12abc" is refused instead of being saved as 11.00 or 12).
+     *
+     * @param array $data submitted course form data
+     * @return array<string, string> field => error
+     */
+    public static function price_errors(array $data): array {
         if (empty($data['lp_paid'])) {
-            return; // Free course — nothing to validate.
+            return []; // Free course — nothing to validate.
         }
         $errors = [];
         foreach (['lp_price_home', 'lp_price_other'] as $field) {
-            $v = $data[$field] ?? '';
-            if ($v === '' || !is_numeric($v) || (float) $v <= 0) {
-                $errors[$field] = get_string('error_price_positive', 'local_payments');
+            if (($error = \local_payments\local\price_input::form_error($data[$field] ?? '')) !== '') {
+                $errors[$field] = $error;
             }
         }
-        if ($errors) {
-            $hook->add_errors($errors);
-        }
+        return $errors;
     }
 
     /**
@@ -257,9 +266,9 @@ class course_form {
         };
 
         // Home-country row (country-specific) + "*" fallback row (the default, is_default=1).
-        $homeid = $upsert(self::default_country(), (float) $data->lp_price_home,
+        $homeid = $upsert(self::default_country(), \local_payments\local\price_input::value($data->lp_price_home),
             (string) $data->lp_currency_home, 0);
-        $otherid = $upsert('*', (float) $data->lp_price_other,
+        $otherid = $upsert('*', \local_payments\local\price_input::value($data->lp_price_other),
             (string) $data->lp_currency_other, 1);
 
         // "Two prices only": retire (deactivate) any other rows — e.g. legacy per-country

@@ -82,7 +82,7 @@ api::run(function (string $function) use ($USER) {
             return course_price_manager::save_course_price($courseid, optional_param('priceid', 0, PARAM_INT), [
                 'country'    => optional_param('country', '*', PARAM_RAW_TRIMMED),
                 'currency'   => required_param('currency', PARAM_ALPHA),
-                'price'      => required_param('price', PARAM_FLOAT),
+                'price'      => required_param('price', PARAM_RAW_TRIMMED), // Checked as typed (BUG-035).
                 'is_default' => optional_param('is_default', 0, PARAM_BOOL),
                 'is_active'  => optional_param('is_active', 1, PARAM_BOOL),
             ], (int) $USER->id);

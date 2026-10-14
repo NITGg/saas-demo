@@ -75,6 +75,27 @@ final class admin_api_test extends \advanced_testcase {
         ]));
     }
 
+    public function test_malformed_prices_are_refused_not_changed(): void {
+        // BUG-035: "10.999" was saved as 11.00, "12abc" as 12, "1,500" as 1, "1e6" as 1,000,000.
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        foreach (['10.999', '12abc', '1,500', '1e6', '-5', 'abc', '100000000'] as $typed) {
+            try {
+                course_price_manager::save_course_price($course->id, 0,
+                    ['country' => '*', 'currency' => 'EGP', 'price' => $typed], 2);
+                $this->fail("Price '$typed' was accepted");
+            } catch (\moodle_exception $e) {
+                $this->assertContains($e->errorcode, ['err_priceformat', 'err_pricemax', 'err_pricepositive'], $typed);
+            }
+        }
+        $this->assertSame(0, \core\di::get(\moodle_database::class)->count_records('local_payments_course_prices'));
+
+        // Arabic digits and a decimal comma are read as typed.
+        $saved = course_price_manager::save_course_price($course->id, 0,
+            ['country' => '*', 'currency' => 'EGP', 'price' => '١٤٩,٥'], 2);
+        $this->assertSame(149.5, $saved['price']);
+    }
+
     public function test_first_price_is_default_and_validation_rules(): void {
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course();
@@ -152,6 +173,9 @@ final class admin_api_test extends \advanced_testcase {
         $this->transaction(['provider_id' => $pid, 'courseid' => $course->id, 'amount' => 10, 'currency' => 'USD',
             'country' => 'SA']);
         $this->transaction(['provider_id' => $pid, 'status' => status_machine::FAILED]);
+        // A wallet top-up is not revenue (BUG-064).
+        $this->transaction(['userid' => $user->id, 'provider_id' => $pid, 'amount' => 500,
+            'metadata' => json_encode(['item_type' => 'wallet_topup', 'item_id' => $user->id])]);
 
         $report = report_manager::get_revenue_report();
         $this->assertSame(3, $report['total_transactions']);
@@ -162,14 +186,14 @@ final class admin_api_test extends \advanced_testcase {
         $this->assertCount(2, $report['top_courses']); // subscription (courseid 0) is not a course.
 
         $all = report_manager::get_transactions([], 0, 2);
-        $this->assertSame(4, $all['total']);
+        $this->assertSame(5, $all['total']); // The transaction list still shows every payment, top-ups too.
         $this->assertCount(2, $all['transactions']);
 
         $mine = report_manager::get_transactions(['userid' => $user->id, 'status' => 'completed']);
-        $this->assertSame(2, $mine['total']);
+        $this->assertSame(3, $mine['total']);
         $types = array_column($mine['transactions'], 'item_type');
         sort($types);
-        $this->assertSame(['course', 'subscription'], $types);
+        $this->assertSame(['course', 'subscription', 'wallet_topup'], $types);
         $names = array_column($mine['transactions'], 'item_name', 'item_type');
         $this->assertSame('Gold', $names['subscription']);
 

@@ -80,6 +80,12 @@ final class articles_test extends \advanced_testcase {
         $searchres = article_manager::get_articles(0, 9, 'نادرة');
         $this->assertCount(1, $searchres['articles']);
         $this->assertSame('مقال تجريبي رقم 5', $searchres['articles'][0]->title_ar);
+
+        // BUG-056: other spellings of the same word find it too; % is a plain character.
+        foreach (['نادره', 'كلمه مفتاحيه', 'كَلِمة'] as $typed) {
+            $this->assertSame(1, article_manager::get_articles(0, 9, $typed)['total'], $typed);
+        }
+        $this->assertSame(0, article_manager::get_articles(0, 9, '%')['total']);
     }
 
     public function test_article_visibility(): void {

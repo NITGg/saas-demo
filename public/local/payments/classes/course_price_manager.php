@@ -103,10 +103,15 @@ class course_price_manager {
         if (!in_array($currency, self::CURRENCIES, true)) {
             throw new \moodle_exception('err_invalidcurrency', 'local_payments');
         }
-        $price = round((float) ($data['price'] ?? 0), 2);
-        if ($price <= 0) {
-            throw new \moodle_exception('err_pricepositive', 'local_payments');
+        // As typed: refused when malformed, never rounded or cut (BUG-035).
+        $typed = $data['price'] ?? '';
+        $problem = \local_payments\local\price_input::problem($typed);
+        if ($problem !== '') {
+            throw new \moodle_exception(['format' => 'err_priceformat', 'positive' => 'err_pricepositive',
+                'max' => 'err_pricemax'][$problem], 'local_payments', '',
+                number_format(\local_payments\local\price_input::MAX, 2));
         }
+        $price = \local_payments\local\price_input::value($typed);
         $isdefault = !empty($data['is_default']);
         $isactive = !array_key_exists('is_active', $data) || !empty($data['is_active']);
 

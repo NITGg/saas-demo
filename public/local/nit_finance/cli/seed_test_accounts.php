@@ -21,7 +21,7 @@
  *
  *   php admin/cli/... local/nit_finance/cli/seed_test_accounts.php [--courseid=N]
  *
- * Idempotent. With --courseid the student is also enrolled in that course.
+ * Idempotent. With --courseid the student (and the test teacher, as editing teacher) is enrolled in that course.
  *
  * @package    local_nit_finance
  * @copyright  2026 NIT
@@ -39,6 +39,9 @@ const TEST_STUDENT_PASSWORD = 'Nit-4G5VdloZRH-7a';
 /** Test manager login (local development only): system Manager role, for the admin pages. */
 const TEST_MANAGER_USERNAME = 'nit_test_manager';
 const TEST_MANAGER_PASSWORD = 'Mgr-V3uhdR39vh-4q';
+/** Test teacher login (local development only): editing teacher in --courseid, for teacher-side checks. */
+const TEST_TEACHER_USERNAME = 'nit_dev_teacher';
+const TEST_TEACHER_PASSWORD = 'Tch-c9YhUGYlMl-3k';
 
 [$options] = cli_get_params(['courseid' => 0, 'help' => false], ['h' => 'help']);
 if ($options['help']) {
@@ -100,4 +103,27 @@ if (!$manager) {
     cli_writeln('Created ' . TEST_MANAGER_USERNAME . " (id {$manager->id}, system manager)");
 } else {
     cli_writeln(TEST_MANAGER_USERNAME . " exists (id {$manager->id})");
+}
+
+$teacher = $DB->get_record('user', ['username' => TEST_TEACHER_USERNAME, 'deleted' => 0]);
+if (!$teacher) {
+    $id = user_create_user((object) [
+        'username' => TEST_TEACHER_USERNAME,
+        'password' => TEST_TEACHER_PASSWORD,
+        'firstname' => 'مدرس',
+        'lastname' => 'تجريبي',
+        'email' => TEST_TEACHER_USERNAME . '@example.com',
+        'auth' => 'manual',
+        'confirmed' => 1,
+        'mnethostid' => $CFG->mnet_localhost_id,
+        'lang' => 'ar',
+    ]);
+    $teacher = $DB->get_record('user', ['id' => $id]);
+    cli_writeln('Created ' . TEST_TEACHER_USERNAME . " (id {$teacher->id})");
+} else {
+    cli_writeln(TEST_TEACHER_USERNAME . " exists (id {$teacher->id})");
+}
+if ($options['courseid']) {
+    $enrol->enrol_user($instance, $teacher->id, $DB->get_field('role', 'id', ['shortname' => 'editingteacher']));
+    cli_writeln("Teacher enrolled (editing teacher) in course {$options['courseid']}");
 }
