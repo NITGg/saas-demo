@@ -67,6 +67,75 @@ class file_lessons {
     }
 
     /**
+     * The activity type of a course module settings form, e.g. "resource".
+     *
+     * @param \moodleform_mod $formwrapper
+     * @return string
+     */
+    public static function form_modname(\moodleform_mod $formwrapper): string {
+        $current = $formwrapper->get_current();
+        $cm = $formwrapper->get_coursemodule();
+        return !empty($current->modulename) ? (string) $current->modulename : (string) ($cm->modname ?? '');
+    }
+
+    /**
+     * The file picker of a file lesson shows (and keeps to) the lesson limit, not
+     * Moodle's site-wide "Maximum size for new files".
+     *
+     * @param string $modname the activity type
+     * @param \MoodleQuickForm $mform
+     */
+    public static function limit_picker(string $modname, \MoodleQuickForm $mform): void {
+        $field = self::MODULES[$modname] ?? null;
+        if ($field === null || is_siteadmin() || !$mform->elementExists($field)) {
+            return;
+        }
+        $element = $mform->getElement($field);
+        if ($element instanceof \MoodleQuickForm_filemanager) {
+            $element->setMaxbytes(self::max_bytes());
+        }
+    }
+
+    /**
+     * course/dndupload.php: a file dropped on the course page becomes a File lesson
+     * without its settings form, so the file is checked here, before Moodle keeps it.
+     *
+     * @param \core\hook\after_config $hook
+     */
+    public static function after_config(\core\hook\after_config $hook): void {
+        $problem = self::dnd_upload_problem();
+        if ($problem !== '') {
+            // The answer course/dndupload.js expects: it shows "error" in a dialog.
+            @header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['error' => $problem]);
+            exit;
+        }
+    }
+
+    /**
+     * What is wrong with the file of this drag-and-drop request ('' when it may be
+     * uploaded, or the request is not a file lesson upload).
+     *
+     * @return string
+     */
+    public static function dnd_upload_problem(): string {
+        global $SCRIPT;
+        if (during_initial_install() || ($SCRIPT ?? '') !== '/course/dndupload.php'
+                || optional_param('type', '', PARAM_TEXT) !== 'Files'
+                || !isset(self::MODULES[optional_param('module', '', PARAM_PLUGIN)])
+                || !isloggedin() || is_siteadmin()) {
+            return '';
+        }
+        $upload = $_FILES['repo_upload_file'] ?? null;
+        if (!is_array($upload) || ($upload['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK
+                || !is_string($upload['tmp_name'] ?? null) || !is_readable($upload['tmp_name'])) {
+            return ''; // Moodle reports a missing or broken upload itself.
+        }
+        $handle = fopen($upload['tmp_name'], 'rb');
+        return self::problem((string) $upload['name'], (int) filesize($upload['tmp_name']), self::content_type($handle));
+    }
+
+    /**
      * Errors for the files in a file lesson's settings form (empty = fine).
      *
      * @param string $modname the activity type, e.g. "resource"
@@ -85,7 +154,8 @@ class file_lessons {
             'filepath, filename', false);
         $problems = [];
         foreach ($files as $file) {
-            $problem = self::problem($file->get_filename(), (int) $file->get_filesize(), self::sniff($file));
+            $problem = self::problem($file->get_filename(), (int) $file->get_filesize(),
+                self::content_type($file->get_content_file_handle()));
             if ($problem !== '') {
                 $problems[] = $problem;
             }
@@ -118,13 +188,12 @@ class file_lessons {
     }
 
     /**
-     * The content type of a stored file, read from its first bytes (not its name).
+     * The content type of a file, read from its first bytes (not its name).
      *
-     * @param \stored_file $file
+     * @param resource|false $handle the open file (closed here)
      * @return string
      */
-    private static function sniff(\stored_file $file): string {
-        $handle = $file->get_content_file_handle();
+    private static function content_type($handle): string {
         $head = $handle ? (string) fread($handle, 8192) : '';
         if ($handle) {
             fclose($handle);

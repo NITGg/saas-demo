@@ -60,6 +60,10 @@ final class wallet_page {
             'redeem' => output::redeem_form(new \moodle_url('/local/nit_finance/wallet.php')),
             'topup' => output::topup_form($return),
             'purchases' => output::purchases(purchases::for_user($userid)),
+            // Refunds (task 8): ask for one within the grace period, see the answers.
+            'refundsurl' => \local_nit_finance\config::refund_days() > 0
+                || $DB->record_exists('nit_refund_request', ['userid' => $userid])
+                ? (new \moodle_url('/local/nit_finance/refunds.php'))->out(false) : '',
             'history' => output::history(wallets::history(wallets::STUDENT, $userid)),
             'teacherhistory' => [],
             'isteacher' => $isteacher,

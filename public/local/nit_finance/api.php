@@ -48,7 +48,8 @@ if (($lang = optional_param('lang', '', PARAM_LANG)) !== '') {
 api::run(function (string $function) use ($userid) {
     // Admin functions: the finance manager capability (system), like the admin pages.
     $adminfunctions = ['get_finance_summary', 'list_withdrawals', 'process_withdrawal', 'list_wallets',
-        'get_wallet_ledger', 'adjust_wallet', 'list_codes', 'generate_codes', 'disable_code'];
+        'get_wallet_ledger', 'adjust_wallet', 'list_codes', 'generate_codes', 'disable_code', 'list_refunds',
+        'process_refund'];
     if (in_array($function, $adminfunctions, true)) {
         api::require_capability('local/nit_finance:manage');
     }
@@ -68,6 +69,16 @@ api::run(function (string $function) use ($userid) {
         // Lessons / courses the student bought or unlocked.
         case 'get_my_purchases':
             return finance::get_my_purchases($userid);
+
+        // Refunds: what can still be refunded (within the grace period) and the student's requests.
+        case 'get_refunds':
+            return finance::get_refunds($userid);
+
+        // Ask for a refund of one of get_refunds' items (an admin approves or rejects it).
+        case 'request_refund':
+            api::require_post();
+            return finance::request_refund($userid, required_param('key', PARAM_RAW_TRIMMED),
+                optional_param('reason', '', PARAM_TEXT));
 
         // Start an online top-up → open checkout_url, then poll get_topup_status.
         case 'create_topup_checkout':
@@ -136,6 +147,15 @@ api::run(function (string $function) use ($userid) {
             return finance::process_withdrawal($userid, required_param('id', PARAM_INT),
                 required_param('action', PARAM_ALPHA), optional_param('reason', '', PARAM_TEXT),
                 optional_param('reference', '', PARAM_TEXT));
+
+        case 'list_refunds':
+            [$page, $perpage] = api::paging(50, 200);
+            return finance::list_refunds(optional_param('status', '', PARAM_ALPHA), $page, $perpage);
+
+        case 'process_refund':
+            api::require_post();
+            return finance::process_refund($userid, required_param('id', PARAM_INT),
+                required_param('action', PARAM_ALPHA), optional_param('reason', '', PARAM_TEXT));
 
         case 'list_wallets':
             [$page, $perpage] = api::paging(50, 200);

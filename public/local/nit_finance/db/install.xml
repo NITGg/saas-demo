@@ -79,7 +79,7 @@
         <FIELD NAME="walletid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="amount_minor" TYPE="int" LENGTH="19" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="positive = in, negative = out"/>
         <FIELD NAME="balance_after_minor" TYPE="int" LENGTH="19" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
-        <FIELD NAME="kind" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="topup | purchase | earning | withdrawal | adjustment"/>
+        <FIELD NAME="kind" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="topup | purchase | earning | withdrawal | adjustment | refund"/>
         <FIELD NAME="itemtype" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="" SEQUENCE="false"/>
         <FIELD NAME="itemid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="purchaseid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
@@ -184,6 +184,39 @@
       <INDEXES>
         <INDEX NAME="cmid_uix" UNIQUE="true" FIELDS="cmid"/>
         <INDEX NAME="course_idx" UNIQUE="false" FIELDS="courseid"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="nit_refund_request" COMMENT="A student's request to refund a purchase within the grace period; an admin approves (amount minus the fee goes to the student's wallet) or rejects it.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="the student"/>
+        <FIELD NAME="source" TYPE="char" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="online (gateway payment) | wallet (paid from wallet balance)"/>
+        <FIELD NAME="itemtype" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="course | cm | subscription"/>
+        <FIELD NAME="itemid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="course id, cm id or subscription plan id"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="0 for a subscription"/>
+        <FIELD NAME="itemname" TYPE="char" LENGTH="255" NOTNULL="true" DEFAULT="" SEQUENCE="false"/>
+        <FIELD NAME="transactionid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="local_payments_transactions.id (online)"/>
+        <FIELD NAME="purchaseid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="nit_purchase.id (wallet course / lesson) or nit_sub_purchase.id (subscription)"/>
+        <FIELD NAME="paidtime" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="when the purchase was paid"/>
+        <FIELD NAME="amount_minor" TYPE="int" LENGTH="19" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="what the student paid"/>
+        <FIELD NAME="fee_percent" TYPE="number" LENGTH="5" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="the fee setting when the request was made"/>
+        <FIELD NAME="fee_minor" TYPE="int" LENGTH="19" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="kept by the platform"/>
+        <FIELD NAME="refund_minor" TYPE="int" LENGTH="19" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="back to the student's wallet"/>
+        <FIELD NAME="reason" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="the student's reason"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="12" NOTNULL="true" DEFAULT="pending" SEQUENCE="false" COMMENT="pending | approved | rejected"/>
+        <FIELD NAME="adminreason" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="why it was rejected"/>
+        <FIELD NAME="processedby" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timeprocessed" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="user_status_idx" UNIQUE="false" FIELDS="userid, status"/>
+        <INDEX NAME="status_idx" UNIQUE="false" FIELDS="status, timeprocessed"/>
+        <INDEX NAME="purchase_idx" UNIQUE="false" FIELDS="source, itemtype, transactionid, purchaseid"/>
       </INDEXES>
     </TABLE>
   </TABLES>

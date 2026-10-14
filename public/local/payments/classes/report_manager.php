@@ -69,8 +69,23 @@ class report_manager {
                                     FROM {nit_wallet_txn} wt
                                     JOIN {nit_wallet} w ON w.id = wt.walletid AND w.ownertype = 'student'
                                    WHERE wt.kind = 'purchase'
-                                      OR (wt.kind = 'adjustment' AND wt.purchaseid > 0 AND wt.amount_minor > 0)");
+                                      OR (wt.kind IN ('adjustment', 'refund') AND wt.purchaseid > 0 AND wt.amount_minor > 0)");
         return [(int) $r->n, -((int) $r->total) / 100];
+    }
+
+    /**
+     * The refund fee kept on online payments refunded to the wallet (approved refund requests of
+     * local_nit_finance): the payment is "refunded" and leaves the revenue, the fee stays. EGP.
+     *
+     * @return float pounds
+     */
+    private static function refund_fee_revenue(): float {
+        global $DB;
+        if (!$DB->get_manager()->table_exists('nit_refund_request')) {
+            return 0.0;
+        }
+        return ((int) $DB->get_field_sql("SELECT COALESCE(SUM(fee_minor), 0) FROM {nit_refund_request}
+                                           WHERE source = 'online' AND status = 'approved'")) / 100;
     }
 
     /**

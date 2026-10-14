@@ -47,6 +47,8 @@ final class wallets {
     public const KIND_WITHDRAWAL = 'withdrawal';
     /** Manual correction by an admin. */
     public const KIND_ADJUSTMENT = 'adjustment';
+    /** An approved refund request: back to the student, or taken back from a teacher / the platform. */
+    public const KIND_REFUND = 'refund';
 
     /**
      * A wallet, created empty on first use.

@@ -45,6 +45,33 @@ final class config {
             ->get_int('teacher_percent', self::DEFAULT_TEACHER_PERCENT);
     }
 
+    /** Default refund grace period: days after a purchase in which the student may ask for a refund. */
+    const DEFAULT_REFUND_DAYS = 3;
+
+    /** Default refund fee: percent of the amount paid that the platform keeps. */
+    const DEFAULT_REFUND_FEE_PERCENT = 0;
+
+    /**
+     * The refund grace period in days (0 = refunds closed).
+     *
+     * @return int
+     */
+    public static function refund_days(): int {
+        $days = get_config(self::COMPONENT, 'refund_days');
+        return max(0, ($days === false || $days === '') ? self::DEFAULT_REFUND_DAYS : (int) $days);
+    }
+
+    /**
+     * The refund fee in percent (0–100).
+     *
+     * @return float
+     */
+    public static function refund_fee_percent(): float {
+        $fee = get_config(self::COMPONENT, 'refund_fee_percent');
+        $fee = ($fee === false || $fee === '') ? self::DEFAULT_REFUND_FEE_PERCENT : (float) $fee;
+        return min(100.0, max(0.0, $fee));
+    }
+
     /**
      * The platform's share of a Flex value, in percent.
      *

@@ -46,8 +46,16 @@ function local_academy_override_webservice_execution($function, $params) {
  */
 function local_academy_coursemodule_validation($formwrapper, $data) {
     global $USER;
-    $current = $formwrapper->get_current();
-    $cm = $formwrapper->get_coursemodule();
-    $modname = !empty($current->modulename) ? (string) $current->modulename : ($cm->modname ?? '');
+    $modname = \local_academy\local\file_lessons::form_modname($formwrapper);
     return \local_academy\local\file_lessons::validate($modname, (array) $data, (int) $USER->id);
+}
+
+/**
+ * The file picker of a file lesson shows the lesson limit (BUG-039).
+ *
+ * @param moodleform_mod $formwrapper
+ * @param MoodleQuickForm $mform
+ */
+function local_academy_coursemodule_standard_elements($formwrapper, $mform) {
+    \local_academy\local\file_lessons::limit_picker(\local_academy\local\file_lessons::form_modname($formwrapper), $mform);
 }

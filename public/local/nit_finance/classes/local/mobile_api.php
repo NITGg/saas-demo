@@ -1151,4 +1151,112 @@ final class mobile_api {
             'priced' => $minor > 0,
         ] + self::money('price', catalog::price((int) $cm->id)) + ['currency' => self::CURRENCY];
     }
+    // ── Refunds (task 8) ─────────────────────────────────────────────────────
+
+    /**
+     * A refund request for the app.
+     *
+     * @param stdClass $r nit_refund_request row
+     * @param array $names user id => full name (admin lists)
+     * @return array
+     */
+    private static function refund(stdClass $r, array $names = []): array {
+        return [
+            'id' => (int) $r->id,
+            'status' => (string) $r->status,
+            'status_label' => self::str('status_' . $r->status),
+            'source' => (string) $r->source,
+            'source_label' => self::str('refundsource_' . $r->source),
+            'itemtype' => (string) $r->itemtype,
+            'itemtype_label' => self::str('itemtype_' . $r->itemtype),
+            'itemid' => (int) $r->itemid,
+            'courseid' => (int) $r->courseid,
+            'itemname' => (string) $r->itemname,
+            'userid' => (int) $r->userid,
+            'student_name' => $names[(int) $r->userid] ?? '',
+            'reason' => (string) $r->reason,
+            'admin_reason' => (string) $r->adminreason,
+            'paidtime' => (int) $r->paidtime,
+            'timecreated' => (int) $r->timecreated,
+            'timeprocessed' => (int) $r->timeprocessed,
+            'fee_percent' => (float) $r->fee_percent,
+        ] + self::money('amount', (int) $r->amount_minor) + self::money('fee', (int) $r->fee_minor)
+            + self::money('refund', (int) $r->refund_minor) + ['currency' => self::CURRENCY];
+    }
+
+    /**
+     * The student's refunds: what they may still ask to refund, and their requests.
+     *
+     * @param int $userid
+     * @return array
+     */
+    public static function get_refunds(int $userid): array {
+        $refundable = [];
+        foreach (refunds::refundable($userid) as $item) {
+            $refundable[] = [
+                'key' => $item['key'],
+                'source' => $item['source'],
+                'source_label' => self::str('refundsource_' . $item['source']),
+                'itemtype' => $item['itemtype'],
+                'itemtype_label' => self::str('itemtype_' . $item['itemtype']),
+                'itemid' => $item['itemid'],
+                'courseid' => $item['courseid'],
+                'itemname' => $item['itemname'],
+                'paidtime' => $item['paidtime'],
+                'deadline' => $item['deadline'],
+            ] + self::money('amount', $item['amount_minor']) + self::money('fee', $item['fee_minor'])
+                + self::money('refund', $item['refund_minor']) + ['currency' => self::CURRENCY];
+        }
+        return [
+            'refund_days' => local_nit_financeconfig::refund_days(),
+            'fee_percent' => local_nit_financeconfig::refund_fee_percent(),
+            'refundable' => $refundable,
+            'requests' => array_map(fn($r) => self::refund($r), refunds::list('', $userid)),
+        ];
+    }
+
+    /**
+     * Ask for a refund of one of get_refunds()'s refundable items.
+     *
+     * @param int $userid
+     * @param string $key
+     * @param string $reason
+     * @return array
+     */
+    public static function request_refund(int $userid, string $key, string $reason): array {
+        return ['request' => self::refund(refunds::request($userid, $key, $reason))];
+    }
+
+    /**
+     * Admin: refund requests, newest first.
+     *
+     * @param string $status pending | approved | rejected | '' = all
+     * @param int $page
+     * @param int $perpage
+     * @return array
+     */
+    public static function list_refunds(string $status, int $page, int $perpage): array {
+        $all = refunds::list($status);
+        $names = self::names(array_column($all, 'userid'));
+        return [
+            'total' => count($all),
+            'page' => $page,
+            'perpage' => $perpage,
+            'requests' => array_map(fn($r) => self::refund($r, $names), array_slice($all, $page * $perpage, $perpage)),
+        ];
+    }
+
+    /**
+     * Admin: approve or reject a refund request.
+     *
+     * @param int $adminid
+     * @param int $id
+     * @param string $action approve | reject
+     * @param string $reason required to reject
+     * @return array
+     */
+    public static function process_refund(int $adminid, int $id, string $action, string $reason): array {
+        $r = refunds::process($adminid, $id, $action, $reason);
+        return ['request' => self::refund($r, self::names([(int) $r->userid]))];
+    }
 }

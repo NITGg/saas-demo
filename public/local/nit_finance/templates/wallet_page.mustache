@@ -27,6 +27,7 @@
         "haspurchases": true,
         "purchases": [{"name": "Lesson 1", "coursename": "Physics", "typename": "Lesson", "amount": "50 EGP",
             "method": "Wallet", "date": "4/10/26", "url": "#"}],
+        "refundsurl": "#",
         "hashistory": true,
         "history": [{"date": "4/10/26, 10:00", "kind": "Purchase", "note": "Lesson 1", "amount": "-50 EGP",
             "positive": false, "balance": "100 EGP"}],
@@ -54,6 +55,7 @@
 
         <section class="nitfin-section">
             <h2 class="nitfin-section__title">{{#str}}mypurchases, local_nit_finance{{/str}}</h2>
+            {{#refundsurl}}<p><a class="nitfin-btn nitfin-btn--small" href="{{refundsurl}}">{{#str}}myrefunds, local_nit_finance{{/str}}</a></p>{{/refundsurl}}
             {{#haspurchases}}
             <ul class="nitfin-purchases">
                 {{#purchases}}

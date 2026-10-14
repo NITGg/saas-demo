@@ -134,8 +134,8 @@ final class file_lessons_test extends \advanced_testcase {
 
         $form = $submit(['setup.exe' => "MZ\x90\x00" . str_repeat("\x00", 60)]);
         $this->assertNull($form->get_data());
-        $this->assertStringContainsString(s(get_string('err_filelessontype', 'local_academy',
-            ['file' => 'setup.exe', 'types' => implode(', ', array_keys(file_lessons::TYPES))])), $form->render());
+        $this->assertStringContainsString(get_string('err_filelessontype', 'local_academy',
+            ['file' => 'setup.exe', 'types' => implode(', ', array_keys(file_lessons::TYPES))]), $form->render());
 
         $this->assertNotNull($submit(['syllabus.pdf' => self::PDF])->get_data());
     }

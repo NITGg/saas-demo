@@ -55,6 +55,12 @@ class provider implements
             'account'      => 'privacy:metadata:nit_withdrawal:account',
             'timecreated'  => 'privacy:metadata:nit_withdrawal:timecreated',
         ], 'privacy:metadata:nit_withdrawal');
+        $collection->add_database_table('nit_refund_request', [
+            'userid'       => 'privacy:metadata:nit_refund_request:userid',
+            'reason'       => 'privacy:metadata:nit_refund_request:reason',
+            'refund_minor' => 'privacy:metadata:nit_refund_request:refund_minor',
+            'timecreated'  => 'privacy:metadata:nit_refund_request:timecreated',
+        ], 'privacy:metadata:nit_refund_request');
         return $collection;
     }
 
@@ -67,9 +73,10 @@ class provider implements
     public static function get_contexts_for_userid(int $userid): contextlist {
         $contextlist = new contextlist();
         $sql = "SELECT 1 FROM {nit_earning} WHERE teacherid = :t1
-                 UNION SELECT 1 FROM {nit_withdrawal} WHERE teacherid = :t2";
+                 UNION SELECT 1 FROM {nit_withdrawal} WHERE teacherid = :t2
+                 UNION SELECT 1 FROM {nit_refund_request} WHERE userid = :t3";
         global $DB;
-        if ($DB->record_exists_sql($sql, ['t1' => $userid, 't2' => $userid])) {
+        if ($DB->record_exists_sql($sql, ['t1' => $userid, 't2' => $userid, 't3' => $userid])) {
             $contextlist->add_system_context();
         }
         return $contextlist;
@@ -87,6 +94,7 @@ class provider implements
         }
         $userlist->add_from_sql('teacherid', "SELECT teacherid FROM {nit_earning}", []);
         $userlist->add_from_sql('teacherid', "SELECT teacherid FROM {nit_withdrawal}", []);
+        $userlist->add_from_sql('userid', "SELECT userid FROM {nit_refund_request}", []);
     }
 
     /**
@@ -113,6 +121,11 @@ class provider implements
             writer::with_context($context)->export_data(
                 [get_string('pluginname', 'local_nit_finance'), 'withdrawals'], (object) ['records' => array_values($withdrawals)]);
         }
+        $refunds = $DB->get_records('nit_refund_request', ['userid' => $userid]);
+        if ($refunds) {
+            writer::with_context($context)->export_data(
+                [get_string('pluginname', 'local_nit_finance'), 'refunds'], (object) ['records' => array_values($refunds)]);
+        }
     }
 
     /**
@@ -128,6 +141,7 @@ class provider implements
         }
         $DB->delete_records('nit_earning');
         $DB->delete_records('nit_withdrawal');
+        $DB->delete_records('nit_refund_request');
     }
 
     /**
@@ -144,6 +158,7 @@ class provider implements
         $userid = $contextlist->get_user()->id;
         $DB->delete_records('nit_earning', ['teacherid' => $userid]);
         $DB->delete_records('nit_withdrawal', ['teacherid' => $userid]);
+        $DB->delete_records('nit_refund_request', ['userid' => $userid]);
     }
 
     /**
@@ -160,5 +175,6 @@ class provider implements
         [$insql, $params] = $DB->get_in_or_equal($userlist->get_userids(), SQL_PARAMS_NAMED);
         $DB->delete_records_select('nit_earning', "teacherid $insql", $params);
         $DB->delete_records_select('nit_withdrawal', "teacherid $insql", $params);
+        $DB->delete_records_select('nit_refund_request', "userid $insql", $params);
     }
 }

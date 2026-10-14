@@ -36,6 +36,15 @@ if ($hassiteconfig || has_capability('local/nit_finance:manage', context_system:
             get_string('teacherpercent', 'local_nit_finance'),
             get_string('teacherpercent_desc', 'local_nit_finance'),
             \local_nit_finance\config::DEFAULT_TEACHER_PERCENT, '/^(100|[1-9]?\d)$/', 4));
+        // Refunds: the student asks within these days, an admin approves; the fee stays with the platform.
+        $settings->add(new admin_setting_heading('local_nit_finance/refundheading',
+            get_string('refundsettings', 'local_nit_finance'), ''));
+        $settings->add(new admin_setting_configtext('local_nit_finance/refund_days',
+            get_string('refunddays', 'local_nit_finance'), get_string('refunddays_desc', 'local_nit_finance'),
+            \local_nit_finance\config::DEFAULT_REFUND_DAYS, '/^\d{1,3}$/', 4));
+        $settings->add(new admin_setting_configtext('local_nit_finance/refund_fee_percent',
+            get_string('refundfee', 'local_nit_finance'), get_string('refundfee_desc', 'local_nit_finance'),
+            \local_nit_finance\config::DEFAULT_REFUND_FEE_PERCENT, '/^(100(\.0{1,2})?|\d{1,2}(\.\d{1,2})?)$/', 6));
         $ADMIN->add('local_nit_finance_cat', $settings);
     }
 
@@ -49,6 +58,12 @@ if ($hassiteconfig || has_capability('local/nit_finance:manage', context_system:
         'local_nit_finance_codes',
         get_string('codesadmin', 'local_nit_finance'),
         new moodle_url('/local/nit_finance/codes.php'),
+        'local/nit_finance:manage'
+    ));
+    $ADMIN->add('local_nit_finance_cat', new admin_externalpage(
+        'local_nit_finance_refunds',
+        get_string('refundrequests', 'local_nit_finance'),
+        new moodle_url('/local/nit_finance/manage_refunds.php'),
         'local/nit_finance:manage'
     ));
     $ADMIN->add('local_nit_finance_cat', new admin_externalpage(

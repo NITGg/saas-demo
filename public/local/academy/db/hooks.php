@@ -38,6 +38,11 @@ $callbacks = [
         'callback' => [\local_academy\local\forgot_password::class, 'after_config'],
     ],
     [
+        // course/dndupload.php: a file dropped on the course page is a File lesson too (BUG-039).
+        'hook' => \core\hook\after_config::class,
+        'callback' => [\local_academy\local\file_lessons::class, 'after_config'],
+    ],
+    [
         // A student's own phone stays valid and unique on every page that saves the account.
         'hook' => \core_user\hook\before_user_updated::class,
         'callback' => [\local_academy\local\student_rules::class, 'before_user_updated'],

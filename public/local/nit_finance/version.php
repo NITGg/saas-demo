@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_nit_finance';
-$plugin->version   = 2026100600;          // Free preview of paid video lessons.
+$plugin->version   = 2026101400;          // Refund requests (grace period, fee, to wallet).
 $plugin->requires  = 2024100700;              // Moodle 4.5 LTS baseline.
 $plugin->supported = [405, 502];
 $plugin->maturity  = MATURITY_ALPHA;

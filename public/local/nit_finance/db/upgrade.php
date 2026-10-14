@@ -79,5 +79,13 @@ function xmldb_local_nit_finance_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026100600, 'local', 'nit_finance');
     }
 
+    if ($oldversion < 2026101400) {
+        // Refund requests: the student asks within the grace period, an admin approves or rejects.
+        if (!$dbman->table_exists('nit_refund_request')) {
+            $dbman->install_one_table_from_xmldb_file(__DIR__ . '/install.xml', 'nit_refund_request');
+        }
+        upgrade_plugin_savepoint(true, 2026101400, 'local', 'nit_finance');
+    }
+
     return true;
 }
