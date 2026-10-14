@@ -26,10 +26,10 @@
  * SAFE BY DEFAULT: runs as a dry-run (reports only). Pass --execute to write.
  * Idempotent: already-encrypted values are skipped, so it is safe to re-run.
  *
- * NOTE: these settings use admin_setting_configpasswordunmask, which stores the
- * value as PLAINTEXT in the DB. So EDITING any of them later via the admin
- * settings UI overwrites the ciphertext with plaintext again — re-run this CLI
- * after any such edit. No cache purge is needed afterwards.
+ * NOTE: these settings now use \local_nit_core\admin\admin_setting_encryptedpasswordunmask,
+ * which encrypts on save and decrypts for display. So editing one via the admin UI
+ * keeps it encrypted at rest — you no longer need to re-run this CLI afterwards.
+ * This backfill is mainly for existing/legacy plaintext values. No cache purge needed.
  *
  * Usage (from the Moodle web root `public/`, or via docker):
  *   php local/nit_core/cli/encrypt_config_secrets.php               # dry-run report
@@ -73,8 +73,8 @@ if ($options['help']) {
     echo "Safe to re-run: values already encrypted are skipped (idempotent).\n\n";
     echo "After encrypting, the consuming code reads these via \\local_nit_core\\helper\\crypto::config_secret(),\n";
     echo "which decrypts them transparently, so the plugins keep working. No cache purge is required.\n\n";
-    echo "CAVEAT: these settings use configpasswordunmask, which stores plaintext in the DB — editing one\n";
-    echo "via the admin settings UI replaces the ciphertext with plaintext again, so re-run this CLI after.\n";
+    echo "These settings use admin_setting_encryptedpasswordunmask (encrypt-on-save, decrypt-on-display),\n";
+    echo "so editing one via the admin UI keeps it encrypted — no need to re-run this CLI after an edit.\n";
     exit(0);
 }
 

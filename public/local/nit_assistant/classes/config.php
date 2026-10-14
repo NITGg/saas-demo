@@ -34,7 +34,7 @@ final class config {
         'maxturninput' => 30000,
         'maxturnoutput' => 1500,
         'maxconvmessages' => 60,
-        'turntimeout' => 30,
+        'turntimeout' => 60,
     ];
 
     /** Messages of history sent to the model. */
@@ -66,6 +66,71 @@ final class config {
      */
     public static function daily_budget(): float {
         return max(0.0, (float) (get_config('local_nit_assistant', 'dailybudget') ?: 0));
+    }
+
+    /**
+     * Remember why the last model call failed, for admins (Usage & cost page).
+     *
+     * @param \Throwable $e
+     * @return void
+     */
+    public static function record_error(\Throwable $e): void {
+        $detail = $e instanceof \moodle_exception && !empty($e->debuginfo) ? $e->debuginfo : $e->getMessage();
+        $detail = \local_nit_assistant\security\redaction::text(\core_text::substr(trim((string) $detail), 0, 500));
+        set_config('lasterror', json_encode(['time' => time(), 'message' => $detail]), 'local_nit_assistant');
+        // Also in the PHP error log (docker logs / the web server's error log), one line per failure —
+        // debugging() would hide it unless developer debugging is on.
+        // phpcs:ignore moodle.PHP.ForbiddenFunctions.FoundWithAlternative
+        error_log('local_nit_assistant: AI call failed: ' . preg_replace('/\s+/', ' ', $detail));
+    }
+
+    /**
+     * The last model error, if any.
+     *
+     * @return array|null ['time', 'message']
+     */
+    public static function last_error(): ?array {
+        $e = json_decode((string) get_config('local_nit_assistant', 'lasterror'), true);
+        return is_array($e) && !empty($e['message']) ? $e : null;
+    }
+
+    /**
+     * May visitors (not signed in) chat?
+     *
+     * @return bool
+     */
+    public static function visitors(): bool {
+        $value = get_config('local_nit_assistant', 'visitors');
+        return $value === false || (bool) $value;
+    }
+
+    /**
+     * Messages one sender may send per hour (four times this per day).
+     *
+     * @return int
+     */
+    public static function hourly_limit(): int {
+        return max(1, (int) (get_config('local_nit_assistant', 'hourlylimit') ?: 30));
+    }
+
+    /**
+     * The team's working hours as the academy wrote them (may hold {mlang} parts).
+     *
+     * @return string
+     */
+    public static function working_hours(): string {
+        return trim((string) get_config('local_nit_assistant', 'workinghours'));
+    }
+
+    /**
+     * The first message shown when the chat opens, in a language.
+     *
+     * @param string $lang ar | en
+     * @return string
+     */
+    public static function greeting(string $lang): string {
+        $text = \local_nit_assistant\tools\sales\helper::ml((string) get_config('local_nit_assistant', 'greeting'), $lang);
+        return $text !== '' ? $text : get_string_manager()->get_string('greeting_default', 'local_nit_assistant', null, $lang);
     }
 
     /**

@@ -42,6 +42,7 @@ final class provider implements
         $collection->add_database_table('local_nit_asst_conv', [
             'userid' => 'privacy:metadata:conv:userid', 'lang' => 'privacy:metadata:conv:lang',
             'summary' => 'privacy:metadata:conv:summary', 'timecreated' => 'privacy:metadata:conv:timecreated',
+            'phone' => 'privacy:metadata:conv:phone',
         ], 'privacy:metadata:conv');
         $collection->add_database_table('local_nit_asst_msg', [
             'content' => 'privacy:metadata:msg:content', 'timecreated' => 'privacy:metadata:msg:timecreated',
@@ -52,6 +53,26 @@ final class provider implements
         $collection->add_database_table('local_nit_asst_event', [
             'userid' => 'privacy:metadata:event:userid', 'cost' => 'privacy:metadata:event:cost',
         ], 'privacy:metadata:event');
+        $collection->add_database_table('local_nit_asst_lead', [
+            'userid' => 'privacy:metadata:lead:userid', 'name' => 'privacy:metadata:lead:name',
+            'phone' => 'privacy:metadata:lead:phone', 'email' => 'privacy:metadata:lead:email',
+            'interest' => 'privacy:metadata:lead:interest',
+        ], 'privacy:metadata:lead');
+        $collection->add_database_table('local_nit_asst_ticket', [
+            'userid' => 'privacy:metadata:ticket:userid', 'subject' => 'privacy:metadata:ticket:subject',
+            'description' => 'privacy:metadata:ticket:description',
+        ], 'privacy:metadata:ticket');
+        $collection->add_database_table('local_nit_asst_followup', [
+            'userid' => 'privacy:metadata:followup:userid', 'title' => 'privacy:metadata:followup:title',
+            'body' => 'privacy:metadata:followup:body', 'timesent' => 'privacy:metadata:followup:timesent',
+        ], 'privacy:metadata:followup');
+        $collection->add_database_table('local_nit_asst_waid', [
+            'phone' => 'privacy:metadata:waid:phone', 'userid' => 'privacy:metadata:waid:userid',
+            'verifiedat' => 'privacy:metadata:waid:verifiedat',
+        ], 'privacy:metadata:waid');
+        $collection->add_external_location_link('whatsapp', [
+            'phone' => 'privacy:metadata:whatsapp:phone', 'messages' => 'privacy:metadata:whatsapp:messages',
+        ], 'privacy:metadata:whatsapp');
         $collection->add_external_location_link('anthropic', [
             'messages' => 'privacy:metadata:anthropic:messages',
         ], 'privacy:metadata:anthropic');
@@ -68,6 +89,10 @@ final class provider implements
             $DB->record_exists('local_nit_asst_conv', ['userid' => $userid])
                 || $DB->record_exists('local_nit_asst_audit', ['userid' => $userid])
                 || $DB->record_exists('local_nit_asst_event', ['userid' => $userid])
+                || $DB->record_exists('local_nit_asst_lead', ['userid' => $userid])
+                || $DB->record_exists('local_nit_asst_ticket', ['userid' => $userid])
+                || $DB->record_exists('local_nit_asst_followup', ['userid' => $userid])
+                || $DB->record_exists('local_nit_asst_waid', ['userid' => $userid])
         ) {
             $list->add_system_context();
         }
@@ -81,7 +106,10 @@ final class provider implements
         if (!$userlist->get_context() instanceof \context_system) {
             return;
         }
-        foreach (['local_nit_asst_conv', 'local_nit_asst_audit', 'local_nit_asst_event'] as $table) {
+        foreach (
+            ['local_nit_asst_conv', 'local_nit_asst_audit', 'local_nit_asst_event', 'local_nit_asst_lead',
+                'local_nit_asst_ticket', 'local_nit_asst_followup', 'local_nit_asst_waid'] as $table
+        ) {
             $userlist->add_from_sql('userid', "SELECT userid FROM {{$table}} WHERE userid > 0", []);
         }
     }
@@ -96,6 +124,7 @@ final class provider implements
             if (!$context instanceof \context_system) {
                 continue;
             }
+            self::export_followups($context, $userid);
             foreach ($DB->get_records('local_nit_asst_conv', ['userid' => $userid], 'timecreated') as $conv) {
                 [$insql, $params] = $DB->get_in_or_equal(['visitor', 'assistant', 'staff'], SQL_PARAMS_NAMED);
                 $msgs = $DB->get_records_select(
@@ -111,6 +140,13 @@ final class provider implements
                         'started' => \core_privacy\local\request\transform::datetime($conv->timecreated),
                         'language' => $conv->lang,
                         'summary' => $conv->summary,
+                        'contact' => array_values(array_map(static fn($l) => [
+                            'name' => $l->name, 'phone' => $l->phone, 'email' => $l->email, 'interest' => $l->interest,
+                        ], $DB->get_records('local_nit_asst_lead', ['convid' => $conv->id]))),
+                        'tickets' => array_values(array_map(static fn($t) => [
+                            'number' => (int) $t->id, 'subject' => $t->subject, 'description' => $t->description,
+                            'status' => $t->status,
+                        ], $DB->get_records('local_nit_asst_ticket', ['convid' => $conv->id, 'userid' => $userid]))),
                         'messages' => array_values(array_map(static fn($m) => [
                             'from' => $m->role === 'visitor' ? 'you' : $m->role,
                             'text' => $m->content,
@@ -119,6 +155,27 @@ final class provider implements
                     ]
                 );
             }
+        }
+    }
+
+    /**
+     * Export the follow-up messages sent to a user.
+     *
+     * @param \context $context
+     * @param int $userid
+     * @return void
+     */
+    private static function export_followups(\context $context, int $userid): void {
+        global $DB;
+        $sent = $DB->get_records('local_nit_asst_followup', ['userid' => $userid, 'status' => 'sent'], 'timesent');
+        if ($sent) {
+            writer::with_context($context)->export_data(
+                [get_string('privacy:followups', 'local_nit_assistant')],
+                (object) ['messages' => array_values(array_map(static fn($f) => [
+                    'title' => $f->title, 'text' => $f->body,
+                    'sent' => \core_privacy\local\request\transform::datetime($f->timesent),
+                ], $sent))]
+            );
         }
     }
 
@@ -134,6 +191,10 @@ final class provider implements
         $DB->delete_records('local_nit_asst_audit');
         $DB->delete_records('local_nit_asst_conv');
         $DB->delete_records('local_nit_asst_event');
+        $DB->delete_records('local_nit_asst_lead');
+        $DB->delete_records('local_nit_asst_ticket');
+        $DB->delete_records('local_nit_asst_followup');
+        $DB->delete_records('local_nit_asst_waid');
     }
 
     /**
@@ -173,9 +234,15 @@ final class provider implements
             [$cin, $cparams] = $DB->get_in_or_equal($convids, SQL_PARAMS_NAMED, 'c');
             $DB->delete_records_select('local_nit_asst_msg', "convid {$cin}", $cparams);
             $DB->delete_records_select('local_nit_asst_audit', "convid {$cin}", $cparams);
+            $DB->delete_records_select('local_nit_asst_lead', "convid {$cin}", $cparams);
+            $DB->delete_records_select('local_nit_asst_ticket', "convid {$cin}", $cparams);
             $DB->delete_records_select('local_nit_asst_conv', "id {$cin}", $cparams);
         }
         $DB->delete_records_select('local_nit_asst_audit', "userid {$insql}", $params);
         $DB->delete_records_select('local_nit_asst_event', "userid {$insql}", $params);
+        $DB->delete_records_select('local_nit_asst_lead', "userid {$insql}", $params);
+        $DB->delete_records_select('local_nit_asst_ticket', "userid {$insql}", $params);
+        $DB->delete_records_select('local_nit_asst_followup', "userid {$insql}", $params);
+        $DB->delete_records_select('local_nit_asst_waid', "userid {$insql}", $params);
     }
 }

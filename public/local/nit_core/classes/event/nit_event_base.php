@@ -43,7 +43,7 @@ abstract class nit_event_base extends \core\event\base {
             'context' => \context_system::instance(),
             'other'   => [
                 'entityclass' => get_class($entity),
-                'entityid'    => (int) ($entityid ?? $entity->get_id()),
+                'entityid'    => (int) ($entityid ?? $entity->get_entity_id()),
             ],
         ]);
         return $event;

@@ -71,7 +71,7 @@ final class entity_base_test extends \advanced_testcase {
         $entity = new reference_entity(0, (object) ['name' => 'alpha']);
         $entity->create();
 
-        $this->assertNotNull($entity->get_id());
+        $this->assertNotNull($entity->get_entity_id());
         $this->assertGreaterThan(0, $entity->get('timecreated'));
         $this->assertGreaterThan(0, $entity->get('usermodified'));
 
@@ -102,7 +102,7 @@ final class entity_base_test extends \advanced_testcase {
     public function test_delete_audits_with_id(): void {
         $entity = new reference_entity(0, (object) ['name' => 'alpha']);
         $entity->create();
-        $id = $entity->get_id();
+        $id = $entity->get_entity_id();
 
         $sink = $this->redirectEvents();
         $entity->delete();

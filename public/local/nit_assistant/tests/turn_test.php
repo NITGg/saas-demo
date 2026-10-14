@@ -111,7 +111,14 @@ final class turn_test extends \advanced_testcase {
         $req = $this->llm->requests[0];
         $this->assertStringContainsString('AI assistant', $req['system']);
         $this->assertSame([['role' => 'user', 'text' => 'What do you teach?']], $req['messages']);
-        $this->assertSame(['get_academy_info'], array_column($req['tools'], 'name'));
+        $this->assertSame(
+            array_column((new \local_nit_assistant\tools\registry())->definitions('sales'), 'name'),
+            array_column($req['tools'], 'name')
+        );
+        $this->assertNotContains('capture_lead', array_column(
+            (new \local_nit_assistant\tools\registry())->definitions('student'),
+            'name'
+        ), 'each mode gets only its own tools');
     }
 
     public function test_tools_run_for_the_signed_in_user_never_who_the_model_says(): void {

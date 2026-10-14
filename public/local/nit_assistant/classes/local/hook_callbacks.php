@@ -42,5 +42,13 @@ final class hook_callbacks {
             }
             return new anthropic_client($key, (float) config::LIMITS['turntimeout']);
         });
+        // WhatsApp Cloud API with the academy's own number (tests replace it too).
+        $hook->add_definition(\local_nit_assistant\whatsapp\cloud::class, static function (): \local_nit_assistant\whatsapp\cloud {
+            $cfg = \local_nit_assistant\whatsapp\cloud::config();
+            if ($cfg === null) {
+                throw new \moodle_exception('error_wanotset', 'local_nit_assistant');
+            }
+            return new \local_nit_assistant\whatsapp\cloud($cfg);
+        });
     }
 }

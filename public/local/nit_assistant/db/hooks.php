@@ -30,4 +30,9 @@ $callbacks = [
         'hook' => \core\hook\di_configuration::class,
         'callback' => [\local_nit_assistant\local\hook_callbacks::class, 'di_configuration'],
     ],
+    [
+        // The chat button on the site's pages.
+        'hook' => \core\hook\output\before_footer_html_generation::class,
+        'callback' => [\local_nit_assistant\local\launcher::class, 'before_footer'],
+    ],
 ];

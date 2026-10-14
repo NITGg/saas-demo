@@ -56,10 +56,13 @@ final class anthropic_client implements client {
      */
     public function __construct(string $apikey, float $timeout = 30.0, ?ClientInterface $transporter = null) {
         sdk_loader::register();
-        $transporter ??= new \core\http_client(['timeout' => $timeout, 'connect_timeout' => 10]);
+        // A reply streams for a while (tool calls, then a long answer): give the whole response time,
+        // and cut only when nothing arrives for $timeout seconds.
+        $total = max(120.0, $timeout * 2);
+        $transporter ??= new \core\http_client(['timeout' => $total, 'read_timeout' => $timeout, 'connect_timeout' => 10]);
         $this->sdk = new AnthropicClient(
             apiKey: $apikey,
-            requestOptions: ['transporter' => $transporter, 'maxRetries' => 1, 'timeout' => $timeout],
+            requestOptions: ['transporter' => $transporter, 'maxRetries' => 1, 'timeout' => $total],
         );
     }
 
@@ -106,11 +109,17 @@ final class anthropic_client implements client {
 
         $text = '';
         $calls = [];
+        $raw = [];
         foreach ($msg->content as $block) {
             if ($block->type === 'text') {
                 $text .= $block->text;
+                $raw[] = ['type' => 'text', 'text' => (string) $block->text];
             } else if ($block instanceof BetaToolUseBlock) {
-                $calls[] = ['id' => $block->id, 'name' => $block->name, 'input' => $block->input];
+                $input = self::tool_input($block);
+                $calls[] = ['id' => $block->id, 'name' => $block->name, 'input' => $input];
+                $raw[] = ['type' => 'tool_use', 'id' => $block->id, 'name' => $block->name, 'input' => $input];
+            } else {
+                $raw[] = $block; // Anything else is replayed as the SDK gave it.
             }
         }
         $u = $msg->usage;
@@ -125,8 +134,26 @@ final class anthropic_client implements client {
                 (int) ($u->cacheCreationInputTokens ?? 0)
             ),
             $msg->model,
-            $msg->content,
+            $raw,
         );
+    }
+
+    /**
+     * A tool call's input as an array. A tool without parameters is called with an empty
+     * input, which the SDK can't hand back as ->input ("property is overridden"), so read the
+     * raw payload: an array, a JSON string (possibly empty) or nothing.
+     *
+     * @param BetaToolUseBlock $block
+     * @return array
+     */
+    private static function tool_input(BetaToolUseBlock $block): array {
+        $input = $block['input'] ?? null;
+        if (is_string($input)) {
+            $input = trim($input) === '' ? [] : json_decode($input, true);
+        } else if (is_object($input)) {
+            $input = json_decode(json_encode($input), true);
+        }
+        return is_array($input) ? $input : [];
     }
 
     /**
@@ -172,8 +199,17 @@ final class anthropic_client implements client {
                 return ['role' => 'user', 'content' => (string) $m['text']];
             }
             if ($m['role'] === 'assistant') {
-                // Inside a turn the raw blocks are replayed unchanged (thinking blocks are bound to them).
-                return ['role' => 'assistant', 'content' => !empty($m['raw']) ? $m['raw'] : ((string) $m['text'] ?: '…')];
+                // Inside a turn the reply's blocks are replayed; a tool call's empty input must go back as {}.
+                if (empty($m['raw'])) {
+                    return ['role' => 'assistant', 'content' => (string) $m['text'] ?: '…'];
+                }
+                $content = array_map(static function ($b) {
+                    if (is_array($b) && ($b['type'] ?? '') === 'tool_use' && empty($b['input'])) {
+                        $b['input'] = new \stdClass();
+                    }
+                    return $b;
+                }, $m['raw']);
+                return ['role' => 'assistant', 'content' => $content];
             }
             return ['role' => 'user', 'content' => array_map(static fn(array $r): array => array_filter([
                 'type' => 'tool_result',

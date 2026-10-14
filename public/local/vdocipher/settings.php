@@ -14,7 +14,7 @@ if ($hassiteconfig) {
 
     // The VdoCipher API secret. Stored unmasked in config but never sent to any
     // client — only the server uses it to sign requests / mint OTPs.
-    $settings->add(new admin_setting_configpasswordunmask(
+    $settings->add(new \local_nit_core\admin\admin_setting_encryptedpasswordunmask(
         'local_vdocipher/apisecret',
         get_string('apisecret', 'local_vdocipher'),
         get_string('apisecret_desc', 'local_vdocipher'),

@@ -133,6 +133,41 @@ final class anthropic_client_test extends \basic_testcase {
         $this->assertCount(2, $res->raw, 'raw blocks are kept for replay within the turn');
     }
 
+    public function test_a_tool_called_with_no_input_is_read_and_replayed_as_an_empty_object(): void {
+        // Tools without parameters (list_packages…) are called with {}; the SDK can't read that back as ->input.
+        $reply = self::sse([
+            ['message_start', ['type' => 'message_start', 'message' => ['id' => 'msg_2', 'type' => 'message',
+                'role' => 'assistant', 'model' => 'claude-sonnet-5-5', 'content' => [], 'stop_reason' => null,
+                'stop_sequence' => null, 'usage' => ['input_tokens' => 10, 'output_tokens' => 1]]]],
+            ['content_block_start', ['type' => 'content_block_start', 'index' => 0,
+                'content_block' => ['type' => 'tool_use', 'id' => 'toolu_9', 'name' => 'list_packages',
+                    'input' => new \stdClass()]]],
+            ['content_block_delta', ['type' => 'content_block_delta', 'index' => 0,
+                'delta' => ['type' => 'input_json_delta', 'partial_json' => '']]],
+            ['content_block_stop', ['type' => 'content_block_stop', 'index' => 0]],
+            ['message_delta', ['type' => 'message_delta', 'delta' => ['stop_reason' => 'tool_use', 'stop_sequence' => null],
+                'usage' => ['output_tokens' => 5]]],
+            ['message_stop', ['type' => 'message_stop']],
+        ]);
+        $client = $this->client([$reply, self::reply()]);
+        $res = $client->call(self::request());
+        $this->assertSame([['id' => 'toolu_9', 'name' => 'list_packages', 'input' => []]], $res->toolcalls);
+
+        // Next round of the turn: the call is replayed, then its result.
+        $next = self::request();
+        $next['messages'] = [
+            ['role' => 'user', 'text' => 'Tell me about live lessons'],
+            ['role' => 'assistant', 'text' => '', 'raw' => $res->raw],
+            ['role' => 'tool_results', 'results' => [['id' => 'toolu_9', 'content' => '{"ok":true}', 'iserror' => false]]],
+        ];
+        $client->call($next);
+        $body = json_decode((string) $this->sent[1]['request']->getBody());
+        $replayed = $body->messages[1]->content[0];
+        $this->assertSame('tool_use', $replayed->type);
+        $this->assertSame('toolu_9', $replayed->id);
+        $this->assertInstanceOf(\stdClass::class, $replayed->input, 'input goes back as {} not []');
+    }
+
     public function test_the_request_caches_the_stable_prompt_and_opts_into_refusal_fallback_on_sonnet(): void {
         $this->client([self::reply()])->call(self::request());
         $req = $this->sent[0]['request'];

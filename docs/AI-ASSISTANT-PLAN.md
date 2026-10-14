@@ -172,3 +172,158 @@ like nit2.
 5. **Model access:** the **Claude API directly** (no core_ai / Bedrock).
 6. **WhatsApp:** per academy, configured in the settings like nit2 — **built last** (after phase 4).
 7. **Scope:** work only on **bassthalk** (branch `bassthalk-clone`); pushes go to that branch.
+
+---
+
+## 9. Phase 1 — what was built (sales assistant)
+
+**Visitors' chat:** a chat button on every page (hook `before_footer_html_generation`; not in the
+app WebView, chrome-free layouts or admin pages), RTL, a full-screen sheet on phones. Replies
+stream from `chat.php` (server-sent events); `api.php` returns the history and starts a new chat.
+A visitor is known by a random key kept in their browser (only its hash is stored); the chat follows
+them when they sign in and is not shown again after they sign out. The mobile app uses the web
+services `local_nit_assistant_send_message` / `local_nit_assistant_get_messages`.
+
+**Sales tools** (all read the academy's own plugins, so prices/offers match the checkout):
+`list_subscriptions`, `list_packages`, `search_courses`, `get_course`, `list_offers` (never coupon
+codes), `preview_price` (offer + a coupon the visitor typed; 5 coupon checks per chat),
+`find_teachers` (no phone/email), `search_help` (CMS pages, articles, the academy's notes; Arabic
+spelling variants), `start_checkout` (link only), `capture_lead` (only with consent),
+`handoff_to_human`, plus `get_academy_info`.
+
+**Staff side** (Site administration → Plugins → Local plugins → AI assistant):
+AI Inbox (waiting first; take over, reply — replying takes over —, hand back, close; refreshes
+itself), Leads (status + notes), Usage & cost (30 days, per model), Settings. Alerts (bell, push,
+email) go to users with `local/nit_assistant:viewinbox` — the site admins if nobody has it —
+through `local_nit_notifications`, provider `local_nit_assistant/staffalert`.
+
+**Settings added:** visitors can chat, greeting, notes for the assistant (one topic per paragraph),
+team working hours, messages per hour per person (×4 per day).
+
+**Tests:** 53 PHPUnit tests; mutation checks for the safety rules. **Evals:** 40 AR/EN cases in
+`tests/evals/sales_cases.json`, run with the real model on demand:
+`NIT_ASSISTANT_EVAL_KEY=sk-ant-… vendor/bin/phpunit --testsuite local_nit_assistant_testsuite --group nit_assistant_eval`
+(test environment only; costs a few cents per run). Gate: 90% overall, 100% of safety cases.
+
+**To switch it on for an academy:** set `$CFG->nit_crypto_key` (if not set), then in the settings
+turn it on, paste the academy's Anthropic key, set a daily budget, write the notes and working
+hours, and give the staff role `local/nit_assistant:viewinbox` + `:reply`.
+
+**Known:** Flex entities (`local_nit_core\base\entity::get_id()` is public) throw under developer
+debugging — a separate fix; the assistant's Flex tests switch developer debugging off meanwhile.
+
+---
+
+## 10. Phase 2 — what was built (student support)
+
+**Mode, decided by the server on every message:** `student` when the signed-in user has a
+student role in any course, an active subscription or an active Flex package; otherwise `sales`
+(teacher mode comes in phase 3). A visitor who buys a plan is helped as a student from the next
+message.
+
+**Student tools** (each reads only the signed-in student's own data — the model never passes a
+user id): `my_subscription` (active plan, end date, days left, courses it opens, past plans),
+`my_flex` (credits available/held, package expiry, last movements), `my_lessons` (requests,
+upcoming with the join link once the teacher started the room, past; the cancellation and
+absence rules), `my_live_sessions` (group classes; link from 30 min before), `my_courses`
+(completion %, watched %, last lesson, certificates), `my_wallet`, `my_payments` (status in
+plain words, invoice number, try-again link for failed ones), `lesson_video_help` (points to
+the lesson's own video assistant), `open_ticket` (write; 3 per student per day; card numbers
+masked). Students can still use the catalogue tools, `start_checkout` and `handoff_to_human`.
+
+**Staff side:** a Tickets page (open first; status open / in progress / resolved / closed,
+team notes, link to the conversation) and a ticket alert.
+
+**Tests:** student-tool tests built around "another student's data never shows". **Evals:**
+20 student cases (`tests/evals/student_cases.json`, privacy cases included), run with
+`--group nit_assistant_eval` like the sales ones.
+
+---
+
+## 11. Phase 3 — what was built (teacher assistant)
+
+**Mode:** `teacher` for anyone with a teacher / editing-teacher role (or teacher earnings or a
+teacher wallet), checked before the student test.
+
+**Teacher tools** (only the signed-in teacher's own data): `my_teaching` (requests waiting for
+their answer with the student's note, today's and upcoming lessons, past lessons, the rules for
+starting the room and marking a student absent), `my_classes` (upcoming group classes, invited
+count, room link from 30 min before), `my_earnings` (available to withdraw, total earned, share
+%, latest earnings, withdrawal requests with status and reason — payout accounts masked to the
+last 4 characters), `my_availability` (bookable or why not, subjects, weekly hours, credits per
+lesson). Teachers can also use `search_help`, `open_ticket` and `handoff_to_human`.
+
+**Still read-only:** it never accepts/declines requests, starts rooms, changes hours or requests
+withdrawals — it explains the step and links the page. Never gives students' contact details.
+
+**Tests:** teacher-tool tests (another teacher's lessons/earnings never show, accounts masked).
+**Evals:** 12 teacher cases in `tests/evals/teacher_cases.json`.
+
+---
+
+## 12. Phase 4 — what was built (proactive follow-ups)
+
+The academy already reminds students automatically before a subscription or a Flex package
+expires, so follow-ups cover what nothing else does. Each morning (task
+`local_nit_assistant\task\followups`, 09:00) the assistant drafts a short message, in the student's
+own language, when:
+
+| Kind | When |
+|---|---|
+| `checkout_unpaid` | a payment failed / expired / was cancelled 1–7 days ago and they haven't bought the item since (link: try again) |
+| `winback` | their subscription ended 3–30 days ago and they have no plan now (link: plans) |
+| `chat_interest` | the assistant gave them a buying link 2–7 days ago and they haven't bought it (link: the item) |
+| `flex_idle` | an active package has credits left and they haven't asked for a lesson in 14 days (link: book) |
+
+**Nothing is sent without staff approval:** the Follow-ups page lists the drafts; staff may edit
+the title and text, then Send (bell, app push, email — as each student's notification preferences
+allow, provider `local_nit_assistant/followup`) or Dismiss. Each subject gets at most one draft
+ever; nobody gets more than one follow-up per cooldown (default 7 days); suspended or unconfirmed
+accounts are skipped. Staff get a daily alert when drafts are waiting, and when leads have not
+been contacted for 2 days.
+
+**Settings:** follow-ups on/off (off by default), days between follow-ups. **Privacy:** sent
+follow-ups are exported and deleted with the user's data.
+
+**Tests:** 7 follow-up tests (who gets one and who must not, language, single send, cooldown,
+dismiss, the daily task); 78 in total.
+
+---
+
+## 13. WhatsApp per academy — what was built
+
+Each academy answers on **its own WhatsApp number** (Meta WhatsApp Cloud API), set up in the
+plugin settings — the same design as nit2.
+
+**Settings:** AI answers on WhatsApp (off → messages go straight to the AI Inbox), phone number ID,
+WhatsApp Business Account ID, access token and app secret (both stored encrypted), verify token,
+Graph API version. **WhatsApp status page** (Site admin → … → AI assistant → WhatsApp): a set-up
+checklist, the webhook URL + verify token to paste into Meta, a live token check, whether the
+WhatsApp account is linked to the app (with a **Link** button — Meta delivers nothing until it is),
+and a test message (`hello_world` template).
+
+**Webhook** (`/local/nit_assistant/webhook.php`): Meta's handshake; every POST must carry a valid
+`X-Hub-Signature-256` (else 401, nothing stored); messages for another number id are ignored; a
+message id is handled once (Meta retries); Meta gets 200 at once, the reply follows.
+
+**Incoming messages** run the same assistant as the website: one conversation per number, the same
+abuse limits (per number), text only (media → a short notice), blue ticks, and nothing from the AI
+while a person has the chat. Replies are plain text with the links appended.
+
+**Accounts:** a number alone never identifies anyone. The assistant asks for the account email
+(`link_whatsapp_account`, WhatsApp only); a 6-digit code is emailed to that account (same answer
+whether it exists or not; 3 codes/hour, 5 tries, 15 minutes). The code is checked **before** the
+model and never stored (only its hash while pending). Once verified, the number is linked for 90
+days and the user gets the student/teacher help with their own data.
+
+**Staff replies** from the AI Inbox are sent on WhatsApp, only within 24 hours of the user's last
+message (Meta's rule); a failed send is shown on the message ("Not delivered").
+
+**Meta set-up for each academy:** a Meta business + app with WhatsApp, the academy's number
+added and verified, a permanent System User token (whatsapp_business_messaging +
+whatsapp_business_management), the webhook URL + verify token, the "messages" field subscribed,
+then **Link** on the status page.
+
+**Tests:** 10 WhatsApp tests (signatures, payloads, the reply flow, a person's chats, AI off,
+media, linking by code — and the code never stored —, staff replies and the 24-hour window);
+88 in total.

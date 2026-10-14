@@ -40,29 +40,57 @@ final class registry {
     public function __construct(?array $tools = null) {
         $this->tools = $tools ?? [
             new common\academy_info(),
+            new common\search_help(),
+            new sales\list_subscriptions(),
+            new sales\list_packages(),
+            new sales\search_courses(),
+            new sales\get_course(),
+            new sales\list_offers(),
+            new sales\preview_price(),
+            new sales\find_teachers(),
+            new sales\start_checkout(),
+            new sales\capture_lead(),
+            new student\my_subscription(),
+            new student\my_flex(),
+            new student\my_lessons(),
+            new student\my_live_sessions(),
+            new student\my_courses(),
+            new student\my_wallet(),
+            new student\my_payments(),
+            new student\lesson_video_help(),
+            new student\open_ticket(),
+            new teacher\my_teaching(),
+            new teacher\my_classes(),
+            new teacher\my_earnings(),
+            new teacher\my_availability(),
+            new common\link_whatsapp_account(),
+            new common\handoff_to_human(),
         ];
     }
 
     /**
-     * Tools offered in a mode.
+     * Tools offered in a mode on a channel.
      *
      * @param string $mode
+     * @param string $channel web | app | whatsapp
      * @return tool[]
      */
-    public function for_mode(string $mode): array {
-        return array_values(array_filter($this->tools, static fn(tool $t): bool => in_array($mode, $t->modes(), true)));
+    public function for_mode(string $mode, string $channel = 'web'): array {
+        return array_values(array_filter($this->tools, static fn(tool $t): bool => in_array($mode, $t->modes(), true)
+            && in_array($channel, $t->channels(), true)));
     }
 
     /**
      * Definitions for the model.
      *
      * @param string $mode
+     * @param string $channel
      * @return array list of ['name', 'description', 'schema']
      */
-    public function definitions(string $mode): array {
+    public function definitions(string $mode, string $channel = 'web'): array {
         return array_map(static fn(tool $t): array => [
             'name' => $t->name(), 'description' => $t->description(), 'schema' => $t->schema(),
-        ], $this->for_mode($mode));
+        ], $this->for_mode($mode, $channel));
     }
 
     /**
@@ -89,7 +117,7 @@ final class registry {
                 $tool = $t;
             }
         }
-        if (!$tool || !in_array($ctx->mode, $tool->modes(), true)) {
+        if (!$tool || !in_array($ctx->mode, $tool->modes(), true) || !in_array($ctx->channel, $tool->channels(), true)) {
             return $done(['ok' => false, 'code' => 'not_authorized', 'message' => 'This tool is not available here.']);
         }
         if (!is_array($input)) {
@@ -114,11 +142,15 @@ final class registry {
                 return $done(json_decode($prev, true));
             }
         }
+        // The academy's plugins resolve names and texts in the current language: use the conversation's.
+        $previous = force_current_language($ctx->lang);
         try {
             $result = $tool->run($ctx, $input);
         } catch (\Throwable $e) {
             debugging("local_nit_assistant: tool {$name} failed: " . $e->getMessage(), DEBUG_DEVELOPER);
             $result = ['ok' => false, 'code' => 'service_unavailable', 'message' => 'Could not do that right now.'];
+        } finally {
+            force_current_language($previous);
         }
         if ($key !== null && !empty($result['ok'])) {
             try {
