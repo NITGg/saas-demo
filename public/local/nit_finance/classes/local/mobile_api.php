@@ -1156,11 +1156,11 @@ final class mobile_api {
     /**
      * A refund request for the app.
      *
-     * @param stdClass $r nit_refund_request row
+     * @param \stdClass $r nit_refund_request row
      * @param array $names user id => full name (admin lists)
      * @return array
      */
-    private static function refund(stdClass $r, array $names = []): array {
+    private static function refund(\stdClass $r, array $names = []): array {
         return [
             'id' => (int) $r->id,
             'status' => (string) $r->status,
@@ -1208,8 +1208,8 @@ final class mobile_api {
                 + self::money('refund', $item['refund_minor']) + ['currency' => self::CURRENCY];
         }
         return [
-            'refund_days' => local_nit_financeconfig::refund_days(),
-            'fee_percent' => local_nit_financeconfig::refund_fee_percent(),
+            'refund_days' => \local_nit_finance\config::refund_days(),
+            'fee_percent' => \local_nit_finance\config::refund_fee_percent(),
             'refundable' => $refundable,
             'requests' => array_map(fn($r) => self::refund($r), refunds::list('', $userid)),
         ];

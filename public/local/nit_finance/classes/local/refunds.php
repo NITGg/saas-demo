@@ -395,8 +395,9 @@ final class refunds {
                 'amount_minor' => (int) round((float) $tx->amount * 100)];
             if ($type === self::COURSE && (int) $tx->courseid > 1) {
                 $course = $DB->get_record('course', ['id' => $tx->courseid], 'id, fullname');
-                if (!$course || !is_enrolled(\context_course::instance($course->id), $userid, '', true)) {
-                    continue; // Deleted, or already taken out of the course.
+                if (!$course || !is_enrolled(\context_course::instance($course->id), $userid, '', true)
+                        || access::unenrolled_since($userid, (int) $course->id, (int) $tx->timecreated)) {
+                    continue; // Deleted, or taken out of the course after paying (even if back in now).
                 }
                 $out[] = $base + ['key' => self::SOURCE_ONLINE . ':' . self::COURSE . ':' . $tx->id, 'itemtype' => self::COURSE,
                     'itemid' => (int) $course->id, 'courseid' => (int) $course->id, 'purchaseid' => 0,

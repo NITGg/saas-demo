@@ -128,7 +128,7 @@ final class refunds_test extends \advanced_testcase {
 
     public function test_lesson_refund_unenrols_only_if_the_lesson_got_the_student_in(): void {
         $cm = $this->getDataGenerator()->create_module('page', ['course' => $this->course->id]);
-        purchases::set_price((int) $cm->cmid, (int) $this->course->id, 5000);
+        catalog::set_price((int) $cm->cmid, (int) $this->course->id, 5000);
         $student = $this->student(10000);
         purchases::buy_with_wallet($student, (int) $cm->cmid);
         $this->assertTrue($this->enrolled($student));
@@ -143,7 +143,7 @@ final class refunds_test extends \advanced_testcase {
     public function test_the_same_lesson_bought_again_after_a_refund_can_be_refunded_again(): void {
         global $DB;
         $cm = $this->getDataGenerator()->create_module('page', ['course' => $this->course->id]);
-        purchases::set_price((int) $cm->cmid, (int) $this->course->id, 5000);
+        catalog::set_price((int) $cm->cmid, (int) $this->course->id, 5000);
         $student = $this->student(10000);
         purchases::buy_with_wallet($student, (int) $cm->cmid);
         refunds::process((int) get_admin()->id,
@@ -209,6 +209,48 @@ final class refunds_test extends \advanced_testcase {
         $this->assertSame('refunded', $DB->get_field('local_payments_transactions', 'status', ['id' => $txid]));
         $this->assertEquals(135, $DB->get_field('local_payments_refunds', 'amount', ['transaction_id' => $txid]));
         $this->assertFalse($this->enrolled($student));
+    }
+
+    /**
+     * The admin takes the student out of the course (logged, as on a real site).
+     *
+     * @param int $userid
+     */
+    private function admin_unenrols(int $userid): void {
+        global $DB;
+        $this->preventResetByRollback();
+        set_config('enabled_stores', 'logstore_standard', 'tool_log');
+        set_config('buffersize', 0, 'logstore_standard');
+        get_log_manager(true);
+        $this->setAdminUser();
+        $instance = $DB->get_record('enrol', ['courseid' => $this->course->id, 'enrol' => 'manual'], '*', MUST_EXIST);
+        enrol_get_plugin('manual')->unenrol_user($instance, $userid);
+    }
+
+    public function test_wallet_purchase_is_not_refundable_after_the_admin_unenrols(): void {
+        $student = $this->student(30000);
+        wallet_checkout::buy_course($student, (int) $this->course->id);
+
+        $this->admin_unenrols($student);
+
+        $this->assertSame([], refunds::refundable($student));
+    }
+
+    public function test_online_payment_is_not_refundable_after_the_admin_unenrols_even_if_bought_again(): void {
+        global $DB;
+        $student = $this->student(30000);
+        $DB->insert_record('local_payments_transactions', (object) ['userid' => $student,
+            'courseid' => $this->course->id, 'provider_id' => 0, 'order_id' => 'R3', 'idempotency_key' => 'r3',
+            'amount' => 150, 'currency' => 'EGP', 'status' => 'completed', 'country' => 'EG',
+            'metadata' => json_encode(['item_type' => 'course']), 'expires_at' => 0,
+            'timecreated' => time() - 60, 'timemodified' => time() - 60]);
+        \local_payments\enrollment_handler::enrol_user($student, (int) $this->course->id);
+
+        $this->admin_unenrols($student);
+        wallet_checkout::buy_course($student, (int) $this->course->id);
+
+        $this->assertTrue($this->enrolled($student));
+        $this->assertSame(refunds::SOURCE_WALLET, $this->only_refundable($student)['source']);
     }
 
     public function test_access_from_a_subscription_is_kept(): void {

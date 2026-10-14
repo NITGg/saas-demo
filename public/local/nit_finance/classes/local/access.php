@@ -124,6 +124,55 @@ final class access {
     }
 
     /**
+     * Was the student taken out of the course (an enrolment deleted) at or after $since?
+     * An online payment made before that no longer counts. Read from the standard log,
+     * so it is false when that log store is off.
+     *
+     * @param int $userid
+     * @param int $courseid
+     * @param int $since
+     * @return bool
+     */
+    public static function unenrolled_since(int $userid, int $courseid, int $since): bool {
+        global $DB;
+        if (!$DB->get_manager()->table_exists('logstore_standard_log')) {
+            return false;
+        }
+        return $DB->record_exists_select('logstore_standard_log',
+            'courseid = :courseid AND relateduserid = :userid AND eventname = :eventname AND timecreated >= :since',
+            ['courseid' => $courseid, 'userid' => $userid, 'eventname' => '\core\event\user_enrolment_deleted',
+                'since' => $since]);
+    }
+
+    /**
+     * Did the student pay for this course or a lesson in it, and still keep it?
+     * A wallet/code purchase (revoked when they are unenrolled), or a completed online
+     * course payment they were not unenrolled after.
+     *
+     * @param int $userid
+     * @param int $courseid
+     * @return bool
+     */
+    public static function paid_for_course(int $userid, int $courseid): bool {
+        global $DB;
+        if ($DB->record_exists('nit_purchase', ['userid' => $userid, 'courseid' => $courseid, 'status' => 'active'])) {
+            return true;
+        }
+        if (!$DB->get_manager()->table_exists('local_payments_transactions')) {
+            return false;
+        }
+        $paid = $DB->get_fieldset_select('local_payments_transactions', 'timecreated',
+            "userid = :userid AND courseid = :courseid AND status = 'completed'",
+            ['userid' => $userid, 'courseid' => $courseid]);
+        foreach ($paid as $time) {
+            if (!self::unenrolled_since($userid, $courseid, (int) $time)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Is the course itself sold (has an active online price)?
      *
      * @param int $courseid

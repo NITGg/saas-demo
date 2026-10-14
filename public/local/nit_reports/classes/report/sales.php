@@ -626,7 +626,8 @@ class sales extends base {
         }
         $rows = [];
         foreach ($groups as $g) {
-            $rows[] = array_diff_key($g, ['n' => 1, 'money' => 1]) + ['count' => self::num($g['n']),
+            // The raw refunded count is dropped too, so the formatted one below is shown.
+            $rows[] = array_diff_key($g, ['n' => 1, 'money' => 1, 'refunded' => 1]) + ['count' => self::num($g['n']),
                 'revenue' => self::moneys($g['money']), 'refunded' => self::num($g['refunded'] ?? 0),
                 '_sort' => ['count' => $g['n'], 'revenue' => array_sum($g['money']), 'refunded' => $g['refunded'] ?? 0]];
         }

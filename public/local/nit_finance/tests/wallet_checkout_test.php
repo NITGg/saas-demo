@@ -170,6 +170,22 @@ final class wallet_checkout_test extends \advanced_testcase {
             ['userid' => $student, 'itemid' => $this->course->id, 'status' => 'active']));
     }
 
+    public function test_subscription_cancel_keeps_course_paid_online(): void {
+        global $DB;
+        $student = $this->student(10000);
+        $DB->insert_record('local_payments_transactions', (object) ['userid' => $student,
+            'courseid' => $this->course->id, 'provider_id' => 0, 'order_id' => 'S1', 'idempotency_key' => 's1',
+            'amount' => 200, 'currency' => 'EGP', 'status' => 'completed', 'country' => 'EG',
+            'metadata' => json_encode(['item_type' => 'course']), 'expires_at' => 0,
+            'timecreated' => time(), 'timemodified' => time()]);
+        \local_payments\enrollment_handler::enrol_user($student, (int) $this->course->id);
+        $sub = wallet_checkout::buy_subscription($student, $this->plan(100));
+
+        \local_nit_subscriptions\subscription_purchase_manager::unsubscribe((int) $sub->id);
+
+        $this->assertTrue(is_enrolled(\context_course::instance($this->course->id), $student, '', true));
+    }
+
     public function test_student_with_single_lessons_can_buy_the_whole_course(): void {
         $cm = $this->getDataGenerator()->create_module('page', ['course' => $this->course->id]);
         catalog::set_price((int) $cm->cmid, (int) $this->course->id, 3000);

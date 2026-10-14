@@ -556,9 +556,9 @@ class subscription_purchase_manager {
             if (!$ctx) {
                 continue;
             }
-            // Bought from the wallet or with a code (local_nit_finance): keep the access they paid for.
-            if ($DB->get_manager()->table_exists('nit_purchase') && $DB->record_exists('nit_purchase',
-                    ['userid' => (int) $purchase->userid, 'courseid' => (int) $cid, 'status' => 'active'])) {
+            // Also paid for the course (online, wallet or code): keep the access they paid for.
+            if (class_exists('\local_nit_finance\local\access')
+                    && \local_nit_finance\local\access::paid_for_course((int) $purchase->userid, (int) $cid)) {
                 continue;
             }
             if (is_enrolled($ctx, (int) $purchase->userid, '', true)) {
