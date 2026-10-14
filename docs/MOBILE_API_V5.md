@@ -30,6 +30,7 @@ sets how many Flex one live lesson costs (§3.7). The
 | 15 | Prices, revenue and Arabic search (QA run 1, phase 3) | `save_course_price` (errorcodes `priceformat`, `pricemax`), `get_revenue_report` (top-ups not revenue, wallet purchases are; new `wallet_*` fields), `get_courses` / `get_articles` / `get_teachers` (Arabic spellings folded) | **Check**: show the two price messages (§3.10) |
 | 16 | Live rooms: waiting room in lesson rooms, new look (12–14/10) | `mod_jitsi_get_session_info` → `lobby` is now `true` in lesson (Flex) rooms too; new public `/mod/jitsi/branding.php`; the web room has its own controls | **Yes**: the waiting-room steps now apply to lesson rooms; optional new look (§3.11) |
 | 17 | Reports: category manager and teacher money (QA run 1, BUG-043) | `get_report` → `teacher_dues` for a category/course manager: money only from their courses; the payout / wallet / lesson columns and cards are gone | No if the table is built from `columns` (§3.13) |
+| 18 | Refund requests | `/local/nit_finance/api.php`: `get_refunds`, `request_refund` (student), `list_refunds`, `process_refund` (admin); `get_revenue_report` + `refund_fee_revenue*` | **Yes**: a Refunds screen for students; approve/reject for admins (§3.14) |
 
 ---
 
@@ -556,6 +557,37 @@ errors' messages.
 Unchanged: site managers/admins see everything; a teacher still sees their own whole line. Same call, same shape.
 
 **App action:** none if the app builds the table from `columns` (never a fixed column list).
+
+### 3.14 Refund requests (14/10) — `/local/nit_finance/api.php`
+
+Within the **refund period** after a purchase (admin setting, default 3 days; 0 = closed) a student can ask
+for a refund of a **course, lesson or subscription paid online or from the wallet** (not codes, not lesson
+packages, online payments in EGP only). An admin approves or rejects. On approval the amount paid **less
+the refund fee** (admin setting, default 0 %) goes to the student's **wallet** (ledger kind `refund`), the
+access is removed (unless a subscription or another purchase still gives it) and the student is notified
+(`local_nit_finance` / `refundresult`). One request per purchase (a rejected one cannot be asked again).
+
+| function | Who | Params | `data` |
+|---|---|---|---|
+| `get_refunds` | student | — | `refund_days`, `fee_percent`, `refundable[]` (`key`, `source` online\|wallet, `itemtype` course\|cm\|subscription, `itemid`, `courseid`, `itemname`, `paidtime`, `deadline`, `amount*`, `fee*`, `refund*`), `requests[]` (see below) |
+| `request_refund` (POST) | student | `key` (from `refundable`), `reason` (optional) | `{request}` |
+| `list_refunds` | admin (`local/nit_finance:manage`) | `status` = pending\|approved\|rejected\|'' , `page`, `perpage` | `total`, `requests[]` (+`student_name`) |
+| `process_refund` (POST) | admin | `id`, `action` = approve\|reject, `reason` (required to reject) | `{request}` |
+
+A request: `id`, `status` (+`status_label`), `source`, `itemtype`, `itemid`, `courseid`, `itemname`, `userid`,
+`reason`, `admin_reason`, `paidtime`, `timecreated`, `timeprocessed`, `fee_percent`, `amount_minor`/`amount`,
+`fee_minor`/`fee`, `refund_minor`/`refund`, `currency` (EGP).
+
+Errorcodes: `notrefundable` (outside the period, already asked, code / package / other currency),
+`refundprocessed` (already answered), `refundnotfound`, `reasonrequired`, `badaction`, `badstatus`.
+
+`get_revenue_report` (§3.10): an approved refund comes off the revenue; for an online payment the payment
+leaves the revenue and the fee kept stays — new fields `refund_fee_revenue` / `refund_fee_revenue_minor`.
+
+- **App action:** a "Refunds" screen (list `refundable` with "Ask for a refund", and `requests`); admin
+  approve / reject in the admin area.
+
+---
 
 ## 4. Device limit — `local_nit_devices` (new)
 

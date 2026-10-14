@@ -220,6 +220,25 @@ final class refunds_test extends \advanced_testcase {
         $this->assertTrue($this->enrolled($student), 'the subscription still gives the course');
     }
 
+    public function test_mobile_api_lists_requests_and_processes(): void {
+        $student = $this->student(30000);
+        wallet_checkout::buy_course($student, (int) $this->course->id);
+        $mine = \local_nit_finance\local\mobile_api::get_refunds($student);
+        $this->assertSame(3, $mine['refund_days']);
+        $this->assertSame(18000, $mine['refundable'][0]['refund_minor']);
+
+        $request = \local_nit_finance\local\mobile_api::request_refund($student, $mine['refundable'][0]['key'], 'Too hard')['request'];
+        $this->assertSame('pending', $request['status']);
+        $list = \local_nit_finance\local\mobile_api::list_refunds('pending', 0, 50);
+        $this->assertSame(1, $list['total']);
+        $this->assertNotSame('', $list['requests'][0]['student_name']);
+
+        $done = \local_nit_finance\local\mobile_api::process_refund((int) get_admin()->id, $request['id'], 'reject', 'No')['request'];
+        $this->assertSame('rejected', $done['status']);
+        $this->assertSame('No', $done['admin_reason']);
+        $this->assertCount(1, \local_nit_finance\local\mobile_api::get_refunds($student)['requests']);
+    }
+
     public function test_wallet_subscription_refund_cancels_it(): void {
         global $DB;
         $planid = (int) $DB->insert_record('nit_subscription', (object) ['name' => 'Silver', 'price' => 100,

@@ -147,22 +147,27 @@ class report_manager {
         // Revenue is what was sold: purchases paid from wallet balance count too (EGP), less refunds
         // back to the wallet (BUG-064). They are not gateway transactions, so not in the counts.
         [$walletcount, $walletrevenue] = self::wallet_revenue();
-        $out['total_revenue'] = round($out['total_revenue'] + $walletrevenue, 2);
+        // The fee kept on an online payment refunded to the wallet (the payment itself left the revenue).
+        $feerevenue = self::refund_fee_revenue();
+        $extra = $walletrevenue + $feerevenue;
+        $out['total_revenue'] = round($out['total_revenue'] + $extra, 2);
         $out['wallet_purchases'] = $walletcount;
         $out['wallet_revenue'] = round($walletrevenue, 2);
         $out['wallet_revenue_minor'] = (int) round($walletrevenue * 100);
+        $out['refund_fee_revenue'] = round($feerevenue, 2);
+        $out['refund_fee_revenue_minor'] = (int) round($feerevenue * 100);
         $added = false;
         foreach ($bycurrency as $r) {
             $revenue = (float) $r->revenue;
             if ($r->currency === 'EGP') {
-                $revenue += $walletrevenue;
+                $revenue += $extra;
                 $added = true;
             }
             $out['revenue_by_currency'][] = ['count' => (int) $r->cnt]
                 + self::money($revenue, (string) $r->currency, 'revenue');
         }
-        if (!$added && $walletrevenue != 0) {
-            $out['revenue_by_currency'][] = ['count' => 0] + self::money($walletrevenue, 'EGP', 'revenue');
+        if (!$added && $extra != 0) {
+            $out['revenue_by_currency'][] = ['count' => 0] + self::money($extra, 'EGP', 'revenue');
         }
         foreach ($bycountry as $r) {
             $out['by_country'][] = ['country' => (string) $r->country, 'count' => (int) $r->cnt]

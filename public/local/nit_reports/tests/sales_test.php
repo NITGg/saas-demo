@@ -129,6 +129,45 @@ final class sales_test extends \advanced_testcase {
         $this->assertSame([format_float(140, 2) . ' EGP'], array_column($this->report('month')->rows(0, 0)['rows'], 'revenue'));
     }
 
+    public function test_refunds_come_off_the_revenue_and_the_fee_stays(): void {
+        global $DB;
+        $this->resetAfterTest();
+        if (!class_exists(\local_nit_finance\local\refunds::class)) {
+            $this->markTestSkipped('local_nit_finance refunds are not installed.');
+        }
+        $this->setAdminUser();
+        set_config('refund_days', 3, 'local_nit_finance');
+        set_config('refund_fee_percent', 10, 'local_nit_finance');
+        $gen = $this->getDataGenerator();
+        $course = $gen->create_course();
+        $gen->create_and_enrol($course, 'editingteacher');
+        $DB->insert_record('local_payments_course_prices', (object) ['courseid' => $course->id, 'country' => '*',
+            'currency' => 'EGP', 'price' => 200, 'is_default' => 1, 'is_active' => 1, 'priority' => 0,
+            'created_by' => 2, 'timecreated' => time(), 'timemodified' => time()]);
+        $refunds = \local_nit_finance\local\refunds::class;
+
+        // Bought from the wallet for 200, refunded: 180 back, the 20 fee is revenue.
+        $buyer = (int) $gen->create_user()->id;
+        wallets::move(wallets::STUDENT, $buyer, 20000, wallets::KIND_TOPUP);
+        \local_nit_finance\local\wallet_checkout::buy_course($buyer, (int) $course->id);
+        $refunds::process((int) get_admin()->id,
+            (int) $refunds::request($buyer, $refunds::refundable($buyer)[0]['key'])->id, 'approve');
+
+        // Bought online for 150, refunded to the wallet: 135 back, the 15 fee is revenue.
+        $payer = (int) $gen->create_user()->id;
+        $this->payment($payer, (int) $course->id, 150, ['item_type' => 'course']);
+        \local_payments\enrollment_handler::enrol_user($payer, (int) $course->id);
+        $refunds::process((int) get_admin()->id,
+            (int) $refunds::request($payer, $refunds::refundable($payer)[0]['key'])->id, 'approve');
+
+        $cards = $this->cards();
+        $this->assertSame(format_float(35, 2) . ' EGP', $cards['card_revenue']);
+        $this->assertSame(data::minor(2000), $cards['card_walletsales']);
+        $this->assertSame('2 — ' . format_float(315, 2) . ' EGP', $cards['card_refunded']);
+        $this->assertSame([35.0], array_values($this->report('item')->chart()->get_series()[0]->get_values()));
+        $this->assertSame([format_float(35, 2) . ' EGP'], array_column($this->report('month')->rows(0, 0)['rows'], 'revenue'));
+    }
+
     /**
      * The sales report in one view.
      *
