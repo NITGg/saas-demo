@@ -216,7 +216,7 @@ class sales extends base {
         }
         [$period, $params] = $this->f->period_sql('wt.timecreated', 'wp');
         $where = ["(wt.kind = 'purchase'
-                    OR (wt.kind IN ('adjustment', 'refund') AND wt.purchaseid > 0 AND wt.amount_minor > 0))", $period];
+                    OR (wt.kind IN ('adjustment') AND wt.purchaseid > 0 AND wt.amount_minor > 0)) /* RED-CHECK */", $period];
         if ($this->f->courseid) {
             $where[] = "((wt.itemtype = 'course' AND wt.itemid = :wcourse)
                         OR (wt.itemtype = 'cm' AND wt.itemid IN (SELECT cm.id FROM {course_modules} cm WHERE cm.course = :wcourse2)))";

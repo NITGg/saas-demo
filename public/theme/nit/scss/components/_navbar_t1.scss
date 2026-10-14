@@ -295,4 +295,44 @@
             border-radius: 50%;
         }
     }
+
+    // Phones (360–420px): menu + logo + search + avatar + messages + bell no longer fit
+    // with the desktop gaps, and the right cluster wrapped to a second row under the
+    // bar, over the page. Tighter gaps and 36px icons keep them on one row.
+    @media (max-width: 420px) {
+        .nit-navbar-inner {
+            flex-wrap: nowrap;
+            gap: 8px;
+            padding-inline: 10px;
+        }
+
+        .nit-navbar-brand {
+            min-width: 0;
+            flex-shrink: 1;
+        }
+
+        .nit-navbar-logo {
+            max-width: 100%;
+            object-fit: contain;
+        }
+
+        .nit-navbar-right {
+            gap: 6px;
+        }
+
+        .nit-search-trigger,
+        .nit-navbar-icon,
+        .popover-region-toggle {
+            width: 36px;
+            height: 36px;
+            min-width: 36px;
+            max-width: 36px;
+        }
+
+        [data-region="usermenu"] .dropdown-toggle {
+            gap: 4px;
+            padding: 3px;
+            padding-inline-end: 8px;
+        }
+    }
 }

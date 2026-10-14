@@ -52,6 +52,14 @@
                 el.hidden = !n;
             }
         };
+        // Phone browsers (Android Chrome, iPhone / iPad Safari) can't share the screen:
+        // Jitsi's toggleShareScreen silently does nothing there, so the button goes.
+        var canShare = !!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia)
+            && !/Android|iPhone|iPad|iPod|Mobi/i.test(navigator.userAgent)
+            && !(navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+        if (!canShare && btn('screen')) {
+            btn('screen').remove();
+        }
         var popups = function(except) {
             dock.querySelectorAll('.nitdock-pop').forEach(function(p) {
                 if (p !== except) {
