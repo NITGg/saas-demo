@@ -23,6 +23,7 @@
  */
 
 require(__DIR__ . '/../../config.php');
+require_once($CFG->libdir . '/adminlib.php'); // for admin_externalpage_setup()
 
 require_login();
 require_capability('moodle/site:config', context_system::instance());
