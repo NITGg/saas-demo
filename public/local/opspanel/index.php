@@ -45,8 +45,8 @@ echo html_writer::div(
 );
 echo html_writer::tag('p', get_string('signedout', 'local_opspanel'), ['class' => 'text-muted small']);
 echo html_writer::tag('iframe', '', [
-    'src' => $opsurl . 'mini',
-    'style' => 'width:100%;max-width:640px;height:300px;border:0;border-radius:12px',
+    'src' => $opsurl,
+    'style' => 'width:100%;height:80vh;min-height:640px;border:1px solid var(--line, #2a3657);border-radius:12px',
     'title' => get_string('pluginname', 'local_opspanel'),
     'loading' => 'lazy',
 ]);
