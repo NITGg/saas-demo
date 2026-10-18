@@ -43,6 +43,14 @@ if ($hassiteconfig || has_capability('local/nit_flex:managepackages', context_sy
             get_string('expiryreminderdays_desc', 'local_nit_flex'), 3, PARAM_INT, 4));
         $ADMIN->add('local_nit_flex_cat', $settings);
     }
+
+    // Teacher applications (local_nit_tutors) live in this category too. Added from here, not from
+    // local_nit_tutors/settings.php: Moodle loads local plugins' settings sorted by their name in the
+    // current language, and in Arabic «المدرسون» loads before «باقات الحصص» creates this category.
+    if (class_exists('\local_nit_tutors\local\admin_tabs')
+            && ($hassiteconfig || has_capability('local/nit_tutors:review', context_system::instance()))) {
+        $ADMIN->add('local_nit_flex_cat', \local_nit_tutors\local\admin_tabs::admin_page());
+    }
 }
 
 // Site administration → Local plugins: keep our pages in the agreed order.

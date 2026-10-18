@@ -111,7 +111,7 @@
         {{! Qualifications }}
         <section class="nit-prof-card">
           <div class="nit-prof-cardhd">{{#str}}form_quals, local_nit_tutors{{/str}} {{#minquals}}<span class="nittu-req">*</span>{{/minquals}}</div>
-          <div class="nittu-quals" data-nittu-quals data-next="{{nextqual}}" data-max="{{maxquals}}">
+          <div class="nittu-quals" data-nittu-quals data-nittu-nextrow="{{nextqual}}" data-max="{{maxquals}}">
             <p class="nittu-pf__help">{{#str}}form_quals_help, local_nit_tutors{{/str}}</p>
             {{#quals}}
             <div class="nittu-qual" data-nittu-qual>
@@ -210,8 +210,8 @@
                 add.disabled = true;
                 return;
             }
-            var next = parseInt(box.getAttribute('data-next'), 10);
-            box.setAttribute('data-next', next + 1);
+            var next = parseInt(box.getAttribute('data-nittu-nextrow'), 10);
+            box.setAttribute('data-nittu-nextrow', next + 1);
             var html = tpl.innerHTML.replace(/__ROW__/g, String(next));
             add.insertAdjacentHTML('beforebegin', html);
         });

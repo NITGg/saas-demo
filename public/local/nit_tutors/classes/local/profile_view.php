@@ -90,7 +90,7 @@ final class profile_view {
         foreach (fields::all() as $f) {
             $value = array_key_exists((int) $f->id, (array) ($in['field'] ?? [])) ? (string) $in['field'][(int) $f->id]
                 : (string) ($answers[$f->id] ?? '');
-            $item = ['id' => (int) $f->id, 'label' => format_string($f->name), 'required' => (bool) $f->required,
+            $item = ['id' => (int) $f->id, 'label' => format_string($f->name), 'required' => (bool) $f->required, 'datatype' => $f->datatype,
                 'description' => format_string((string) $f->description), 'value' => $value,
                 'error' => $errors['field' . $f->id] ?? '', 'is' . $f->datatype => true];
             if ($f->datatype === 'select') {
@@ -127,13 +127,16 @@ final class profile_view {
             'videostatus' => $row && $row->videostatus ? $str('videostatus_' . $row->videostatus)
                 . ($row->videostatus === 'rejected' && $row->videonote ? ' — ' . $row->videonote : '') : '',
             'videoaccept' => implode(',', video::ACCEPTED),
-            'videomax' => display_size(video::max_bytes()),
+            // display_size() joins number and unit with &nbsp;, which a template would print as text.
+            'videomax' => str_replace('&nbsp;', ' ', display_size(video::max_bytes())),
+            'videomaxbytes' => video::max_bytes(),
             'quals' => $quals,
             'nextqual' => max(array_column($quals, 'row')) + 1,
             'maxquals' => teacher_input::MAXQUALS,
             'minquals' => application::setting_int('minqualifications', 1),
             'fileaccept' => implode(',', qualifications::ACCEPTED),
-            'filemax' => display_size(teacher_input::MAXFILEBYTES),
+            'filemax' => str_replace('&nbsp;', ' ', display_size(teacher_input::MAXFILEBYTES)),
+            'filemaxbytes' => teacher_input::MAXFILEBYTES,
             'hasextra' => !empty($extra),
             'extra' => $extra,
             'err' => array_map('strval', $errors),

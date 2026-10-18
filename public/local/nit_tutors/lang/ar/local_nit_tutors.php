@@ -337,3 +337,10 @@ $string['msg_updatesrejected_body'] = 'مرحبًا {$a->name}، لم تُعتم
 $string['badge_manage'] = 'المدرسون';
 $string['badgeteachers_help'] = 'لكل مدرس معتمد اختر كيف يحصل على هذه الشارة: حسب قواعدها، أو دائمًا، أو أبدًا. وبهذه الطريقة تُمنح الشارة اليدوية.';
 $string['noapprovedteachers'] = 'لا يوجد مدرسون معتمدون بعد.';
+
+// Teacher sign-up: the checks of each step in the browser (signup_steps).
+$string['js_bio'] = 'اكتب نبذة قصيرة عنك.';
+$string['js_subjects'] = 'اختر مادة واحدة على الأقل.';
+$string['js_filetype'] = 'نوع الملف غير مقبول. المقبول: %s';
+$string['js_filesize'] = 'الملف أكبر من الحجم المسموح.';
+$string['js_stepof'] = 'الخطوة %s من %n';

@@ -279,6 +279,12 @@ final class application_test extends \advanced_testcase {
                 'userid' => (int) $this->getDataGenerator()->create_user()->id, 'rating' => $rating, 'status' => 1,
                 'timecreated' => time(), 'timemodified' => time()]);
         }
+        // Rows written straight to the table skip local_nit_reviews\api's per-request cache of the
+        // averages (its own save() clears it); drop it as a new request would start without it.
+        foreach (['aggcache', 'teacheraggcache'] as $name) {
+            $cache = new \ReflectionProperty(\local_nit_reviews\api::class, $name);
+            $cache->setValue(null, []);
+        }
     }
 
     /**

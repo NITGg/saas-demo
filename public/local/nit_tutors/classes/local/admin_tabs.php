@@ -35,6 +35,16 @@ final class admin_tabs {
     ];
 
     /**
+     * The admin node of the page (Local plugins → Lesson packages, or Local plugins).
+     *
+     * @return \admin_externalpage
+     */
+    public static function admin_page(): \admin_externalpage {
+        return new \admin_externalpage('local_nit_tutors', get_string('admincategory', 'local_nit_tutors'),
+            new \moodle_url('/local/nit_tutors/admin/applications.php'), 'local/nit_tutors:review');
+    }
+
+    /**
      * Set up an admin tab page: the admin node, the capability, the page URL.
      *
      * @param string $tab

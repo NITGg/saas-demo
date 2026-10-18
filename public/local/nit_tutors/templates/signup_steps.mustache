@@ -61,7 +61,7 @@
 <div class="reg-step" data-step="3">
   <h2 class="nittu-su__h">{{#str}}form_video, local_nit_tutors{{/str}}{{#videorequired}} *{{/videorequired}}</h2>
   <p class="nittu-su__help">{{#str}}form_video_help, local_nit_tutors{{/str}}</p>
-  <div class="reg-cell">
+  <div class="reg-cell" data-nittu-video data-required="{{#videorequired}}1{{/videorequired}}" data-accept="{{videoaccept}}" data-maxbytes="{{videomaxbytes}}">
     <input type="hidden" id="f_video">
     <div class="nittu-seg nittu-su__seg" role="radiogroup" aria-label="{{#str}}form_videotype, local_nit_tutors{{/str}}">
       <label><input type="radio" name="videotype" value="link" {{#islink}}checked{{/islink}} data-nittu-vtype><span>{{#str}}form_videotype_link, local_nit_tutors{{/str}}</span></label>
@@ -85,8 +85,9 @@
 <div class="reg-step" data-step="4">
   <h2 class="nittu-su__h">{{#str}}form_quals, local_nit_tutors{{/str}}{{#minquals}} *{{/minquals}}</h2>
   <p class="nittu-su__help">{{#str}}form_quals_help, local_nit_tutors{{/str}}</p>
-  <div class="reg-cell"><input type="hidden" id="f_quals"><div class="reg-err"></div></div>
-  <div data-nittu-quals data-next="{{nextqual}}" data-max="{{maxquals}}">
+  <div class="reg-cell" data-nittu-qualscell><input type="hidden" id="f_quals"><div class="reg-err"></div></div>
+  <div data-nittu-quals data-nittu-nextrow="{{nextqual}}" data-max="{{maxquals}}" data-min="{{minquals}}"
+       data-accept="{{fileaccept}}" data-maxbytes="{{filemaxbytes}}">
     {{#quals}}
     <div class="nittu-su__qual reg-cell" data-nittu-qual>
       <input type="hidden" id="f_qual{{row}}">
@@ -119,6 +120,7 @@
       </div>
       <div class="nit-reg-row"><div class="nittu-su__lbl">{{#str}}form_qualfile, local_nit_tutors{{/str}}</div>
         <input class="nittu-su__file" type="file" name="qualfile[__ROW__]" accept="{{fileaccept}}"></div>
+      <div class="reg-err"></div>
     </div>
   </template>
   <div class="reg-hint">{{#str}}filelimit, local_nit_tutors, {{filemax}}{{/str}}</div>
@@ -129,7 +131,7 @@
 <div class="reg-step" data-step="5">
   <h2 class="nittu-su__h">{{#hasextra}}{{#str}}form_more, local_nit_tutors{{/str}}{{/hasextra}}{{^hasextra}}{{#str}}signup_laststep, local_nit_tutors{{/str}}{{/hasextra}}</h2>
   {{#extra}}
-  <div class="reg-cell nit-reg-row">
+  <div class="reg-cell nit-reg-row" data-nittu-field data-type="{{datatype}}" data-required="{{#required}}1{{/required}}">
     <input type="hidden" id="f_field{{id}}">
     {{^ischeckbox}}<div class="nittu-su__lbl">{{label}}{{#required}} *{{/required}}</div>{{/ischeckbox}}
     {{#istext}}<div class="reg-field"><input type="text" name="field[{{id}}]" value="{{value}}"></div>{{/istext}}
@@ -173,10 +175,204 @@
                 add.disabled = true;
                 return;
             }
-            var next = parseInt(box.getAttribute('data-next'), 10);
-            box.setAttribute('data-next', next + 1);
+            var next = parseInt(box.getAttribute('data-nittu-nextrow'), 10);
+            box.setAttribute('data-nittu-nextrow', next + 1);
             add.insertAdjacentHTML('beforebegin', tpl.innerHTML.replace(/__ROW__/g, String(next)));
         });
     }
+
+    // ---- Each step is checked before "Next" (and every step before sending): the page's own
+    // [data-next] / submit handlers only run when the step is right. ----
+    var M = {
+        bio: {{#quote}}{{#str}}js_bio, local_nit_tutors{{/str}}{{/quote}},
+        subjects: {{#quote}}{{#str}}js_subjects, local_nit_tutors{{/str}}{{/quote}},
+        videourl: {{#quote}}{{#str}}err_badvideourl, local_nit_tutors{{/str}}{{/quote}},
+        videofile: {{#quote}}{{#str}}err_choosevideo, local_nit_tutors{{/str}}{{/quote}},
+        filetype: {{#quote}}{{#str}}js_filetype, local_nit_tutors{{/str}}{{/quote}},
+        filesize: {{#quote}}{{#str}}js_filesize, local_nit_tutors{{/str}}{{/quote}},
+        qualtitle: {{#quote}}{{#str}}err_qualtitle, local_nit_tutors{{/str}}{{/quote}},
+        qualyear: {{#quote}}{{#str}}err_qualyear, local_nit_tutors{{/str}}{{/quote}},
+        quals: {{#quote}}{{#str}}missing_qualifications, local_nit_tutors, {{minquals}}{{/str}}{{/quote}},
+        required: {{#quote}}{{#str}}required{{/str}}{{/quote}},
+        stepof: {{#quote}}{{#str}}js_stepof, local_nit_tutors{{/str}}{{/quote}}
+    };
+    var VIDEO = /^https?:\/\/((www\.|m\.)?youtube\.com\/(watch\?(.*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/|(www\.)?vimeo\.com\/\d|player\.vimeo\.com\/video\/\d)/i;
+    var thisyear = new Date().getFullYear();
+
+    function mark(cell, msg) {
+        cell.classList.add('invalid');
+        var err = cell.querySelector('.reg-err');
+        if (err) {
+            err.textContent = msg;
+        }
+    }
+    function unmark(step) {
+        step.querySelectorAll('[data-nittu-checked].invalid').forEach(function(c) {
+            c.classList.remove('invalid');
+            var err = c.querySelector('.reg-err');
+            if (err) {
+                err.textContent = '';
+            }
+        });
+    }
+    // A chosen file's type and size ('' = fine or none chosen).
+    function fileproblem(input, accept, maxbytes) {
+        var f = input && input.files && input.files[0];
+        if (!f) {
+            return '';
+        }
+        var ext = '.' + (f.name.split('.').pop() || '').toLowerCase();
+        if (accept.split(',').indexOf(ext) < 0) {
+            return M.filetype.replace('%s', accept.split(',').join(' '));
+        }
+        return f.size > maxbytes ? M.filesize : '';
+    }
+    function val(scope, name) {
+        var el = scope.querySelector('[name="' + name + '"]');
+        return el ? (el.value || '').trim() : '';
+    }
+
+    // The checks of one step: [cell, message] pairs; none = the step is right.
+    function problems(step) {
+        var out = [];
+        var n = step.getAttribute('data-step');
+        if (n === '2') {
+            if (!val(step, 'bio')) {
+                out.push([form.querySelector('#f_bio').closest('.reg-cell'), M.bio]);
+            }
+            if (!step.querySelector('input[name="subjects[]"]:checked')) {
+                out.push([form.querySelector('#f_subjects').closest('.reg-cell'), M.subjects]);
+            }
+        } else if (n === '3') {
+            var cell = step.querySelector('[data-nittu-video]');
+            var type = (step.querySelector('input[name="videotype"]:checked') || {}).value;
+            var required = cell.getAttribute('data-required') === '1';
+            if (type === 'upload') {
+                var file = step.querySelector('input[name="videofile"]');
+                var p = fileproblem(file, cell.getAttribute('data-accept'), parseInt(cell.getAttribute('data-maxbytes'), 10));
+                if (p) {
+                    out.push([cell, p]);
+                } else if (required && !(file.files && file.files.length)) {
+                    out.push([cell, M.videofile]);
+                }
+            } else {
+                var url = val(step, 'videourl');
+                if ((url || required) && !VIDEO.test(url)) {
+                    out.push([cell, M.videourl]);
+                }
+            }
+        } else if (n === '4') {
+            var box = step.querySelector('[data-nittu-quals]');
+            var filled = 0;
+            step.querySelectorAll('[data-nittu-qual]').forEach(function(row) {
+                var title = (row.querySelector('[name^="qualtitle"]').value || '').trim();
+                var inst = (row.querySelector('[name^="qualinstitution"]').value || '').trim();
+                var year = (row.querySelector('[name^="qualyear"]').value || '').trim();
+                var file = row.querySelector('[name^="qualfile"]');
+                var hasfile = file && file.files && file.files.length;
+                if (!title && !inst && !year && !hasfile) {
+                    return; // An empty row.
+                }
+                if (!title) {
+                    out.push([row, M.qualtitle]);
+                } else if (year && (+year < 1950 || +year > thisyear + 1)) {
+                    out.push([row, M.qualyear]);
+                } else {
+                    var fp = fileproblem(file, box.getAttribute('data-accept'), parseInt(box.getAttribute('data-maxbytes'), 10));
+                    if (fp) {
+                        out.push([row, fp]);
+                    }
+                }
+                filled += title ? 1 : 0;
+            });
+            if (filled < parseInt(box.getAttribute('data-min'), 10)) {
+                out.push([step.querySelector('[data-nittu-qualscell]'), M.quals]);
+            }
+        } else if (n === '5') {
+            step.querySelectorAll('[data-nittu-field]').forEach(function(cell) {
+                if (cell.getAttribute('data-required') !== '1') {
+                    return;
+                }
+                var type = cell.getAttribute('data-type');
+                var ok;
+                if (type === 'checkbox') {
+                    ok = cell.querySelector('input[type=checkbox]').checked;
+                } else if (type === 'file') {
+                    var f = cell.querySelector('input[type=file]');
+                    ok = f.files && f.files.length;
+                } else {
+                    var input = cell.querySelector('input:not([type=hidden]), select, textarea');
+                    ok = input && (input.value || '').trim() !== '';
+                }
+                if (!ok) {
+                    out.push([cell, M.required]);
+                }
+            });
+        }
+        return out;
+    }
+    function check(step) {
+        unmark(step);
+        var list = problems(step);
+        list.forEach(function(p) {
+            p[0].setAttribute('data-nittu-checked', '1');
+            mark(p[0], p[1]);
+        });
+        if (list.length) {
+            try { list[0][0].scrollIntoView({block: 'center', behavior: 'smooth'}); } catch (e) { /* Old browsers. */ }
+        }
+        return !list.length;
+    }
+    // Open a step the way the page does (progress bar included).
+    function open(step) {
+        var steps = [].slice.call(form.querySelectorAll('.reg-step'));
+        var i = steps.indexOf(step);
+        steps.forEach(function(s, k) { s.classList.toggle('active', k === i); });
+        var pct = Math.round((i + 1) * 100 / steps.length) + '%';
+        var label = M.stepof.replace('%s', i + 1).replace('%n', steps.length);
+        var el = document.getElementById('reg-pct');
+        if (el) { el.textContent = pct; }
+        el = document.getElementById('reg-step-label');
+        if (el) { el.textContent = label; }
+        el = document.getElementById('reg-fill');
+        if (el) { el.style.width = pct; }
+    }
+
+    // Capture phase: runs before the page's own handlers, and stops them when the step is wrong.
+    document.addEventListener('click', function(e) {
+        var next = e.target.closest && e.target.closest('button[data-next]');
+        if (!next || !form.contains(next)) {
+            return;
+        }
+        if (!check(next.closest('.reg-step'))) {
+            e.stopPropagation();
+            e.preventDefault();
+        }
+    }, true);
+    document.addEventListener('submit', function(e) {
+        if (e.target !== form) {
+            return;
+        }
+        var steps = form.querySelectorAll('.reg-step');
+        for (var i = 0; i < steps.length; i++) {
+            if (!check(steps[i])) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                open(steps[i]);
+                return;
+            }
+        }
+    }, true);
+    // Fixing a field clears its message.
+    form.addEventListener('change', function(e) {
+        var cell = e.target.closest && e.target.closest('[data-nittu-checked].invalid');
+        if (cell) {
+            cell.classList.remove('invalid');
+            var err = cell.querySelector('.reg-err');
+            if (err) {
+                err.textContent = '';
+            }
+        }
+    });
 })();
 {{/js}}

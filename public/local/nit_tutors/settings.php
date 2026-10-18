@@ -15,8 +15,14 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Admin tree: Site administration → Plugins → Local plugins → Teacher applications — one page
- * with tabs (applications, application fields, badges, settings; see local_nit_tutors\local\admin_tabs).
+ * Admin tree: the one page "Teacher applications" with its tabs (applications, application fields,
+ * badges, settings; local_nit_tutors\local\admin_tabs).
+ *
+ * It lives in Local plugins → Lesson packages (local_nit_flex's category), and local_nit_flex adds it
+ * there itself (the load order of local plugins' settings follows their names in the current
+ * language, so this file cannot rely on that category existing yet). This file adds it to Local
+ * plugins only when there is no such category for this user: no local_nit_flex, or a reviewer who
+ * cannot manage packages.
  *
  * @package    local_nit_tutors
  * @copyright  2026 NIT
@@ -25,10 +31,11 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-if ($hassiteconfig || has_capability('local/nit_tutors:review', context_system::instance())) {
-    $ADMIN->add('localplugins', new admin_externalpage('local_nit_tutors',
-        get_string('admincategory', 'local_nit_tutors'),
-        new moodle_url('/local/nit_tutors/admin/applications.php'), 'local/nit_tutors:review'));
+$systemcontext = context_system::instance();
+$flexcategory = core_component::get_component_directory('local_nit_flex') !== null
+    && ($hassiteconfig || has_capability('local/nit_flex:managepackages', $systemcontext));
+if (!$flexcategory && ($hassiteconfig || has_capability('local/nit_tutors:review', $systemcontext))) {
+    $ADMIN->add('localplugins', \local_nit_tutors\local\admin_tabs::admin_page());
     if (class_exists('\local_academy\local\admin_order')) {
         \local_academy\local\admin_order::apply($ADMIN);
     }

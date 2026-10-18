@@ -337,3 +337,10 @@ $string['msg_updatesrejected_body'] = 'Hello {$a->name}, the changes to your tea
 $string['badge_manage'] = 'Teachers';
 $string['badgeteachers_help'] = 'For each approved teacher choose how they get this badge: by its rules, always, or never. This is how a manual badge is given.';
 $string['noapprovedteachers'] = 'No approved teachers yet.';
+
+// Teacher sign-up: the checks of each step in the browser (signup_steps).
+$string['js_bio'] = 'Write a few words about yourself.';
+$string['js_subjects'] = 'Choose at least one subject.';
+$string['js_filetype'] = 'This file type is not accepted. Accepted: %s';
+$string['js_filesize'] = 'The file is too large.';
+$string['js_stepof'] = 'Step %s of %n';
