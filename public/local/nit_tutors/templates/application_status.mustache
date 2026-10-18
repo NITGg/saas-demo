@@ -24,26 +24,27 @@
     * note - the reviewer's message (reason / what to change), may be empty
     * hasmissing, missing - [{label}] what still blocks sending it for review
     * pageurl - the public teacher page once approved
-    * badge - whether the teacher wears the Super Tutor badge
+    * badges - [{name, color, description}] the badges the teacher wears
 
     Example context (json):
     {"status": "changes", "tone": "warning", "title": "Changes requested", "help": "Update and send again.",
      "note": "Please add your degree certificate.", "hasmissing": true, "missing": [{"label": "Intro video"}],
-     "pageurl": "", "badge": false}
+     "pageurl": "", "badges": []}
 }}
-<div class="nittu-status alert alert-{{tone}}" data-status="{{status}}">
-    <h3 class="nittu-status__title h5 mb-1">{{title}}{{#badge}} <span class="nittu-badge">{{#str}}supertutor, local_nit_tutors{{/str}}</span>{{/badge}}</h3>
-    <p class="mb-1">{{help}}</p>
+<div class="nit-prof-card nittu-status nittu-status--{{tone}}" data-status="{{status}}">
+    <div class="nittu-status__head">
+        <span class="nittu-status__pill">{{title}}</span>
+        {{#badges}}<span class="nittu-badge nittu-badge--{{color}}" title="{{description}}">{{name}}</span>{{/badges}}
+        {{#pageurl}}<a class="btn-out nittu-status__link" href="{{pageurl}}">{{#str}}viewpublicpage, local_nit_tutors{{/str}}</a>{{/pageurl}}
+    </div>
+    <p class="nittu-status__help">{{help}}</p>
     {{#note}}
-    <p class="nittu-status__note mb-1"><strong>{{#str}}reviewnote, local_nit_tutors{{/str}}:</strong> {{{note}}}</p>
+    <div class="nittu-status__note"><strong>{{#str}}reviewnote, local_nit_tutors{{/str}}:</strong> {{{note}}}</div>
     {{/note}}
     {{#hasmissing}}
-    <p class="mb-0"><strong>{{#str}}stillmissing, local_nit_tutors{{/str}}:</strong></p>
-    <ul class="mb-0">
-        {{#missing}}<li>{{label}}</li>{{/missing}}
-    </ul>
+    <div class="nittu-status__missing">
+        <strong>{{#str}}stillmissing, local_nit_tutors{{/str}}:</strong>
+        <ul>{{#missing}}<li>{{label}}</li>{{/missing}}</ul>
+    </div>
     {{/hasmissing}}
-    {{#pageurl}}
-    <p class="mb-0 mt-2"><a class="btn btn-outline-primary btn-sm" href="{{pageurl}}">{{#str}}viewpublicpage, local_nit_tutors{{/str}}</a></p>
-    {{/pageurl}}
 </div>

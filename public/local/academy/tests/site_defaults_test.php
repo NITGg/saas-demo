@@ -83,4 +83,55 @@ final class site_defaults_test extends \advanced_testcase {
         $this->assertTrue(is_enabled_auth('email'));
         $this->assertTrue(\local_academy\local\registration::confirmation_required());
     }
+
+    /**
+     * What a command-line install does: our install.php, then Moodle's unconditional reset of every
+     * admin setting (lib/installlib.php install_cli_database), then registerauth = ''.
+     */
+    private function cli_install(): void {
+        global $CFG;
+        require_once($CFG->libdir . '/adminlib.php');
+        require_once($CFG->dirroot . '/local/academy/db/install.php');
+        $this->setAdminUser();
+        xmldb_local_academy_install();
+        admin_apply_default_settings(null, true);
+        set_config('registerauth', '');
+    }
+
+    public function test_a_cli_install_resets_the_settings_install_php_wrote(): void {
+        $this->cli_install();
+        // The bug on the jitsi_life site: the start page is the Dashboard again.
+        $this->assertEquals(HOMEPAGE_MY, get_config('core', 'defaulthomepage'));
+        $this->assertNotSame('Africa/Cairo', get_config('core', 'timezone'));
+        $this->assertEquals(1, get_config('local_academy', site_defaults::PENDING), 'the marker survives the reset');
+    }
+
+    public function test_the_first_request_after_the_install_applies_them_again(): void {
+        $this->cli_install();
+
+        site_defaults::after_config(new \core\hook\after_config());
+
+        $this->assertEquals(HOMEPAGE_SITE, get_config('core', 'defaulthomepage'));
+        $this->assertSame('Africa/Cairo', get_config('core', 'timezone'));
+        $this->assertEquals(1, get_config('core', 'filterall'));
+        $this->assertSame('email', get_config('core', 'registerauth'));
+        $this->assertEquals(site_defaults::LOCKOUT_THRESHOLD, get_config('core', 'lockoutthreshold'));
+        $this->assertFalse(get_config('local_academy', site_defaults::PENDING));
+    }
+
+    public function test_after_that_the_admins_own_choices_are_left_alone(): void {
+        $this->cli_install();
+        site_defaults::after_config(new \core\hook\after_config());
+        // The admin chooses the Dashboard later on purpose: no later request undoes it.
+        set_config('defaulthomepage', HOMEPAGE_MY);
+
+        site_defaults::after_config(new \core\hook\after_config());
+
+        $this->assertEquals(HOMEPAGE_MY, get_config('core', 'defaulthomepage'));
+    }
+
+    public function test_the_hook_is_registered(): void {
+        $callbacks = \core\di::get(\core\hook\manager::class)->get_callbacks_for_hook(\core\hook\after_config::class);
+        $this->assertContains(site_defaults::class . '::after_config', array_column($callbacks, 'callback'));
+    }
 }

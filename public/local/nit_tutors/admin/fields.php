@@ -24,16 +24,16 @@
  */
 
 require(__DIR__ . '/../../../config.php');
-require_once($CFG->libdir . '/adminlib.php');
 
+use local_nit_tutors\local\admin_tabs;
+use local_nit_tutors\local\application;
 use local_nit_tutors\local\fields;
 
 $edit = optional_param('edit', -1, PARAM_INT);   // -1 list, 0 new, n edit.
 $action = optional_param('action', '', PARAM_ALPHA);
 $id = optional_param('id', 0, PARAM_INT);
 
-admin_externalpage_setup('local_nit_tutors_fields');
-require_capability('local/nit_tutors:manage', context_system::instance());
+admin_tabs::setup('fields', $edit >= 0 ? ['edit' => $edit] : []);
 $baseurl = new moodle_url('/local/nit_tutors/admin/fields.php');
 $str = fn(string $k, $a = null) => get_string($k, 'local_nit_tutors', $a);
 
@@ -62,14 +62,15 @@ if ($edit >= 0) {
         redirect($baseurl, $str('done'), null, \core\output\notification::NOTIFY_SUCCESS);
     }
     echo $OUTPUT->header();
-    echo $OUTPUT->heading($str($edit ? 'editfield' : 'addfield'));
+    echo admin_tabs::render('fields');
+    echo $OUTPUT->heading($str($edit ? 'editfield' : 'addfield'), 3);
     $form->display();
     echo $OUTPUT->footer();
     exit;
 }
 
 echo $OUTPUT->header();
-echo $OUTPUT->heading($str('applicationfields'));
+echo admin_tabs::render('fields');
 
 if ($action === 'delete' && $id && !optional_param('confirm', 0, PARAM_BOOL) && ($field = fields::get($id))) {
     echo $OUTPUT->confirm($str('confirmdeletefield', format_string($field->name)),
@@ -79,6 +80,27 @@ if ($action === 'delete' && $id && !optional_param('confirm', 0, PARAM_BOOL) && 
 }
 
 echo html_writer::tag('p', $str('fields_intro'), ['class' => 'text-muted']);
+
+// The fixed parts every application has: always there, not deletable; video and qualifications
+// are made required or not on the Settings tab.
+$yes = get_string('yes');
+$settingsurl = new moodle_url('/local/nit_tutors/admin/settings.php');
+$editsettings = $OUTPUT->action_icon($settingsurl, new pix_icon('t/edit', get_string('edit')));
+$minquals = application::setting_int('minqualifications', 1);
+$builtin = new html_table();
+$builtin->caption = $str('builtinfields');
+$builtin->head = [$str('field_name'), $str('field_type'), $str('field_required'), $str('field_public'), ''];
+$builtin->data = [
+    [$str('form_headline'), $str('type_text'), '', $yes, ''],
+    [$str('form_bio'), $str('type_textarea'), $yes, $yes, ''],
+    [$str('form_subjects'), $str('type_select'), $yes, $yes, ''],
+    [$str('form_video'), $str('builtin_video'), application::setting_int('requirevideo', 1) ? $yes : '', $str('builtin_afterreview'),
+        $editsettings],
+    [$str('form_quals'), $str('builtin_quals'), $minquals > 0 ? $str('builtin_atleast', $minquals) : '', $yes, $editsettings],
+];
+echo html_writer::table($builtin);
+
+echo html_writer::tag('h3', $str('extrafields'), ['class' => 'h5 mt-4']);
 echo $OUTPUT->single_button(new moodle_url($baseurl, ['edit' => 0]), $str('addfield'), 'get');
 
 $all = array_values(fields::all(false));
@@ -88,7 +110,6 @@ if (!$all) {
     $table = new html_table();
     $table->head = [$str('field_name'), $str('field_shortname'), $str('field_type'), $str('field_required'),
         $str('field_public'), $str('field_filter'), $str('field_active'), ''];
-    $yes = get_string('yes');
     foreach ($all as $i => $f) {
         $links = [];
         if ($i > 0) {

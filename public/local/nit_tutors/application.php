@@ -41,8 +41,8 @@ $PAGE->set_url($url);
 $PAGE->set_context(context_user::instance($userid));
 $PAGE->set_pagelayout('standard');
 $PAGE->set_title(get_string('teacherprofile', 'local_nit_tutors'));
-$PAGE->set_heading(get_string('teacherprofile', 'local_nit_tutors'));
-$PAGE->add_body_class('nit-tutor-application');
+$PAGE->set_heading('');
+$PAGE->add_body_class('nit-profile-page nit-tutor-application');
 
 $row = application::get($userid);
 $editable = application::editable($userid);
@@ -86,7 +86,19 @@ if ($editable && ($submitted = $form->get_data())) {
     }
 }
 
+// The account page's frame (left nav, cards) of /local/academy/profile.php; the form's sections
+// are drawn as its cards by .nittu-app in styles.css.
+$shell = '\local_academy\local\account_shell';
 echo $OUTPUT->header();
+if (class_exists($shell)) {
+    echo html_writer::tag('style', $shell::css());
+}
+echo html_writer::start_div('nit-prof nittu-app');
+echo html_writer::tag('h1', s(get_string('teacherprofile', 'local_nit_tutors')));
+echo html_writer::start_div('nit-prof-grid');
+echo class_exists($shell) ? $shell::nav_html('tutor') : html_writer::div('');
+echo html_writer::start_div('nit-prof-main');
 echo $OUTPUT->render_from_template('local_nit_tutors/application_status', \local_nit_tutors\local\status_view::context($userid));
 $form->display();
+echo html_writer::end_div() . html_writer::end_div() . html_writer::end_div();
 echo $OUTPUT->footer();

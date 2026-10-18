@@ -114,4 +114,27 @@ final class signup_test extends \advanced_testcase {
         profile_editor::save($uid, $data);
         $this->assertSame('BA English', \local_nit_tutors\local\qualifications::list($other)[0]->title);
     }
+
+    public function test_the_account_nav_offers_applying_then_the_teacher_profile(): void {
+        $uid = (int) $this->getDataGenerator()->create_user()->id;
+        $this->setUser($uid);
+        $nav = \local_academy\local\account_shell::nav('tutor');
+        $this->assertSame('tutor', array_key_last($nav), 'not a teacher yet: "Apply to teach" comes last');
+        $this->assertTrue($nav['tutor']['on']);
+        $this->assertStringContainsString('/local/nit_tutors/application.php', $nav['tutor']['url']);
+
+        application::ensure($uid);
+        $this->assertSame(['profile', 'tutor'], array_slice(array_keys(\local_academy\local\account_shell::nav('profile')), 0, 2),
+            'an applicant gets "Teacher profile" right under Profile');
+    }
+
+    public function test_the_settings_tab_keeps_values_in_range(): void {
+        \local_nit_tutors\form\settings_form::store((object) ['requireapproval' => 0, 'requirevideo' => 0,
+            'minqualifications' => 99, 'videomaxmb' => 0, 'allowreapply' => 1]);
+        $this->assertFalse(application::approval_required());
+        $this->assertSame(10, application::setting_int('minqualifications', 1));
+        $this->assertSame(1, application::setting_int('videomaxmb', 200));
+        $current = \local_nit_tutors\form\settings_form::current();
+        $this->assertSame(0, $current->requirevideo);
+    }
 }

@@ -55,11 +55,13 @@ final class public_profile {
         $quals = qualifications::public_list($userid);
         $answers = fields::public_answers($userid);
         $hours = $listed ? self::hours($service, $userid, $viewerid) : [];
+        $badges = badge::chips(badge::held($userid));
 
         return [
             'tutor' => [
                 'listed' => $listed,
-                'badge' => $approved && badge::has($userid),
+                'hasbadges' => !empty($badges),
+                'badges' => $badges,
                 'headline' => format_string($profile['headline']),
                 'price' => $profile['lesson_flex'],
                 'subjects' => $listed ? array_map(fn($s) => ['name' => format_string($s)], $profile['subjects']) : [],

@@ -63,7 +63,7 @@ final class search {
             'time' => isset(self::TIMES[$raw['time'] ?? '']) ? (string) $raw['time'] : '',
             'rating' => isset($raw['rating']) && in_array((string) $raw['rating'], ['3', '4', '4.5'], true)
                 ? (float) $raw['rating'] : 0.0,
-            'super' => !empty($raw['super']),
+            'badge' => $int('badge') ?: 0,
             'f' => $fieldvals,
             'sort' => in_array($raw['sort'] ?? '', self::SORTS, true) ? (string) $raw['sort'] : 'recommended',
         ];
@@ -115,8 +115,10 @@ final class search {
             $where[] = 'tp.lesson_flex <= :pmax';
             $params['pmax'] = $filters['pricemax'];
         }
-        if ($filters['super']) {
-            $where[] = 't.badge = 1';
+        if ($filters['badge']) {
+            $where[] = 'EXISTS (SELECT 1 FROM {' . badge::USERS . '} bf JOIN {' . badge::TABLE . '} bfb
+                ON bfb.id = bf.badgeid AND bfb.active = 1 WHERE bf.userid = u.id AND bf.awarded = 1 AND bf.badgeid = :badgeid)';
+            $params['badgeid'] = $filters['badge'];
         }
         $filterfields = self::filter_fields();
         foreach ($filters['f'] as $fid => $value) {
@@ -130,8 +132,7 @@ final class search {
         }
         $fields = \core_user\fields::for_userpic()->get_sql('u', false, '', '', false)->selects;
         $rows = $DB->get_records_sql(
-            "SELECT $fields, tp.headline, tp.lesson_flex, COALESCE(t.badge, 0) AS badge,
-                    t.videostatus, t.timecreated AS tutorsince
+            "SELECT $fields, tp.headline, tp.lesson_flex, t.videostatus, t.timecreated AS tutorsince
                FROM {nit_teacher_profile} tp
                JOIN {user} u ON u.id = tp.userid AND u.deleted = 0 AND u.suspended = 0
           LEFT JOIN {nit_tutor} t ON t.userid = u.id
@@ -141,6 +142,7 @@ final class search {
         $ratings = class_exists('\local_nit_reviews\api') && $rows
             ? \local_nit_reviews\api::get_teacher_aggregates(array_keys($rows)) : [];
         $lessons = self::lesson_counts(array_keys($rows));
+        $badges = self::badges_of(array_keys($rows));
         $viewertz = $viewerid ? teacher_service::timezone($viewerid) : \core_date::get_server_timezone_object();
         $out = [];
         foreach ($rows as $u) {
@@ -167,7 +169,7 @@ final class search {
                 'rating' => $rating,
                 'reviews' => $agg ? (int) $agg->count : 0,
                 'lessons' => $lessons[$id] ?? 0,
-                'badge' => (bool) $u->badge,
+                'badges' => $badges[$id] ?? [],
                 'hasvideo' => $u->videostatus === 'approved',
             ];
         }
@@ -193,10 +195,36 @@ final class search {
             case 'lessons':
                 return fn($a, $b) => $b['lessons'] <=> $a['lessons'] ?: $byname($a, $b);
             default:
-                // Recommended: Super Tutors, then teachers with a video, then the best rated, then the busiest.
-                return fn($a, $b) => [(int) $b['badge'], (int) $b['hasvideo'], $b['rating'], $b['lessons']]
-                    <=> [(int) $a['badge'], (int) $a['hasvideo'], $a['rating'], $a['lessons']] ?: $byname($a, $b);
+                // Recommended: most badges, then teachers with a video, then the best rated, then the busiest.
+                return fn($a, $b) => [count($b['badges']), (int) $b['hasvideo'], $b['rating'], $b['lessons']]
+                    <=> [count($a['badges']), (int) $a['hasvideo'], $a['rating'], $a['lessons']] ?: $byname($a, $b);
         }
+    }
+
+    /**
+     * The active badges each teacher wears, in the admin's order.
+     *
+     * @param int[] $ids
+     * @return array id => \stdClass[] badges
+     */
+    public static function badges_of(array $ids): array {
+        global $DB;
+        if (!$ids) {
+            return [];
+        }
+        [$insql, $params] = $DB->get_in_or_equal($ids, SQL_PARAMS_NAMED);
+        $out = [];
+        $rs = $DB->get_recordset_sql(
+            "SELECT bu.id AS buid, bu.userid, b.*
+               FROM {" . badge::USERS . "} bu
+               JOIN {" . badge::TABLE . "} b ON b.id = bu.badgeid AND b.active = 1
+              WHERE bu.awarded = 1 AND bu.userid $insql
+           ORDER BY b.sortorder, b.id", $params);
+        foreach ($rs as $r) {
+            $out[(int) $r->userid][] = $r;
+        }
+        $rs->close();
+        return $out;
     }
 
     /**
@@ -310,7 +338,8 @@ final class search {
             'rating' => format_float($t['rating'], 1),
             'reviews' => $t['reviews'],
             'lessons' => $t['lessons'],
-            'badge' => $t['badge'],
+            'hasbadges' => !empty($t['badges']),
+            'badges' => badge::chips($t['badges']),
             'hasvideo' => $t['hasvideo'],
             'url' => (new \moodle_url('/local/academy/teacher.php', ['id' => $t['id']]))->out(false),
             'bookurl' => self::book_url($t['id'])->out(false),
@@ -345,7 +374,7 @@ final class search {
         foreach ($result['teachers'] as $t) {
             $card = self::card($t);
             $out[] = ['id' => $card['id'], 'name' => $card['name'], 'image' => $card['photo'], 'url' => $card['url'],
-                'headline' => $card['headline'], 'badge' => $card['badge']];
+                'headline' => $card['headline'], 'badge' => $card['hasbadges']]; // The navbar shows a ★.
         }
         return ['total' => $result['total'], 'teachers' => $out,
             'moreurl' => (new \moodle_url('/local/nit_tutors/index.php', ['q' => $q]))->out(false)];

@@ -40,7 +40,7 @@ $raw = [
     'day' => optional_param('day', '', PARAM_RAW_TRIMMED),
     'time' => optional_param('time', '', PARAM_ALPHA),
     'rating' => optional_param('rating', '', PARAM_RAW_TRIMMED),
-    'super' => optional_param('super', 0, PARAM_BOOL),
+    'badge' => optional_param('badge', '', PARAM_RAW_TRIMMED),
     'sort' => optional_param('sort', 'recommended', PARAM_ALPHAEXT),
     'f' => optional_param_array('f', [], PARAM_TEXT),
 ];
@@ -52,7 +52,7 @@ $filters = search::normalise($raw);
 $params = array_filter([
     'q' => $filters['q'], 'subject' => $filters['subject'], 'pricemin' => $filters['pricemin'],
     'pricemax' => $filters['pricemax'], 'day' => $filters['day'], 'time' => $filters['time'],
-    'rating' => $filters['rating'] ?: null, 'super' => $filters['super'] ? 1 : null,
+    'rating' => $filters['rating'] ?: null, 'badge' => $filters['badge'] ?: null,
     'sort' => $filters['sort'] !== 'recommended' ? $filters['sort'] : null,
 ], fn($v) => $v !== null && $v !== '');
 foreach ($filters['f'] as $fid => $v) {
@@ -104,6 +104,11 @@ foreach (search::filter_fields() as $f) {
     $fieldfilters[] = ['id' => $f->id, 'label' => format_string($f->name), 'options' => $options];
 }
 
+$badges = [];
+foreach (\local_nit_tutors\local\badge::all() as $b) {
+    $badges[] = ['value' => $b->id, 'label' => format_string($b->name), 'selected' => (int) $b->id === $filters['badge']];
+}
+
 $cards = array_map([search::class, 'card'], $result['teachers']);
 $active = count($params) - (isset($params['q']) ? 1 : 0) - (isset($params['sort']) ? 1 : 0);
 
@@ -113,7 +118,8 @@ $context = [
     'q' => $filters['q'],
     'pricemin' => $filters['pricemin'],
     'pricemax' => $filters['pricemax'],
-    'super' => $filters['super'],
+    'hasbadgefilter' => !empty($badges),
+    'badges' => $badges,
     'subjects' => $subjects,
     'days' => $days,
     'times' => $times,

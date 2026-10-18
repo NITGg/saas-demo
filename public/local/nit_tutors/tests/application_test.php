@@ -281,39 +281,108 @@ final class application_test extends \advanced_testcase {
         }
     }
 
-    public function test_the_badge_follows_the_rules(): void {
-        set_config('badge_minrating', 4.5, 'local_nit_tutors');
-        set_config('badge_minreviews', 3, 'local_nit_tutors');
-        set_config('badge_minlessons', 5, 'local_nit_tutors');
-        set_config('badge_maxabsence', 10, 'local_nit_tutors');
+    /**
+     * Ids of the badges the teacher wears.
+     *
+     * @param int $uid
+     * @return int[]
+     */
+    private function wears(int $uid): array {
+        return array_map(fn($b) => (int) $b->id, badge::held($uid));
+    }
+
+    /**
+     * An automatic badge with these rules (0 / 100 = not checked).
+     *
+     * @param array $rules
+     * @return int
+     */
+    private function autobadge(array $rules): int {
+        return badge::save((object) (['name' => 'Rules ' . random_string(4), 'method' => badge::METHOD_AUTO] + $rules));
+    }
+
+    public function test_a_new_site_starts_with_the_super_tutor_badge(): void {
+        $all = array_values(badge::all());
+        $this->assertCount(1, $all);
+        $this->assertStringContainsString('Super Tutor', $all[0]->name);
+        $this->assertEquals(4.8, (float) $all[0]->minrating);
+        $this->assertSame((int) $all[0]->id, badge::ensure_default(), 'not created twice');
+    }
+
+    public function test_an_automatic_badge_follows_its_rules_and_is_lost_when_they_stop_holding(): void {
+        $id = $this->autobadge(['minrating' => 4.5, 'minreviews' => 3, 'minlessons' => 5, 'maxabsence' => 10]);
         $uid = self::complete_applicant();
         application::approve($uid, (int) get_admin()->id);
         $this->history($uid, 5, 0, [5, 5, 4]);
-        $this->assertTrue(badge::refresh($uid));
-        $this->assertTrue(badge::has($uid));
+        badge::refresh($uid);
+        $this->assertContains($id, $this->wears($uid));
 
         $this->history($uid, 0, 2, []); // 2 no-shows in 7 lessons = 28.6% > 10%.
-        $this->assertFalse(badge::refresh($uid));
-        $this->assertFalse(badge::has($uid));
+        badge::refresh_all();
+        $this->assertNotContains($id, $this->wears($uid));
     }
 
     public function test_too_few_ratings_earn_no_badge(): void {
-        set_config('badge_minreviews', 3, 'local_nit_tutors');
-        set_config('badge_minlessons', 0, 'local_nit_tutors');
+        $id = $this->autobadge(['minrating' => 4, 'minreviews' => 3]);
         $uid = self::complete_applicant();
         application::approve($uid, (int) get_admin()->id);
         $this->history($uid, 0, 0, [5, 5]);
-        $this->assertFalse(badge::refresh($uid));
+        badge::refresh($uid);
+        $this->assertNotContains($id, $this->wears($uid));
     }
 
-    public function test_the_reviewer_can_pin_the_badge_but_not_on_an_unapproved_teacher(): void {
+    public function test_a_badge_without_rules_goes_to_every_approved_teacher(): void {
+        $id = $this->autobadge([]);
         $uid = self::complete_applicant();
-        badge::set_mode($uid, badge::ON);
-        $this->assertFalse(badge::has($uid), 'only an approved teacher wears it');
+        $this->assertNotContains($id, $this->wears($uid));
         application::approve($uid, (int) get_admin()->id);
-        $this->assertTrue(badge::has($uid));
-        badge::set_mode($uid, badge::OFF);
-        $this->assertFalse(badge::has($uid));
+        $this->assertContains($id, $this->wears($uid), 'approving refreshes the badges');
+    }
+
+    public function test_a_manual_badge_is_only_given_by_hand(): void {
+        $id = badge::save((object) ['name' => 'Verified', 'method' => badge::METHOD_MANUAL]);
+        $uid = self::complete_applicant();
+        application::approve($uid, (int) get_admin()->id);
+        $this->assertNotContains($id, $this->wears($uid));
+        badge::set_mode($uid, $id, badge::ON);
+        $this->assertContains($id, $this->wears($uid));
+    }
+
+    public function test_the_reviewer_can_pin_a_badge_but_not_on_an_unapproved_teacher(): void {
+        $id = $this->autobadge(['minlessons' => 1000]);
+        $uid = self::complete_applicant();
+        badge::set_mode($uid, $id, badge::ON);
+        $this->assertNotContains($id, $this->wears($uid), 'only an approved teacher wears it');
+        application::approve($uid, (int) get_admin()->id);
+        $this->assertContains($id, $this->wears($uid));
+        badge::set_mode($uid, $id, badge::OFF);
+        $this->assertNotContains($id, $this->wears($uid));
+        application::suspend($uid, (int) get_admin()->id, 'x');
+        badge::set_mode($uid, $id, badge::ON);
+        $this->assertNotContains($id, $this->wears($uid), 'a suspended teacher wears none');
+    }
+
+    public function test_an_inactive_or_deleted_badge_is_not_shown(): void {
+        $id = $this->autobadge([]);
+        $uid = self::complete_applicant();
+        application::approve($uid, (int) get_admin()->id);
+        $this->assertContains($id, $this->wears($uid));
+        badge::save((object) (['active' => 0] + (array) badge::get($id)));
+        $this->assertNotContains($id, $this->wears($uid));
+        badge::delete($id);
+        $this->assertNull(badge::get($id));
+    }
+
+    public function test_badges_keep_the_admins_order(): void {
+        $a = $this->autobadge([]);
+        $b = $this->autobadge([]);
+        $uid = self::complete_applicant();
+        application::approve($uid, (int) get_admin()->id);
+        $before = $this->wears($uid);
+        $this->assertLessThan(array_search($b, $before), array_search($a, $before));
+        badge::move($b, -1);
+        $after = $this->wears($uid);
+        $this->assertLessThan(array_search($a, $after), array_search($b, $after));
     }
 
     public function test_approving_past_the_plan_teacher_limit_is_refused(): void {

@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_nit_tutors';
-$plugin->version   = 2026101800;        // First version: applications, intro video, qualifications, Super Tutor, search.
+$plugin->version   = 2026101900;        // Badges the admin manages (was one fixed Super Tutor); one tabbed admin page under Local plugins.
 $plugin->requires  = 2024100700;
 $plugin->supported = [405, 502];
 $plugin->maturity  = MATURITY_ALPHA;

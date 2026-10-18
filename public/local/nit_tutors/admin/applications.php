@@ -23,8 +23,8 @@
  */
 
 require(__DIR__ . '/../../../config.php');
-require_once($CFG->libdir . '/adminlib.php');
 
+use local_nit_tutors\local\admin_tabs;
 use local_nit_tutors\local\application;
 
 $status = optional_param('status', application::PENDING, PARAM_ALPHA);
@@ -32,25 +32,29 @@ $search = optional_param('q', '', PARAM_TEXT);
 $page = optional_param('page', 0, PARAM_INT);
 $perpage = 30;
 
-admin_externalpage_setup('local_nit_tutors_applications', '', ['status' => $status, 'q' => $search]);
+admin_tabs::setup('applications', ['status' => $status, 'q' => $search]);
 $baseurl = new moodle_url('/local/nit_tutors/admin/applications.php', ['status' => $status, 'q' => $search]);
 $str = fn(string $k, $a = null) => get_string($k, 'local_nit_tutors', $a);
 
 echo $OUTPUT->header();
-echo $OUTPUT->heading($str('applications'));
+echo admin_tabs::render('applications');
 
-// Status tabs with counts.
+// Status filter with counts (a row of pills under the page tabs).
 $counts = application::counts();
-$tabs = [];
+$filters = [];
 foreach (application::STATUSES as $st) {
-    $tabs[] = new tabobject($st, new moodle_url('/local/nit_tutors/admin/applications.php', ['status' => $st]),
-        $str('status_' . $st) . ' (' . $counts[$st] . ')');
+    $filters[$st] = $str('status_' . $st) . ' (' . $counts[$st] . ')';
 }
-$tabs[] = new tabobject('video', new moodle_url('/local/nit_tutors/admin/applications.php', ['status' => 'video']),
-    $str('tab_videos') . ' (' . application::videos_waiting() . ')');
-$tabs[] = new tabobject('all', new moodle_url('/local/nit_tutors/admin/applications.php', ['status' => 'all']),
-    get_string('all') . ' (' . array_sum($counts) . ')');
-echo $OUTPUT->tabtree($tabs, $status);
+$filters['video'] = $str('tab_videos') . ' (' . application::videos_waiting() . ')';
+$filters['all'] = get_string('all') . ' (' . array_sum($counts) . ')';
+echo html_writer::start_tag('nav', ['class' => 'nittu-tabs mb-3', 'aria-label' => $str('col_status')]);
+foreach ($filters as $st => $label) {
+    echo $st === $status
+        ? html_writer::span(s($label), 'nittu-tab is-active', ['aria-current' => 'page'])
+        : html_writer::link(new moodle_url('/local/nit_tutors/admin/applications.php', ['status' => $st]), s($label),
+            ['class' => 'nittu-tab']);
+}
+echo html_writer::end_tag('nav');
 
 // Search.
 echo html_writer::start_tag('form', ['method' => 'get', 'class' => 'form-inline d-flex gap-2 mb-3', 'action' => $baseurl->out_omit_querystring()]);
@@ -66,8 +70,9 @@ if (!$result['rows']) {
 } else {
     $table = new html_table();
     $table->head = [get_string('fullname'), get_string('email'), $str('col_status'), $str('col_submitted'),
-        $str('col_video'), $str('col_quals'), $str('supertutor'), ''];
+        $str('col_video'), $str('col_quals'), $str('tab_badges'), ''];
     $date = get_string('strftimedatetimeshort', 'langconfig');
+    $badges = \local_nit_tutors\local\search::badges_of(array_map(fn($r) => (int) $r->userid, $result['rows']));
     foreach ($result['rows'] as $r) {
         $user = user_picture::unalias($r, null, 'uid');
         $quals = \local_nit_tutors\local\qualifications::list((int) $r->userid);
@@ -80,7 +85,8 @@ if (!$result['rows']) {
             $r->timesubmitted ? userdate($r->timesubmitted, $date) : '-',
             $r->videostatus ? $str('videostatus_' . $r->videostatus) : '-',
             $verified . ' / ' . count($quals),
-            $r->badge ? '★' : '',
+            implode(' ', array_map(fn($b) => html_writer::span(format_string($b->name), 'nittu-badge nittu-badge--' . $b->color),
+                $badges[(int) $r->userid] ?? [])),
             html_writer::link($reviewurl, $str('review'), ['class' => 'btn btn-sm btn-outline-primary']),
         ];
     }

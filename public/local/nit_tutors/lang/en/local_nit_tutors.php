@@ -26,9 +26,6 @@ defined('MOODLE_INTERNAL') || die();
 
 $string['pluginname'] = 'NIT Tutors';
 $string['admincategory'] = 'Teacher applications';
-$string['applications'] = 'Applications';
-$string['applicationfields'] = 'Application fields';
-$string['settings'] = 'Settings';
 $string['task_refreshbadges'] = 'Refresh Super Tutor badges';
 $string['nit_tutors:review'] = 'Review teacher applications';
 $string['nit_tutors:manage'] = 'Manage teacher application fields';
@@ -55,7 +52,6 @@ $string['reviewnote'] = 'Message from the reviewer';
 $string['reviewnote_help'] = 'The reason, or what to change. Required to reject, ask for changes, suspend or refuse a video; the teacher sees it.';
 $string['stillmissing'] = 'Still missing';
 $string['viewpublicpage'] = 'View public page';
-$string['supertutor'] = 'Super Tutor';
 $string['teacherprofile'] = 'Teacher profile';
 $string['saved'] = 'Saved.';
 $string['submitted'] = 'Your application was sent for review.';
@@ -98,16 +94,6 @@ $string['qual_verified'] = 'Verified';
 $string['qual_unverified'] = 'Not verified yet';
 
 // Join as a teacher.
-$string['apply_title'] = 'Join as a teacher';
-$string['apply_lead'] = 'Teach private live lessons on the academy.';
-$string['apply_step1'] = 'Create your account.';
-$string['apply_step2'] = 'Complete your teacher profile: about you, subjects, intro video and qualifications.';
-$string['apply_step3'] = 'Send it for review — once approved, students can find and book you.';
-$string['apply_haveaccount'] = 'Already have an account?';
-$string['apply_asstudent'] = 'Sign up as a student instead';
-$string['apply_phone'] = 'Phone number';
-$string['apply_agree'] = 'I agree to the <a href="{$a}" target="_blank">terms and conditions</a>';
-$string['apply_create'] = 'Create account and continue';
 
 // Errors.
 $string['err_noteditable'] = 'Your application is being reviewed and cannot be changed now.';
@@ -151,11 +137,7 @@ $string['novideo'] = 'No intro video.';
 $string['noquals'] = 'No qualifications.';
 $string['price'] = 'Price';
 $string['priceflex'] = '{$a} Flex';
-$string['badgemode_auto'] = 'By the rules';
-$string['badgemode_on'] = 'Always on';
-$string['badgemode_off'] = 'Always off';
 $string['badge_stats'] = 'Rating {$a->rating} from {$a->reviews} ratings · {$a->lessons} completed lessons · {$a->absence}% teacher no-shows';
-$string['badge_rules'] = 'Rules: rating ≥ {$a->rating}, at least {$a->reviews} ratings, at least {$a->lessons} completed lessons, no-shows ≤ {$a->absence}%';
 $string['badge_meets'] = 'Meets the rules.';
 $string['badge_notmeets'] = 'Does not meet the rules yet.';
 
@@ -187,7 +169,6 @@ $string['type_checkbox'] = 'Yes / no';
 $string['type_file'] = 'File';
 
 // Settings.
-$string['set_h_apply'] = 'Applications';
 $string['set_requireapproval'] = 'Approval required';
 $string['set_requireapproval_desc'] = 'Only teachers whose application is approved are listed in the teacher search and can be booked. Off: every teacher who takes bookings is listed.';
 $string['set_requirevideo'] = 'Intro video required';
@@ -195,12 +176,6 @@ $string['set_minqualifications'] = 'Qualifications required';
 $string['set_videomaxmb'] = 'Max video upload (MB)';
 $string['set_videomaxmb_desc'] = 'Also limited by the server\'s upload limit.';
 $string['set_allowreapply'] = 'Allow applying again after a rejection';
-$string['set_h_badge'] = 'Super Tutor badge';
-$string['set_h_badge_desc'] = 'An approved teacher who meets every rule gets the badge; it is checked daily and taken away when the rules are no longer met. A reviewer can pin it on or off for one teacher.';
-$string['set_badge_minrating'] = 'Minimum average rating';
-$string['set_badge_minreviews'] = 'Minimum number of ratings';
-$string['set_badge_minlessons'] = 'Minimum completed lessons';
-$string['set_badge_maxabsence'] = 'Maximum teacher no-shows (%)';
 
 // Messages.
 $string['msg_submitted_subject'] = 'New teacher application: {$a}';
@@ -240,7 +215,6 @@ $string['time_afternoon'] = 'Afternoon (12:00–17:00)';
 $string['time_evening'] = 'Evening (17:00–24:00)';
 $string['rating'] = 'Rating';
 $string['ratingup'] = '{$a} ★ and up';
-$string['supertutoronly'] = 'Super Tutors only';
 $string['sortby'] = 'Sort by';
 $string['sort_recommended'] = 'Recommended';
 $string['sort_rating'] = 'Best rated';
@@ -267,7 +241,6 @@ $string['privacy:metadata:tutor:userid'] = 'The teacher.';
 $string['privacy:metadata:tutor:status'] = 'The application status.';
 $string['privacy:metadata:tutor:reviewnote'] = 'The reviewer\'s message to the teacher.';
 $string['privacy:metadata:tutor:videourl'] = 'The intro video link.';
-$string['privacy:metadata:tutor:badge'] = 'Whether the teacher has the Super Tutor badge.';
 $string['privacy:metadata:qual'] = 'A teacher\'s qualifications.';
 $string['privacy:metadata:qual:userid'] = 'The teacher.';
 $string['privacy:metadata:qual:title'] = 'The qualification.';
@@ -277,3 +250,72 @@ $string['privacy:metadata:data'] = 'A teacher\'s answers to the application fiel
 $string['privacy:metadata:data:userid'] = 'The teacher.';
 $string['privacy:metadata:data:value'] = 'The answer.';
 $string['privacy:metadata:files'] = 'The intro video, certificates and file answers.';
+
+// Admin page tabs (Local plugins → Teacher applications).
+$string['tab_applications'] = 'Applications';
+$string['tab_fields'] = 'Application fields';
+$string['tab_badges'] = 'Badges';
+$string['tab_settings'] = 'Settings';
+$string['decision_videoonly'] = 'This approved teacher sent a new intro video. Approve or Reject here decides the video only; to refuse it, write the reason for the teacher.';
+$string['act_approvevideo'] = 'Approve the video';
+$string['act_rejectvideo'] = 'Reject the video';
+$string['opencertificate'] = 'Open the certificate';
+
+// Application fields tab: the fixed parts.
+$string['builtinfields'] = 'Fields every application has';
+$string['extrafields'] = 'Your extra fields';
+$string['builtin_video'] = 'Video file or YouTube / Vimeo link';
+$string['builtin_quals'] = 'Qualifications with a certificate';
+$string['builtin_afterreview'] = 'After the academy approves it';
+$string['builtin_atleast'] = 'At least {$a}';
+
+// Badges.
+$string['badge'] = 'Badge';
+$string['badges_intro'] = 'Badges show on the teacher page and in the teacher search, and students can filter by them. A badge is earned automatically when a teacher meets its rules (checked every day, and taken away when they stop meeting them), or given by hand by a reviewer. On each teacher\'s review page a reviewer can also give or withhold any badge for that teacher.';
+$string['addbadge'] = 'Add a badge';
+$string['editbadge'] = 'Edit badge';
+$string['nobadges'] = 'No badges yet.';
+$string['confirmdeletebadge'] = 'Delete the badge "{$a}"? Every teacher who wears it loses it.';
+$string['badge_name'] = 'Name';
+$string['badge_name_help'] = 'What students see, e.g. "Super Tutor". Use {mlang ar}…{mlang}{mlang en}…{mlang} for both languages.';
+$string['badge_description'] = 'What it means';
+$string['badge_color'] = 'Colour';
+$string['badge_method'] = 'How it is given';
+$string['badgemethod_auto'] = 'Automatically, by rules';
+$string['badgemethod_manual'] = 'By hand, by a reviewer';
+$string['badgemethod_manual_desc'] = 'Given by a reviewer on the teacher\'s review page.';
+$string['badge_rules'] = 'Rules';
+$string['badge_rules_help'] = 'A teacher earns the badge when every rule you set holds. Leave a rule at 0 (or the no-show rate at 100) to not check it.';
+$string['badge_minrating'] = 'Minimum average rating (0–5)';
+$string['badge_minreviews'] = 'Minimum number of ratings';
+$string['badge_minlessons'] = 'Minimum completed lessons';
+$string['badge_maxabsence'] = 'Maximum teacher no-show rate (%)';
+$string['badge_holders'] = 'Teachers wearing it';
+$string['badge_wears'] = 'Wears it';
+$string['badge_notwears'] = 'Does not wear it';
+$string['badge_teacherstats'] = 'This teacher now';
+$string['badges_review_help'] = 'For each badge choose how this teacher gets it: by the badge\'s own method, always, or never.';
+$string['badges_notapproved'] = 'Badges show only once the teacher is approved.';
+$string['badgemode_auto'] = 'By its rules';
+$string['badgemode_auto_manual'] = 'Not given';
+$string['badgemode_on'] = 'Always give it';
+$string['badgemode_off'] = 'Never give it';
+$string['rule_rating'] = 'rating {$a} or more';
+$string['rule_reviews'] = 'at least {$a} ratings';
+$string['rule_lessons'] = 'at least {$a} completed lessons';
+$string['rule_absence'] = 'no-shows {$a}% or less';
+$string['rule_none'] = 'No rule: every approved teacher';
+$string['color_warning'] = 'Gold (Warning)';
+$string['color_primary'] = 'Main colour (Primary)';
+$string['color_success'] = 'Green (Success)';
+$string['color_info'] = 'Blue (Info)';
+$string['color_error'] = 'Red (Error)';
+$string['color_secondary'] = 'Grey (Secondary)';
+$string['err_badgename'] = 'Give the badge a name.';
+$string['err_rating'] = 'Enter a rating from 0 to 5.';
+$string['err_percent'] = 'Enter a percentage from 0 to 100.';
+$string['err_negative'] = 'Enter 0 or more.';
+$string['privacy:metadata:badgeuser'] = 'The badges a teacher wears, and a reviewer\'s choice per badge.';
+$string['privacy:metadata:badgeuser:userid'] = 'The teacher.';
+$string['privacy:metadata:badgeuser:mode'] = 'The reviewer\'s choice (by the rules, always, never).';
+$string['privacy:metadata:badgeuser:awarded'] = 'Whether the teacher wears the badge.';

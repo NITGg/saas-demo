@@ -15,8 +15,12 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Review one teacher: everything they sent, the intro video, the certificates; approve, ask for
- * changes, reject, suspend; approve/refuse a new video; verify qualifications; pin the badge.
+ * Review one teacher: everything they sent, the intro video, the certificates (opened in the
+ * browser); approve, ask for changes, reject, suspend; verify qualifications; their badges.
+ *
+ * One Approve and one Reject button: while an approved teacher's new intro video waits, they decide
+ * the video (Reject needs the reason, which the teacher sees); otherwise the application. A video
+ * sent with a pending application is approved together with it.
  *
  * @package    local_nit_tutors
  * @copyright  2026 NIT
@@ -24,8 +28,8 @@
  */
 
 require(__DIR__ . '/../../../config.php');
-require_once($CFG->libdir . '/adminlib.php');
 
+use local_nit_tutors\local\admin_tabs;
 use local_nit_tutors\local\application;
 use local_nit_tutors\local\badge;
 use local_nit_tutors\local\fields;
@@ -34,15 +38,19 @@ use local_nit_tutors\local\video;
 use local_nit_lessons\service\teacher_service;
 
 $userid = required_param('userid', PARAM_INT);
-admin_externalpage_setup('local_nit_tutors_applications', '', ['userid' => $userid],
-    new moodle_url('/local/nit_tutors/admin/application.php'));
-$syscontext = context_system::instance();
-require_capability('local/nit_tutors:review', $syscontext);
+admin_tabs::setup('applications', ['userid' => $userid]);
+$PAGE->set_url(new moodle_url('/local/nit_tutors/admin/application.php', ['userid' => $userid]));
 
 $user = core_user::get_user($userid, '*', MUST_EXIST);
 $url = new moodle_url('/local/nit_tutors/admin/application.php', ['userid' => $userid]);
-$PAGE->set_url($url);
 $str = fn(string $k, $a = null) => get_string($k, 'local_nit_tutors', $a);
+
+// Opening the page must not create an application for any user id typed in the URL.
+$row = application::get($userid) ?? (object) ['status' => application::DRAFT, 'timesubmitted' => 0, 'timereviewed' => 0,
+    'reviewnote' => '', 'videostatus' => '', 'videonote' => ''];
+$status = (string) $row->status;
+// An approved teacher's new intro video: Approve / Reject decide the video, not the application.
+$videoonly = $status === application::APPROVED && $row->videostatus === 'pending';
 
 // ── Actions ──────────────────────────────────────────────────────────────────
 $action = optional_param('action', '', PARAM_ALPHA);
@@ -52,25 +60,19 @@ if ($action !== '' && confirm_sesskey()) {
     try {
         switch ($action) {
             case 'approve':
-                application::approve($userid, $reviewer, $note);
+                $videoonly ? video::review($userid, true, $note) : application::approve($userid, $reviewer, $note);
+                break;
+            case 'reject':
+                if ($note === '') {
+                    throw new moodle_exception('err_notereq', 'local_nit_tutors');
+                }
+                $videoonly ? video::review($userid, false, $note) : application::reject($userid, $reviewer, $note);
                 break;
             case 'changes':
                 application::request_changes($userid, $reviewer, $note);
                 break;
-            case 'reject':
-                application::reject($userid, $reviewer, $note);
-                break;
             case 'suspend':
                 application::suspend($userid, $reviewer, $note);
-                break;
-            case 'videook':
-                video::review($userid, true, $note);
-                break;
-            case 'videono':
-                if ($note === '') {
-                    throw new moodle_exception('err_notereq', 'local_nit_tutors');
-                }
-                video::review($userid, false, $note);
                 break;
             case 'verify':
             case 'unverify':
@@ -79,9 +81,12 @@ if ($action !== '' && confirm_sesskey()) {
                     qualifications::verify($qualid, $action === 'verify');
                 }
                 break;
-            case 'badge':
-                require_capability('local/nit_tutors:review', $syscontext);
-                badge::set_mode($userid, required_param('mode', PARAM_ALPHA));
+            case 'badges':
+                foreach (optional_param_array('mode', [], PARAM_ALPHA) as $badgeid => $mode) {
+                    if (badge::get((int) $badgeid) && badge::mode((int) $badgeid, $userid) !== $mode) {
+                        badge::set_mode($userid, (int) $badgeid, $mode);
+                    }
+                }
                 break;
         }
         redirect($url, $str('done'), null, \core\output\notification::NOTIFY_SUCCESS);
@@ -91,46 +96,74 @@ if ($action !== '' && confirm_sesskey()) {
 }
 
 // ── Page data ────────────────────────────────────────────────────────────────
-// Opening the page must not create an application for any user id typed in the URL.
-$row = application::get($userid) ?? (object) ['status' => application::DRAFT, 'timesubmitted' => 0, 'timereviewed' => 0,
-    'reviewnote' => '', 'videostatus' => '', 'videonote' => '', 'badge' => 0, 'badgemode' => badge::AUTO];
 $profile = (new teacher_service())->profile($userid);
 $player = video::player($userid, false);
 $usercontext = context_user::instance($userid);
 $date = get_string('strftimedatetimeshort', 'langconfig');
 
+/**
+ * A stored file as a link that opens in the browser (not a download), with a preview for an image.
+ *
+ * @param stored_file|null $file
+ * @param string $area
+ * @param int $itemid
+ * @return array {fileurl, filename, isimage}
+ */
+$fileview = function(?stored_file $file, string $area, int $itemid) use ($usercontext): array {
+    if (!$file) {
+        return ['fileurl' => '', 'filename' => '', 'isimage' => false];
+    }
+    return [
+        'fileurl' => moodle_url::make_pluginfile_url($usercontext->id, 'local_nit_tutors', $area, $itemid,
+            $file->get_filepath(), $file->get_filename(), false)->out(false),
+        'filename' => $file->get_filename(),
+        'isimage' => $file->is_valid_image(),
+    ];
+};
+
 $quals = [];
 foreach (qualifications::list($userid) as $q) {
-    $file = qualifications::file($userid, (int) $q->id);
     $quals[] = [
         'id' => (int) $q->id,
         'title' => format_string($q->title),
         'institution' => format_string((string) $q->institution),
         'year' => (int) $q->year ?: '',
         'verified' => (bool) $q->verified,
-        'fileurl' => $file ? moodle_url::make_pluginfile_url($usercontext->id, 'local_nit_tutors', qualifications::AREA,
-            $q->id, $file->get_filepath(), $file->get_filename(), true)->out(false) : '',
-        'filename' => $file ? $file->get_filename() : '',
-    ];
+    ] + $fileview(qualifications::file($userid, (int) $q->id), qualifications::AREA, (int) $q->id);
 }
 $answers = [];
 $values = fields::answers($userid);
 foreach (fields::all(false) as $f) {
     $value = (string) ($values[$f->id] ?? '');
-    $item = ['label' => format_string($f->name), 'value' => fields::display($f, $value), 'fileurl' => '', 'filename' => ''];
+    $file = null;
     if ($f->datatype === 'file') {
         $files = get_file_storage()->get_area_files($usercontext->id, 'local_nit_tutors', fields::AREA, $f->id, 'filename', false);
-        if ($file = reset($files)) {
-            $item['fileurl'] = moodle_url::make_pluginfile_url($usercontext->id, 'local_nit_tutors', fields::AREA, $f->id,
-                $file->get_filepath(), $file->get_filename(), true)->out(false);
-            $item['filename'] = $file->get_filename();
-        }
+        $file = reset($files) ?: null;
     }
-    $answers[] = $item;
+    $answers[] = ['label' => format_string($f->name), 'value' => fields::display($f, $value)]
+        + $fileview($file, fields::AREA, (int) $f->id);
 }
+
+// Badges: each one with the reviewer's choice, the rules and whether this teacher wears it.
 $stats = badge::stats($userid);
-$rules = badge::rules();
-$status = (string) $row->status;
+$wearing = array_map(fn($b) => (int) $b->id, badge::held($userid));
+$badges = [];
+foreach (badge::all() as $b) {
+    $mode = badge::mode((int) $b->id, $userid);
+    $badges[] = [
+        'id' => (int) $b->id,
+        'name' => format_string($b->name),
+        'color' => $b->color,
+        'rules' => badge::rules_text($b),
+        'isauto' => $b->method === badge::METHOD_AUTO,
+        'meets' => badge::meets($b, $stats),
+        'wears' => in_array((int) $b->id, $wearing, true),
+        'modes' => array_map(fn($m) => ['value' => $m, 'selected' => $m === $mode,
+            'label' => $str('badgemode_' . $m . ($b->method === badge::METHOD_MANUAL && $m === badge::AUTO ? '_manual' : ''))],
+            [badge::AUTO, badge::ON, badge::OFF]),
+    ];
+}
+
 $picture = new user_picture($user);
 $picture->size = 120;
 
@@ -155,31 +188,30 @@ $context = [
     'hasvideo' => $player !== null,
     'video' => $player,
     'videostatus' => $row->videostatus ? $str('videostatus_' . $row->videostatus) : '',
-    'videopending' => $row->videostatus === 'pending',
     'videonote' => (string) $row->videonote,
     'quals' => $quals,
     'hasquals' => !empty($quals),
     'answers' => $answers,
     'hasanswers' => !empty($answers),
     'missing' => array_map(fn($m) => ['label' => $m], array_values(application::missing($userid))),
-    'canapprove' => $status !== application::APPROVED,
+    'videoonly' => $videoonly,
+    'canapprove' => $status !== application::APPROVED || $videoonly,
     'canchanges' => in_array($status, [application::PENDING, application::REJECTED], true),
-    'canreject' => in_array($status, [application::PENDING, application::CHANGES, application::DRAFT], true),
+    'canreject' => in_array($status, [application::PENDING, application::CHANGES, application::DRAFT], true) || $videoonly,
     'cansuspend' => $status === application::APPROVED,
-    'approvelabel' => $str($status === application::SUSPENDED ? 'act_reinstate' : 'act_approve'),
-    'badge' => (bool) $row->badge,
-    'badgemodes' => array_map(fn($m) => ['value' => $m, 'label' => $str('badgemode_' . $m), 'selected' => $row->badgemode === $m],
-        [badge::AUTO, badge::ON, badge::OFF]),
+    'approvelabel' => $str($videoonly ? 'act_approvevideo' : ($status === application::SUSPENDED ? 'act_reinstate' : 'act_approve')),
+    'rejectlabel' => $str($videoonly ? 'act_rejectvideo' : 'act_reject'),
+    'hasbadges' => !empty($badges),
+    'badges' => $badges,
+    'isapproved' => $status === application::APPROVED,
     'stats' => $str('badge_stats', (object) [
         'rating' => format_float($stats['rating'], 1), 'reviews' => $stats['reviews'], 'lessons' => $stats['lessons'],
         'absence' => format_float($stats['absencepct'], 1)]),
-    'rules' => $str('badge_rules', (object) [
-        'rating' => format_float($rules['minrating'], 1), 'reviews' => $rules['minreviews'], 'lessons' => $rules['minlessons'],
-        'absence' => format_float($rules['maxabsence'], 1)]),
-    'earned' => badge::earned($userid),
+    'badgesurl' => (new moodle_url('/local/nit_tutors/admin/badges.php'))->out(false),
     'backurl' => (new moodle_url('/local/nit_tutors/admin/applications.php', ['status' => $status]))->out(false),
 ];
 
 echo $OUTPUT->header();
+echo admin_tabs::render('applications');
 echo $OUTPUT->render_from_template('local_nit_tutors/admin_review', $context);
 echo $OUTPUT->footer();

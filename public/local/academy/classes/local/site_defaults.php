@@ -28,6 +28,15 @@ namespace local_academy\local;
  *   Europe/London), so lesson times showed 2–3 hours off and "Start lesson"
  *   said it was too early. Users keep "99" (= the site timezone).
  *
+ * A command-line install (admin/cli/install.php, install_database.php — what the
+ * SaaS provisioning runs) installs the plugins and THEN calls
+ * admin_apply_default_settings(NULL, true), which resets every admin setting to
+ * Moodle's default: the values install.php just wrote are lost (the jitsi_life
+ * site opened on the Dashboard, in UTC, with headings unfiltered). So install.php
+ * also leaves the PENDING marker — not an admin setting, the reset leaves it —
+ * and after_config() applies everything again on the first request once the
+ * install has finished, then removes the marker.
+ *
  * @package    local_academy
  * @copyright  2026 NIT
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -36,6 +45,33 @@ class site_defaults {
 
     /** The academy's timezone (Egypt). */
     const TIMEZONE = 'Africa/Cairo';
+
+    /** local_academy config: the install's settings still have to be applied again (see the class comment). */
+    const PENDING = 'sitedefaultspending';
+
+    /**
+     * Everything a new site gets: apply(), email_confirmation(), login_lockout().
+     */
+    public static function apply_all(): void {
+        self::apply();
+        self::email_confirmation();
+        self::login_lockout();
+    }
+
+    /**
+     * Hook: the first request after the install has finished applies the settings again (they were
+     * reset by the installer after install.php ran). Cheap on every other request: one cached config read.
+     *
+     * @param \core\hook\after_config $hook
+     */
+    public static function after_config(\core\hook\after_config $hook): void {
+        if (during_initial_install() || !get_config('local_academy', self::PENDING)) {
+            return;
+        }
+        // Removed first: a failure below must not repeat on every request.
+        unset_config(self::PENDING, 'local_academy');
+        self::apply_all();
+    }
 
     /**
      * Apply the settings (safe to run again).

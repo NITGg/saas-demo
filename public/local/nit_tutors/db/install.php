@@ -23,11 +23,12 @@
  */
 
 /**
- * Create the Tutor role (see \local_nit_tutors\local\tutor_role).
+ * Create the Tutor role and the first badge (see \local_nit_tutors\local\tutor_role).
  *
  * @return bool
  */
 function xmldb_local_nit_tutors_install() {
     \local_nit_tutors\local\tutor_role::ensure();
+    \local_nit_tutors\local\badge::ensure_default();
     return true;
 }

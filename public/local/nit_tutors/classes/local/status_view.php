@@ -53,7 +53,7 @@ final class status_view {
             'missing' => array_map(fn($m) => ['label' => $m], $missing),
             'pageurl' => $status === application::APPROVED
                 ? (new \moodle_url('/local/academy/teacher.php', ['id' => $userid]))->out(false) : '',
-            'badge' => $status === application::APPROVED && badge::has($userid),
+            'badges' => $status === application::APPROVED ? badge::chips(badge::held($userid)) : [],
         ];
     }
 }

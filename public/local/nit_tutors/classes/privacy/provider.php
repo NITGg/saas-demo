@@ -47,8 +47,12 @@ class provider implements
             'status' => 'privacy:metadata:tutor:status',
             'reviewnote' => 'privacy:metadata:tutor:reviewnote',
             'videourl' => 'privacy:metadata:tutor:videourl',
-            'badge' => 'privacy:metadata:tutor:badge',
         ], 'privacy:metadata:tutor');
+        $collection->add_database_table('nit_tutor_badge_user', [
+            'userid' => 'privacy:metadata:badgeuser:userid',
+            'mode' => 'privacy:metadata:badgeuser:mode',
+            'awarded' => 'privacy:metadata:badgeuser:awarded',
+        ], 'privacy:metadata:badgeuser');
         $collection->add_database_table('nit_tutor_qual', [
             'userid' => 'privacy:metadata:qual:userid',
             'title' => 'privacy:metadata:qual:title',
@@ -111,6 +115,7 @@ class provider implements
                 'application' => $DB->get_record('nit_tutor', ['userid' => $userid]),
                 'qualifications' => array_values($DB->get_records('nit_tutor_qual', ['userid' => $userid])),
                 'answers' => array_values($DB->get_records('nit_tutor_data', ['userid' => $userid])),
+                'badges' => array_values($DB->get_records('nit_tutor_badge_user', ['userid' => $userid])),
             ];
             writer::with_context($context)->export_data($path, $data);
             foreach (['video', 'qualification', 'field'] as $area) {
@@ -164,6 +169,7 @@ class provider implements
         global $DB;
         get_file_storage()->delete_area_files(\context_user::instance($userid)->id, 'local_nit_tutors');
         $DB->delete_records('nit_tutor_data', ['userid' => $userid]);
+        $DB->delete_records('nit_tutor_badge_user', ['userid' => $userid]);
         $DB->delete_records('nit_tutor_qual', ['userid' => $userid]);
         $DB->delete_records('nit_tutor', ['userid' => $userid]);
     }

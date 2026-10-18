@@ -26,9 +26,6 @@ defined('MOODLE_INTERNAL') || die();
 
 $string['pluginname'] = 'المدرسون (NIT Tutors)';
 $string['admincategory'] = 'طلبات انضمام المدرسين';
-$string['applications'] = 'الطلبات';
-$string['applicationfields'] = 'حقول طلب الانضمام';
-$string['settings'] = 'الإعدادات';
 $string['task_refreshbadges'] = 'تحديث شارات Super Tutor';
 $string['nit_tutors:review'] = 'مراجعة طلبات انضمام المدرسين';
 $string['nit_tutors:manage'] = 'إدارة حقول طلب الانضمام';
@@ -55,7 +52,6 @@ $string['reviewnote'] = 'رسالة المراجِع';
 $string['reviewnote_help'] = 'السبب أو المطلوب تعديله. إلزامية عند الرفض أو طلب التعديل أو الإيقاف أو رفض الفيديو، ويراها المدرس.';
 $string['stillmissing'] = 'ما زال ناقصًا';
 $string['viewpublicpage'] = 'عرض الصفحة العامة';
-$string['supertutor'] = 'Super Tutor';
 $string['teacherprofile'] = 'ملف المدرس';
 $string['saved'] = 'تم الحفظ.';
 $string['submitted'] = 'تم إرسال طلبك للمراجعة.';
@@ -98,16 +94,6 @@ $string['qual_verified'] = 'موثّق';
 $string['qual_unverified'] = 'لم يُوثّق بعد';
 
 // Join as a teacher.
-$string['apply_title'] = 'انضم كمدرس';
-$string['apply_lead'] = 'قدّم حصصًا فردية مباشرة على الأكاديمية.';
-$string['apply_step1'] = 'أنشئ حسابك.';
-$string['apply_step2'] = 'أكمل ملفك كمدرس: نبذة عنك، والمواد، والفيديو التعريفي، والمؤهلات.';
-$string['apply_step3'] = 'أرسله للمراجعة، وبعد الاعتماد يستطيع الطلاب العثور عليك وحجز حصص معك.';
-$string['apply_haveaccount'] = 'لديك حساب بالفعل؟';
-$string['apply_asstudent'] = 'التسجيل كطالب';
-$string['apply_phone'] = 'رقم الهاتف';
-$string['apply_agree'] = 'أوافق على <a href="{$a}" target="_blank">الشروط والأحكام</a>';
-$string['apply_create'] = 'إنشاء الحساب والمتابعة';
 
 // Errors.
 $string['err_noteditable'] = 'طلبك قيد المراجعة ولا يمكن تعديله الآن.';
@@ -151,11 +137,7 @@ $string['novideo'] = 'لا يوجد فيديو تعريفي.';
 $string['noquals'] = 'لا توجد مؤهلات.';
 $string['price'] = 'السعر';
 $string['priceflex'] = '{$a} فلكس';
-$string['badgemode_auto'] = 'حسب القواعد';
-$string['badgemode_on'] = 'مفعّلة دائمًا';
-$string['badgemode_off'] = 'متوقفة دائمًا';
 $string['badge_stats'] = 'التقييم {$a->rating} من {$a->reviews} تقييم · {$a->lessons} حصة مكتملة · {$a->absence}% غياب المدرس';
-$string['badge_rules'] = 'القواعد: تقييم ≥ {$a->rating}، و{$a->reviews} تقييم على الأقل، و{$a->lessons} حصة مكتملة على الأقل، وغياب ≤ {$a->absence}%';
 $string['badge_meets'] = 'يحقق القواعد.';
 $string['badge_notmeets'] = 'لا يحقق القواعد بعد.';
 
@@ -165,7 +147,7 @@ $string['addfield'] = 'إضافة حقل';
 $string['editfield'] = 'تعديل الحقل';
 $string['nofields'] = 'لا توجد حقول بعد.';
 $string['confirmdeletefield'] = 'حذف الحقل «{$a}» وإجابات كل المدرسين عليه؟';
-$string['field_name'] = 'العنوان';
+$string['field_name'] = 'اسم الحقل';
 $string['field_name_help'] = 'يظهر للمدرس. استخدم {mlang ar}…{mlang}{mlang en}…{mlang} للغتين.';
 $string['field_shortname'] = 'الاسم المختصر';
 $string['field_type'] = 'النوع';
@@ -187,7 +169,6 @@ $string['type_checkbox'] = 'نعم / لا';
 $string['type_file'] = 'ملف';
 
 // Settings.
-$string['set_h_apply'] = 'الطلبات';
 $string['set_requireapproval'] = 'الاعتماد مطلوب';
 $string['set_requireapproval_desc'] = 'يظهر في بحث المدرسين ويمكن حجزه فقط المدرس المعتمد طلبه. عند الإيقاف: يظهر كل مدرس يقبل الحجز.';
 $string['set_requirevideo'] = 'الفيديو التعريفي إلزامي';
@@ -195,12 +176,6 @@ $string['set_minqualifications'] = 'عدد المؤهلات المطلوبة';
 $string['set_videomaxmb'] = 'أقصى حجم لرفع الفيديو (ميجابايت)';
 $string['set_videomaxmb_desc'] = 'ويحدّه أيضًا حد الرفع في الخادم.';
 $string['set_allowreapply'] = 'السماح بالتقديم مرة أخرى بعد الرفض';
-$string['set_h_badge'] = 'شارة Super Tutor';
-$string['set_h_badge_desc'] = 'يحصل على الشارة المدرس المعتمد الذي يحقق كل القواعد. تُراجع يوميًا وتُسحب تلقائيًا إذا لم تعد القواعد متحققة. ويستطيع المراجِع تثبيتها أو إيقافها لمدرس بعينه.';
-$string['set_badge_minrating'] = 'أقل متوسط تقييم';
-$string['set_badge_minreviews'] = 'أقل عدد تقييمات';
-$string['set_badge_minlessons'] = 'أقل عدد حصص مكتملة';
-$string['set_badge_maxabsence'] = 'أقصى نسبة غياب للمدرس (%)';
 
 // Messages.
 $string['msg_submitted_subject'] = 'طلب انضمام مدرس جديد: {$a}';
@@ -240,7 +215,6 @@ $string['time_afternoon'] = 'ظهرًا (12:00–17:00)';
 $string['time_evening'] = 'مساءً (17:00–24:00)';
 $string['rating'] = 'التقييم';
 $string['ratingup'] = '{$a} ★ فأكثر';
-$string['supertutoronly'] = 'Super Tutor فقط';
 $string['sortby'] = 'الترتيب';
 $string['sort_recommended'] = 'موصى به';
 $string['sort_rating'] = 'الأعلى تقييمًا';
@@ -267,7 +241,6 @@ $string['privacy:metadata:tutor:userid'] = 'المدرس.';
 $string['privacy:metadata:tutor:status'] = 'حالة الطلب.';
 $string['privacy:metadata:tutor:reviewnote'] = 'رسالة المراجِع للمدرس.';
 $string['privacy:metadata:tutor:videourl'] = 'رابط الفيديو التعريفي.';
-$string['privacy:metadata:tutor:badge'] = 'هل يحمل المدرس شارة Super Tutor.';
 $string['privacy:metadata:qual'] = 'مؤهلات المدرس.';
 $string['privacy:metadata:qual:userid'] = 'المدرس.';
 $string['privacy:metadata:qual:title'] = 'المؤهل.';
@@ -277,3 +250,72 @@ $string['privacy:metadata:data'] = 'إجابات المدرس على حقول ا
 $string['privacy:metadata:data:userid'] = 'المدرس.';
 $string['privacy:metadata:data:value'] = 'الإجابة.';
 $string['privacy:metadata:files'] = 'الفيديو التعريفي والشهادات والملفات المرفقة.';
+
+// Admin page tabs (Local plugins → Teacher applications).
+$string['tab_applications'] = 'الطلبات';
+$string['tab_fields'] = 'حقول الطلب';
+$string['tab_badges'] = 'الشارات';
+$string['tab_settings'] = 'الإعدادات';
+$string['decision_videoonly'] = 'هذا المدرس معتمد وأرسل فيديو تعريفيًا جديدًا. «اعتماد» و«رفض» هنا يخصّان الفيديو فقط، وعند الرفض اكتب السبب ليراه المدرس.';
+$string['act_approvevideo'] = 'اعتماد الفيديو';
+$string['act_rejectvideo'] = 'رفض الفيديو';
+$string['opencertificate'] = 'فتح الشهادة';
+
+// Application fields tab: the fixed parts.
+$string['builtinfields'] = 'حقول موجودة في كل طلب';
+$string['extrafields'] = 'حقولك الإضافية';
+$string['builtin_video'] = 'ملف فيديو أو رابط YouTube / Vimeo';
+$string['builtin_quals'] = 'مؤهلات مع صورة الشهادة';
+$string['builtin_afterreview'] = 'بعد اعتماده من الأكاديمية';
+$string['builtin_atleast'] = '{$a} على الأقل';
+
+// Badges.
+$string['badge'] = 'الشارة';
+$string['badges_intro'] = 'تظهر الشارات في صفحة المدرس وفي بحث المدرسين، ويستطيع الطلاب الفلترة بها. الشارة إما تُمنح تلقائيًا للمدرس الذي يحقق قواعدها (تُراجع يوميًا وتُسحب عندما لا تعود متحققة)، أو يمنحها المراجِع يدويًا. وفي صفحة مراجعة كل مدرس يستطيع المراجِع منح أي شارة أو منعها لهذا المدرس بالذات.';
+$string['addbadge'] = 'إضافة شارة';
+$string['editbadge'] = 'تعديل الشارة';
+$string['nobadges'] = 'لا توجد شارات بعد.';
+$string['confirmdeletebadge'] = 'حذف الشارة «{$a}»؟ كل مدرس يحملها سيفقدها.';
+$string['badge_name'] = 'الاسم';
+$string['badge_name_help'] = 'ما يراه الطلاب، مثل «مدرس متميز». استخدم {mlang ar}…{mlang}{mlang en}…{mlang} للغتين.';
+$string['badge_description'] = 'معناها';
+$string['badge_color'] = 'اللون';
+$string['badge_method'] = 'طريقة المنح';
+$string['badgemethod_auto'] = 'تلقائيًا حسب القواعد';
+$string['badgemethod_manual'] = 'يدويًا من المراجِع';
+$string['badgemethod_manual_desc'] = 'يمنحها المراجِع من صفحة مراجعة المدرس.';
+$string['badge_rules'] = 'القواعد';
+$string['badge_rules_help'] = 'يحصل المدرس على الشارة عندما تتحقق كل قاعدة تحددها. اترك القاعدة 0 (ونسبة الغياب 100) حتى لا تُفحص.';
+$string['badge_minrating'] = 'أقل متوسط تقييم (من 0 إلى 5)';
+$string['badge_minreviews'] = 'أقل عدد تقييمات';
+$string['badge_minlessons'] = 'أقل عدد حصص مكتملة';
+$string['badge_maxabsence'] = 'أقصى نسبة غياب للمدرس (%)';
+$string['badge_holders'] = 'عدد من يحملها';
+$string['badge_wears'] = 'يحملها';
+$string['badge_notwears'] = 'لا يحملها';
+$string['badge_teacherstats'] = 'أرقام المدرس الآن';
+$string['badges_review_help'] = 'لكل شارة اختر كيف يحصل عليها هذا المدرس: حسب طريقة الشارة نفسها، أو دائمًا، أو أبدًا.';
+$string['badges_notapproved'] = 'لا تظهر الشارات إلا بعد اعتماد المدرس.';
+$string['badgemode_auto'] = 'حسب قواعدها';
+$string['badgemode_auto_manual'] = 'غير ممنوحة';
+$string['badgemode_on'] = 'امنحها دائمًا';
+$string['badgemode_off'] = 'لا تمنحها أبدًا';
+$string['rule_rating'] = 'تقييم {$a} فأكثر';
+$string['rule_reviews'] = '{$a} تقييمات على الأقل';
+$string['rule_lessons'] = '{$a} حصة مكتملة على الأقل';
+$string['rule_absence'] = 'غياب {$a}% أو أقل';
+$string['rule_none'] = 'بدون قواعد: كل مدرس معتمد';
+$string['color_warning'] = 'ذهبي (Warning)';
+$string['color_primary'] = 'اللون الأساسي (Primary)';
+$string['color_success'] = 'أخضر (Success)';
+$string['color_info'] = 'أزرق (Info)';
+$string['color_error'] = 'أحمر (Error)';
+$string['color_secondary'] = 'رمادي (Secondary)';
+$string['err_badgename'] = 'اكتب اسم الشارة.';
+$string['err_rating'] = 'أدخل تقييمًا من 0 إلى 5.';
+$string['err_percent'] = 'أدخل نسبة من 0 إلى 100.';
+$string['err_negative'] = 'أدخل 0 أو أكثر.';
+$string['privacy:metadata:badgeuser'] = 'الشارات التي يحملها المدرس، واختيار المراجِع لكل شارة.';
+$string['privacy:metadata:badgeuser:userid'] = 'المدرس.';
+$string['privacy:metadata:badgeuser:mode'] = 'اختيار المراجِع (حسب القواعد، دائمًا، أبدًا).';
+$string['privacy:metadata:badgeuser:awarded'] = 'هل يحمل المدرس الشارة.';

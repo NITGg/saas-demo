@@ -93,18 +93,26 @@ final class search_test extends \advanced_testcase {
         $this->assertSame([], $this->ids(['q' => 'chemistry']));
     }
 
-    public function test_price_subject_and_super_filters(): void {
+    public function test_price_subject_and_badge_filters(): void {
         $cheap = $this->tutor(['lesson_flex' => 1], 'English');
         $dear = $this->tutor(['lesson_flex' => 5], 'Math');
         $this->assertSame([$cheap], $this->ids(['pricemax' => '2']));
         $this->assertSame([$dear], $this->ids(['pricemin' => '3']));
         $this->assertSame([$dear], $this->ids(['subject' => 'Math']));
 
-        badge::set_mode($dear, badge::ON);
-        $this->assertSame([$dear], $this->ids(['super' => 1]));
-        // Recommended order: the Super Tutor first.
+        $verified = badge::save((object) ['name' => 'Verified', 'method' => badge::METHOD_MANUAL]);
+        badge::set_mode($dear, $verified, badge::ON);
+        $this->assertSame([$dear], $this->ids(['badge' => (string) $verified]));
+        // Recommended order: the teacher with more badges first.
         $this->assertSame([$dear, $cheap], $this->ids());
         $this->assertSame([$cheap, $dear], $this->ids(['sort' => 'price_asc']));
+        // The card lists the badge.
+        $card = search::card(search::run(search::normalise(['badge' => (string) $verified]))['teachers'][0]);
+        $this->assertSame('Verified', $card['badges'][0]['name']);
+
+        // A badge switched off no longer filters anyone in.
+        badge::save((object) (['active' => 0] + (array) badge::get($verified)));
+        $this->assertSame([], $this->ids(['badge' => (string) $verified]));
     }
 
     public function test_an_admin_filter_field(): void {

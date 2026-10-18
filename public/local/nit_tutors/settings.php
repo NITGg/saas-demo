@@ -15,8 +15,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Admin tree: Site administration → Users → Teacher applications (applications, application
- * fields, settings).
+ * Admin tree: Site administration → Plugins → Local plugins → Teacher applications — one page
+ * with tabs (applications, application fields, badges, settings; see local_nit_tutors\local\admin_tabs).
  *
  * @package    local_nit_tutors
  * @copyright  2026 NIT
@@ -25,44 +25,11 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$systemcontext = context_system::instance();
-if ($hassiteconfig || has_capability('local/nit_tutors:review', $systemcontext)) {
-    $ADMIN->add('users', new admin_category('local_nit_tutors', get_string('admincategory', 'local_nit_tutors')));
-    $ADMIN->add('local_nit_tutors', new admin_externalpage('local_nit_tutors_applications',
-        get_string('applications', 'local_nit_tutors'),
+if ($hassiteconfig || has_capability('local/nit_tutors:review', context_system::instance())) {
+    $ADMIN->add('localplugins', new admin_externalpage('local_nit_tutors',
+        get_string('admincategory', 'local_nit_tutors'),
         new moodle_url('/local/nit_tutors/admin/applications.php'), 'local/nit_tutors:review'));
-    $ADMIN->add('local_nit_tutors', new admin_externalpage('local_nit_tutors_fields',
-        get_string('applicationfields', 'local_nit_tutors'),
-        new moodle_url('/local/nit_tutors/admin/fields.php'), 'local/nit_tutors:manage'));
-}
-
-if ($hassiteconfig) {
-    $settings = new admin_settingpage('local_nit_tutors_settings', get_string('settings', 'local_nit_tutors'));
-    $ADMIN->add('local_nit_tutors', $settings);
-
-    if ($ADMIN->fulltree) {
-        $p = 'local_nit_tutors/';
-        $settings->add(new admin_setting_heading($p . 'h_apply', get_string('set_h_apply', 'local_nit_tutors'), ''));
-        $settings->add(new admin_setting_configcheckbox($p . 'requireapproval',
-            get_string('set_requireapproval', 'local_nit_tutors'), get_string('set_requireapproval_desc', 'local_nit_tutors'), 1));
-        $settings->add(new admin_setting_configcheckbox($p . 'requirevideo',
-            get_string('set_requirevideo', 'local_nit_tutors'), '', 1));
-        $settings->add(new admin_setting_configtext($p . 'minqualifications',
-            get_string('set_minqualifications', 'local_nit_tutors'), '', 1, PARAM_INT));
-        $settings->add(new admin_setting_configtext($p . 'videomaxmb',
-            get_string('set_videomaxmb', 'local_nit_tutors'), get_string('set_videomaxmb_desc', 'local_nit_tutors'), 200, PARAM_INT));
-        $settings->add(new admin_setting_configcheckbox($p . 'allowreapply',
-            get_string('set_allowreapply', 'local_nit_tutors'), '', 1));
-
-        $settings->add(new admin_setting_heading($p . 'h_badge', get_string('set_h_badge', 'local_nit_tutors'),
-            get_string('set_h_badge_desc', 'local_nit_tutors')));
-        $settings->add(new admin_setting_configtext($p . 'badge_minrating',
-            get_string('set_badge_minrating', 'local_nit_tutors'), '', '4.8', PARAM_FLOAT));
-        $settings->add(new admin_setting_configtext($p . 'badge_minreviews',
-            get_string('set_badge_minreviews', 'local_nit_tutors'), '', 10, PARAM_INT));
-        $settings->add(new admin_setting_configtext($p . 'badge_minlessons',
-            get_string('set_badge_minlessons', 'local_nit_tutors'), '', 30, PARAM_INT));
-        $settings->add(new admin_setting_configtext($p . 'badge_maxabsence',
-            get_string('set_badge_maxabsence', 'local_nit_tutors'), '', '2', PARAM_FLOAT));
+    if (class_exists('\local_academy\local\admin_order')) {
+        \local_academy\local\admin_order::apply($ADMIN);
     }
 }

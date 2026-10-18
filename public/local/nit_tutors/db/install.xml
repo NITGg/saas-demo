@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="local/nit_tutors/db" VERSION="2026101800" COMMENT="NIT Tutors: teacher applications, intro video, qualifications, badges, application fields.">
+<XMLDB PATH="local/nit_tutors/db" VERSION="2026101900" COMMENT="NIT Tutors: teacher applications, intro video, qualifications, badges, application fields.">
   <TABLES>
-    <TABLE NAME="nit_tutor" COMMENT="One row per teacher or applicant: application state, intro video, Super Tutor badge.">
+    <TABLE NAME="nit_tutor" COMMENT="One row per teacher or applicant: application state and intro video.">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
@@ -14,9 +14,6 @@
         <FIELD NAME="videourl" TYPE="char" LENGTH="1333" NOTNULL="false" SEQUENCE="false" COMMENT="YouTube / Vimeo link when videotype = link"/>
         <FIELD NAME="videostatus" TYPE="char" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="empty|pending|approved|rejected"/>
         <FIELD NAME="videonote" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
-        <FIELD NAME="badgemode" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="auto" SEQUENCE="false" COMMENT="auto|on|off"/>
-        <FIELD NAME="badge" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1 = wears the Super Tutor badge now"/>
-        <FIELD NAME="badgesince" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
       </FIELDS>
@@ -87,6 +84,46 @@
       </KEYS>
       <INDEXES>
         <INDEX NAME="user_field_uk" UNIQUE="true" FIELDS="userid, fieldid"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="nit_tutor_badge" COMMENT="Teacher badges the admin defines (e.g. Super Tutor): earned by rules, or given by hand.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="name" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="{mlang} allowed"/>
+        <FIELD NAME="description" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="What it means, for students; {mlang} allowed"/>
+        <FIELD NAME="color" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="warning" SEQUENCE="false" COMMENT="A Brand Colors role: primary|success|warning|info|error|secondary"/>
+        <FIELD NAME="method" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="auto" SEQUENCE="false" COMMENT="auto (by the rules) | manual (given by a reviewer)"/>
+        <FIELD NAME="minrating" TYPE="number" LENGTH="3" NOTNULL="true" DEFAULT="0" SEQUENCE="false" DECIMALS="1" COMMENT="0 = not checked"/>
+        <FIELD NAME="minreviews" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="0 = not checked"/>
+        <FIELD NAME="minlessons" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="0 = not checked"/>
+        <FIELD NAME="maxabsence" TYPE="number" LENGTH="5" NOTNULL="true" DEFAULT="100" SEQUENCE="false" DECIMALS="1" COMMENT="Teacher no-shows, %; 100 = not checked"/>
+        <FIELD NAME="active" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false"/>
+        <FIELD NAME="sortorder" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+    </TABLE>
+
+    <TABLE NAME="nit_tutor_badge_user" COMMENT="A teacher's state for one badge: the reviewer's choice and whether they wear it now.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="badgeid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="mode" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="auto" SEQUENCE="false" COMMENT="auto (by the badge's method) | on (always) | off (never)"/>
+        <FIELD NAME="awarded" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timeawarded" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="badgeid_fk" TYPE="foreign" FIELDS="badgeid" REFTABLE="nit_tutor_badge" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="badge_user_uk" UNIQUE="true" FIELDS="badgeid, userid"/>
+        <INDEX NAME="user_awarded_idx" UNIQUE="false" FIELDS="userid, awarded"/>
       </INDEXES>
     </TABLE>
   </TABLES>

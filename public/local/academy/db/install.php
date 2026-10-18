@@ -26,5 +26,8 @@ function xmldb_local_academy_install() {
     \local_academy\local\site_defaults::email_confirmation();
     \local_academy\local\site_defaults::login_lockout();
     \local_academy\local\site_defaults::ensure_arabic();
+    // A command-line install resets every admin setting after this runs: apply them again on the
+    // first request after the install (site_defaults::after_config).
+    set_config(\local_academy\local\site_defaults::PENDING, 1, 'local_academy');
     return true;
 }

@@ -76,8 +76,8 @@ final class application {
         }
         $now = time();
         $row = (object) ['userid' => $userid, 'status' => self::DRAFT, 'reviewedby' => 0, 'timesubmitted' => 0,
-            'timereviewed' => 0, 'videotype' => '', 'videourl' => '', 'videostatus' => '', 'badgemode' => 'auto',
-            'badge' => 0, 'badgesince' => 0, 'timecreated' => $now, 'timemodified' => $now];
+            'timereviewed' => 0, 'videotype' => '', 'videourl' => '', 'videostatus' => '', 'timecreated' => $now,
+            'timemodified' => $now];
         $row->id = $DB->insert_record(self::TABLE, $row);
         return $row;
     }

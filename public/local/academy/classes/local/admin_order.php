@@ -50,6 +50,7 @@ class admin_order extends \admin_category {
         'local_nit_ai',
         'local_nit_devices',
         'local_jobform_manage',
+        'local_nit_tutors',
         'local_nit_flex_cat',
         'local_nit_mlang_settings',
         'local_nit_finance_cat',

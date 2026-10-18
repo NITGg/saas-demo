@@ -20,32 +20,33 @@
     The reviewer's page for one teacher (admin/application.php).
 
     Context variables required for this template:
-    * sesskey, actionurl, backurl
+    * sesskey, actionurl, backurl, badgesurl
     * name, email, phone, photo, profileurl, publicurl
     * status, statuslabel, submitted, reviewed, reviewnote
     * headline, bio (HTML), subjects [{name}], price
-    * hasvideo, video {embed, src, mimetype}, videostatus, videopending, videonote
-    * hasquals, quals [{id, title, institution, year, verified, fileurl, filename}]
-    * hasanswers, answers [{label, value, fileurl, filename}]
+    * hasvideo, video {embed, src, mimetype}, videostatus, videonote
+    * hasquals, quals [{id, title, institution, year, verified, fileurl, filename, isimage}]
+    * hasanswers, answers [{label, value, fileurl, filename, isimage}]
     * missing [{label}]
-    * canapprove, canchanges, canreject, cansuspend, approvelabel
-    * badge, badgemodes [{value, label, selected}], stats, rules, earned
+    * videoonly - the decision buttons act on the new intro video of an approved teacher
+    * canapprove, canchanges, canreject, cansuspend, approvelabel, rejectlabel
+    * isapproved, stats, hasbadges, badges [{id, name, color, rules, isauto, meets, wears, modes [{value, label, selected}]}]
 
     Example context (json):
-    {"sesskey": "x", "actionurl": "#", "backurl": "#", "name": "Sara Ali", "email": "s@example.com", "phone": "",
-     "photo": "", "profileurl": "#", "publicurl": "#", "status": "pending", "statuslabel": "Waiting for review",
+    {"sesskey": "x", "actionurl": "#", "backurl": "#", "badgesurl": "#", "name": "Sara Ali", "email": "s@example.com",
+     "phone": "", "photo": "", "profileurl": "#", "publicurl": "#", "status": "pending", "statuslabel": "Waiting for review",
      "submitted": "", "reviewed": "", "reviewnote": "", "headline": "", "bio": "", "subjects": [], "price": 1,
-     "hasvideo": false, "videostatus": "", "videopending": false, "videonote": "", "hasquals": false, "quals": [],
-     "hasanswers": false, "answers": [], "missing": [], "canapprove": true, "canchanges": true, "canreject": true,
-     "cansuspend": false, "approvelabel": "Approve", "badge": false, "badgemodes": [], "stats": "", "rules": "",
-     "earned": false}
+     "hasvideo": false, "videostatus": "", "videonote": "", "hasquals": false, "quals": [], "hasanswers": false,
+     "answers": [], "missing": [], "videoonly": false, "canapprove": true, "canchanges": true, "canreject": true,
+     "cansuspend": false, "approvelabel": "Approve", "rejectlabel": "Reject", "isapproved": false, "stats": "",
+     "hasbadges": false, "badges": []}
 }}
 <div class="nittu-review">
-    <p><a href="{{backurl}}">&larr; {{#str}}applications, local_nit_tutors{{/str}}</a></p>
+    <p><a href="{{backurl}}">&larr; {{#str}}tab_applications, local_nit_tutors{{/str}}</a></p>
     <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
         <img src="{{photo}}" alt="" width="72" height="72" class="rounded-circle">
         <div class="flex-grow-1">
-            <h2 class="h4 mb-1">{{name}} {{#badge}}<span class="nittu-badge">{{#str}}supertutor, local_nit_tutors{{/str}}</span>{{/badge}}</h2>
+            <h2 class="h4 mb-1">{{name}}</h2>
             <div class="text-muted"><span dir="ltr">{{email}}</span>{{#phone}} · <span dir="ltr">{{phone}}</span>{{/phone}}</div>
             <div class="mt-1"><span class="badge bg-secondary nittu-st-{{status}}">{{statuslabel}}</span>
                 {{#submitted}}<small class="text-muted ms-2">{{#str}}col_submitted, local_nit_tutors{{/str}}: {{submitted}}</small>{{/submitted}}
@@ -92,11 +93,12 @@
                 {{^hasquals}}<p class="text-muted mb-0">{{#str}}noquals, local_nit_tutors{{/str}}</p>{{/hasquals}}
                 <ul class="list-unstyled mb-0">
                 {{#quals}}
-                    <li class="d-flex flex-wrap align-items-center gap-2 py-2 border-bottom">
+                    <li class="d-flex flex-wrap align-items-center gap-3 py-2 border-bottom">
+                        {{#isimage}}<a href="{{fileurl}}" target="_blank" rel="noopener"><img class="nittu-cert" src="{{fileurl}}" alt="{{filename}}"></a>{{/isimage}}
                         <div class="flex-grow-1">
                             <strong>{{title}}</strong>{{#institution}} — {{institution}}{{/institution}}{{#year}} ({{year}}){{/year}}
                             {{#verified}}<span class="badge bg-success ms-1">{{#str}}qual_verified, local_nit_tutors{{/str}}</span>{{/verified}}
-                            {{#fileurl}}<div><a href="{{fileurl}}" target="_blank">{{filename}}</a></div>{{/fileurl}}
+                            {{#fileurl}}<div><a href="{{fileurl}}" target="_blank" rel="noopener">{{#str}}opencertificate, local_nit_tutors{{/str}}</a> <small class="text-muted">{{filename}}</small></div>{{/fileurl}}
                         </div>
                         <form method="post" action="{{actionurl}}">
                             <input type="hidden" name="sesskey" value="{{sesskey}}">
@@ -115,7 +117,7 @@
                 <dl class="mb-0">
                 {{#answers}}
                     <dt>{{label}}</dt>
-                    <dd>{{#fileurl}}<a href="{{fileurl}}" target="_blank">{{filename}}</a>{{/fileurl}}{{^fileurl}}{{{value}}}{{/fileurl}}</dd>
+                    <dd>{{#fileurl}}{{#isimage}}<a href="{{fileurl}}" target="_blank" rel="noopener"><img class="nittu-cert" src="{{fileurl}}" alt="{{filename}}"></a> {{/isimage}}<a href="{{fileurl}}" target="_blank" rel="noopener">{{filename}}</a>{{/fileurl}}{{^fileurl}}{{{value}}}{{/fileurl}}</dd>
                 {{/answers}}
                 </dl>
             </div></section>
@@ -125,6 +127,7 @@
         <div class="col-lg-5">
             <section class="card mb-3"><div class="card-body">
                 <h3 class="h5">{{#str}}decision, local_nit_tutors{{/str}}</h3>
+                {{#videoonly}}<p class="alert alert-info py-2">{{#str}}decision_videoonly, local_nit_tutors{{/str}}</p>{{/videoonly}}
                 <form method="post" action="{{actionurl}}">
                     <input type="hidden" name="sesskey" value="{{sesskey}}">
                     <label class="form-label" for="nittu-note">{{#str}}reviewnote, local_nit_tutors{{/str}}</label>
@@ -132,30 +135,41 @@
                         placeholder="{{#str}}reviewnote_help, local_nit_tutors{{/str}}"></textarea>
                     <div class="d-flex flex-wrap gap-2">
                         {{#canapprove}}<button class="btn btn-primary" name="action" value="approve">{{approvelabel}}</button>{{/canapprove}}
+                        {{#canreject}}<button class="btn btn-outline-primary" name="action" value="reject">{{rejectlabel}}</button>{{/canreject}}
                         {{#canchanges}}<button class="btn btn-outline-primary" name="action" value="changes">{{#str}}act_changes, local_nit_tutors{{/str}}</button>{{/canchanges}}
-                        {{#canreject}}<button class="btn btn-outline-primary" name="action" value="reject">{{#str}}act_reject, local_nit_tutors{{/str}}</button>{{/canreject}}
                         {{#cansuspend}}<button class="btn btn-outline-primary" name="action" value="suspend">{{#str}}act_suspend, local_nit_tutors{{/str}}</button>{{/cansuspend}}
-                        {{#videopending}}
-                        <button class="btn btn-primary" name="action" value="videook">{{#str}}act_videook, local_nit_tutors{{/str}}</button>
-                        <button class="btn btn-outline-primary" name="action" value="videono">{{#str}}act_videono, local_nit_tutors{{/str}}</button>
-                        {{/videopending}}
                     </div>
                 </form>
             </div></section>
 
             <section class="card mb-3"><div class="card-body">
-                <h3 class="h5">{{#str}}supertutor, local_nit_tutors{{/str}}</h3>
-                <p class="mb-1">{{stats}}</p>
-                <p class="text-muted small">{{rules}}</p>
-                <p>{{#earned}}{{#str}}badge_meets, local_nit_tutors{{/str}}{{/earned}}{{^earned}}{{#str}}badge_notmeets, local_nit_tutors{{/str}}{{/earned}}</p>
-                <form method="post" action="{{actionurl}}" class="d-flex gap-2">
+                <h3 class="h5">{{#str}}tab_badges, local_nit_tutors{{/str}}</h3>
+                <p class="small text-muted">{{#str}}badges_review_help, local_nit_tutors{{/str}}</p>
+                <p class="small mb-2"><strong>{{#str}}badge_teacherstats, local_nit_tutors{{/str}}:</strong> {{stats}}</p>
+                {{^isapproved}}<p class="small text-muted">{{#str}}badges_notapproved, local_nit_tutors{{/str}}</p>{{/isapproved}}
+                {{#hasbadges}}
+                <form method="post" action="{{actionurl}}">
                     <input type="hidden" name="sesskey" value="{{sesskey}}">
-                    <input type="hidden" name="action" value="badge">
-                    <select class="form-select" name="mode" aria-label="{{#str}}supertutor, local_nit_tutors{{/str}}">
-                        {{#badgemodes}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/badgemodes}}
-                    </select>
+                    <input type="hidden" name="action" value="badges">
+                    <ul class="list-unstyled mb-3">
+                        {{#badges}}
+                        <li class="nittu-badgerow">
+                            <div class="d-flex flex-wrap align-items-center gap-2">
+                                <span class="nittu-badge nittu-badge--{{color}}">{{name}}</span>
+                                {{#wears}}<span class="badge bg-success">{{#str}}badge_wears, local_nit_tutors{{/str}}</span>{{/wears}}
+                                {{^wears}}<span class="badge bg-light text-dark">{{#str}}badge_notwears, local_nit_tutors{{/str}}</span>{{/wears}}
+                            </div>
+                            <div class="small text-muted my-1">{{rules}}{{#isauto}} — {{#meets}}{{#str}}badge_meets, local_nit_tutors{{/str}}{{/meets}}{{^meets}}{{#str}}badge_notmeets, local_nit_tutors{{/str}}{{/meets}}{{/isauto}}</div>
+                            <select class="form-select form-select-sm" name="mode[{{id}}]" aria-label="{{name}}">
+                                {{#modes}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/modes}}
+                            </select>
+                        </li>
+                        {{/badges}}
+                    </ul>
                     <button class="btn btn-outline-primary">{{#str}}savechanges{{/str}}</button>
                 </form>
+                {{/hasbadges}}
+                {{^hasbadges}}<p class="small text-muted mb-0">{{#str}}nobadges, local_nit_tutors{{/str}} <a href="{{badgesurl}}">{{#str}}addbadge, local_nit_tutors{{/str}}</a></p>{{/hasbadges}}
             </div></section>
         </div>
     </div>

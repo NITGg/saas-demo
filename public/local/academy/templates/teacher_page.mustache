@@ -30,7 +30,7 @@
     * canrate, rateurl - the "rate the teacher" button for a learner who may rate them
     * hasreviews, reviews - the latest approved comments: name, picture, starson, starsoff, rating, date, text, course
     * hascourses - whether the teacher has a visible course (an approved tutor may have none)
-    * tutor - local_nit_tutors\local\public_profile::extras(): listed, badge, headline, price, subjects, hasvideo,
+    * tutor - local_nit_tutors\local\public_profile::extras(): listed, hasbadges, badges [{name, color, description}], headline, price, subjects, hasvideo,
       video {embed, src}, hasquals, quals, hasanswers, answers, hashours, hours, timezone, lessons, bookurl (null without it)
     * courses - course cards: id, fullname, url, enrolurl, image, year, price, summary,
       createdtext, modifiedtext, yearid, enrolled, free
@@ -64,7 +64,7 @@
                 </ul>
                 {{/hascourses}}
                 <h1 class="bthtp__name">{{name}}</h1>
-                {{#tutor.badge}}<p class="bthtp__badge"><span class="nittu-badge">{{#str}}supertutor, local_nit_tutors{{/str}}</span></p>{{/tutor.badge}}
+                {{#tutor.hasbadges}}<p class="bthtp__badge">{{#tutor.badges}}<span class="nittu-badge nittu-badge--{{color}}" title="{{description}}">{{name}}</span> {{/tutor.badges}}</p>{{/tutor.hasbadges}}
                 {{#title}}<p class="bthtp__title">{{title}}</p>{{/title}}
                 {{^title}}{{#tutor.headline}}<p class="bthtp__title">{{tutor.headline}}</p>{{/tutor.headline}}{{/title}}
                 {{#hasyears}}

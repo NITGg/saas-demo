@@ -23,18 +23,23 @@
 require(__DIR__ . '/../../config.php');
 require_once($CFG->dirroot . '/theme/nit/lib.php'); // theme_nit_brand_logo_url().
 
-$PAGE->set_url(new moodle_url('/local/academy/register.php'));
+// ?as=teacher: the teacher sign-up (local_nit_tutors) in this same design — one step with name, phone,
+// email and password, no school questions; the account then opens the teacher application.
+$teachersignup = '\local_nit_tutors\local\signup';
+$asteacher = optional_param('as', '', PARAM_ALPHA) === 'teacher' && class_exists($teachersignup);
+$PAGE->set_url(new moodle_url('/local/academy/register.php', $asteacher ? ['as' => 'teacher'] : null));
 $PAGE->set_context(context_system::instance());
 $PAGE->set_pagelayout('embedded');
 // Page copy in the visitor's language (Arabic first, English otherwise).
 $isar = strpos(current_language(), 'ar') === 0;
 $t = static fn(string $en, string $ar): string => $isar ? $ar : $en;
-$PAGE->set_title($t('Create an account', 'طلب انشاء حساب'));
+$PAGE->set_title($asteacher ? $t('Join as a teacher', 'انضم كمدرس') : $t('Create an account', 'طلب انشاء حساب'));
 $hintname = $t('Write your name in Arabic as it is on the ID card', 'اكتب اسمك بالعربي زي اللي موجود في البطاقة');
 $PAGE->set_heading('');
 
 if (isloggedin() && !isguestuser()) {
-    redirect(new moodle_url('/'));
+    // A signed-in user who wants to teach goes straight to the application.
+    redirect($asteacher ? new moodle_url('/local/nit_tutors/apply.php') : new moodle_url('/'));
 }
 
 // The dropdown lists are the admin's: Years = the course categories; Study systems / Divisions from
@@ -59,7 +64,7 @@ $regold = [];     // Values to put back in the form after a failed submit (never
 $regerrors = [];  // Field name => message.
 if (data_submitted()) {
     $raw = [];
-    foreach (\local_academy\local\registration::FIELDS as $name) {
+    foreach ($asteacher ? $teachersignup::FIELDS : \local_academy\local\registration::FIELDS as $name) {
         $raw[$name] = optional_param($name, '', PARAM_RAW);
     }
     $agreed = (bool) optional_param('agree', 0, PARAM_BOOL);
@@ -73,7 +78,8 @@ if (data_submitted()) {
         if (optional_param('password2', '', PARAM_RAW) !== $raw['password']) {
             throw new \local_academy\local\invalid_registration(['password2' => get_string('reg_passwordmismatch', 'local_academy')]);
         }
-        $newuser = \local_academy\local\registration::register($raw, $agreed);
+        $newuser = $asteacher ? $teachersignup::register($raw, $agreed)
+            : \local_academy\local\registration::register($raw, $agreed);
         if (empty($newuser->confirmed)) {
             // Moodle's email self-registration: "check your email" (core strings), no sign-in yet.
             $PAGE->set_title(get_string('emailconfirm'));
@@ -87,14 +93,17 @@ if (data_submitted()) {
             die;
         }
         complete_user_login($newuser);
-        redirect(new moodle_url('/'), get_string('reg_success', 'local_academy'),
-            null, \core\output\notification::NOTIFY_SUCCESS);
+        // A new teacher continues with the application (bio, subjects, video, qualifications).
+        redirect($asteacher ? new moodle_url('/local/nit_tutors/application.php') : new moodle_url('/'),
+            get_string('reg_success', 'local_academy'), null, \core\output\notification::NOTIFY_SUCCESS);
     } catch (\local_academy\local\invalid_registration $e) {
+        $regerrors = $e->errors;
+    } catch (\local_nit_tutors\local\invalid_signup $e) {
         $regerrors = $e->errors;
     } catch (\moodle_exception $e) {
         $regerrors = ['_form' => $e->getMessage()];
     }
-    $regold = \local_academy\local\registration::clean($raw);
+    $regold = $asteacher ? $teachersignup::clean($raw) : \local_academy\local\registration::clean($raw);
     unset($regold['password']);
     $regold['agree'] = $agreed;
 }
@@ -182,6 +191,12 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
   .nit-reg h1{ font-family:'Tajawal'; font-weight:700; font-size:24px; color:var(--ink); text-align:center; margin:10px 0 0; }
   .nit-reg-sub{ font-family:'Tajawal'; font-weight:400; font-size:16px; color:var(--muted); text-align:center; line-height:1.7; margin:10px 0 24px; }
 
+  /* student / teacher switch (?as=teacher) */
+  .nit-reg-roles{ display:flex; gap:6px; padding:5px; margin:14px auto 0; max-width:320px; border:1px solid var(--line); border-radius:14px; background:var(--field); }
+  .nit-reg-roles a{ flex:1; text-align:center; padding:10px 12px; border-radius:10px; font-family:'Tajawal'; font-weight:700; font-size:16px; color:var(--muted)!important; text-decoration:none!important; }
+  .nit-reg-roles a:hover{ background:var(--hover); color:var(--ink)!important; }
+  .nit-reg-roles a.on{ background:var(--accent); color:var(--onaccent)!important; }
+
   .nit-reg-grid{ display:grid; grid-template-columns:1fr 1fr; gap:24px; }
   .nit-reg-grid.one{ grid-template-columns:1fr; }
   @media (max-width:520px){ .nit-reg-grid{ grid-template-columns:1fr; } }
@@ -263,14 +278,25 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
     </a>
     <div class="nit-reg-inner">
-      <div class="nit-reg-progress">
+      <div class="nit-reg-progress"<?php echo $asteacher ? ' hidden' : ''; ?>>
         <div class="nit-reg-progrow"><span class="pct" id="reg-pct">30%</span><span class="step" id="reg-step-label"><?php echo s($t('Step one', 'الخطوه الاولى')); ?></span></div>
         <div class="nit-reg-track"><div class="nit-reg-fill" id="reg-fill" style="width:30%"></div></div>
       </div>
 
       <div class="nit-reg-logo"><img src="<?php echo s(theme_nit_brand_logo_url()); ?>" alt="<?php echo s(format_string($SITE->fullname)); ?>"></div>
+      <?php if (class_exists($teachersignup)): // Student / teacher: two sign-ups, one design. ?>
+      <nav class="nit-reg-roles" aria-label="<?php echo s($t('I am a', 'أنا')); ?>">
+        <a href="<?php echo (new moodle_url('/local/academy/register.php'))->out(false); ?>"<?php echo $asteacher ? '' : ' class="on" aria-current="page"'; ?>><?php echo s($t('Student', 'طالب')); ?></a>
+        <a href="<?php echo (new moodle_url('/local/academy/register.php', ['as' => 'teacher']))->out(false); ?>"<?php echo $asteacher ? ' class="on" aria-current="page"' : ''; ?>><?php echo s($t('Teacher', 'مدرس')); ?></a>
+      </nav>
+      <?php endif; ?>
+      <?php if ($asteacher): ?>
+      <h1><?php echo s($t('Join as a teacher:', 'انضم كمدرس :')); ?></h1>
+      <p class="nit-reg-sub"><?php echo s($t('Create your account, then complete your teacher profile (about you, subjects, intro video, qualifications) and send it for review. Once approved, students can find and book you.', 'أنشئ حسابك، ثم أكمل ملفك كمدرس (نبذة عنك، والمواد، والفيديو التعريفي، والمؤهلات) وأرسله للمراجعة. بعد الاعتماد يستطيع الطلاب العثور عليك وحجز حصص معك.')); ?></p>
+      <?php else: ?>
       <h1><?php echo s($t('Create an account:', 'طلب انشاء حساب :')); ?></h1>
       <p class="nit-reg-sub"><?php echo s($t('Enter your details correctly. Your request is reviewed within a few hours to a few days, and you can log in to see its status.', 'ادخل بياناتك بشكل صحيح وسيتم مراجعة طلبك خلال ساعات لـ بضع ايام, وتقدر تسجل دخول عشان تشوف حالة الطلب بتاعك')); ?></p>
+      <?php endif; ?>
 
       <?php if (!empty($regerrors)) {
           echo $OUTPUT->notification($regerrors['_form'] ?? get_string('reg_failed', 'local_academy'),
@@ -278,6 +304,26 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
       } ?>
       <form method="post" action="<?php echo $PAGE->url->out(false); ?>" id="regform" autocomplete="off">
         <input type="hidden" name="sesskey" value="<?php echo sesskey(); ?>">
+
+        <?php if ($asteacher): ?>
+        <!-- TEACHER: one step -->
+        <div class="reg-step active" data-step="1">
+          <div class="nit-reg-grid">
+            <?php echo reg_text('firstname', $t('First name', 'الاسم الأول'), $ic['user']); ?>
+            <?php echo reg_text('lastname', $t('Last name', 'الاسم الأخير'), $ic['user']); ?>
+          </div>
+          <div class="nit-reg-grid one nit-reg-row"><?php echo reg_text('phone', $t('Phone number', 'رقم الهاتف'), $ic['phone'], '', 'tel', false, 'inputmode="tel" maxlength="15"'); ?></div>
+          <div class="nit-reg-grid one nit-reg-row"><?php echo reg_text('email', $t('Email', 'البريد الإلكتروني'), $ic['mail'], '', 'email'); ?></div>
+          <div class="nit-reg-grid nit-reg-row">
+            <?php echo reg_text('password', $t('Password', 'كلمة السر'), $ic['lock'], '', 'password', true); ?>
+            <?php echo reg_text('password2', $t('Confirm password', 'تأكيد كلمة السر'), $ic['lock'], '', 'password', true); ?>
+          </div>
+          <label class="nit-reg-terms"><input type="checkbox" name="agree" value="1" id="f_agree"<?php echo !empty($regold['agree']) ? ' checked' : ''; ?>><span><?php echo s($t('I agree to the', 'أوافق على')); ?> <a href="#" class="reg-terms-open"><?php echo s($t('terms and conditions', 'الشروط والأحكام')); ?></a></span></label>
+          <div class="reg-err" id="agree-err" style="margin-top:6px;"></div>
+          <div class="nit-reg-btns"><button type="submit" class="btn-next"><?php echo s($t('Create account and continue', 'إنشاء الحساب والمتابعة')); ?></button></div>
+          <div class="nit-reg-bottom"><?php echo s($t('Already have an account?', 'يوجد لديك حساب بالفعل؟')); ?> <a href="<?php echo $loginurl; ?>"><?php echo s($t('Log in now!', 'ادخل إلى حسابك الآن !')); ?></a></div>
+        </div>
+        <?php else: ?>
 
         <!-- STEP 1 -->
         <div class="reg-step active" data-step="1">
@@ -294,9 +340,6 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
           <div class="nit-reg-grid one nit-reg-row"><?php echo reg_text('national', $t('Student national ID', 'رقم الطالب القومي'), $ic['id'], $t('The student\'s own ID number, not the guardian\'s', 'رقم بطاقة الطالب نفسه، مش ولي الأمر'), 'text', false, 'inputmode="numeric" maxlength="14"'); ?></div>
           <div class="nit-reg-btns"><button type="button" class="btn-next" data-next><?php echo s($t('Next', 'التالي')); ?></button></div>
           <div class="nit-reg-bottom"><?php echo s($t('Already have an account?', 'يوجد لديك حساب بالفعل؟')); ?> <a href="<?php echo $loginurl; ?>"><?php echo s($t('Log in now!', 'ادخل إلى حسابك الآن !')); ?></a></div>
-          <?php if (file_exists($CFG->dirroot . '/local/nit_tutors/apply.php')): // Teachers have their own sign-up (no school questions). ?>
-          <div class="nit-reg-bottom"><?php echo s($t('Are you a teacher?', 'هل أنت مدرس؟')); ?> <a href="<?php echo (new moodle_url('/local/nit_tutors/apply.php'))->out(false); ?>"><?php echo s($t('Apply to teach', 'قدّم طلب انضمام كمدرس')); ?></a></div>
-          <?php endif; ?>
         </div>
 
         <!-- STEP 2 -->
@@ -332,6 +375,7 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
           <div class="nit-reg-btns"><button type="button" class="btn-prev" data-prev><?php echo s($t('Back', 'السابق')); ?></button><button type="submit" class="btn-next"><?php echo s($t('Create account!', 'طلب انشاء حساب !')); ?></button></div>
           <div class="nit-reg-bottom"><?php echo s($t('Already have an account?', 'يوجد لديك حساب بالفعل؟')); ?> <a href="<?php echo $loginurl; ?>"><?php echo s($t('Log in now!', 'ادخل إلى حسابك الآن !')); ?></a></div>
         </div>
+        <?php endif; ?>
       </form>
     </div>
   </div>

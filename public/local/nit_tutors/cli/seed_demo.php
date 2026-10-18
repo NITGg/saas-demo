@@ -127,7 +127,7 @@ qualifications::save($approved, 0, 'CELTA', 'Cambridge', 2019, 2);
 fields::save_answer($approved, $field, '{mlang ar}الإنجليزية{mlang}{mlang en}English{mlang}');
 application::submit($approved);
 application::approve($approved, $admin, '');
-badge::set_mode($approved, badge::ON);
+badge::set_mode($approved, badge::ensure_default(), badge::ON);
 
 // 2. Waiting for review.
 $pending = nit_tutors_seed_user('nit_tutor_pending', 'عمر', 'حسن', 'مدرس رياضيات للمرحلة الثانوية، 5 سنوات خبرة.');

@@ -17,7 +17,7 @@
 namespace local_nit_tutors\task;
 
 /**
- * Daily: give or take the Super Tutor badge by the admin's rules.
+ * Daily: give or take every teacher badge by its rules (badges the admin defines).
  *
  * @package    local_nit_tutors
  * @copyright  2026 NIT
@@ -38,6 +38,6 @@ class refresh_badges extends \core\task\scheduled_task {
      * Run.
      */
     public function execute(): void {
-        mtrace('Super Tutor badges: ' . \local_nit_tutors\local\badge::refresh_all());
+        mtrace('Teacher badges worn: ' . \local_nit_tutors\local\badge::refresh_all());
     }
 }

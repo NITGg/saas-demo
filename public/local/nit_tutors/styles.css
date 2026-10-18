@@ -2,21 +2,169 @@
    Colours come from the Brand Colors palette (--nit-brand-*), with neutral fallbacks.
    Logical properties only (inline-start/end), so RTL needs no mirrored rules. */
 
+/* A teacher badge: tinted with the Brand Colors role the admin picked (badge colour). The text
+   stays the palette's text colour, so it reads in light and dark groups alike. */
 .nittu-badge {
+    --nittu-role: var(--nit-brand-warning, #f5b301);
     display: inline-flex;
     align-items: center;
     gap: 4px;
     padding: 2px 10px;
     border-radius: 999px;
+    border: 1px solid var(--nittu-role);
     font-size: 12px;
     font-weight: 700;
     line-height: 1.6;
-    background: var(--nit-brand-warning, #f5b301);
+    background: color-mix(in srgb, var(--nittu-role) 18%, var(--nit-brand-surface, #fff));
     color: var(--nit-brand-textprimary, #1b1b1b);
     white-space: nowrap;
 }
 .nittu-badge::before {
     content: "★";
+    color: var(--nittu-role);
+}
+.nittu-badge--primary { --nittu-role: var(--nit-brand-primary, #0e7c66); }
+.nittu-badge--success { --nittu-role: var(--nit-brand-success, #1f7a45); }
+.nittu-badge--info { --nittu-role: var(--nit-brand-info, #1d6fb8); }
+.nittu-badge--error { --nittu-role: var(--nit-brand-error, #b3261e); }
+.nittu-badge--secondary { --nittu-role: var(--nit-brand-secondary, #6b6b66); }
+.nittu-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 4px 0;
+}
+
+/* Reviewer page: certificate previews and the badge rows. */
+.nittu-cert {
+    width: 96px;
+    height: 72px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--nit-brand-borderprimary, #dcdcd7);
+}
+.nittu-badgerow {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--nit-brand-bordersecondary, #ededE9);
+}
+
+/* ── Teacher profile page (application.php) in the account frame ─────────── */
+.nittu-status {
+    padding: 20px 22px;
+    border-inline-start: 4px solid var(--nittu-tone, var(--nit-brand-info, #1d6fb8));
+}
+.nittu-status--success { --nittu-tone: var(--nit-brand-success, #1f7a45); }
+.nittu-status--warning { --nittu-tone: var(--nit-brand-warning, #c98a00); }
+.nittu-status--danger { --nittu-tone: var(--nit-brand-error, #b3261e); }
+.nittu-status__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+.nittu-status__pill {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--nit-brand-textprimary, #16191d);
+}
+.nittu-status__link {
+    margin-inline-start: auto;
+}
+.nittu-status__help {
+    margin: 8px 0 0;
+    color: var(--nit-brand-textsecondary, #6b6b66);
+    font-size: 14px;
+}
+.nittu-status__note,
+.nittu-status__missing {
+    margin-top: 12px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--nittu-tone, #1d6fb8) 8%, var(--nit-brand-surface, #fff));
+    font-size: 14px;
+}
+.nittu-status__missing ul {
+    margin: 6px 0 0;
+    padding-inline-start: 20px;
+}
+/* The moodleform's sections drawn as the account page's cards. */
+.nittu-app .mform fieldset {
+    background: var(--t-bg, var(--nit-brand-surface, #fff));
+    border: 1px solid var(--t-border, var(--nit-brand-borderprimary, #ededE9));
+    border-radius: 16px;
+    padding: 0 22px 18px;
+    margin-bottom: 18px;
+}
+.nittu-app .mform fieldset legend {
+    float: none;
+    width: auto;
+    margin: 0;
+    padding: 18px 0 14px;
+    font-size: 15px;
+    font-weight: 600;
+}
+.nittu-app .mform fieldset legend a,
+.nittu-app .mform fieldset legend .icons-collapse-expand {
+    color: var(--nit-brand-textprimary, #16191d);
+    text-decoration: none;
+}
+.nittu-app .mform .collapsible-actions {
+    display: none;
+}
+/* Moodle 5 draws the section title as .ftoggler > h3 (the legend itself is visually hidden). */
+.nittu-app .mform fieldset .ftoggler {
+    padding: 16px 0 10px;
+    border-bottom: 1px solid var(--t-line, var(--nit-brand-bordersecondary, #f1f1ed));
+    margin-bottom: 14px;
+}
+.nittu-app .mform fieldset .ftoggler h3,
+.nittu-app .mform fieldset .ftoggler .h3 {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0;
+    color: var(--nit-brand-textprimary, #16191d);
+}
+.nittu-app .mform .fitem {
+    flex-direction: column;
+}
+.nittu-app .mform .fitem > .col-md-3,
+.nittu-app .mform .fitem > .col-md-9 {
+    flex: 0 0 100%;
+    max-width: 100%;
+    padding-inline: 0;
+    text-align: start;
+}
+.nittu-app .mform .fitem > .col-md-3 label,
+.nittu-app .mform .fitem > .col-md-3 .col-form-label {
+    font-size: 12px;
+    color: var(--t-muted, var(--nit-brand-textsecondary, #8a8a82));
+    padding-bottom: 6px;
+}
+.nittu-app .mform .form-control,
+.nittu-app .mform .form-select,
+.nittu-app .mform .custom-select {
+    min-height: 46px;
+    border: 1px solid var(--t-border2, var(--nit-brand-borderprimary, #dcdcd7));
+    border-radius: 10px;
+    background-color: var(--t-field, var(--nit-brand-surface, #fbfbf9));
+    font-size: 14px;
+}
+.nittu-app .mform textarea.form-control {
+    line-height: 1.7;
+}
+.nittu-app .mform .form-control:focus,
+.nittu-app .mform .form-select:focus {
+    border-color: var(--t-accent, var(--nit-brand-primary, #0e7c66));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--nit-brand-primary, #0e7c66) 16%, transparent);
+}
+.nittu-app .mform .filemanager {
+    border-radius: 10px;
+}
+.nittu-app .mform #fgroup_id_buttonar {
+    background: var(--t-bg, var(--nit-brand-surface, #fff));
+    border: 1px solid var(--t-border, var(--nit-brand-borderprimary, #ededE9));
+    border-radius: 16px;
+    padding: 16px 22px;
 }
 
 /* Header search dialog (theme_nit navbar): the "Teachers" group of the live results. */

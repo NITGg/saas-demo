@@ -21,18 +21,19 @@
 
     Context variables required for this template:
     * actionurl, reseturl, coursesurl, applyurl
-    * q, pricemin, pricemax, super, hasfilters, total
-    * subjects, days, times, ratings, sorts - [{value, label, selected}]
+    * q, pricemin, pricemax, hasfilters, total
+    * subjects, days, times, ratings, sorts, badges - [{value, label, selected}]; hasbadgefilter
     * fieldfilters - [{id, label, options: [{value, label, selected}]}]
     * hasteachers, teachers - cards: id, name, photo, headline, subjects [{name}], price, hasrating, rating,
-      reviews, lessons, badge, hasvideo, url, bookurl
+      reviews, lessons, hasbadges, badges [{name, color, description}], hasvideo, url, bookurl
 
     Example context (json):
     {"actionurl": "#", "reseturl": "#", "coursesurl": "#", "applyurl": "#", "q": "", "pricemin": "", "pricemax": "",
-     "super": false, "hasfilters": false, "total": 1, "subjects": [], "days": [], "times": [], "ratings": [],
-     "sorts": [], "fieldfilters": [], "hasteachers": true,
+     "hasfilters": false, "total": 1, "subjects": [], "days": [], "times": [], "ratings": [],
+     "sorts": [], "badges": [], "hasbadgefilter": false, "fieldfilters": [], "hasteachers": true,
      "teachers": [{"id": 3, "name": "Sara Ali", "photo": "", "headline": "IELTS coach", "subjects": [{"name": "English"}],
-       "price": 2, "hasrating": true, "rating": "4.9", "reviews": 12, "lessons": 40, "badge": true, "hasvideo": true,
+       "price": 2, "hasrating": true, "rating": "4.9", "reviews": 12, "lessons": 40, "hasbadges": true,
+       "badges": [{"name": "Super Tutor", "color": "warning", "description": ""}], "hasvideo": true,
        "url": "#", "bookurl": "#"}]}
 }}
 <div class="nittu-search">
@@ -102,10 +103,15 @@
                     </select>
                 </label>
                 {{/fieldfilters}}
-                <label class="nittu-filter nittu-filter--check">
-                    <input type="checkbox" name="super" value="1" {{#super}}checked{{/super}}>
-                    <span>{{#str}}supertutoronly, local_nit_tutors{{/str}}</span>
+                {{#hasbadgefilter}}
+                <label class="nittu-filter">
+                    <span>{{#str}}badge, local_nit_tutors{{/str}}</span>
+                    <select class="form-select" name="badge">
+                        <option value="">{{#str}}any, local_nit_tutors{{/str}}</option>
+                        {{#badges}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/badges}}
+                    </select>
                 </label>
+                {{/hasbadgefilter}}
                 <label class="nittu-filter">
                     <span>{{#str}}sortby, local_nit_tutors{{/str}}</span>
                     <select class="form-select" name="sort">
@@ -127,7 +133,7 @@
                         </a>
                         <div class="nittu-card__body">
                             <h2 class="nittu-card__name"><a href="{{url}}">{{name}}</a></h2>
-                            {{#badge}}<span class="nittu-badge">{{#str}}supertutor, local_nit_tutors{{/str}}</span>{{/badge}}
+                            {{#hasbadges}}<div class="nittu-badges">{{#badges}}<span class="nittu-badge nittu-badge--{{color}}" title="{{description}}">{{name}}</span>{{/badges}}</div>{{/hasbadges}}
                             {{#headline}}<p class="nittu-card__headline">{{headline}}</p>{{/headline}}
                             <ul class="nittu-card__subjects">{{#subjects}}<li>{{name}}</li>{{/subjects}}</ul>
                             <div class="nittu-card__meta">
