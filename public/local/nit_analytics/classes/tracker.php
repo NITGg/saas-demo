@@ -166,6 +166,55 @@ final class tracker {
     }
 
     /**
+     * A tracked campaign link to a page of this site. Values are lower-cased and spaces become
+     * underscores, so "Oct English" and "oct_english" count as one campaign.
+     *
+     * @param string $path page on this site, e.g. "/" or "/local/academy/course.php?id=3"
+     * @param string $source e.g. google
+     * @param string $medium e.g. cpc
+     * @param string $campaign e.g. oct_english
+     * @param string $content optional, e.g. banner_a
+     * @return string '' when source, medium or campaign is missing
+     */
+    public static function campaign_url(string $path, string $source, string $medium, string $campaign,
+            string $content = ''): string {
+        $slug = fn(string $v): string => trim(preg_replace('/[^a-z0-9_\-.]+/', '_',
+            \core_text::strtolower(trim($v))), '_');
+        $params = array_filter([
+            'utm_source' => $slug($source),
+            'utm_medium' => $slug($medium),
+            'utm_campaign' => $slug($campaign),
+            'utm_content' => $slug($content),
+        ], fn($v) => $v !== '');
+        if (!isset($params['utm_source'], $params['utm_medium'], $params['utm_campaign'])) {
+            return '';
+        }
+        $path = '/' . ltrim(trim($path), '/');
+        if (preg_match('~^/*(https?:)?//~i', trim($path)) || strpos($path, '..') !== false) {
+            $path = '/'; // Only pages of this site.
+        }
+        $url = new \moodle_url($path);
+        $url->params($params);
+        return $url->out(false);
+    }
+
+    /**
+     * Whether the request carries a Google Ads click id (auto-tagging): gclid, or gbraid / wbraid
+     * on iOS.
+     *
+     * @param array $params
+     * @return bool
+     */
+    public static function from_google_ads(array $params): bool {
+        foreach (['gclid', 'gbraid', 'wbraid'] as $key) {
+            if (isset($params[$key]) && is_string($params[$key]) && preg_match('/^[A-Za-z0-9_\-]{10,200}$/', $params[$key])) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Keep the first UTM set of the session (first touch). A fresh landing with UTM parameters is
      * logged for the funnel; without parameters, an earlier visit's attribution cookie is used.
      *
@@ -186,6 +235,10 @@ final class tracker {
             return;
         }
         $utm = self::clean_utm($params);
+        if (!isset($utm['utm_source']) && self::from_google_ads($params)) {
+            // Google Ads auto-tagging adds a click id instead of UTM parameters.
+            $utm = ['utm_source' => 'google', 'utm_medium' => 'cpc'] + $utm;
+        }
         if ($utm) {
             $session->local_nit_analytics_utm = $utm;
             funnel::log_landing($utm, time());

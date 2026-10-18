@@ -235,6 +235,55 @@ final class tracker_test extends \advanced_testcase {
     }
 
     /**
+     * A Google Ads auto-tagged visit (gclid / gbraid / wbraid, no UTM) counts as google / cpc;
+     * explicit UTM wins over the click id; junk click ids are ignored.
+     *
+     * @return void
+     */
+    public function test_google_ads_click_id_counts_as_google_cpc(): void {
+        global $DB;
+        foreach (['gclid', 'gbraid', 'wbraid'] as $key) {
+            $session = new \stdClass();
+            tracker::capture([$key => 'Cj0KCQjw-abc_123XYZ'], [], $session);
+            $this->assertSame(['utm_source' => 'google', 'utm_medium' => 'cpc'], $session->local_nit_analytics_utm, $key);
+        }
+        $this->assertSame(3, $DB->count_records(funnel::LANDING_TABLE, ['source' => 'google', 'medium' => 'cpc']));
+
+        $tagged = new \stdClass();
+        tracker::capture(['gclid' => 'Cj0KCQjw-abc_123XYZ', 'utm_source' => 'newsletter', 'utm_medium' => 'email'],
+            [], $tagged);
+        $this->assertSame('newsletter', $tagged->local_nit_analytics_utm['utm_source'], 'explicit UTM wins');
+
+        $junk = new \stdClass();
+        tracker::capture(['gclid' => '<script>'], [], $junk);
+        $this->assertObjectNotHasProperty('local_nit_analytics_utm', $junk);
+    }
+
+    /**
+     * The link builder makes clean UTM links to pages of this site only.
+     *
+     * @return void
+     */
+    public function test_campaign_url(): void {
+        global $CFG;
+        $url = tracker::campaign_url('/local/academy/course.php?id=3', 'Google', 'CPC', 'Oct English', 'Video A');
+        $this->assertSame($CFG->wwwroot . '/local/academy/course.php?id=3&utm_source=google&utm_medium=cpc'
+            . '&utm_campaign=oct_english&utm_content=video_a', $url);
+
+        $this->assertSame($CFG->wwwroot . '/?utm_source=facebook&utm_medium=paid_social&utm_campaign=x',
+            tracker::campaign_url('', 'facebook', 'paid social', 'x'));
+        $this->assertStringStartsWith($CFG->wwwroot . '/?', tracker::campaign_url('https://evil.example/', 'a', 'b', 'c'),
+            'external pages are not allowed');
+        $this->assertSame('', tracker::campaign_url('/', 'google', '', 'oct'), 'medium is required');
+
+        // A built link is captured as the same campaign.
+        $session = new \stdClass();
+        parse_str((string) parse_url($url, PHP_URL_QUERY), $params);
+        tracker::capture($params, [], $session);
+        $this->assertSame('oct_english', $session->local_nit_analytics_utm['utm_campaign']);
+    }
+
+    /**
      * A self sign-up stores the session's UTM on the account and fires the conversion once.
      *
      * @return void

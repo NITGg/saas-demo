@@ -48,7 +48,8 @@ if ($download === 'csv') {
 
 echo $OUTPUT->header();
 echo $OUTPUT->heading($s('funnelreport'));
-echo html_writer::tag('p', $s('funnelintro'), ['class' => 'text-muted']);
+echo html_writer::tag('p', $s('funnelintro') . ' ' .
+    html_writer::link(new moodle_url('/local/nit_analytics/links.php'), $s('linksheading')), ['class' => 'text-muted']);
 
 $options = [];
 foreach ([7, 30, 90, 365] as $d) {

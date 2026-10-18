@@ -46,3 +46,9 @@ $ADMIN->add('reports', new admin_externalpage(
     new moodle_url('/local/nit_analytics/report.php'),
     'local/nit_analytics:viewreport'
 ));
+$ADMIN->add('reports', new admin_externalpage(
+    'local_nit_analytics_links',
+    get_string('linksheading', 'local_nit_analytics'),
+    new moodle_url('/local/nit_analytics/links.php'),
+    'local/nit_analytics:viewreport'
+));
