@@ -117,6 +117,10 @@ class pages {
         $page['courses'] = array_map(static fn(array $c): array => self::course_card($c, $userid), $page['courses']);
         $page['reviews'] = array_map(static fn(array $r): array => ['picture' => endpoint::file_url($r['picture'])] + $r,
             $page['reviews'] ?? []);
+        // An approved tutor (local_nit_tutors): an uploaded intro video plays through the token.
+        if (!empty($page['tutor']['video']['src'])) {
+            $page['tutor']['video']['src'] = endpoint::file_url($page['tutor']['video']['src']);
+        }
         return $page;
     }
 

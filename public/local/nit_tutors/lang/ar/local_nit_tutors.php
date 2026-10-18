@@ -95,6 +95,7 @@ $string['err_noteditable'] = 'طلبك قيد المراجعة ولا يمكن �
 $string['err_noreapply'] = 'لا تقبل هذه الأكاديمية طلبًا جديدًا بعد الرفض.';
 $string['err_incomplete'] = 'أكمل طلبك أولًا: {$a}';
 $string['err_notereq'] = 'اكتب رسالة للمدرس أولًا.';
+$string['err_decisionnotoffered'] = 'هذا القرار غير متاح لهذا المدرس الآن.';
 $string['err_badvideourl'] = 'الصق رابط فيديو من YouTube أو Vimeo.';
 $string['err_qualtitle'] = 'اكتب اسم المؤهل.';
 $string['err_badanswer'] = 'إجابة «{$a}» غير صحيحة.';

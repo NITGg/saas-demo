@@ -323,7 +323,21 @@ final class mobile_api {
             'bookable' => $service->bookable($userid),
             'timezone' => teacher_service::timezone($userid)->getName(),
             'days' => $days,
+            // true: the headline and subjects are reviewed (local_nit_tutors) — change them with
+            // /local/nit_tutors/api.php save_application; update_teacher_profile keeps them as approved.
+            'headlinereviewed' => self::reviewed($userid),
         ];
+    }
+
+    /**
+     * Are this teacher's headline and subjects reviewed before students see them (an approved tutor
+     * of local_nit_tutors, "Approval required" on)?
+     *
+     * @param int $userid
+     * @return bool
+     */
+    private static function reviewed(int $userid): bool {
+        return class_exists('\local_nit_tutors\local\pending') && \local_nit_tutors\local\pending::applies($userid);
     }
 
     /**
@@ -342,6 +356,12 @@ final class mobile_api {
         $service = new teacher_service();
         if (!$service->is_teacher($userid)) {
             throw new lesson_exception('err_notateacher');
+        }
+        if (self::reviewed($userid)) {
+            // Reviewed data does not change here (it would skip the review): only bookings, price, hours.
+            $live = $service->profile($userid);
+            $headline = $live['headline'];
+            $subjects = $live['subjects'];
         }
         $service->save($userid, $available, $headline, array_map('strval', $subjects), $hours, $lessonflex);
         return self::get_teacher_profile($userid);

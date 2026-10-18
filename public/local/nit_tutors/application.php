@@ -32,9 +32,9 @@
 require(__DIR__ . '/../../config.php');
 
 use local_nit_lessons\local\profile_section;
-use local_nit_lessons\service\teacher_service;
 use local_nit_tutors\local\application;
 use local_nit_tutors\local\pending;
+use local_nit_tutors\local\profile_save;
 use local_nit_tutors\local\profile_view;
 use local_nit_tutors\local\teacher_input;
 
@@ -54,8 +54,7 @@ $PAGE->add_body_class('nit-profile-page nit-tutor-application');
 
 $editable = application::editable($userid);
 $status = application::status($userid);
-$cansubmit = in_array($status, ['', application::DRAFT, application::CHANGES, application::REJECTED], true)
-    && ($status !== application::REJECTED || application::setting_int('allowreapply', 1));
+$cansubmit = profile_save::can_submit($userid);
 
 $posted = null;
 $postedcard = null;
@@ -65,48 +64,17 @@ if ($editable && data_submitted() && confirm_sesskey()) {
     // taking bookings, the price, the weekly hours — is the teacher's day-to-day settings.
     $card = profile_section::posted();
     $in = teacher_input::from_request();
-    if ($card !== null) {
-        $in['headline'] = $card['headline'];
-        $in['subjects'] = $card['subjects'];
-    }
-    $files = teacher_input::files_from_request();
-    $send = $cansubmit && optional_param('send', 0, PARAM_BOOL);
-    $errors = teacher_input::validate($in, $files, $userid, $send) + ($card['errors'] ?? []);
-    // Taking bookings needs subjects — the ones students see: the new ones, or while a change
-    // waits for review, the approved ones. Checked before anything is saved.
-    $waitsforreview = pending::applies($userid);
-    $livesubjects = $waitsforreview ? (new teacher_service())->profile($userid)['subjects'] : $in['subjects'];
-    if ($card !== null && $card['available'] && !$livesubjects && !isset($errors['subjects'])) {
-        $errors['subjects'] = get_string('err_subjectsrequired', 'local_nit_lessons');
-    }
+    $result = profile_save::save($userid, $in, teacher_input::files_from_request(), $card,
+        (bool) optional_param('send', 0, PARAM_BOOL));
+    $errors = $result['errors'];
     if (!$errors) {
-        // An approved teacher's headline, subjects, about, video, qualifications and fields wait for
-        // review (local_nit_tutors\local\pending); everyone else's are saved.
-        $waits = teacher_input::save($userid, $in, $files);
-        if ($card !== null) {
-            // Bookings, price and hours save at once, next to the headline and subjects now live.
-            $live = (new teacher_service())->profile($userid);
-            try {
-                (new teacher_service())->save($userid, $card['available'], $live['headline'], $live['subjects'],
-                    $card['hours'], $card['lessonflex']);
-            } catch (moodle_exception $e) {
-                $errors['general'] = $e->getMessage();
-            }
-        }
-    }
-    if (!$errors) {
-        if ($send) {
-            try {
-                application::submit($userid);
-                redirect($url, get_string('submitted', 'local_nit_tutors'), null, \core\output\notification::NOTIFY_SUCCESS);
-            } catch (moodle_exception $e) {
-                \core\notification::error($e->getMessage());
-            }
-        } else {
-            redirect($url, get_string($waits ? 'savedforreview' : 'saved', 'local_nit_tutors'), null,
-                \core\output\notification::NOTIFY_SUCCESS);
-        }
+        redirect($url, get_string($result['submitted'] ? 'submitted' : ($result['waits'] ? 'savedforreview' : 'saved'),
+            'local_nit_tutors'), null, \core\output\notification::NOTIFY_SUCCESS);
     } else {
+        if ($card !== null) {
+            $in['headline'] = $card['headline'];
+            $in['subjects'] = $card['subjects'];
+        }
         // Show what they typed again; files must be chosen again (a browser cannot refill a file input).
         $posted = $in;
         $postedcard = $card;

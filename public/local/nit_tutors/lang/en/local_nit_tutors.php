@@ -95,6 +95,7 @@ $string['err_noteditable'] = 'Your application is being reviewed and cannot be c
 $string['err_noreapply'] = 'This academy does not accept a new application after a rejection.';
 $string['err_incomplete'] = 'Complete your application first: {$a}';
 $string['err_notereq'] = 'Write a message to the teacher first.';
+$string['err_decisionnotoffered'] = 'This decision is not offered for this teacher now.';
 $string['err_badvideourl'] = 'Paste a YouTube or Vimeo video link.';
 $string['err_qualtitle'] = 'Write the qualification\'s name.';
 $string['err_badanswer'] = 'The answer to "{$a}" is not valid.';

@@ -68,35 +68,57 @@ class profile_section {
         if (!optional_param(self::MARKER, 0, PARAM_BOOL)) {
             return null;
         }
-        $errors = [];
         $days = optional_param_array('nitlx_day', [], PARAM_INT);
         $starts = optional_param_array('nitlx_start', [], PARAM_RAW_TRIMMED);
         $ends = optional_param_array('nitlx_end', [], PARAM_RAW_TRIMMED);
         $hours = [];
         foreach ($days as $i => $day) {
-            $start = (string) ($starts[$i] ?? '');
-            $end = (string) ($ends[$i] ?? '');
+            $hours[] = ['dayofweek' => $day, 'starttime' => $starts[$i] ?? '', 'endtime' => $ends[$i] ?? ''];
+        }
+        return self::card((bool) optional_param('nitlx_available', 0, PARAM_BOOL),
+            optional_param('nitlx_headline', '', PARAM_TEXT), optional_param_array('nitlx_subjects', [], PARAM_TEXT),
+            $hours, optional_param('nitlx_lessonflex', '', PARAM_RAW_TRIMMED));
+    }
+
+    /**
+     * The card's values, checked (the web form and the app send the same values).
+     *
+     * @param bool $available
+     * @param string $headline
+     * @param array $subjects
+     * @param array $hours [{dayofweek, starttime "HH:MM", endtime "HH:MM"}]; a row with no times is dropped
+     * @param string $lessonflex '' = keep the saved price
+     * @return array {available, headline, subjects, hours, lessonflex: int|null (null = keep),
+     *     errors: [lessonflex|hours => message]}
+     */
+    public static function card(bool $available, string $headline, array $subjects, array $hours, string $lessonflex): array {
+        $errors = [];
+        $rows = [];
+        foreach ($hours as $h) {
+            $day = (int) ($h['dayofweek'] ?? -1);
+            $start = trim((string) ($h['starttime'] ?? ''));
+            $end = trim((string) ($h['endtime'] ?? ''));
             if ($start === '' && $end === '') {
                 continue;
             }
-            $hours[] = ['dayofweek' => (int) $day, 'starttime' => $start, 'endtime' => $end];
+            $rows[] = ['dayofweek' => $day, 'starttime' => $start, 'endtime' => $end];
             if ($day < 0 || $day > 6 || !preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $start)
                     || !preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $end)
                     || self::minutes($end) - self::minutes($start) < lesson::DEFAULT_DURATION) {
                 $errors['hours'] = get_string('err_badhours', 'local_nit_lessons');
             }
         }
-        // Flex per lesson: an empty or missing box keeps the saved price; anything else must be a whole number ≥ 1.
-        $lessonflex = trim(optional_param('nitlx_lessonflex', '', PARAM_RAW_TRIMMED));
+        // Flex per lesson: an empty box keeps the saved price; anything else must be a whole number ≥ 1.
+        $lessonflex = trim($lessonflex);
         if ($lessonflex !== '' && (!preg_match('/^\d{1,18}$/', $lessonflex) || (int) $lessonflex < 1)) {
             $errors['lessonflex'] = get_string('err_badlessonflex', 'local_nit_lessons');
         }
         return [
-            'available' => (bool) optional_param('nitlx_available', 0, PARAM_BOOL),
-            'headline' => optional_param('nitlx_headline', '', PARAM_TEXT),
-            'subjects' => array_values(array_filter(optional_param_array('nitlx_subjects', [], PARAM_TEXT),
-                fn($s) => trim((string) $s) !== '')),
-            'hours' => $hours,
+            'available' => $available,
+            'headline' => trim(clean_param($headline, PARAM_TEXT)),
+            'subjects' => array_values(array_filter(array_map(fn($s) => clean_param((string) $s, PARAM_TEXT), $subjects),
+                fn($s) => trim($s) !== '')),
+            'hours' => $rows,
             'lessonflex' => $lessonflex === '' || isset($errors['lessonflex']) ? null : (int) $lessonflex,
             'errors' => $errors,
         ];
