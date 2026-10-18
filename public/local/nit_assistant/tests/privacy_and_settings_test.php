@@ -126,4 +126,27 @@ final class privacy_and_settings_test extends \core_privacy\tests\provider_testc
         $this->assertSame('claude-sonnet-5-5', config::chat_model());
         $this->assertSame('claude-haiku-5-5', config::summary_model());
     }
+
+    /**
+     * The Graph API version setting accepts its own default (v23.0 — the dot used to be rejected,
+     * which blocked the upgrade "new settings" page) and empty, and refuses junk.
+     *
+     * @return void
+     */
+    public function test_graph_version_setting_accepts_its_default(): void {
+        global $CFG;
+        require_once($CFG->libdir . '/adminlib.php');
+        $this->setAdminUser();
+        $setting = null;
+        foreach (admin_get_root(true)->locate('local_nit_assistant')->settings as $candidate) {
+            if ($candidate->name === 'wa_graphversion') {
+                $setting = $candidate;
+            }
+        }
+        $this->assertNotNull($setting, 'wa_graphversion setting not found');
+        $this->assertTrue($setting->validate(\local_nit_assistant\whatsapp\cloud::DEFAULT_VERSION));
+        $this->assertTrue($setting->validate('v24.1'));
+        $this->assertTrue($setting->validate(''));
+        $this->assertNotTrue($setting->validate('v23.0; drop'));
+    }
 }
