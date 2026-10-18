@@ -32,6 +32,8 @@ if ($hassiteconfig) {
                 get_string($key, 'local_nit_analytics'), get_string($key . '_desc', 'local_nit_analytics'),
                 '', PARAM_ALPHANUMEXT, 24));
         }
+        $settings->add(new admin_setting_configcheckbox('local_nit_analytics/requireconsent',
+            get_string('requireconsent', 'local_nit_analytics'), get_string('requireconsent_desc', 'local_nit_analytics'), 1));
         $settings->add(new admin_setting_configcheckbox('local_nit_analytics/trackadmins',
             get_string('trackadmins', 'local_nit_analytics'), get_string('trackadmins_desc', 'local_nit_analytics'), 0));
     }
@@ -40,7 +42,7 @@ if ($hassiteconfig) {
 
 $ADMIN->add('reports', new admin_externalpage(
     'local_nit_analytics_report',
-    get_string('signupsreport', 'local_nit_analytics'),
+    get_string('funnelreport', 'local_nit_analytics'),
     new moodle_url('/local/nit_analytics/report.php'),
     'local/nit_analytics:viewreport'
 ));

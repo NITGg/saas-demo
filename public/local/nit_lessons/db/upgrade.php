@@ -80,5 +80,22 @@ function xmldb_local_nit_lessons_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026101800, 'local', 'nit_lessons');
     }
 
+    if ($oldversion < 2026101900) {
+        // Auto-complete only lessons the student actually joined: remember when they first opened
+        // the room. Lessons already running have no record, so they are left for support.
+        $field = new xmldb_field('student_joined', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'cmid');
+        $table = new xmldb_table('nit_lesson');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        // Give the student 72 hours (like Preply) to report a problem before a lesson completes
+        // itself. Sites on the earlier 24-hour default move; a value an admin chose is kept.
+        $current = get_config('local_nit_lessons', 'auto_complete_minutes');
+        if ($current === false || (int) $current === 1440) {
+            set_config('auto_complete_minutes', 4320, 'local_nit_lessons');
+        }
+        upgrade_plugin_savepoint(true, 2026101900, 'local', 'nit_lessons');
+    }
+
     return true;
 }

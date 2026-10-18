@@ -513,6 +513,16 @@ class purchase_service extends service {
             'transaction_no' => self::generate_txn(),
             'status'         => payment::STATUS_SUCCESS,
         ]))->create();
+        // Purchase conversion for the marketing funnel (local_nit_analytics, when installed).
+        if (class_exists('\local_nit_analytics\conversions')) {
+            global $USER;
+            try {
+                \local_nit_analytics\conversions::record_purchase($userid, 'flex', $amountminor, 'EGP',
+                    (string) $purchase->get('id'), isset($USER->id) && (int) $USER->id === $userid);
+            } catch (\Throwable $e) {
+                debugging('local_nit_flex: analytics conversion not recorded: ' . $e->getMessage(), DEBUG_DEVELOPER);
+            }
+        }
     }
 
     /**

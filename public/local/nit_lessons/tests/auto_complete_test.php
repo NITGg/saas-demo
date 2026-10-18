@@ -57,6 +57,8 @@ final class auto_complete_test extends \advanced_testcase {
         $course = $gen->create_course();
         $gen->enrol_user($this->teacher->id, $course->id, 'editingteacher');
         set_config('subjects', 'Physics', 'local_nit_lessons');
+        // local_nit_tutors (when installed) books only approved tutors; these tests are about lessons.
+        set_config('requireapproval', 0, 'local_nit_tutors');
         (new teacher_service())->save((int) $this->teacher->id, true, '', ['Physics'], []);
         foreach (['min_booking_minutes' => 0, 'start_allowed_minutes' => 100000,
                 'complete_allowed_minutes' => 0, 'auto_complete_minutes' => 60] as $k => $v) {
@@ -93,14 +95,95 @@ final class auto_complete_test extends \advanced_testcase {
      *
      * @param int $minutesago
      * @param int $days which day to book, so several lessons do not clash
+     * @param bool $joined whether the student opened the room
      * @return int lesson id
      */
-    private function started(int $minutesago, int $days = 1): int {
+    private function started(int $minutesago, int $days = 1, bool $joined = true): int {
         global $DB;
         $lesson = $this->confirmed($days);
         lessons::start((int) $this->teacher->id, $lesson['id']);
         $DB->set_field('nit_lesson', 'actual_start', time() - $minutesago * MINSECS, ['id' => $lesson['id']]);
+        if ($joined) {
+            $DB->set_field('nit_lesson', 'student_joined', time() - $minutesago * MINSECS, ['id' => $lesson['id']]);
+        }
         return (int) $lesson['id'];
+    }
+
+    /**
+     * The default waits 72 hours, like Preply, so the student has time to report a problem.
+     *
+     * @return void
+     */
+    public function test_default_grace_is_72_hours(): void {
+        unset_config('auto_complete_minutes', 'local_nit_lessons');
+        $this->assertSame(4320, (new \local_nit_lessons\service\settings_service())->get('auto_complete_minutes'));
+    }
+
+    /**
+     * A started lesson the student never joined is a no-show case for support: it is never
+     * auto-completed, so the teacher is not paid for it automatically.
+     *
+     * @return void
+     */
+    public function test_lesson_student_never_joined_is_left_for_support(): void {
+        global $DB;
+        $id = $this->started(10 * 24 * 60, 1, false);
+        $this->assertSame(0, lessons::auto_complete_due(time()));
+        $this->assertSame('in_progress', $DB->get_field('nit_lesson', 'status', ['id' => $id]));
+        $this->assertSame(0, wallet::teacher((int) $this->teacher->id)['available_balance_minor']);
+        $this->assertSame(1, purchase::active((int) $this->student->id)['reserved_flex']);
+    }
+
+    /**
+     * Opening the room as the student records the first join; the teacher opening it does not,
+     * and a second student visit keeps the first time.
+     *
+     * @return void
+     */
+    public function test_student_opening_the_room_records_the_join(): void {
+        global $DB;
+        room_factory::set_override(new class extends stub_room {
+            public function session_payload(\local_nit_lessons\entity\lesson $lesson, int $viewerid): ?array {
+                return ['join_url' => 'https://room.test/lesson'];
+            }
+        });
+        $lesson = $this->confirmed();
+        lessons::start((int) $this->teacher->id, $lesson['id']);
+        $service = new \local_nit_lessons\service\lesson_service();
+
+        $service->open_room((int) $this->teacher->id, $lesson['id']);
+        $this->assertSame(0, (int) $DB->get_field('nit_lesson', 'student_joined', ['id' => $lesson['id']]),
+            'the teacher opening the room is not the student joining');
+
+        $service->open_room((int) $this->student->id, $lesson['id']);
+        $first = (int) $DB->get_field('nit_lesson', 'student_joined', ['id' => $lesson['id']]);
+        $this->assertGreaterThan(0, $first);
+
+        $DB->set_field('nit_lesson', 'student_joined', $first - 600, ['id' => $lesson['id']]);
+        $service->open_room((int) $this->student->id, $lesson['id']);
+        $this->assertSame($first - 600, (int) $DB->get_field('nit_lesson', 'student_joined', ['id' => $lesson['id']]),
+            'a later visit keeps the first join time');
+    }
+
+    /**
+     * The upgrade moves the earlier 24-hour default to 72 hours and keeps a value an admin chose.
+     *
+     * @return void
+     */
+    public function test_upgrade_moves_24h_default_to_72h(): void {
+        global $CFG;
+        require_once($CFG->libdir . '/upgradelib.php');
+        require_once(__DIR__ . '/../db/upgrade.php');
+
+        set_config('version', 2026101800, 'local_nit_lessons');
+        set_config('auto_complete_minutes', 1440, 'local_nit_lessons');
+        xmldb_local_nit_lessons_upgrade(2026101800);
+        $this->assertSame('4320', get_config('local_nit_lessons', 'auto_complete_minutes'));
+
+        set_config('version', 2026101800, 'local_nit_lessons');
+        set_config('auto_complete_minutes', 600, 'local_nit_lessons');
+        xmldb_local_nit_lessons_upgrade(2026101800);
+        $this->assertSame('600', get_config('local_nit_lessons', 'auto_complete_minutes'));
     }
 
     /**

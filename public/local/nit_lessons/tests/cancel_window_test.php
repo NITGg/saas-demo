@@ -57,6 +57,8 @@ final class cancel_window_test extends \advanced_testcase {
         $course = $gen->create_course();
         $gen->enrol_user($this->teacher->id, $course->id, 'editingteacher');
         set_config('subjects', 'Physics', 'local_nit_lessons');
+        // local_nit_tutors (when installed) books only approved tutors; these tests are about lessons.
+        set_config('requireapproval', 0, 'local_nit_tutors');
         (new teacher_service())->save((int) $this->teacher->id, true, '', ['Physics'], []);
         set_config('min_booking_minutes', 0, 'local_nit_lessons');
         unset_config('cancel_deadline_minutes', 'local_nit_lessons');

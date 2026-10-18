@@ -29,4 +29,9 @@ $observers = [
         'eventname' => '\core\event\user_created',
         'callback'  => '\local_nit_analytics\observer::user_created',
     ],
+    [
+        // Course purchases through local_payments (ignored when that plugin is absent).
+        'eventname' => '\local_payments\event\payment_completed',
+        'callback'  => '\local_nit_analytics\conversions::payment_completed',
+    ],
 ];

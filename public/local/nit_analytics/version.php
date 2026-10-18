@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_nit_analytics';
-$plugin->version   = 2026101800;        // First version.
+$plugin->version   = 2026101900;        // Consent gating, purchase conversions, funnel report + CSV, attribution cookie.
 $plugin->requires  = 2024100700;
 $plugin->supported = [405, 502];
 $plugin->maturity  = MATURITY_ALPHA;

@@ -17,12 +17,18 @@
 namespace local_nit_analytics\privacy;
 
 use core_privacy\local\metadata\collection;
+use core_privacy\local\request\approved_contextlist;
+use core_privacy\local\request\approved_userlist;
+use core_privacy\local\request\contextlist;
 use core_privacy\local\request\transform;
+use core_privacy\local\request\userlist;
 use core_privacy\local\request\writer;
+use local_nit_analytics\conversions;
 use local_nit_analytics\tracker;
 
 /**
- * Privacy provider: the sign-up attribution kept as user preferences, and the external trackers.
+ * Privacy provider: sign-up attribution (user preferences), recorded purchases (system context),
+ * and the external trackers. Landings hold no personal data.
  *
  * @package    local_nit_analytics
  * @copyright  2026 NIT
@@ -30,6 +36,8 @@ use local_nit_analytics\tracker;
  */
 class provider implements
     \core_privacy\local\metadata\provider,
+    \core_privacy\local\request\plugin\provider,
+    \core_privacy\local\request\core_userlist_provider,
     \core_privacy\local\request\user_preference_provider {
 
     public static function get_metadata(collection $collection): collection {
@@ -37,10 +45,78 @@ class provider implements
             $collection->add_user_preference(tracker::PREF_PREFIX . $key, 'privacy:metadata:preference:' . $key);
         }
         $collection->add_user_preference(tracker::PREF_PENDING, 'privacy:metadata:preference:signup_pending');
+        $collection->add_user_preference(conversions::PREF_PENDING, 'privacy:metadata:preference:purchase_pending');
+        $collection->add_database_table(conversions::TABLE, [
+            'userid' => 'privacy:metadata:conv:userid',
+            'kind' => 'privacy:metadata:conv:kind',
+            'amount_minor' => 'privacy:metadata:conv:amount_minor',
+            'currency' => 'privacy:metadata:conv:currency',
+            'timecreated' => 'privacy:metadata:conv:timecreated',
+        ], 'privacy:metadata:conv');
         $collection->add_external_location_link('trackers', [
             'pageurl' => 'privacy:metadata:trackers:pageurl',
         ], 'privacy:metadata:trackers');
         return $collection;
+    }
+
+    public static function get_contexts_for_userid(int $userid): contextlist {
+        $list = new contextlist();
+        $list->add_from_sql("SELECT ctx.id FROM {context} ctx
+                              WHERE ctx.contextlevel = :lvl
+                                AND EXISTS (SELECT 1 FROM {" . conversions::TABLE . "} c WHERE c.userid = :uid)",
+            ['lvl' => CONTEXT_SYSTEM, 'uid' => $userid]);
+        return $list;
+    }
+
+    public static function get_users_in_context(userlist $userlist) {
+        if ($userlist->get_context()->contextlevel !== CONTEXT_SYSTEM) {
+            return;
+        }
+        $userlist->add_from_sql('userid', 'SELECT userid FROM {' . conversions::TABLE . '}', []);
+    }
+
+    public static function export_user_data(approved_contextlist $contextlist) {
+        global $DB;
+        $userid = (int) $contextlist->get_user()->id;
+        foreach ($contextlist->get_contexts() as $context) {
+            if ($context->contextlevel !== CONTEXT_SYSTEM) {
+                continue;
+            }
+            $rows = [];
+            foreach ($DB->get_records(conversions::TABLE, ['userid' => $userid], 'timecreated') as $r) {
+                $rows[] = ['kind' => $r->kind, 'amount' => number_format($r->amount_minor / 100, 2) . ' ' . $r->currency,
+                    'time' => transform::datetime($r->timecreated)];
+            }
+            if ($rows) {
+                writer::with_context($context)->export_data([get_string('pluginname', 'local_nit_analytics')],
+                    (object) ['purchases' => $rows]);
+            }
+        }
+    }
+
+    public static function delete_data_for_all_users_in_context(\context $context) {
+        global $DB;
+        if ($context->contextlevel === CONTEXT_SYSTEM) {
+            $DB->delete_records(conversions::TABLE);
+        }
+    }
+
+    public static function delete_data_for_user(approved_contextlist $contextlist) {
+        global $DB;
+        foreach ($contextlist->get_contexts() as $context) {
+            if ($context->contextlevel === CONTEXT_SYSTEM) {
+                $DB->delete_records(conversions::TABLE, ['userid' => (int) $contextlist->get_user()->id]);
+            }
+        }
+    }
+
+    public static function delete_data_for_users(approved_userlist $userlist) {
+        global $DB;
+        if ($userlist->get_context()->contextlevel !== CONTEXT_SYSTEM || !$userlist->get_userids()) {
+            return;
+        }
+        [$in, $params] = $DB->get_in_or_equal($userlist->get_userids(), SQL_PARAMS_NAMED);
+        $DB->delete_records_select(conversions::TABLE, "userid $in", $params);
     }
 
     /**

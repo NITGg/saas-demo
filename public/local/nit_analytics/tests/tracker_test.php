@@ -17,7 +17,7 @@
 namespace local_nit_analytics;
 
 /**
- * Tracker snippets, UTM capture and sign-up attribution.
+ * Consent gating, tracker snippets, UTM capture (session + cookie) and sign-up attribution.
  *
  * @package    local_nit_analytics
  * @copyright  2026 NIT
@@ -27,9 +27,13 @@ namespace local_nit_analytics;
  */
 final class tracker_test extends \advanced_testcase {
 
+    /** @var array Consent cookie for "accepted". */
+    const GRANTED = [tracker::CONSENT_COOKIE => 'granted'];
+
     protected function setUp(): void {
         parent::setUp();
         $this->resetAfterTest();
+        set_config('requireconsent', 1, 'local_nit_analytics');
     }
 
     /**
@@ -54,80 +58,156 @@ final class tracker_test extends \advanced_testcase {
     }
 
     /**
-     * Nothing configured: no tracking; each id adds only its own snippet.
+     * With consent required, nothing tracks until the visitor accepts; the banner shows only while
+     * the choice is open; declining keeps trackers off.
      *
      * @return void
      */
-    public function test_snippets_follow_configuration(): void {
+    public function test_consent_gates_tracking(): void {
         $this->setGuestUser();
-        $this->assertFalse(tracker::should_track('standard'));
-        $this->assertSame('', tracker::head_html(true));
+        set_config('ga4_id', 'G-TEST1234', 'local_nit_analytics');
+
+        $this->assertFalse(tracker::should_track('standard', []), 'no tracking before a choice');
+        $this->assertTrue(tracker::should_ask_consent('standard', []), 'the banner asks');
+
+        $this->assertTrue(tracker::should_track('standard', self::GRANTED));
+        $this->assertFalse(tracker::should_ask_consent('standard', self::GRANTED));
+
+        $denied = [tracker::CONSENT_COOKIE => 'denied'];
+        $this->assertFalse(tracker::should_track('standard', $denied));
+        $this->assertFalse(tracker::should_ask_consent('standard', $denied), 'a decline is not asked again');
+
+        $this->assertFalse(tracker::should_track('standard', [tracker::CONSENT_COOKIE => 'yes please']),
+            'only the exact value "granted" counts');
+    }
+
+    /**
+     * Where the site turns consent off, trackers run and no banner shows.
+     *
+     * @return void
+     */
+    public function test_consent_can_be_turned_off(): void {
+        $this->setGuestUser();
+        set_config('ga4_id', 'G-TEST1234', 'local_nit_analytics');
+        set_config('requireconsent', 0, 'local_nit_analytics');
+        $this->assertTrue(tracker::should_track('standard', []));
+        $this->assertFalse(tracker::should_ask_consent('standard', []));
+    }
+
+    /**
+     * No ids configured: no tracking and no banner; popups and admins are skipped.
+     *
+     * @return void
+     */
+    public function test_nothing_without_ids_and_on_skipped_pages(): void {
+        $this->setGuestUser();
+        $this->assertFalse(tracker::should_track('standard', self::GRANTED));
+        $this->assertFalse(tracker::should_ask_consent('standard', []), 'no banner when there is nothing to track');
 
         set_config('ga4_id', 'G-TEST1234', 'local_nit_analytics');
-        $this->assertTrue(tracker::should_track('standard'));
-        $this->assertFalse(tracker::should_track('popup'), 'popups are never tracked');
+        $this->assertFalse(tracker::should_track('popup', self::GRANTED));
+
+        $this->setAdminUser();
+        $this->assertFalse(tracker::should_track('standard', self::GRANTED));
+        set_config('trackadmins', 1, 'local_nit_analytics');
+        $this->assertTrue(tracker::should_track('standard', self::GRANTED));
+    }
+
+    /**
+     * The banner's buttons store the choice in the consent cookie on the site's own path.
+     *
+     * @return void
+     */
+    public function test_banner_sets_consent_cookie(): void {
+        $html = tracker::consent_banner_html();
+        $this->assertStringContainsString(get_string('consent_accept', 'local_nit_analytics'), $html);
+        $this->assertStringContainsString(tracker::CONSENT_COOKIE, $html);
+        $this->assertStringContainsString('granted', $html);
+        $this->assertStringContainsString('denied', $html);
+    }
+
+    /**
+     * Each id adds only its own snippet; sign-up and purchase events are printed for each tracker.
+     *
+     * @return void
+     */
+    public function test_snippets_and_conversion_events(): void {
+        set_config('ga4_id', 'G-TEST1234', 'local_nit_analytics');
         $html = tracker::head_html(false);
         $this->assertStringContainsString('gtag/js?id=G-TEST1234', $html);
         $this->assertStringNotContainsString('fbq(', $html);
 
         set_config('meta_pixel_id', '9876543210', 'local_nit_analytics');
         set_config('gtm_id', 'GTM-ABCD12', 'local_nit_analytics');
-        $html = tracker::head_html(false);
-        $this->assertStringContainsString("fbq('init',\"9876543210\")", $html);
-        $this->assertStringContainsString('"GTM-ABCD12"', $html);
-        $this->assertStringContainsString('ns.html?id=GTM-ABCD12', tracker::body_html());
-    }
-
-    /**
-     * Admins are not tracked unless the setting says so.
-     *
-     * @return void
-     */
-    public function test_admins_skipped_by_default(): void {
-        set_config('ga4_id', 'G-TEST1234', 'local_nit_analytics');
-        $this->setAdminUser();
-        $this->assertFalse(tracker::should_track('standard'));
-        set_config('trackadmins', 1, 'local_nit_analytics');
-        $this->assertTrue(tracker::should_track('standard'));
-    }
-
-    /**
-     * The sign-up event is printed once, for each configured tracker.
-     *
-     * @return void
-     */
-    public function test_signup_event_snippet(): void {
-        set_config('ga4_id', 'G-TEST1234', 'local_nit_analytics');
-        set_config('meta_pixel_id', '9876543210', 'local_nit_analytics');
-        $html = tracker::head_html(true);
+        $html = tracker::head_html(true, [['ref' => 'flex-7', 'amount_minor' => 150050, 'currency' => 'EGP']]);
         $this->assertStringContainsString("gtag('event','sign_up')", $html);
         $this->assertStringContainsString("fbq('track','CompleteRegistration')", $html);
+        $this->assertStringContainsString('"transaction_id":"flex-7","value":1500.5,"currency":"EGP"', $html);
+        $this->assertStringContainsString("fbq('track','Purchase',{\"value\":1500.5,\"currency\":\"EGP\"}", $html);
+        $this->assertStringContainsString("event:'purchase'", $html);
+        $this->assertStringContainsString('ns.html?id=GTM-ABCD12', tracker::body_html());
         $this->assertStringNotContainsString('sign_up', tracker::head_html(false));
     }
 
     /**
-     * First touch wins: a later visit with other UTM values in the same session changes nothing.
-     * Unknown parameters are ignored and values are cleaned and capped.
+     * With consent, the session's attribution is written to the 90-day cookie once.
      *
      * @return void
      */
-    public function test_capture_keeps_first_touch(): void {
+    public function test_attribution_cookie_written_once(): void {
+        set_config('ga4_id', 'G-TEST1234', 'local_nit_analytics');
+        $utm = ['utm_source' => 'facebook'];
+        $html = tracker::head_html(false, [], $utm, self::GRANTED);
+        $this->assertStringContainsString(tracker::UTM_COOKIE . '=', $html);
+        $this->assertStringContainsString('max-age=' . tracker::UTM_COOKIE_LIFETIME, $html);
+
+        $already = self::GRANTED + [tracker::UTM_COOKIE => json_encode($utm)];
+        $this->assertStringNotContainsString(tracker::UTM_COOKIE . '=', tracker::head_html(false, [], $utm, $already));
+    }
+
+    /**
+     * First touch wins within a session; a landing with UTM is logged once; values are cleaned.
+     *
+     * @return void
+     */
+    public function test_capture_keeps_first_touch_and_logs_landing(): void {
+        global $DB;
         $session = new \stdClass();
-        tracker::capture(['id' => 5], $session);
+        tracker::capture(['id' => 5], [], $session);
         $this->assertObjectNotHasProperty('local_nit_analytics_utm', $session, 'no UTM, nothing kept');
 
         tracker::capture([
             'utm_source' => 'facebook', 'utm_medium' => 'cpc', 'utm_campaign' => str_repeat('x', 150),
             'utm_term' => '<b>english</b>', 'gclid' => 'abc',
-        ], $session);
-        tracker::capture(['utm_source' => 'google'], $session);
+        ], [], $session);
+        tracker::capture(['utm_source' => 'google'], [], $session);
 
         $utm = $session->local_nit_analytics_utm;
         $this->assertSame('facebook', $utm['utm_source']);
-        $this->assertSame('cpc', $utm['utm_medium']);
         $this->assertSame(100, \core_text::strlen($utm['utm_campaign']));
         $this->assertSame('english', $utm['utm_term']);
         $this->assertArrayNotHasKey('gclid', $utm);
+        $this->assertSame(1, $DB->count_records(funnel::LANDING_TABLE), 'one landing per visit');
+        $this->assertSame(1, $DB->count_records(funnel::LANDING_TABLE, ['source' => 'facebook', 'medium' => 'cpc']));
+    }
+
+    /**
+     * A visitor returning in a new session is attributed from the cookie, not counted as a new
+     * landing, and keeps the original source even if the new link has another.
+     *
+     * @return void
+     */
+    public function test_returning_visitor_attributed_from_cookie(): void {
+        global $DB;
+        $session = new \stdClass();
+        $cookies = [tracker::UTM_COOKIE => json_encode(['utm_source' => 'tiktok', 'evil' => 'x'])];
+        tracker::capture(['utm_source' => 'google'], $cookies, $session);
+        $this->assertSame(['utm_source' => 'tiktok'], $session->local_nit_analytics_utm);
+        $this->assertSame(0, $DB->count_records(funnel::LANDING_TABLE));
+
+        $broken = new \stdClass();
+        tracker::capture([], [tracker::UTM_COOKIE => '{not json'], $broken);
+        $this->assertObjectNotHasProperty('local_nit_analytics_utm', $broken, 'a bad cookie is ignored');
     }
 
     /**
@@ -160,32 +240,5 @@ final class tracker_test extends \advanced_testcase {
         $user = $this->getDataGenerator()->create_user();
         $this->assertNull(get_user_preferences('local_nit_analytics_utm_source', null, $user->id));
         $this->assertFalse(tracker::take_pending_signup((int) $user->id));
-    }
-
-    /**
-     * The report counts recent sign-ups per source; old or unattributed accounts are separate.
-     *
-     * @return void
-     */
-    public function test_signups_by_source(): void {
-        global $DB;
-        $gen = $this->getDataGenerator();
-        $session = new \stdClass();
-        $session->local_nit_analytics_utm = ['utm_source' => 'facebook', 'utm_medium' => 'cpc'];
-        foreach ([1, 2] as $unused) {
-            tracker::record_signup((int) $gen->create_user()->id, $session);
-        }
-        $session->local_nit_analytics_utm = ['utm_source' => 'google'];
-        $old = $gen->create_user();
-        tracker::record_signup((int) $old->id, $session);
-        $DB->set_field('user', 'timecreated', time() - 100 * DAYSECS, ['id' => $old->id]);
-
-        $rows = tracker::signups_by_source(time() - 30 * DAYSECS);
-        $bysource = array_column($rows, 'signups', 'source');
-
-        $this->assertSame(2, $bysource['facebook']);
-        $this->assertArrayNotHasKey('google', $bysource, 'sign-ups older than the period are left out');
-        $this->assertSame('facebook', $rows[0]['source'], 'biggest source first');
-        $this->assertSame('cpc', $rows[0]['medium']);
     }
 }

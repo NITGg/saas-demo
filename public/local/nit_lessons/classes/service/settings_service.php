@@ -41,7 +41,7 @@ class settings_service extends service {
         'start_allowed_minutes'    => 30,
         'complete_allowed_minutes' => 45,
         'absence_report_minutes'   => 15,
-        'auto_complete_minutes'    => 1440,    // A started lesson completes itself this long after it ends; 0 = off.
+        'auto_complete_minutes'    => 4320,    // 72h (like Preply): a joined lesson completes itself this long after it ends; 0 = off.
         'lessons_courseid'         => 0,
     ];
 
