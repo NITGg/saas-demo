@@ -89,6 +89,7 @@ class lesson extends entity {
             'actual_end'     => ['type' => PARAM_INT, 'default' => 0],
             'sessionid'      => ['type' => PARAM_INT, 'default' => 0],
             'cmid'           => ['type' => PARAM_INT, 'default' => 0],
+            'student_joined' => ['type' => PARAM_INT, 'default' => 0],
         ];
     }
 }

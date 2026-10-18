@@ -17,12 +17,14 @@
 namespace local_nit_analytics;
 
 /**
- * Marketing analytics: the GA4 / GTM / Meta Pixel snippets, and first-touch UTM attribution that is
- * kept on the account when a visitor signs up.
+ * Marketing analytics: consent, the GA4 / GTM / Meta Pixel snippets, and first-touch UTM attribution
+ * that is kept on the account when a visitor signs up.
  *
- * Flow: a visitor lands with ?utm_source=… → capture() keeps the first set seen in the session →
- * the user_created observer copies it to the new user's preferences and marks a pending sign-up →
- * the next page the user sees fires the sign_up / CompleteRegistration event once.
+ * Flow: a visitor lands with ?utm_source=… → capture() keeps the first set seen in the session and
+ * logs the landing → with analytics consent the set is also kept in a 90-day first-party cookie, so
+ * a visitor who returns later is still attributed → the user_created observer copies it to the new
+ * user's preferences and marks a pending sign-up → the next page fires sign_up once. Purchases are
+ * recorded by {@see conversions}. No tracker loads until the visitor accepts (setting requireconsent).
  *
  * @package    local_nit_analytics
  * @copyright  2026 NIT
@@ -41,7 +43,19 @@ final class tracker {
     /** @var string User preference set at sign-up until the conversion event has been sent. */
     const PREF_PENDING = 'local_nit_analytics_signup_pending';
 
-    /** @var string[] Page layouts that never get tracking code. */
+    /** @var string Cookie holding the visitor's analytics choice: granted | denied. */
+    const CONSENT_COOKIE = 'nit_analytics_consent';
+
+    /** @var string Cookie holding the first-touch UTM set (JSON), only with consent. */
+    const UTM_COOKIE = 'nit_analytics_utm';
+
+    /** @var int Lifetime of the attribution cookie, seconds. */
+    const UTM_COOKIE_LIFETIME = 90 * DAYSECS;
+
+    /** @var int Lifetime of the consent cookie, seconds. */
+    const CONSENT_COOKIE_LIFETIME = 180 * DAYSECS;
+
+    /** @var string[] Page layouts that never get tracking code or the banner. */
     const SKIP_LAYOUTS = ['maintenance', 'print', 'embedded', 'popup', 'redirect'];
 
     /** @var array<string,string> Setting => pattern a valid id must match. */
@@ -63,32 +77,82 @@ final class tracker {
     }
 
     /**
-     * Whether the current page should carry tracking code.
+     * Whether at least one tracker id is configured.
+     *
+     * @return bool
+     */
+    public static function configured(): bool {
+        return self::id('ga4_id') !== '' || self::id('gtm_id') !== '' || self::id('meta_pixel_id') !== '';
+    }
+
+    /**
+     * The visitor's analytics choice: 'granted', 'denied' or '' (not asked yet).
+     *
+     * @param array $cookies normally $_COOKIE
+     * @return string
+     */
+    public static function consent_choice(array $cookies): string {
+        $value = $cookies[self::CONSENT_COOKIE] ?? '';
+        return in_array($value, ['granted', 'denied'], true) ? $value : '';
+    }
+
+    /**
+     * Whether analytics may run for this visitor: consent given, or consent not required by the site.
+     *
+     * @param array $cookies normally $_COOKIE
+     * @return bool
+     */
+    public static function consent_given(array $cookies): bool {
+        return !get_config(self::COMPONENT, 'requireconsent') || self::consent_choice($cookies) === 'granted';
+    }
+
+    /**
+     * Whether this page may show analytics at all (layout, admin exclusion, ids configured).
      *
      * @param string $pagelayout
      * @return bool
      */
-    public static function should_track(string $pagelayout): bool {
+    private static function page_eligible(string $pagelayout): bool {
         if (during_initial_install() || in_array($pagelayout, self::SKIP_LAYOUTS, true)) {
             return false;
         }
         if (is_siteadmin() && !get_config(self::COMPONENT, 'trackadmins')) {
             return false;
         }
-        return self::id('ga4_id') !== '' || self::id('gtm_id') !== '' || self::id('meta_pixel_id') !== '';
+        return self::configured();
     }
 
     /**
-     * Keep the first UTM set of the session (first touch). Values are trimmed to 100 characters.
+     * Whether the current page should carry tracking code.
      *
-     * @param array $params request parameters (normally $_GET)
-     * @param \stdClass $session the Moodle $SESSION
-     * @return void
+     * @param string $pagelayout
+     * @param array $cookies normally $_COOKIE
+     * @return bool
      */
-    public static function capture(array $params, \stdClass $session): void {
-        if (!empty($session->local_nit_analytics_utm)) {
-            return;
-        }
+    public static function should_track(string $pagelayout, array $cookies): bool {
+        return self::page_eligible($pagelayout) && self::consent_given($cookies);
+    }
+
+    /**
+     * Whether to ask for consent on this page: trackers configured, consent required, not answered.
+     *
+     * @param string $pagelayout
+     * @param array $cookies normally $_COOKIE
+     * @return bool
+     */
+    public static function should_ask_consent(string $pagelayout, array $cookies): bool {
+        return self::page_eligible($pagelayout) && get_config(self::COMPONENT, 'requireconsent')
+            && self::consent_choice($cookies) === '';
+    }
+
+    /**
+     * Clean UTM values out of an array (query string or decoded cookie). Unknown keys are ignored;
+     * values are cleaned and capped at 100 characters.
+     *
+     * @param array $params
+     * @return array<string,string>
+     */
+    public static function clean_utm(array $params): array {
         $utm = [];
         foreach (self::UTM_KEYS as $key) {
             if (isset($params[$key]) && is_string($params[$key])) {
@@ -98,8 +162,33 @@ final class tracker {
                 }
             }
         }
+        return $utm;
+    }
+
+    /**
+     * Keep the first UTM set of the session (first touch). A fresh landing with UTM parameters is
+     * logged for the funnel; without parameters, an earlier visit's attribution cookie is used.
+     *
+     * @param array $params request parameters (normally $_GET)
+     * @param array $cookies normally $_COOKIE
+     * @param \stdClass $session the Moodle $SESSION
+     * @return void
+     */
+    public static function capture(array $params, array $cookies, \stdClass $session): void {
+        if (!empty($session->local_nit_analytics_utm)) {
+            return;
+        }
+        $cookie = json_decode((string) ($cookies[self::UTM_COOKIE] ?? ''), true);
+        $fromcookie = is_array($cookie) ? self::clean_utm($cookie) : [];
+        if ($fromcookie) {
+            // An earlier visit already holds the first touch: keep it, do not count a new landing.
+            $session->local_nit_analytics_utm = $fromcookie;
+            return;
+        }
+        $utm = self::clean_utm($params);
         if ($utm) {
             $session->local_nit_analytics_utm = $utm;
+            funnel::log_landing($utm, time());
         }
     }
 
@@ -132,12 +221,42 @@ final class tracker {
     }
 
     /**
-     * The <head> snippet for the configured trackers, plus the sign-up conversion when $signup.
+     * Path for our cookies: the site's own path, so two sites on one domain do not share them.
      *
-     * @param bool $signup
      * @return string
      */
-    public static function head_html(bool $signup): string {
+    private static function cookie_path(): string {
+        global $CFG;
+        $path = (string) parse_url($CFG->wwwroot, PHP_URL_PATH);
+        return rtrim($path, '/') . '/';
+    }
+
+    /**
+     * JavaScript that sets a first-party cookie.
+     *
+     * @param string $name
+     * @param string $value
+     * @param int $lifetime seconds
+     * @return string
+     */
+    private static function cookie_js(string $name, string $value, int $lifetime): string {
+        global $CFG;
+        $secure = strpos($CFG->wwwroot, 'https://') === 0 ? ';Secure' : '';
+        return 'document.cookie=' . json_encode($name . '=') . '+encodeURIComponent(' . json_encode($value) . ')+'
+            . json_encode(';path=' . self::cookie_path() . ';max-age=' . $lifetime . ';SameSite=Lax' . $secure) . ';';
+    }
+
+    /**
+     * The <head> snippet for the configured trackers, plus pending conversion events.
+     *
+     * @param bool $signup fire the sign-up conversion
+     * @param array[] $purchases pending purchases (see conversions::take_pending)
+     * @param array $session_utm the session's UTM set, kept in the attribution cookie if not there yet
+     * @param array $cookies normally $_COOKIE
+     * @return string
+     */
+    public static function head_html(bool $signup, array $purchases = [], array $session_utm = [],
+            array $cookies = []): string {
         $ga4 = self::id('ga4_id');
         $gtm = self::id('gtm_id');
         $pixel = self::id('meta_pixel_id');
@@ -161,8 +280,9 @@ final class tracker {
                 . "s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');"
                 . "fbq('init'," . json_encode($pixel) . ");fbq('track','PageView');</script>\n";
         }
+
+        $events = [];
         if ($signup) {
-            $events = [];
             if ($gtm !== '') {
                 $events[] = "window.dataLayer=window.dataLayer||[];dataLayer.push({event:'sign_up'});";
             }
@@ -172,11 +292,53 @@ final class tracker {
             if ($pixel !== '') {
                 $events[] = "fbq('track','CompleteRegistration');";
             }
-            if ($events) {
-                $html .= '<script>' . implode('', $events) . "</script>\n";
+        }
+        foreach ($purchases as $p) {
+            $value = round(((int) $p['amount_minor']) / 100, 2);
+            $data = json_encode(['transaction_id' => (string) $p['ref'], 'value' => $value,
+                'currency' => (string) $p['currency']]);
+            if ($gtm !== '') {
+                $events[] = "window.dataLayer=window.dataLayer||[];dataLayer.push({event:'purchase',ecommerce:$data});";
+            }
+            if ($ga4 !== '') {
+                $events[] = "gtag('event','purchase',$data);";
+            }
+            if ($pixel !== '') {
+                $events[] = "fbq('track','Purchase'," . json_encode(['value' => $value,
+                    'currency' => (string) $p['currency']]) . ',' . json_encode(['eventID' => (string) $p['ref']]) . ');';
             }
         }
+        if ($session_utm && empty($cookies[self::UTM_COOKIE])) {
+            $events[] = self::cookie_js(self::UTM_COOKIE, json_encode($session_utm), self::UTM_COOKIE_LIFETIME);
+        }
+        if ($events) {
+            $html .= '<script>' . implode('', $events) . "</script>\n";
+        }
         return $html;
+    }
+
+    /**
+     * The consent banner (bottom of the page). Accept stores the choice and reloads so trackers
+     * load; decline stores the choice and hides the banner.
+     *
+     * @return string
+     */
+    public static function consent_banner_html(): string {
+        $text = s(get_string('consent_text', self::COMPONENT));
+        $accept = s(get_string('consent_accept', self::COMPONENT));
+        $decline = s(get_string('consent_decline', self::COMPONENT));
+        $set = function (string $value): string {
+            return s(self::cookie_js(self::CONSENT_COOKIE, $value, self::CONSENT_COOKIE_LIFETIME));
+        };
+        return '<div id="nit-analytics-consent" role="region" aria-label="' . $text . '" style="position:fixed;'
+            . 'inset-inline:16px;bottom:16px;z-index:10000;max-width:560px;margin-inline:auto;background:#fff;color:#1d2125;'
+            . 'border:1px solid #dee2e6;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.15);padding:14px 16px;'
+            . 'display:flex;flex-wrap:wrap;gap:10px;align-items:center">'
+            . '<p style="margin:0;flex:1 1 260px;font-size:14px">' . $text . '</p>'
+            . '<button type="button" class="btn btn-outline-secondary btn-sm" onclick="' . $set('denied')
+            . "document.getElementById('nit-analytics-consent').remove();\">" . $decline . '</button>'
+            . '<button type="button" class="btn btn-primary btn-sm" onclick="' . $set('granted')
+            . 'location.reload();">' . $accept . '</button></div>' . "\n";
     }
 
     /**
@@ -191,43 +353,5 @@ final class tracker {
         }
         return '<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=' . s($gtm) . '" height="0" width="0"'
             . ' style="display:none;visibility:hidden"></iframe></noscript>' . "\n";
-    }
-
-    /**
-     * Sign-ups per source / medium / campaign since a time, most first. Accounts without
-     * attribution are grouped under empty strings (direct, or created by an admin).
-     *
-     * @param int $since unix time
-     * @return array[] each {source, medium, campaign, signups}
-     */
-    public static function signups_by_source(int $since): array {
-        global $DB, $CFG;
-        $sql = "SELECT COALESCE(ps.value, '') AS source, COALESCE(pm.value, '') AS medium,
-                       COALESCE(pc.value, '') AS campaign, COUNT(u.id) AS signups
-                  FROM {user} u
-             LEFT JOIN {user_preferences} ps ON ps.userid = u.id AND ps.name = :ps
-             LEFT JOIN {user_preferences} pm ON pm.userid = u.id AND pm.name = :pm
-             LEFT JOIN {user_preferences} pc ON pc.userid = u.id AND pc.name = :pc
-                 WHERE u.deleted = 0 AND u.id <> :guest AND u.timecreated >= :since
-              GROUP BY COALESCE(ps.value, ''), COALESCE(pm.value, ''), COALESCE(pc.value, '')
-              ORDER BY COUNT(u.id) DESC, COALESCE(ps.value, '') ASC";
-        $rows = $DB->get_recordset_sql($sql, [
-            'ps' => self::PREF_PREFIX . 'utm_source',
-            'pm' => self::PREF_PREFIX . 'utm_medium',
-            'pc' => self::PREF_PREFIX . 'utm_campaign',
-            'guest' => (int) $CFG->siteguest,
-            'since' => $since,
-        ]);
-        $out = [];
-        foreach ($rows as $row) {
-            $out[] = [
-                'source' => (string) $row->source,
-                'medium' => (string) $row->medium,
-                'campaign' => (string) $row->campaign,
-                'signups' => (int) $row->signups,
-            ];
-        }
-        $rows->close();
-        return $out;
     }
 }

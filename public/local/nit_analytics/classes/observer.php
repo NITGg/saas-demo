@@ -39,7 +39,10 @@ final class observer {
             return;
         }
         try {
-            tracker::record_signup((int) $event->objectid, $SESSION ?? new \stdClass());
+            $session = $SESSION ?? new \stdClass();
+            // A visitor attributed on an earlier visit (cookie) but with no page seen this session.
+            tracker::capture([], $_COOKIE, $session);
+            tracker::record_signup((int) $event->objectid, $session);
         } catch (\Throwable $e) {
             debugging('local_nit_analytics: could not record sign-up: ' . $e->getMessage(), DEBUG_DEVELOPER);
         }

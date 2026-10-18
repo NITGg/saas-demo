@@ -35,4 +35,9 @@ $callbacks = [
         'hook'     => \core\hook\output\before_standard_top_of_body_html_generation::class,
         'callback' => \local_nit_analytics\local\hook_callbacks::class . '::before_standard_top_of_body_html_generation',
     ],
+    [
+        // Analytics consent banner.
+        'hook'     => \core\hook\output\before_standard_footer_html_generation::class,
+        'callback' => \local_nit_analytics\local\hook_callbacks::class . '::before_standard_footer_html_generation',
+    ],
 ];

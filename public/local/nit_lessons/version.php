@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_nit_lessons';
-$plugin->version   = 2026101800;        // 12-hour free cancel/reschedule default; auto-complete task for started lessons.
+$plugin->version   = 2026101900;        // Auto-complete waits 72h and needs the student to have joined (student_joined).
 $plugin->requires  = 2024100700;
 $plugin->supported = [405, 502];
 $plugin->maturity  = MATURITY_ALPHA;

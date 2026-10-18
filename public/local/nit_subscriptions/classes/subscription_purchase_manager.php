@@ -190,6 +190,16 @@ class subscription_purchase_manager {
         $purchase->timecreated      = $now;
         $purchase->id = $DB->insert_record('nit_sub_purchase', $purchase);
 
+        // Purchase conversion for the marketing funnel (local_nit_analytics, when installed).
+        if (class_exists('\local_nit_analytics\conversions')) {
+            try {
+                \local_nit_analytics\conversions::record_purchase_major((int) $userid, 'subscription',
+                    (float) $pricepaid, 'EGP', (string) $purchase->id);
+            } catch (\Throwable $e) {
+                debugging('local_nit_subscriptions: analytics conversion not recorded: ' . $e->getMessage(), DEBUG_DEVELOPER);
+            }
+        }
+
         // "Your subscription is active / was renewed" (local_nit_notifications, when installed).
         if ($notify) {
             self::notify_started($purchase);

@@ -257,6 +257,11 @@ class lesson_service extends service {
             $lesson->update();
             $payload = ['join_url' => $created->join_url];
         }
+        if (!$isteacher && (int) $lesson->get('student_joined') === 0) {
+            // Proof the student came: auto-complete only ever closes lessons they joined.
+            $lesson->set('student_joined', time());
+            $lesson->update();
+        }
         return [
             'cmid' => (int) $lesson->get('cmid'),
             'sessionid' => (int) $lesson->get('sessionid'),
@@ -289,9 +294,11 @@ class lesson_service extends service {
 
     /**
      * Complete started lessons the teacher forgot to close (the platform auto-confirm, like
-     * Preply's): an in-progress lesson completes itself auto_complete_minutes after its planned
-     * end, so the student's Flex is used and the teacher is paid. Lessons that never started are
-     * left alone — nobody can tell if they happened. One failure does not stop the others.
+     * Preply's): an in-progress lesson the student joined completes itself auto_complete_minutes
+     * after its planned end, so the student's Flex is used and the teacher is paid. Until then the
+     * student can still report the teacher absent. Lessons that never started, or that the student
+     * never joined, are left alone — those are no-show cases for support (handoff 1.6). One failure
+     * does not stop the others.
      *
      * @param int $now
      * @return array the completed lessons
@@ -302,7 +309,7 @@ class lesson_service extends service {
             return [];
         }
         $due = lesson::get_records_select(
-            'status = :status AND actual_start > 0 AND actual_start + duration * 60 <= :cutoff',
+            'status = :status AND actual_start > 0 AND student_joined > 0 AND actual_start + duration * 60 <= :cutoff',
             ['status' => lesson::STATUS_IN_PROGRESS, 'cutoff' => $now - $grace * MINSECS],
             'actual_start ASC'
         );

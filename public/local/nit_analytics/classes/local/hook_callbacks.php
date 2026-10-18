@@ -16,10 +16,11 @@
 
 namespace local_nit_analytics\local;
 
+use local_nit_analytics\conversions;
 use local_nit_analytics\tracker;
 
 /**
- * Output hooks: capture UTM on every page, print the tracking snippets where configured.
+ * Output hooks: capture UTM on every page; print trackers only with consent; ask for consent.
  *
  * @package    local_nit_analytics
  * @copyright  2026 NIT
@@ -28,7 +29,8 @@ use local_nit_analytics\tracker;
 final class hook_callbacks {
 
     /**
-     * Capture first-touch UTM, then add the tracker snippets (and a pending sign-up event) to <head>.
+     * Capture first-touch UTM, then — with consent — add the tracker snippets and any pending
+     * sign-up / purchase events to <head>.
      *
      * @param \core\hook\output\before_standard_head_html_generation $hook
      * @return void
@@ -39,19 +41,23 @@ final class hook_callbacks {
         if (during_initial_install()) {
             return;
         }
-        // Attribution is kept even when no tracker id is configured, so sign-up sources are known.
+        // Attribution is kept even without trackers or consent (server-side, no cookie), so the
+        // funnel report still knows sign-up sources.
         if (isset($SESSION) && (!isloggedin() || isguestuser())) {
-            tracker::capture($_GET, $SESSION);
+            tracker::capture($_GET, $_COOKIE, $SESSION);
         }
-        if (!tracker::should_track((string) $PAGE->pagelayout)) {
+        if (!tracker::should_track((string) $PAGE->pagelayout, $_COOKIE)) {
             return;
         }
-        $signup = isloggedin() && tracker::take_pending_signup((int) $USER->id);
-        $hook->add_html(tracker::head_html($signup));
+        $real = isloggedin() && !isguestuser();
+        $signup = $real && tracker::take_pending_signup((int) $USER->id);
+        $purchases = $real ? conversions::take_pending((int) $USER->id) : [];
+        $hook->add_html(tracker::head_html($signup, $purchases,
+            (array) ($SESSION->local_nit_analytics_utm ?? []), $_COOKIE));
     }
 
     /**
-     * The GTM <noscript> fallback right after <body>.
+     * The GTM <noscript> fallback right after <body> (only with consent).
      *
      * @param \core\hook\output\before_standard_top_of_body_html_generation $hook
      * @return void
@@ -59,9 +65,24 @@ final class hook_callbacks {
     public static function before_standard_top_of_body_html_generation(
             \core\hook\output\before_standard_top_of_body_html_generation $hook): void {
         global $PAGE;
-        if (during_initial_install() || !tracker::should_track((string) $PAGE->pagelayout)) {
+        if (during_initial_install() || !tracker::should_track((string) $PAGE->pagelayout, $_COOKIE)) {
             return;
         }
         $hook->add_html(tracker::body_html());
+    }
+
+    /**
+     * The consent banner, until the visitor accepts or declines.
+     *
+     * @param \core\hook\output\before_standard_footer_html_generation $hook
+     * @return void
+     */
+    public static function before_standard_footer_html_generation(
+            \core\hook\output\before_standard_footer_html_generation $hook): void {
+        global $PAGE;
+        if (during_initial_install() || !tracker::should_ask_consent((string) $PAGE->pagelayout, $_COOKIE)) {
+            return;
+        }
+        $hook->add_html(tracker::consent_banner_html());
     }
 }
