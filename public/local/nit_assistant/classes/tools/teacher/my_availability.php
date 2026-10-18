@@ -88,7 +88,7 @@ final class my_availability extends tool {
         if (!$hours) {
             $problems[] = 'no weekly hours set';
         }
-        helper::button($ctx, 'action_profile', helper::url('/local/academy/profile.php'));
+        helper::button($ctx, 'action_profile', helper::url('/local/nit_tutors/application.php'));
         return self::ok([
             'bookable' => $p['available'] && $p['subjects'] && $hours,
             'why_not_bookable' => $problems,

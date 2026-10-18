@@ -320,6 +320,44 @@
     border-radius: 50%;
 }
 
+/* ── Teachers tab of the catalogue: filters in its side column (search_filters) ── */
+.nittu-side {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin: 0;
+}
+.nittu-side .nit-cat-side-head {
+    margin-bottom: 0;
+}
+.nittu-side__item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+    font-size: 13px;
+    color: var(--t-muted, var(--nit-brand-textsecondary, #6b6b66));
+}
+.nittu-side__item select,
+.nittu-side__item input {
+    width: 100%;
+    min-width: 0;
+    border: 1px solid var(--t-border, var(--nit-brand-borderprimary, #dcdcd7));
+    border-radius: 10px;
+    padding: 9px 12px;
+    font: inherit;
+    font-size: 14px;
+    background: var(--t-bg, var(--nit-brand-background, #fff));
+    color: var(--t-ink, var(--nit-brand-textprimary, #16191d));
+}
+.nittu-side__pair {
+    display: flex;
+    gap: 8px;
+}
+.nittu-side .btn {
+    border-radius: 10px;
+}
+
 /* ── Search page ─────────────────────────────────────────────────────────── */
 .nittu-search {
     max-width: 1240px;

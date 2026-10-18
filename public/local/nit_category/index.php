@@ -16,6 +16,15 @@ $subid      = optional_param('sub', 0, PARAM_INT);  // 0 = "All" (every subcateg
 // Search text (?q=; the navbar search box's "all results" lands here): kept as typed for
 // the box, matched lower-cased on the course names and summary (catalogue::matches_text()).
 $qtext      = core_text::substr(trim(optional_param('q', '', PARAM_TEXT)), 0, 100);
+// Courses | Teachers (?tab=teachers; local_nit_tutors): the teachers are drawn in this same frame —
+// title, search box, tabs, sort box, side column — so switching tabs moves nothing. Teachers belong
+// to no category: that tab is always the whole academy.
+$teachersview = '\local_nit_tutors\local\search_view';
+$teachertab = optional_param('tab', '', PARAM_ALPHA) === 'teachers' && class_exists($teachersview);
+if ($teachertab) {
+    $categoryid = 0;
+    $subid = 0;
+}
 
 // Parent category. id=0 → the top category, i.e. the global "All courses" catalogue
 // (every top-level category becomes a section).
@@ -44,9 +53,10 @@ if ($subid) {
 }
 
 $PAGE->set_url(new moodle_url('/local/nit_category/index.php',
-    ['id' => $categoryid, 'sub' => $subid] + ($qtext !== '' ? ['q' => $qtext] : [])));
+    ['id' => $categoryid, 'sub' => $subid] + ($qtext !== '' ? ['q' => $qtext] : []) + ($teachertab ? ['tab' => 'teachers'] : [])));
 $PAGE->set_context($context);
-$pagetitle = $istop ? get_string('courses') : $category->get_formatted_name();
+$pagetitle = $teachertab ? get_string('findteacher', 'local_nit_tutors')
+    : ($istop ? get_string('courses') : $category->get_formatted_name());
 $PAGE->set_title($pagetitle);
 $PAGE->set_heading($pagetitle);
 // NIT full-width layout: navbar + footer only, no page heading / secondary nav.
@@ -171,6 +181,22 @@ $collectids = static function (array $node) use (&$collectids, &$cardids): void 
 array_map($collectids, $rootnodes);
 $courserecords = $cardids ? $DB->get_records_list('course', 'id', $cardids) : [];
 
+// The Teachers tab: its filters, sort options and cards (local_nit_tutors\local\search_view); its
+// one GET form lives in the side column, and the search box and the sort box submit with it.
+$catalogueurl = new moodle_url('/local/nit_category/index.php');
+$teacherview = null;
+$teacherform = '';
+$teacherpage = 0;
+if ($teachertab) {
+    $teacherfilters = \local_nit_tutors\local\search::normalise(['q' => $qtext] + $teachersview::raw_from_request());
+    $teacherpage = optional_param('page', 0, PARAM_INT);
+    $teacherview = $teachersview::context($teacherfilters, $teacherpage,
+        new moodle_url($catalogueurl, $withq(['tab' => 'teachers'])));
+    $teacherpagerurl = new moodle_url($catalogueurl, ['tab' => 'teachers'] + $teachersview::params($teacherfilters));
+    $teacherform = $teachersview::FORMID;
+    $categoryname = $t('All teachers', 'كل المدرسين');
+}
+
 echo $OUTPUT->header();
 ?>
 <style>
@@ -266,6 +292,17 @@ echo $OUTPUT->header();
         <?php if (trim(strip_tags($description)) !== ''): ?>
           <div class="nit-cat-desc"><?= $description ?></div>
         <?php endif; ?>
+        <?php if ($teachertab): ?>
+        <div class="nit-cat-count"><strong><?= (int) $teacherview['total'] ?></strong> <?= $t('teachers', 'مدرس') ?> · <?= $categoryname ?></div>
+        <div class="nit-cat-search" role="search">
+          <div class="nit-cat-search-box">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5A6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5S14 7.01 14 9.5S11.99 14 9.5 14"/></svg>
+            <input type="search" name="q" form="<?= s($teacherform) ?>" value="<?= s($qtext) ?>" maxlength="100" autocomplete="off"
+              placeholder="<?= s(get_string('searchplaceholder', 'local_nit_tutors')) ?>" aria-label="<?= s(get_string('searchplaceholder', 'local_nit_tutors')) ?>">
+          </div>
+          <button type="submit" form="<?= s($teacherform) ?>"><?= $t('Search', 'بحث') ?></button>
+        </div>
+        <?php else: ?>
         <div class="nit-cat-count"><strong><?= $totalcourses ?></strong> <?= $t('courses', 'دورة') ?> · <?= $categoryname ?></div>
         <form method="get" class="nit-cat-search" role="search" action="<?= (new moodle_url('/local/nit_category/index.php'))->out(false) ?>">
           <?php if ($categoryid): ?><input type="hidden" name="id" value="<?= (int) $categoryid ?>"><?php endif; ?>
@@ -281,24 +318,46 @@ echo $OUTPUT->header();
           </div>
           <button type="submit"><?= $t('Search', 'بحث') ?></button>
         </form>
+        <?php endif; ?>
         <?php if ($qtext !== ''): ?>
           <div class="nit-cat-searchnote">
             <?= $t('Results for', 'نتائج البحث عن') ?> «<?= s($qtext) ?>»
+            <?php if ($teachertab): ?>
+            <a href="<?= (new moodle_url($catalogueurl, ['tab' => 'teachers']))->out() ?>"><?= $t('Clear search', 'مسح البحث') ?></a>
+            <?php else: ?>
             <a href="<?= (new moodle_url('/local/nit_category/index.php', array_filter(['id' => $categoryid, 'sub' => $subid, 'sort' => $sort !== 'recommended' ? $sort : null, 'price' => $pricefilter !== 'all' ? $pricefilter : null, 'level' => $levelfilter !== '' ? $levelfilter : null, 'rating' => $ratingfilter ?: null])))->out() ?>"><?= $t('Clear search', 'مسح البحث') ?></a>
+            <?php endif; ?>
           </div>
         <?php endif; ?>
         <?php if (class_exists('\local_nit_tutors\local\search')):
-            // Courses | Teachers, always: the Teachers tab opens the teacher search (local_nit_tutors)
-            // with the same words, if any.
+            // Courses | Teachers, always, both with the same words (if any); each count is what its
+            // tab lists for those words.
             $tutorsearch = '\local_nit_tutors\local\search';
             $teachercount = $tutorsearch::run($tutorsearch::normalise(['q' => $qtext]),
-                isloggedin() && !isguestuser() ? (int) $USER->id : 0, 0, 1)['total']; ?>
+                isloggedin() && !isguestuser() ? (int) $USER->id : 0, 0, 1)['total'];
+            $coursestab = $t('Courses', 'الدورات') . ' (' . (int) $totalcourses . ')';
+            $teacherstab = $t('Teachers', 'المدرسين') . ' (' . (int) $teachercount . ')'; ?>
           <nav class="nittu-tabs" aria-label="<?= s($t('Search in', 'البحث في')) ?>">
-            <span class="nittu-tab is-active" aria-current="page"><?= $t('Courses', 'الدورات') ?> (<?= (int) $totalcourses ?>)</span>
-            <a class="nittu-tab" href="<?= (new moodle_url('/local/nit_tutors/index.php', $qtext !== '' ? ['q' => $qtext] : []))->out() ?>"><?= $t('Teachers', 'المدرسين') ?> (<?= (int) $teachercount ?>)</a>
+            <?php if ($teachertab): ?>
+            <a class="nittu-tab" href="<?= (new moodle_url($catalogueurl, $withq([])))->out() ?>"><?= $coursestab ?></a>
+            <span class="nittu-tab is-active" aria-current="page"><?= $teacherstab ?></span>
+            <?php else: ?>
+            <span class="nittu-tab is-active" aria-current="page"><?= $coursestab ?></span>
+            <a class="nittu-tab" href="<?= (new moodle_url($catalogueurl, $withq(['tab' => 'teachers'])))->out() ?>"><?= $teacherstab ?></a>
+            <?php endif; ?>
           </nav>
         <?php endif; ?>
       </div>
+      <?php if ($teachertab): ?>
+      <div class="nit-cat-sort">
+        <label for="nit-sort"><?= $t('Sort', 'ترتيب') ?></label>
+        <select id="nit-sort" name="sort" form="<?= s($teacherform) ?>" data-nittu-autosubmit>
+          <?php foreach ($teacherview['sorts'] as $o): ?>
+          <option value="<?= s($o['value']) ?>" <?= $o['selected'] ? 'selected' : '' ?>><?= s($o['label']) ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <?php else: ?>
       <form method="get" class="nit-cat-sort" action="<?= (new moodle_url('/local/nit_category/index.php'))->out(false) ?>">
         <input type="hidden" name="id" value="<?= (int) $categoryid ?>">
         <?php if ($subid): ?><input type="hidden" name="sub" value="<?= (int) $subid ?>"><?php endif; ?>
@@ -313,8 +372,21 @@ echo $OUTPUT->header();
           <option value="az" <?= $sort === 'az' ? 'selected' : '' ?>><?= $t('A – Z', 'أ – ي') ?></option>
         </select>
       </form>
+      <?php endif; ?>
     </div>
 
+    <?php if ($teachertab): ?>
+    <div class="nit-cat-body">
+      <aside class="nit-cat-side">
+        <?= $OUTPUT->render_from_template('local_nit_tutors/search_filters', $teacherview['filters'] + [
+            'actionurl' => $catalogueurl->out(false), 'tab' => 'teachers']) ?>
+      </aside>
+      <main class="nit-cat-main">
+        <?= $OUTPUT->render_from_template('local_nit_tutors/search_results', $teacherview['results']) ?>
+        <?= $OUTPUT->paging_bar($teacherview['total'], $teacherpage, $teachersview::PERPAGE, $teacherpagerurl) ?>
+      </main>
+    </div>
+    <?php else: ?>
     <div class="nit-cat-body">
       <aside class="nit-cat-side">
         <div class="nit-cat-side-head">
@@ -462,6 +534,7 @@ echo $OUTPUT->header();
         ?>
       </main>
     </div>
+    <?php endif; ?>
   </div>
 </div>
 <?php

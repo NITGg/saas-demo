@@ -24,10 +24,11 @@
     * sesskey, actionurl, backurl
     * name, email, phone, photo, profileurl, publicurl
     * status, statuslabel, submitted, reviewed, reviewnote
-    * headline, bio (HTML), subjects [{name}], price
+    * headline, headlinenew, bio (HTML), bionew, subjects [{name}], subjectsnew, price
+      (for an approved teacher's change waiting for review: the new version; *new = changed)
     * hasvideo, video {embed, src, mimetype}, videonew, videostatus, videonote
     * hasquals, quals [{title, institution, year, isnew, fileurl, filename, isimage}]
-    * hasanswers, answers [{label, value, fileurl, filename, isimage}]
+    * hasanswers, answers [{label, value, isnew, fileurl, filename, isimage}]
     * missing [{label}]
     * decisionhelp, canact, approvelabel, rejectlabel - the two decisions ('' = not offered)
 
@@ -67,10 +68,12 @@
         <div class="col-lg-8">
             <section class="card mb-3"><div class="card-body">
                 <h3 class="h5">{{#str}}form_about, local_nit_tutors{{/str}}</h3>
-                {{#headline}}<p class="fw-bold">{{headline}}</p>{{/headline}}
+                {{#headline}}<p class="fw-bold">{{headline}}{{#headlinenew}} <span class="badge bg-warning text-dark">{{#str}}isnew, local_nit_tutors{{/str}}</span>{{/headlinenew}}</p>{{/headline}}
+                {{#bionew}}<span class="badge bg-warning text-dark">{{#str}}isnew, local_nit_tutors{{/str}}</span>{{/bionew}}
                 <div>{{{bio}}}</div>
                 <p class="mb-1"><strong>{{#str}}form_subjects, local_nit_tutors{{/str}}:</strong>
-                    {{#subjects}}<span class="badge bg-light text-dark me-1">{{name}}</span>{{/subjects}}</p>
+                    {{#subjects}}<span class="badge bg-light text-dark me-1">{{name}}</span>{{/subjects}}
+                    {{#subjectsnew}}<span class="badge bg-warning text-dark">{{#str}}isnew, local_nit_tutors{{/str}}</span>{{/subjectsnew}}</p>
                 <p class="mb-0"><strong>{{#str}}price, local_nit_tutors{{/str}}:</strong> {{#str}}priceflex, local_nit_tutors, {{price}}{{/str}}</p>
             </div></section>
 
@@ -111,7 +114,7 @@
                 <h3 class="h5">{{#str}}form_more, local_nit_tutors{{/str}}</h3>
                 <dl class="mb-0">
                 {{#answers}}
-                    <dt>{{label}}</dt>
+                    <dt>{{label}}{{#isnew}} <span class="badge bg-warning text-dark">{{#str}}isnew, local_nit_tutors{{/str}}</span>{{/isnew}}</dt>
                     <dd>{{#fileurl}}{{#isimage}}<a href="{{fileurl}}" target="_blank" rel="noopener"><img class="nittu-cert" src="{{fileurl}}" alt="{{filename}}"></a> {{/isimage}}<a href="{{fileurl}}" target="_blank" rel="noopener">{{filename}}</a>{{/fileurl}}{{^fileurl}}{{{value}}}{{/fileurl}}</dd>
                 {{/answers}}
                 </dl>

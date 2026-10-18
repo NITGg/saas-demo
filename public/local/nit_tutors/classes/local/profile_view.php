@@ -34,9 +34,10 @@ final class profile_view {
      * @param int $userid 0 = a new teacher (the sign-up)
      * @param array|null $in posted values to show again (after a refused save), else the saved ones
      * @param string[] $errors from teacher_input::validate()
+     * @param bool $waiting $in is an approved teacher's change waiting for review: show its files too
      * @return array
      */
-    public static function inputs(int $userid, ?array $in = null, array $errors = []): array {
+    public static function inputs(int $userid, ?array $in = null, array $errors = [], bool $waiting = false): array {
         $service = new teacher_service();
         $profile = $userid ? $service->profile($userid) : ['headline' => '', 'subjects' => []];
         $user = $userid ? \core_user::get_user($userid) : null;
@@ -56,7 +57,7 @@ final class profile_view {
         $videotype = $in['videotype'] ?? ($row ? (string) $row->videotype : '');
         $videotype = $videotype ?: video::LINK;
         $player = $userid ? video::player($userid, false) : null;
-        $videofile = $userid ? video::file($userid) : null;
+        $videofile = ($waiting ? pending::file($userid, pending::AREA_VIDEO, 0) : null) ?? ($userid ? video::file($userid) : null);
 
         // Qualifications: the saved ones (or the posted rows), at least one row.
         $quals = [];
@@ -73,10 +74,11 @@ final class profile_view {
             }
         }
         foreach ($quals as &$q) {
-            $file = ($userid && $q['id']) ? qualifications::file($userid, $q['id']) : null;
+            $file = $waiting ? pending::file($userid, pending::AREA_QUAL, $q['row']) : null;
+            $file = $file ?? (($userid && $q['id']) ? qualifications::file($userid, $q['id']) : null);
             $q['filename'] = $file ? $file->get_filename() : '';
             $q['fileurl'] = $file ? \moodle_url::make_pluginfile_url($file->get_contextid(), 'local_nit_tutors',
-                qualifications::AREA, $q['id'], '/', $file->get_filename(), false)->out(false) : '';
+                $file->get_filearea(), $file->get_itemid(), '/', $file->get_filename(), false)->out(false) : '';
         }
         unset($q);
         if (!$quals) {
@@ -103,9 +105,10 @@ final class profile_view {
             } else if ($f->datatype === 'file' && $userid) {
                 $files = get_file_storage()->get_area_files(\context_user::instance($userid)->id, 'local_nit_tutors',
                     fields::AREA, $f->id, 'filename', false);
-                if ($file = reset($files)) {
+                $file = ($waiting ? pending::file($userid, pending::AREA_FIELD, (int) $f->id) : null) ?? (reset($files) ?: null);
+                if ($file) {
                     $item['filename'] = $file->get_filename();
-                    $item['fileurl'] = \moodle_url::make_pluginfile_url($file->get_contextid(), 'local_nit_tutors', fields::AREA,
+                    $item['fileurl'] = \moodle_url::make_pluginfile_url($file->get_contextid(), 'local_nit_tutors', $file->get_filearea(),
                         $f->id, '/', $file->get_filename(), false)->out(false);
                 }
             }

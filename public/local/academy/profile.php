@@ -57,19 +57,23 @@ if (optional_param('nitphoto', 0, PARAM_BOOL) && confirm_sesskey()) {
 }
 
 // ── Save (personal details + language preference) ────────────────────────────
+// A teacher's bio is their public "About you": it is edited on the teacher profile
+// (/local/nit_tutors/application.php), where an approved teacher's change waits for review. The
+// lessons card (bookings, headline, subjects, hours) moved there too.
+$tutorurl = class_exists('\local_nit_tutors\local\application')
+    ? new moodle_url('/local/nit_tutors/application.php') : null;
+$biofromtutor = $tutorurl && \local_nit_tutors\local\application::get((int) $USER->id) !== null;
 if (data_submitted() && confirm_sesskey()) {
-    // Teachers: the live-lesson card (bookings, subjects, weekly hours) posts with this form.
-    $lessonerror = class_exists('\local_nit_lessons\local\profile_section')
-        ? \local_nit_lessons\local\profile_section::save((int) $USER->id) : null;
-
     $upd = new stdClass();
     $upd->id = (int) $USER->id;
     $upd->firstname = trim(required_param('firstname', PARAM_TEXT));
     $upd->lastname  = trim(required_param('lastname', PARAM_TEXT));
     $upd->phone1    = trim(optional_param('phone', '', PARAM_TEXT));
     $parentphone    = trim(optional_param('parentphone', '', PARAM_TEXT));
-    $upd->description = optional_param('bio', '', PARAM_TEXT);
-    $upd->descriptionformat = FORMAT_HTML;
+    if (!$biofromtutor) {
+        $upd->description = optional_param('bio', '', PARAM_TEXT);
+        $upd->descriptionformat = FORMAT_HTML;
+    }
     $lang = optional_param('lang', '', PARAM_LANG);
     if ($lang !== '') {
         $upd->lang = $lang;
@@ -160,9 +164,6 @@ if (data_submitted() && confirm_sesskey()) {
                 }
             }
 
-            if ($lessonerror !== null) {
-                redirect(new moodle_url($pageurl, [], 'lessons'), $lessonerror, null, \core\output\notification::NOTIFY_ERROR);
-            }
             redirect($pageurl, $t('Your changes were saved.', 'تم حفظ التغييرات.'),
                 null, \core\output\notification::NOTIFY_SUCCESS);
         } catch (\Throwable $ex) {
@@ -283,7 +284,13 @@ echo $OUTPUT->header();
           <?php echo $pfinput('school'); ?>
           <div class="full">
             <div class="nit-prof-lbl"><?php echo $e($t('Bio', 'نبذة')); ?></div>
+            <?php if ($biofromtutor): ?>
+            <textarea class="nit-prof-field" readonly><?php echo $e(strip_tags($USER->description ?? '')); ?></textarea>
+            <a class="nit-prof-lbl" href="<?php echo $e($tutorurl->out(false)); ?>"><?php
+                echo $e($t('Edit it on your teacher profile', 'عدّلها من ملف المدرس')); ?></a>
+            <?php else: ?>
             <textarea class="nit-prof-field" name="bio" maxlength="2000"><?php echo $e(strip_tags($USER->description ?? '')); ?></textarea>
+            <?php endif; ?>
           </div>
         </div>
       </div>
@@ -315,10 +322,6 @@ echo $OUTPUT->header();
           <?php echo $pfinput('guardianjob'); ?>
         </div>
       </div>
-
-      <?php // Teachers: live lessons (from local_nit_lessons; '' for everyone else). ?>
-      <?php echo class_exists('\local_nit_lessons\local\profile_section')
-          ? \local_nit_lessons\local\profile_section::render((int) $USER->id) : ''; ?>
 
       <!-- preferences (only real, persisted settings) -->
       <div class="nit-prof-card">

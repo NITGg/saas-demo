@@ -219,8 +219,8 @@ final class application {
     }
 
     /**
-     * Does an approved teacher have changes waiting for review (a new intro video, a new or
-     * changed qualification)?
+     * Does an approved teacher have changes waiting for review ({@see pending}; or, from before
+     * changes waited, a new intro video or an unverified qualification)?
      *
      * @param int $userid
      * @return bool
@@ -228,14 +228,14 @@ final class application {
     public static function has_updates(int $userid): bool {
         global $DB;
         $row = self::get($userid);
-        return $row && $row->status === self::APPROVED && ($row->videostatus === 'pending'
+        return $row && $row->status === self::APPROVED && ((string) $row->pending !== '' || $row->videostatus === 'pending'
             || $DB->record_exists(qualifications::TABLE, ['userid' => $userid, 'verified' => 0]));
     }
 
     /**
-     * Decide an approved teacher's changes: approve (the video is shown, the qualifications are
-     * verified) or reject with a reason (the video is refused; changed qualifications stay without
-     * the "verified" mark). The teacher stays approved either way.
+     * Decide an approved teacher's changes: approve (they go live: the video is shown, the
+     * qualifications are verified) or reject with a reason (they are thrown away; the public keeps
+     * seeing the approved version). The teacher stays approved either way.
      *
      * @param int $userid
      * @param bool $approve
@@ -246,11 +246,15 @@ final class application {
         if (!$approve && trim($note) === '') {
             throw new \moodle_exception('err_notereq', 'local_nit_tutors');
         }
+        $haspending = pending::get($userid) !== null;
+        if ($haspending) {
+            $approve ? pending::apply($userid) : pending::discard($userid);
+        }
         $row = self::ensure($userid);
         if ($row->videostatus === 'pending') {
             video::review($userid, $approve, $note);
-        } else if (!$approve) {
-            notifier::reviewed($userid, 'updatesrejected', $note);
+        } else if (!$approve || $haspending) {
+            notifier::reviewed($userid, $approve ? 'updatesapproved' : 'updatesrejected', $note);
         }
         if ($approve) {
             $DB->set_field(qualifications::TABLE, 'verified', 1, ['userid' => $userid]);
@@ -304,6 +308,12 @@ final class application {
         if (trim($note) === '') {
             throw new \moodle_exception('err_notereq', 'local_nit_tutors');
         }
+        // No longer public: a change still waiting for review simply becomes their data (reinstating
+        // the teacher reviews everything again).
+        if ($in = pending::get($userid)) {
+            teacher_input::save_live($userid, $in, pending::files($userid), false);
+            pending::discard($userid);
+        }
         $row = self::ensure($userid);
         $transaction = $DB->start_delegated_transaction();
         $row->status = $status;
@@ -337,14 +347,16 @@ final class application {
     public static function counts(): array {
         global $DB;
         $out = array_fill_keys(self::STATUSES, 0);
-        foreach ($DB->get_records_sql("SELECT status, COUNT(1) AS n FROM {" . self::TABLE . "} GROUP BY status") as $r) {
+        // Counted exactly as search() lists them: a row whose account was deleted is not listed, so not counted.
+        foreach ($DB->get_records_sql("SELECT t.status, COUNT(1) AS n FROM {" . self::TABLE . "} t
+                JOIN {user} u ON u.id = t.userid AND u.deleted = 0 GROUP BY t.status") as $r) {
             $out[$r->status] = (int) $r->n;
         }
         return $out;
     }
 
-    /** SQL (on alias t) of an approved teacher with changes waiting: a new video or an unverified qualification. */
-    const UPDATES_SQL = "t.status = 'approved' AND (t.videostatus = 'pending' OR EXISTS (SELECT 1 FROM {nit_tutor_qual} uq
+    /** SQL (on alias t) of an approved teacher with changes waiting: a pending change, a new video or an unverified qualification. */
+    const UPDATES_SQL = "t.status = 'approved' AND (t.timepending > 0 OR t.videostatus = 'pending' OR EXISTS (SELECT 1 FROM {nit_tutor_qual} uq
         WHERE uq.userid = t.userid AND uq.verified = 0))";
 
     /**
@@ -354,7 +366,8 @@ final class application {
      */
     public static function updates_waiting(): int {
         global $DB;
-        return (int) $DB->count_records_sql("SELECT COUNT(1) FROM {" . self::TABLE . "} t WHERE " . self::UPDATES_SQL);
+        return (int) $DB->count_records_sql("SELECT COUNT(1) FROM {" . self::TABLE . "} t
+            JOIN {user} u ON u.id = t.userid AND u.deleted = 0 WHERE " . self::UPDATES_SQL);
     }
 
     /**

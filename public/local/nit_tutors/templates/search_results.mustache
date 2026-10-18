@@ -1,0 +1,68 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_nit_tutors/search_results
+
+    The teacher cards, drawn in the catalogue's main column on its "Teachers" tab
+    (local_nit_tutors\local\search_view). Styles: local/nit_tutors/styles.css.
+
+    Context variables required for this template:
+    * applyurl
+    * hasteachers, teachers - cards: id, name, photo, headline, subjects [{name}], price, hasrating, rating,
+      reviews, lessons, hasbadges, badges [{name, color, description}], hasvideo, url, bookurl
+
+    Example context (json):
+    {"applyurl": "#", "hasteachers": true,
+     "teachers": [{"id": 3, "name": "Sara Ali", "photo": "", "headline": "IELTS coach", "subjects": [{"name": "English"}],
+       "price": 2, "hasrating": true, "rating": "4.9", "reviews": 12, "lessons": 40, "hasbadges": true,
+       "badges": [{"name": "Super Tutor", "color": "warning", "description": ""}], "hasvideo": true,
+       "url": "#", "bookurl": "#"}]}
+}}
+<section class="nittu-results" aria-live="polite">
+    {{#hasteachers}}
+    <ul class="nittu-grid">
+        {{#teachers}}
+        <li class="nittu-card">
+            <a class="nittu-card__photo" href="{{url}}" tabindex="-1" aria-hidden="true">
+                <img src="{{photo}}" alt="" loading="lazy">
+                {{#hasvideo}}<span class="nittu-card__play" title="{{#str}}hasvideo, local_nit_tutors{{/str}}">▶</span>{{/hasvideo}}
+            </a>
+            <div class="nittu-card__body">
+                <h2 class="nittu-card__name"><a href="{{url}}">{{name}}</a></h2>
+                {{#hasbadges}}<div class="nittu-badges">{{#badges}}<span class="nittu-badge nittu-badge--{{color}}" title="{{description}}">{{name}}</span>{{/badges}}</div>{{/hasbadges}}
+                {{#headline}}<p class="nittu-card__headline">{{headline}}</p>{{/headline}}
+                <ul class="nittu-card__subjects">{{#subjects}}<li>{{name}}</li>{{/subjects}}</ul>
+                <div class="nittu-card__meta">
+                    {{#hasrating}}<span class="nittu-card__rating">★ {{rating}} <small>({{reviews}})</small></span>{{/hasrating}}
+                    {{^hasrating}}<span class="nittu-card__new">{{#str}}newteacher, local_nit_tutors{{/str}}</span>{{/hasrating}}
+                    <span>{{#str}}nlessons, local_nit_tutors, {{lessons}}{{/str}}</span>
+                </div>
+            </div>
+            <div class="nittu-card__side">
+                <div class="nittu-card__price">{{#str}}priceflex, local_nit_tutors, {{price}}{{/str}}<small>{{#str}}perlesson, local_nit_tutors{{/str}}</small></div>
+                <a class="btn btn-primary" href="{{bookurl}}">{{#str}}booklesson, local_nit_tutors{{/str}}</a>
+                <a class="btn btn-outline-primary" href="{{url}}">{{#str}}viewprofile, local_nit_tutors{{/str}}</a>
+            </div>
+        </li>
+        {{/teachers}}
+    </ul>
+    {{/hasteachers}}
+    {{^hasteachers}}
+    <p class="nittu-empty">{{#str}}noteachers, local_nit_tutors{{/str}}</p>
+    {{/hasteachers}}
+    <p class="nittu-join">{{#str}}areyouteacher, local_nit_tutors{{/str}} <a href="{{applyurl}}">{{#str}}jointeacher, local_nit_tutors{{/str}}</a></p>
+</section>

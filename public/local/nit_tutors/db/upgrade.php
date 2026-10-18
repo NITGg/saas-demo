@@ -104,5 +104,17 @@ function xmldb_local_nit_tutors_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026101900, 'local', 'nit_tutors');
     }
 
+    if ($oldversion < 2026101901) {
+        // An approved teacher's edits wait here (with files in the pending* areas) until a reviewer approves them.
+        $table = new xmldb_table('nit_tutor');
+        foreach ([new xmldb_field('pending', XMLDB_TYPE_TEXT, null, null, null, null, null, 'videonote'),
+                new xmldb_field('timepending', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'pending')] as $field) {
+            if (!$dbman->field_exists($table, $field)) {
+                $dbman->add_field($table, $field);
+            }
+        }
+        upgrade_plugin_savepoint(true, 2026101901, 'local', 'nit_tutors');
+    }
+
     return true;
 }

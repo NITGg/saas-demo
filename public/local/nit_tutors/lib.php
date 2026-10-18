@@ -45,7 +45,8 @@ use local_nit_tutors\local\video;
 function local_nit_tutors_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload, array $options = []) {
     global $USER, $CFG;
     if ($context->contextlevel != CONTEXT_USER
-            || !in_array($filearea, [video::AREA, qualifications::AREA, \local_nit_tutors\local\fields::AREA], true)) {
+            || !in_array($filearea, array_merge([video::AREA, qualifications::AREA, \local_nit_tutors\local\fields::AREA],
+                \local_nit_tutors\local\pending::AREAS), true)) {
         return false;
     }
     $ownerid = (int) $context->instanceid;

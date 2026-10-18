@@ -17,8 +17,10 @@
 {{!
     @template local_nit_lessons/profile_section
 
-    The teacher's live-lesson card on /local/academy/profile.php (inside its form,
-    using its nit-prof-* styles). Saved by \local_nit_lessons\local\profile_section::save().
+    The teacher's live-lesson card on the teacher profile /local/nit_tutors/application.php (inside
+    its form, using the nit-prof-* styles of the account frame). Read by profile_section::posted().
+    Optional: note (a line under the intro), subjectsrequired,
+    err {general, headline, lessonflex, subjects, hours}.
 
     Example context (json):
     {
@@ -37,6 +39,8 @@
     </div>
     <div class="nit-prof-body">
         <p class="full nitlx-prof-intro">{{#str}}teacherprofile_intro, local_nit_lessons{{/str}}</p>
+        {{#note}}<p class="full nitlx-prof-hint">{{note}}</p>{{/note}}
+        {{#err.general}}<div class="full nitlx-prof-err">{{err.general}}</div>{{/err.general}}
         <label class="full nitlx-prof-switch">
             <input type="checkbox" name="nitlx_available" value="1" {{#available}}checked{{/available}}>
             <span>{{#str}}takebookings, local_nit_lessons{{/str}}</span>
@@ -45,16 +49,18 @@
             <div class="nit-prof-lbl">{{#str}}headline, local_nit_lessons{{/str}}</div>
             <input class="nit-prof-field" type="text" name="nitlx_headline" value="{{headline}}" maxlength="255"
                    placeholder="{{#str}}headline_ph, local_nit_lessons{{/str}}">
+            {{#err.headline}}<div class="nitlx-prof-err">{{err.headline}}</div>{{/err.headline}}
         </div>
         <div class="full">
             <label class="nit-prof-lbl" for="nitlx-lessonflex">{{#str}}lessonflex, local_nit_lessons{{/str}}</label>
             <p class="nitlx-prof-hint">{{#str}}lessonflex_help, local_nit_lessons{{/str}}</p>
             <input class="nit-prof-field nitlx-prof-num" type="number" id="nitlx-lessonflex" name="nitlx_lessonflex"
                    value="{{lessonflex}}" min="1" step="1" inputmode="numeric" dir="ltr" required>
+            {{#err.lessonflex}}<div class="nitlx-prof-err">{{err.lessonflex}}</div>{{/err.lessonflex}}
         </div>
 
         <div class="full">
-            <div class="nit-prof-lbl">{{#str}}subjects, local_nit_lessons{{/str}}</div>
+            <div class="nit-prof-lbl">{{#str}}subjects, local_nit_lessons{{/str}}{{#subjectsrequired}} <span class="nitlx-prof-req">*</span>{{/subjectsrequired}}</div>
             {{^hassubjectoptions}}<p class="nitlx-prof-hint">{{#str}}nosubjectoptions, local_nit_lessons{{/str}}</p>{{/hassubjectoptions}}
             <div class="nitlx-prof-rows" data-region="subjects">
                 {{#subjects}}
@@ -68,6 +74,7 @@
                 {{/subjects}}
             </div>
             <button type="button" class="nitlx-prof-add" data-add="subject">+ {{#str}}addsubject, local_nit_lessons{{/str}}</button>
+            {{#err.subjects}}<div class="nitlx-prof-err">{{err.subjects}}</div>{{/err.subjects}}
         </div>
 
         <div class="full">
@@ -85,6 +92,7 @@
                 {{/hours}}
             </div>
             <button type="button" class="nitlx-prof-add" data-add="hour">+ {{#str}}addhours, local_nit_lessons{{/str}}</button>
+            {{#err.hours}}<div class="nitlx-prof-err">{{err.hours}}</div>{{/err.hours}}
         </div>
     </div>
 
@@ -112,6 +120,8 @@
   .nitlx-prof-intro, .nitlx-prof-hint{ margin:0; font-size:13px; color:var(--t-muted,#8A8A82); line-height:1.7; }
   .nitlx-prof-hint{ margin-bottom:8px; }
   .nitlx-prof-num{ max-width:160px; }
+  .nitlx-prof-err{ margin-top:6px; font-size:13px; color:#B4402F; }
+  .nitlx-prof-req{ color:#B4402F; }
   .nitlx-prof label.nit-prof-lbl{ display:block; }
   .nitlx-prof-switch{ display:flex; align-items:center; gap:10px; font-size:14px; font-weight:600; cursor:pointer; margin:0; }
   .nitlx-prof-switch input{ width:18px; height:18px; accent-color:var(--nit-brand-primary,#0E7C66); }

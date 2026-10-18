@@ -52,7 +52,7 @@ class hook_callbacks {
                 new \moodle_url('/local/nit_lessons/student.php', ['tab' => 'teaching']), \navigation_node::TYPE_CUSTOM, null,
                 'local_nit_lessons_mylessons');
             $primary->add(get_string('teacherprofile', 'local_nit_lessons'),
-                new \moodle_url('/local/academy/profile.php', null, 'lessons'), \navigation_node::TYPE_CUSTOM, null,
+                profile_section::url(), \navigation_node::TYPE_CUSTOM, null,
                 'local_nit_lessons_teacherprofile');
         }
         if (has_capability('local/nit_lessons:managesettings', \context_system::instance())) {

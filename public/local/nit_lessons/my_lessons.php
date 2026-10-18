@@ -75,7 +75,7 @@ echo $OUTPUT->render_from_template('local_nit_lessons/my_lessons', [
     'haslessons' => !empty($cards),
     'notbookable' => !$teachers->bookable($userid),
     'available' => $profile['available'],
-    'profileurl' => (new moodle_url('/local/academy/profile.php', null, 'lessons'))->out(false),
+    'profileurl' => \local_nit_lessons\local\profile_section::url()->out(false),
     'earningsurl' => (new moodle_url('/local/nit_finance/earnings.php'))->out(false),
 ]);
 echo $OUTPUT->footer();

@@ -22,19 +22,19 @@
     values: profile_view::inputs().
 
     Context variables required for this template:
-    * title, navhtml (HTML), statushtml (HTML), actionurl, sesskey, editable, cansubmit
-    * headline, bio, subjects [{value, label, checked, idx}], hassubjects
+    * title, navhtml (HTML), statushtml (HTML), actionurl, sesskey, editable, cansubmit, pendingnotice
+    * bio; lessonshtml (HTML: local_nit_lessons/profile_section — bookings, headline, price, subjects, hours)
     * islink, isupload, videourl, videorequired, hasplayer, player {embed, src}, videofilename, videostatus,
       videoaccept, videomax
     * quals [{row, id, title, institution, year, error, filename, fileurl}], nextqual, maxquals, minquals,
       fileaccept, filemax
     * hasextra, extra [{id, label, description, required, value, error, istext|istextarea|isselect|isnumber|isurl|
       isdate|ischeckbox|isfile, options, checked, filename, fileurl}]
-    * err {headline, bio, subjects, video, quals}
+    * err {bio, video, quals}
 
     Example context (json):
     {"title": "Teacher profile", "navhtml": "", "statushtml": "", "actionurl": "#", "sesskey": "x", "editable": true,
-     "cansubmit": true, "headline": "", "bio": "", "subjects": [], "hassubjects": false, "islink": true, "isupload": false,
+     "cansubmit": true, "pendingnotice": "", "bio": "", "lessonshtml": "", "islink": true, "isupload": false,
      "videourl": "", "videorequired": true, "hasplayer": false, "videofilename": "", "videostatus": "", "videoaccept": ".mp4",
      "videomax": "200 MB", "quals": [{"row": 0, "id": 0, "title": "", "institution": "", "year": "", "error": "",
      "filename": "", "fileurl": ""}], "nextqual": 1, "maxquals": 10, "minquals": 1, "fileaccept": ".pdf", "filemax": "10 MB",
@@ -50,33 +50,23 @@
         <input type="hidden" name="sesskey" value="{{sesskey}}">
         <fieldset class="nittu-pf__set" {{^editable}}disabled{{/editable}}>
 
-        {{! About you }}
+        {{#pendingnotice}}<div class="alert alert-warning nittu-pf__pending">{{pendingnotice}}</div>{{/pendingnotice}}
+
+        {{! About you (the headline and the subjects are on the lessons card below) }}
         <section class="nit-prof-card">
           <div class="nit-prof-cardhd">{{#str}}form_about, local_nit_tutors{{/str}}</div>
           <div class="nit-prof-body">
-            <div class="full">
-              <label class="nit-prof-lbl" for="nittu-headline">{{#str}}form_headline, local_nit_tutors{{/str}}</label>
-              <input class="nit-prof-field" id="nittu-headline" name="headline" value="{{headline}}" maxlength="255"
-                placeholder="{{#str}}form_headline_ph, local_nit_tutors{{/str}}">
-              {{#err.headline}}<div class="nittu-err">{{err.headline}}</div>{{/err.headline}}
-            </div>
             <div class="full">
               <label class="nit-prof-lbl" for="nittu-bio">{{#str}}form_bio, local_nit_tutors{{/str}} <span class="nittu-req">*</span></label>
               <textarea class="nit-prof-field nittu-pf__bio" id="nittu-bio" name="bio" rows="5"
                 placeholder="{{#str}}form_bio_ph, local_nit_tutors{{/str}}">{{bio}}</textarea>
               {{#err.bio}}<div class="nittu-err">{{err.bio}}</div>{{/err.bio}}
             </div>
-            <div class="full">
-              <div class="nit-prof-lbl">{{#str}}form_subjects, local_nit_tutors{{/str}} <span class="nittu-req">*</span></div>
-              <div class="nittu-chips" role="group" aria-label="{{#str}}form_subjects, local_nit_tutors{{/str}}">
-                {{#subjects}}
-                <label class="nittu-chip"><input type="checkbox" name="subjects[]" value="{{value}}" {{#checked}}checked{{/checked}}><span>{{label}}</span></label>
-                {{/subjects}}
-              </div>
-              {{#err.subjects}}<div class="nittu-err">{{err.subjects}}</div>{{/err.subjects}}
-            </div>
           </div>
         </section>
+
+        {{! Teacher profile: bookings, headline, price, subjects, weekly hours (local_nit_lessons) }}
+        {{{lessonshtml}}}
 
         {{! Intro video }}
         <section class="nit-prof-card">

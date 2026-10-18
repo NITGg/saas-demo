@@ -158,7 +158,7 @@ final class teacher_tools_test extends \advanced_testcase {
         $this->assertSame(['Mathematics'], $r['subjects']);
         $this->assertSame('Sunday', $r['weekly_hours'][0]['day']);
         $this->assertSame(2, $r['credits_per_lesson']);
-        $this->assertStringContainsString('/local/academy/profile.php', $ctx->actions[0]['url']);
+        $this->assertStringContainsString('/local/nit_tutors/application.php', $ctx->actions[0]['url']);
 
         $k = $this->call('my_availability', $this->karim)['data'];
         $this->assertFalse($k['bookable']);

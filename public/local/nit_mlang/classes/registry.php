@@ -78,6 +78,8 @@ class registry {
         'answer[*][text]',
         's__fullname',
         's__shortname',
+        // local_nit_tutors: a teacher badge's one-line "What it means" (admin/badges.php).
+        'badgedescription',
     ];
 
     /**

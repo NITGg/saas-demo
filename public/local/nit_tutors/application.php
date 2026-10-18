@@ -15,10 +15,14 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * "Teacher profile": the teacher's (or applicant's) data — about, subjects, intro video,
+ * "Teacher profile": the teacher's (or applicant's) data — about, the lessons card of
+ * local_nit_lessons (taking bookings, headline, price, subjects, weekly hours), intro video,
  * qualifications, the admin's fields — inside the account frame of /local/academy/profile.php,
- * with "Save" and "Save and send for review". New teachers fill all of it in the sign-up already
+ * with "Save" and "Save and send for review". New teachers fill most of it in the sign-up already
  * (/local/academy/register.php?as=teacher); this page is where they see the status and change it.
+ *
+ * An approved teacher's changes wait for the academy's review ({@see \local_nit_tutors\local\pending}):
+ * students keep seeing the approved version until then. Bookings, price and hours save at once.
  *
  * @package    local_nit_tutors
  * @copyright  2026 NIT
@@ -27,7 +31,10 @@
 
 require(__DIR__ . '/../../config.php');
 
+use local_nit_lessons\local\profile_section;
+use local_nit_lessons\service\teacher_service;
 use local_nit_tutors\local\application;
+use local_nit_tutors\local\pending;
 use local_nit_tutors\local\profile_view;
 use local_nit_tutors\local\teacher_input;
 
@@ -51,14 +58,43 @@ $cansubmit = in_array($status, ['', application::DRAFT, application::CHANGES, ap
     && ($status !== application::REJECTED || application::setting_int('allowreapply', 1));
 
 $posted = null;
+$postedcard = null;
 $errors = [];
 if ($editable && data_submitted() && confirm_sesskey()) {
+    // The lessons card (local_nit_lessons) holds the headline and the subjects; the rest of the card —
+    // taking bookings, the price, the weekly hours — is the teacher's day-to-day settings.
+    $card = profile_section::posted();
     $in = teacher_input::from_request();
+    if ($card !== null) {
+        $in['headline'] = $card['headline'];
+        $in['subjects'] = $card['subjects'];
+    }
     $files = teacher_input::files_from_request();
     $send = $cansubmit && optional_param('send', 0, PARAM_BOOL);
-    $errors = teacher_input::validate($in, $files, $userid, $send);
+    $errors = teacher_input::validate($in, $files, $userid, $send) + ($card['errors'] ?? []);
+    // Taking bookings needs subjects — the ones students see: the new ones, or while a change
+    // waits for review, the approved ones. Checked before anything is saved.
+    $waitsforreview = pending::applies($userid);
+    $livesubjects = $waitsforreview ? (new teacher_service())->profile($userid)['subjects'] : $in['subjects'];
+    if ($card !== null && $card['available'] && !$livesubjects && !isset($errors['subjects'])) {
+        $errors['subjects'] = get_string('err_subjectsrequired', 'local_nit_lessons');
+    }
     if (!$errors) {
-        teacher_input::save($userid, $in, $files);
+        // An approved teacher's headline, subjects, about, video, qualifications and fields wait for
+        // review (local_nit_tutors\local\pending); everyone else's are saved.
+        $waits = teacher_input::save($userid, $in, $files);
+        if ($card !== null) {
+            // Bookings, price and hours save at once, next to the headline and subjects now live.
+            $live = (new teacher_service())->profile($userid);
+            try {
+                (new teacher_service())->save($userid, $card['available'], $live['headline'], $live['subjects'],
+                    $card['hours'], $card['lessonflex']);
+            } catch (moodle_exception $e) {
+                $errors['general'] = $e->getMessage();
+            }
+        }
+    }
+    if (!$errors) {
         if ($send) {
             try {
                 application::submit($userid);
@@ -67,19 +103,43 @@ if ($editable && data_submitted() && confirm_sesskey()) {
                 \core\notification::error($e->getMessage());
             }
         } else {
-            $approved = $status === application::APPROVED;
-            redirect($url, get_string($approved && application::has_updates($userid) ? 'savedforreview' : 'saved',
-                'local_nit_tutors'), null, \core\output\notification::NOTIFY_SUCCESS);
+            redirect($url, get_string($waits ? 'savedforreview' : 'saved', 'local_nit_tutors'), null,
+                \core\output\notification::NOTIFY_SUCCESS);
         }
     } else {
         // Show what they typed again; files must be chosen again (a browser cannot refill a file input).
         $posted = $in;
+        $postedcard = $card;
         \core\notification::error(get_string('err_form', 'local_nit_tutors'));
     }
 }
 
+// What the form shows: what was just refused, else a change waiting for review, else the live data.
+$waiting = pending::get($userid);
+$shown = $posted ?? $waiting;
+$cardvalues = [
+    'subjectsrequired' => true,
+    'note' => $status === application::APPROVED && application::approval_required()
+        ? get_string('lessonsfirst', 'local_nit_tutors') : '',
+    'err' => array_intersect_key($errors, array_flip(['general', 'headline', 'subjects', 'lessonflex', 'hours'])),
+];
+if ($shown !== null) {
+    $cardvalues['headline'] = (string) $shown['headline'];
+    $cardvalues['subjects'] = array_values((array) $shown['subjects']);
+}
+if ($postedcard !== null) {
+    $cardvalues['available'] = $postedcard['available'];
+    $cardvalues['hours'] = $postedcard['hours'];
+    if ($postedcard['lessonflex'] !== null) {
+        $cardvalues['lessonflex'] = $postedcard['lessonflex'];
+    }
+}
+
 $shell = '\local_academy\local\account_shell';
-$context = profile_view::inputs($userid, $posted, $errors) + [
+$context = profile_view::inputs($userid, $shown, $errors, $posted === null && $waiting !== null) + [
+    'lessonshtml' => profile_section::render($userid, true, $cardvalues),
+    'pendingnotice' => $waiting !== null ? get_string('pendingnotice', 'local_nit_tutors',
+        userdate((int) application::get($userid)->timepending, get_string('strftimedatetimeshort', 'langconfig'))) : '',
     'title' => get_string('teacherprofile', 'local_nit_tutors'),
     'navhtml' => class_exists($shell) ? $shell::nav_html('tutor') : '',
     'statushtml' => $OUTPUT->render_from_template('local_nit_tutors/application_status',

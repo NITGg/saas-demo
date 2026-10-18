@@ -42,7 +42,7 @@ $string['status_suspended'] = 'Suspended';
 $string['statushelp_draft'] = 'Complete your teacher profile, then send it for review. Students will see you once the academy approves it.';
 $string['statushelp_pending'] = 'Your application is with the academy. We will message you as soon as it is reviewed.';
 $string['statushelp_changes'] = 'The academy asked for some changes. Update your profile and send it again.';
-$string['statushelp_approved'] = 'You are an approved teacher: students can find and book you. A new intro video is shown after the academy approves it.';
+$string['statushelp_approved'] = 'You are an approved teacher: students can find and book you. When you change your profile, students keep seeing the approved version until the academy approves the change.';
 $string['statushelp_rejected'] = 'Your application was not accepted. You can update it and apply again.';
 $string['statushelp_suspended'] = 'Your teacher profile is suspended: students cannot find or book you. Lessons already booked are not affected.';
 $string['videostatus_pending'] = 'Waiting for review';
@@ -316,7 +316,7 @@ $string['err_choosevideo'] = 'Choose a video file to upload, or paste a link.';
 $string['err_qualyear'] = 'Enter a year between 1950 and next year.';
 $string['err_filetype'] = 'This file type is not accepted. Accepted: {$a}';
 $string['err_filesize'] = 'The file is too large (at most {$a}).';
-$string['savedforreview'] = 'Saved. Your new video / qualifications are shown after the academy reviews them.';
+$string['savedforreview'] = 'Saved. Your changes are shown to students after the academy approves them; until then they see your approved profile.';
 $string['nocertificate'] = 'No certificate attached.';
 $string['isnew'] = 'New — to review';
 
@@ -325,13 +325,18 @@ $string['tab_updates'] = 'New changes';
 $string['act_approveupdates'] = 'Approve the changes';
 $string['act_rejectupdates'] = 'Reject the changes';
 $string['decision_application'] = 'Approve the teacher, or reject the application with the reason the teacher reads (they can update it and apply again).';
-$string['decision_updates'] = 'This approved teacher changed their intro video or qualifications. Approve shows them to students; Reject (with the reason) keeps the old ones out — the teacher stays approved.';
+$string['decision_updates'] = 'This approved teacher changed their profile (shown below as it will look). Approve puts the changes live; Reject (with the reason) throws them away and students keep seeing the approved version — the teacher stays approved.';
 $string['decision_approved'] = 'This teacher is approved. To stop them (not listed, not bookable), write the reason and press Stop.';
 $string['decision_suspended'] = 'This teacher is stopped. Reinstate them to list them again.';
 $string['msg_updates_subject'] = 'Teacher profile changes to review: {$a}';
 $string['msg_updates_body'] = '{$a->name} changed their intro video or qualifications. Review them: {$a->url}';
 $string['msg_updatesrejected_subject'] = 'Your profile changes were not approved';
 $string['msg_updatesrejected_body'] = 'Hello {$a->name}, the changes to your teacher profile were not approved: {$a->note}. {$a->url}';
+$string['msg_updatesapproved_subject'] = 'Your profile changes were approved';
+$string['msg_updatesapproved_body'] = 'Hello {$a->name}, the changes to your teacher profile were approved and students can see them now. {$a->url}';
+$string['pendingnotice'] = 'Your changes are waiting for the academy\'s review (sent {$a}). Students see your approved profile until then. You can keep editing: the latest version is the one reviewed.';
+$string['pendingfile'] = 'New file waiting for review: {$a}';
+$string['lessonsfirst'] = 'Taking bookings, the price and the weekly hours save at once; the rest waits for review.';
 
 // Badges tab: the teachers of a badge.
 $string['badge_manage'] = 'Teachers';

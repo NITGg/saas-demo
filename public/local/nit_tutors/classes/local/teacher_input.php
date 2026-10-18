@@ -124,7 +124,7 @@ final class teacher_input {
                 }
                 $hasvideo = true;
             } else {
-                $hasvideo = $userid && video::file($userid) !== null;
+                $hasvideo = $userid && (video::file($userid) !== null || pending::file($userid, pending::AREA_VIDEO, 0));
                 if (!$hasvideo) {
                     $errors['video'] = $str('err_choosevideo');
                 }
@@ -164,7 +164,8 @@ final class teacher_input {
                 $new = $files['fieldfile'][(int) $f->id] ?? null;
                 if ($new && ($err = self::file_error($new, qualifications::ACCEPTED, self::MAXFILEBYTES))) {
                     $errors[$name] = $err;
-                } else if ($complete && $f->required && !$new && !($userid && fields::has_file($userid, (int) $f->id))) {
+                } else if ($complete && $f->required && !$new && !($userid && (fields::has_file($userid, (int) $f->id)
+                        || pending::file($userid, pending::AREA_FIELD, (int) $f->id)))) {
                     $errors[$name] = get_string('required');
                 }
                 continue;
@@ -199,14 +200,31 @@ final class teacher_input {
     }
 
     /**
-     * Save everything posted (call validate() first).
+     * Save everything posted (call validate() first). An approved teacher's change waits for review
+     * ({@see pending}); everyone else's goes live.
      *
      * @param int $userid
      * @param array $in
      * @param array $files
-     * @return bool whether an approved teacher changed something the academy reviews (video, qualifications)
+     * @return bool whether a change now waits for the academy's review
      */
     public static function save(int $userid, array $in, array $files): bool {
+        if (pending::applies($userid)) {
+            return pending::save($userid, $in, $files);
+        }
+        return self::save_live($userid, $in, $files);
+    }
+
+    /**
+     * Write the values over the live data.
+     *
+     * @param int $userid
+     * @param array $in
+     * @param array $files uploads, or entries carrying a stored file (pending::files())
+     * @param bool $notify tell the reviewers when an approved teacher changed the video or a qualification
+     * @return bool whether an approved teacher changed something the academy reviews (video, qualifications)
+     */
+    public static function save_live(int $userid, array $in, array $files, bool $notify = true): bool {
         global $CFG, $DB;
         require_once($CFG->dirroot . '/user/lib.php');
         $context = \context_user::instance($userid);
@@ -272,7 +290,7 @@ final class teacher_input {
             }
         }
         $DB->set_field(application::TABLE, 'timemodified', time(), ['userid' => $userid]);
-        if ($reviewable) {
+        if ($reviewable && $notify) {
             notifier::updates_waiting($userid);
         }
         return $reviewable;
@@ -305,7 +323,7 @@ final class teacher_input {
      * @param mixed $value
      * @return mixed
      */
-    private static function field_value(\stdClass $field, $value) {
+    public static function field_value(\stdClass $field, $value) {
         if ($field->datatype === 'date' && is_string($value) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
             return (new \DateTimeImmutable($value . ' 12:00', \core_date::get_server_timezone_object()))->getTimestamp();
         }
@@ -340,13 +358,20 @@ final class teacher_input {
      * @param array $file {name, tmp_name, size}
      * @return bool whether it was stored
      */
-    private static function store(int $contextid, string $area, int $itemid, array $file): bool {
+    public static function store(int $contextid, string $area, int $itemid, array $file): bool {
+        $fs = get_file_storage();
+        if (isset($file['stored'])) {
+            // A waiting file (pending::files()) copied into place.
+            $fs->delete_area_files($contextid, 'local_nit_tutors', $area, $itemid);
+            $fs->create_file_from_storedfile(['contextid' => $contextid, 'component' => 'local_nit_tutors',
+                'filearea' => $area, 'itemid' => $itemid, 'filepath' => '/'], $file['stored']);
+            return true;
+        }
         $path = (string) $file['tmp_name'];
         // A real request only stores PHP's own uploads; tests pass a local file.
         if (!is_uploaded_file($path) && !(defined('PHPUNIT_TEST') && PHPUNIT_TEST && is_readable($path))) {
             return false;
         }
-        $fs = get_file_storage();
         $fs->delete_area_files($contextid, 'local_nit_tutors', $area, $itemid);
         $fs->create_file_from_pathname(['contextid' => $contextid, 'component' => 'local_nit_tutors', 'filearea' => $area,
             'itemid' => $itemid, 'filepath' => '/', 'filename' => clean_param((string) $file['name'], PARAM_FILE) ?: 'file'], $path);

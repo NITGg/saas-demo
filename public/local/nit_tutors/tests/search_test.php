@@ -54,8 +54,10 @@ final class search_test extends \advanced_testcase {
         if ($user) {
             $DB->update_record('user', (object) (['id' => $uid] + $user));
         }
-        $row = $DB->get_record('nit_teacher_profile', ['userid' => $uid]);
-        $DB->update_record('nit_teacher_profile', (object) (['id' => $row->id] + $profile));
+        if ($profile) {
+            $row = $DB->get_record('nit_teacher_profile', ['userid' => $uid]);
+            $DB->update_record('nit_teacher_profile', (object) (['id' => $row->id] + $profile));
+        }
         $DB->set_field('nit_teacher_subject', 'subject', $subject, ['teacherid' => $uid]);
         application::approve($uid, (int) get_admin()->id);
         return $uid;

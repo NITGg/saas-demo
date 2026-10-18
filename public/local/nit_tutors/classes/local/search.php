@@ -377,6 +377,6 @@ final class search {
                 'headline' => $card['headline'], 'badge' => $card['hasbadges']]; // The navbar shows a ★.
         }
         return ['total' => $result['total'], 'teachers' => $out,
-            'moreurl' => (new \moodle_url('/local/nit_tutors/index.php', ['q' => $q]))->out(false)];
+            'moreurl' => (new \moodle_url('/local/nit_category/index.php', ['tab' => 'teachers', 'q' => $q]))->out(false)];
     }
 }

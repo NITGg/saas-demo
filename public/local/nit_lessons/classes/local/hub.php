@@ -214,7 +214,7 @@ final class hub {
             'lessons' => $cards,
             'haslessons' => !empty($cards),
             'notbookable' => !$teachers->bookable($userid),
-            'profileurl' => (new \moodle_url('/local/academy/profile.php', null, 'lessons'))->out(false),
+            'profileurl' => profile_section::url()->out(false),
         ];
     }
 

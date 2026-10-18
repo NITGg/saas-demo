@@ -1,0 +1,107 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_nit_tutors/search_filters
+
+    The teacher filters, drawn in the catalogue's side column on its "Teachers" tab
+    (/local/nit_category/index.php?tab=teachers; local_nit_tutors\local\search_view). The form
+    (id = formid) is the tab's one GET form: the catalogue's search box and sort box submit with
+    it through their form attribute. A changed list applies at once, like the catalogue's filters.
+
+    Context variables required for this template:
+    * formid, actionurl, tab, pricemin, pricemax, hasfilters, reseturl
+    * subjects, days, times, ratings, badges - [{value, label, selected}]; hasbadgefilter
+    * fieldfilters - [{id, label, options: [{value, label, selected}]}]
+
+    Example context (json):
+    {"formid": "nittu-filterform", "actionurl": "#", "tab": "teachers", "pricemin": "", "pricemax": "",
+     "hasfilters": false, "reseturl": "#", "subjects": [{"value": "English", "label": "English", "selected": false}],
+     "days": [], "times": [], "ratings": [], "badges": [], "hasbadgefilter": false, "fieldfilters": []}
+}}
+<form id="{{formid}}" class="nittu-side" method="get" action="{{actionurl}}">
+    <input type="hidden" name="tab" value="{{tab}}">
+    <div class="nit-cat-side-head">
+        <span>{{#str}}filters, local_nit_tutors{{/str}}</span>
+        {{#hasfilters}}<a href="{{reseturl}}">{{#str}}clearfilters, local_nit_tutors{{/str}}</a>{{/hasfilters}}
+    </div>
+    <label class="nittu-side__item">
+        <span>{{#str}}form_subjects, local_nit_tutors{{/str}}</span>
+        <select name="subject" data-nittu-autosubmit>
+            <option value="">{{#str}}any, local_nit_tutors{{/str}}</option>
+            {{#subjects}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/subjects}}
+        </select>
+    </label>
+    <div class="nittu-side__item">
+        <span>{{#str}}pricerange, local_nit_tutors{{/str}}</span>
+        <div class="nittu-side__pair">
+            <input type="number" min="0" name="pricemin" value="{{pricemin}}" dir="ltr"
+                placeholder="{{#str}}min, local_nit_tutors{{/str}}" aria-label="{{#str}}min, local_nit_tutors{{/str}}">
+            <input type="number" min="0" name="pricemax" value="{{pricemax}}" dir="ltr"
+                placeholder="{{#str}}max, local_nit_tutors{{/str}}" aria-label="{{#str}}max, local_nit_tutors{{/str}}">
+        </div>
+    </div>
+    <label class="nittu-side__item">
+        <span>{{#str}}availableday, local_nit_tutors{{/str}}</span>
+        <select name="day" data-nittu-autosubmit>
+            <option value="">{{#str}}any, local_nit_tutors{{/str}}</option>
+            {{#days}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/days}}
+        </select>
+    </label>
+    <label class="nittu-side__item">
+        <span>{{#str}}availabletime, local_nit_tutors{{/str}}</span>
+        <select name="time" data-nittu-autosubmit>
+            <option value="">{{#str}}any, local_nit_tutors{{/str}}</option>
+            {{#times}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/times}}
+        </select>
+    </label>
+    <label class="nittu-side__item">
+        <span>{{#str}}rating, local_nit_tutors{{/str}}</span>
+        <select name="rating" data-nittu-autosubmit>
+            <option value="">{{#str}}any, local_nit_tutors{{/str}}</option>
+            {{#ratings}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/ratings}}
+        </select>
+    </label>
+    {{#fieldfilters}}
+    <label class="nittu-side__item">
+        <span>{{label}}</span>
+        <select name="f[{{id}}]" data-nittu-autosubmit>
+            <option value="">{{#str}}any, local_nit_tutors{{/str}}</option>
+            {{#options}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/options}}
+        </select>
+    </label>
+    {{/fieldfilters}}
+    {{#hasbadgefilter}}
+    <label class="nittu-side__item">
+        <span>{{#str}}badge, local_nit_tutors{{/str}}</span>
+        <select name="badge" data-nittu-autosubmit>
+            <option value="">{{#str}}any, local_nit_tutors{{/str}}</option>
+            {{#badges}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/badges}}
+        </select>
+    </label>
+    {{/hasbadgefilter}}
+    <button class="btn btn-primary w-100" type="submit">{{#str}}applyfilters, local_nit_tutors{{/str}}</button>
+</form>
+{{#js}}
+document.querySelectorAll('[data-nittu-autosubmit]').forEach(function(el) {
+    el.addEventListener('change', function() {
+        var form = el.form;
+        if (form) {
+            form.requestSubmit ? form.requestSubmit() : form.submit();
+        }
+    });
+});
+{{/js}}

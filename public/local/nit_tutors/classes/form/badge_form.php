@@ -44,8 +44,10 @@ class badge_form extends \moodleform {
         $mform->setType('name', PARAM_RAW_TRIMMED);
         $mform->addRule('name', null, 'required', null, 'client');
         $mform->addHelpButton('name', 'badge_name', 'local_nit_tutors');
-        $mform->addElement('textarea', 'description', $s('badge_description'), ['rows' => 3, 'cols' => 60]);
-        $mform->setType('description', PARAM_RAW);
+        // A one-line text input named so local_nit_mlang gives it the Arabic / English boxes the name has
+        // (it splits text inputs by name; a textarea is not split). set_data() and get_data() map it to "description".
+        $mform->addElement('text', 'badgedescription', $s('badge_description'), ['size' => 60, 'maxlength' => 1000]);
+        $mform->setType('badgedescription', PARAM_RAW_TRIMMED);
         $colors = [];
         foreach (badge::COLORS as $c) {
             $colors[$c] = $s('color_' . $c);
@@ -79,6 +81,33 @@ class badge_form extends \moodleform {
         $mform->setDefault('maxabsence', 100);
         $mform->hideIf('maxabsence', 'method', 'eq', badge::METHOD_MANUAL);
         $this->add_action_buttons();
+    }
+
+    /**
+     * Load a badge: its description goes into the "badgedescription" input.
+     *
+     * @param \stdClass|array $data
+     */
+    public function set_data($data) {
+        $data = (object) $data;
+        if (isset($data->description)) {
+            $data->badgedescription = $data->description;
+        }
+        parent::set_data($data);
+    }
+
+    /**
+     * The submitted badge, with "badgedescription" back as "description".
+     *
+     * @return \stdClass|null
+     */
+    public function get_data() {
+        $data = parent::get_data();
+        if ($data) {
+            $data->description = $data->badgedescription ?? '';
+            unset($data->badgedescription);
+        }
+        return $data;
     }
 
     /**

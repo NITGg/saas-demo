@@ -206,12 +206,17 @@ final class signup_test extends \advanced_testcase {
         } catch (\moodle_exception $e) {
             $this->assertSame('err_notereq', $e->errorcode);
         }
+        $this->assertCount(1, qualifications::list($uid), 'nothing goes live before the review');
         application::review_updates($uid, false, 'Attach the CELTA certificate');
         $this->assertSame(application::APPROVED, application::status($uid), 'still approved');
-        $this->assertTrue(application::has_updates($uid), 'the new qualification stays unverified');
+        $this->assertFalse(application::has_updates($uid), 'the refused change is thrown away');
+        $this->assertCount(1, qualifications::list($uid));
 
+        $this->assertTrue(teacher_input::save($uid, $in, $this->nofiles()));
         application::review_updates($uid, true);
         $this->assertFalse(application::has_updates($uid));
+        $this->assertSame(['BA English', 'CELTA'], array_column(qualifications::list($uid), 'title'));
+        $this->assertSame([1, 1], array_map('intval', array_column(qualifications::list($uid), 'verified')));
     }
 
     public function test_the_account_nav_offers_applying_then_the_teacher_profile(): void {
