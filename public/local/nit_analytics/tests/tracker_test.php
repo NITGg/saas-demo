@@ -114,6 +114,30 @@ final class tracker_test extends \advanced_testcase {
     }
 
     /**
+     * The banner is printed right after <body> (not in the footer, which Boost hides inside the "?"
+     * popover), and the callback is registered for that hook.
+     *
+     * @covers \local_nit_analytics\local\hook_callbacks
+     * @return void
+     */
+    public function test_banner_is_printed_at_top_of_body(): void {
+        global $PAGE;
+        $this->setGuestUser();
+        set_config('ga4_id', 'G-TEST1234', 'local_nit_analytics');
+        $PAGE->set_url('/');
+        $PAGE->set_pagelayout('frontpage');
+
+        $hook = new \core\hook\output\before_standard_top_of_body_html_generation($PAGE->get_renderer('core'));
+        local\hook_callbacks::before_standard_top_of_body_html_generation($hook);
+        $this->assertStringContainsString('id="nit-analytics-consent"', $hook->get_output());
+
+        $callbacks = \core\hook\manager::get_instance()->get_callbacks_for_hook(
+            \core\hook\output\before_standard_top_of_body_html_generation::class);
+        $ours = array_filter($callbacks, fn($c) => strpos((string) ($c['callback'] ?? ''), 'local_nit_analytics') !== false);
+        $this->assertNotEmpty($ours, 'the top-of-body callback must be registered');
+    }
+
+    /**
      * The banner's buttons store the choice in the consent cookie on the site's own path.
      *
      * @return void
