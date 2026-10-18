@@ -276,7 +276,6 @@ class lesson_service extends service {
      * @return array
      */
     public function complete_lesson(int $teacherid, int $lessonid, ?string $note = null): array {
-        global $DB;
         $lesson = $this->owned_lesson($lessonid);
         if ((int) $lesson->get('teacherid') !== $teacherid) {
             throw new lesson_exception('err_forbidden');
@@ -285,22 +284,73 @@ class lesson_service extends service {
             throw new lesson_exception('err_badstate');
         }
         $this->require_complete_window($lesson);
+        return $this->finish_lesson($lesson, 'Lesson completed', time(), $note);
+    }
 
+    /**
+     * Complete started lessons the teacher forgot to close (the platform auto-confirm, like
+     * Preply's): an in-progress lesson completes itself auto_complete_minutes after its planned
+     * end, so the student's Flex is used and the teacher is paid. Lessons that never started are
+     * left alone — nobody can tell if they happened. One failure does not stop the others.
+     *
+     * @param int $now
+     * @return array the completed lessons
+     */
+    public function auto_complete_due(int $now): array {
+        $grace = $this->setting('auto_complete_minutes');
+        if ($grace <= 0) {
+            return [];
+        }
+        $due = lesson::get_records_select(
+            'status = :status AND actual_start > 0 AND actual_start + duration * 60 <= :cutoff',
+            ['status' => lesson::STATUS_IN_PROGRESS, 'cutoff' => $now - $grace * MINSECS],
+            'actual_start ASC'
+        );
+        $done = [];
+        foreach ($due as $lesson) {
+            try {
+                $end = (int) $lesson->get('actual_start') + (int) $lesson->get('duration') * MINSECS;
+                $done[] = $this->finish_lesson($lesson, 'Lesson auto-completed', $end, null);
+            } catch (\Throwable $e) {
+                debugging('local_nit_lessons: auto-complete failed for lesson ' . $lesson->get('id')
+                    . ': ' . $e->getMessage(), DEBUG_DEVELOPER);
+            }
+        }
+        return $done;
+    }
+
+    /**
+     * Close a lesson as completed: end the room, use the Flex and pay the teacher, all or nothing.
+     *
+     * @param lesson $lesson
+     * @param string $reason Flex ledger note
+     * @param int $end actual end time
+     * @param string|null $note
+     * @return array
+     */
+    private function finish_lesson(lesson $lesson, string $reason, int $end, ?string $note): array {
+        global $DB;
+        $lessonid   = (int) $lesson->get('id');
+        $teacherid  = (int) $lesson->get('teacherid');
         $studentid  = (int) $lesson->get('studentid');
         $purchaseid = (int) $lesson->get('purchaseid');
         $count      = self::flex_count($lesson);
 
         $transaction = $DB->start_delegated_transaction();
-        room_factory::instance()->end_for_lesson($lesson);
-        flex::consume($studentid, $purchaseid, $lessonid, $teacherid, 'Lesson completed', $count);
-        $extra = ['actual_end' => time(), 'flex_state' => 'consumed'];
-        if ($note !== null) {
-            $extra['note'] = $note;
+        try {
+            room_factory::instance()->end_for_lesson($lesson);
+            flex::consume($studentid, $purchaseid, $lessonid, $teacherid, $reason, $count);
+            $extra = ['actual_end' => $end, 'flex_state' => 'consumed'];
+            if ($note !== null) {
+                $extra['note'] = $note;
+            }
+            $result = $this->transition($lesson, lesson::STATUS_COMPLETED, $teacherid, $extra);
+            $value = flex::value_for_purchase($purchaseid) * $count;
+            wallet::distribute($lessonid, $teacherid, $studentid, $purchaseid, $value);
+            $transaction->allow_commit();
+        } catch (\Throwable $e) {
+            $transaction->rollback($e);
         }
-        $result = $this->transition($lesson, lesson::STATUS_COMPLETED, $teacherid, $extra);
-        $value = flex::value_for_purchase($purchaseid) * $count;
-        wallet::distribute($lessonid, $teacherid, $studentid, $purchaseid, $value);
-        $transaction->allow_commit();
         return $result;
     }
 

@@ -114,6 +114,21 @@ final class lessons {
     }
 
     /**
+     * Complete the started lessons whose teacher never closed them, and tell each student
+     * (scheduled task auto_complete_lessons).
+     *
+     * @param int $now
+     * @return int how many were completed
+     */
+    public static function auto_complete_due(int $now): int {
+        $done = (new lesson_service())->auto_complete_due($now);
+        foreach ($done as $lesson) {
+            self::notify('completed', $lesson, (int) $lesson['teacherid']);
+        }
+        return count($done);
+    }
+
+    /**
      * Teacher reports the student absent (US-LS-3-3).
      *
      * @param int $teacherid

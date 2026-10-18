@@ -68,5 +68,17 @@ function xmldb_local_nit_lessons_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026101100, 'local', 'nit_lessons');
     }
 
+    if ($oldversion < 2026101800) {
+        // Free cancel / reschedule window is 12 hours (academy spec 2.2). Sites still on the old
+        // 120-minute default move to 720; a value an admin chose on purpose is kept.
+        foreach (['cancel_deadline_minutes', 'update_deadline_minutes'] as $key) {
+            $current = get_config('local_nit_lessons', $key);
+            if ($current === false || (int) $current === 120) {
+                set_config($key, 720, 'local_nit_lessons');
+            }
+        }
+        upgrade_plugin_savepoint(true, 2026101800, 'local', 'nit_lessons');
+    }
+
     return true;
 }

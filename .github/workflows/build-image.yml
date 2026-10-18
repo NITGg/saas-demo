@@ -22,6 +22,9 @@ on:
     # the SaaS academies are untouched. Deploy on the server with update.sh.
     branches:
       - bassthalk-clone
+      # Standalone Jitsi-Life site: every push publishes :jitsi-life. Same
+      # safety as above — branch pushes never run the tag-only rollout job.
+      - jitsi_life
   workflow_dispatch:
     inputs:
       tag:
@@ -64,6 +67,7 @@ jobs:
             type=raw,value=${{ inputs.tag }},enable=${{ inputs.tag != '' }}
             type=raw,value=latest,enable=${{ github.ref_type == 'tag' }}
             type=raw,value=bassthalk-clone,enable=${{ github.ref == 'refs/heads/bassthalk-clone' }}
+            type=raw,value=jitsi-life,enable=${{ github.ref == 'refs/heads/jitsi_life' }}
             type=sha
 
       - name: Build & push

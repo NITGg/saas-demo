@@ -36,11 +36,12 @@ class settings_service extends service {
     /** @var array<string,int> Setting key => default (minutes; a course id for lessons_courseid). */
     const DEFAULTS = [
         'min_booking_minutes'      => 60,
-        'cancel_deadline_minutes'  => 120,
-        'update_deadline_minutes'  => 120,
+        'cancel_deadline_minutes'  => 720,     // 12 hours: free cancel / reschedule (academy spec 2.2).
+        'update_deadline_minutes'  => 720,
         'start_allowed_minutes'    => 30,
         'complete_allowed_minutes' => 45,
         'absence_report_minutes'   => 15,
+        'auto_complete_minutes'    => 1440,    // A started lesson completes itself this long after it ends; 0 = off.
         'lessons_courseid'         => 0,
     ];
 

@@ -230,7 +230,7 @@ if ($hassiteconfig || has_capability('local/nit_assistant:manage', context_syste
         get_string('wa_graphversion', 'local_nit_assistant'),
         get_string('wa_graphversion_desc', 'local_nit_assistant'),
         \local_nit_assistant\whatsapp\cloud::DEFAULT_VERSION,
-        PARAM_ALPHANUMEXT,
+        '/^(v\d+\.\d+)?$/', // E.g. v23.0 (PARAM_ALPHANUMEXT rejected the dot); empty = default.
         10
     ));
 
