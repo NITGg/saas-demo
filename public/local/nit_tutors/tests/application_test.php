@@ -191,7 +191,7 @@ final class application_test extends \advanced_testcase {
         $this->assertSame('pending', application::get($uid)->videostatus);
         $this->assertNull(video::player($uid), 'visitors must not see a video nobody approved');
         $this->assertNotNull(video::player($uid, false), 'the reviewer sees it');
-        $this->assertSame(1, application::videos_waiting());
+        $this->assertSame(1, application::updates_waiting());
 
         video::review($uid, true);
         $this->assertSame('https://player.vimeo.com/video/76979871', video::player($uid)['embed']);

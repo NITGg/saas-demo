@@ -167,3 +167,9 @@ $string['registration_enabled_desc'] ='Opens the registration page (/local/acade
 $string['studentmessaging'] = 'Prevent messaging between students';
 $string['studentmessaging_desc'] = 'Students cannot message each other or send each other contact requests, on the site and in the app. Students can still message their teachers, and teachers, managers and admins can message anyone. "Staff" here means anyone with the moodle/site:messageanyuser capability (teachers, non-editing teachers, managers). Group conversations, which a teacher turns on per course group, are not affected.';
 $string['studentmessaging_blocked'] = 'You cannot send messages to other students.';
+
+// Account page: change photo (classes/local/account_photo.php).
+$string['photo_failed'] = 'The photo could not be saved. Choose the picture again.';
+$string['photo_notallowed'] = 'You cannot change your photo on this site.';
+$string['photo_toobig'] = 'The photo is too large (at most {$a}).';
+$string['photo_notimage'] = 'Choose a JPG, PNG, GIF or WebP picture.';

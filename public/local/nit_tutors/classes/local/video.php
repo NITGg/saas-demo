@@ -136,10 +136,8 @@ final class video {
         $row->videostatus = self::has_video($userid, $row) ? 'pending' : '';
         $row->videonote = '';
         $row->timemodified = time();
+        // The reviewers hear about an approved teacher's changes from teacher_input::save() (one message).
         $DB->update_record(application::TABLE, $row);
-        if ($row->videostatus === 'pending' && $row->status === application::APPROVED) {
-            notifier::video_waiting($userid);
-        }
     }
 
     /**

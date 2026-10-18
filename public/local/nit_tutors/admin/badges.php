@@ -103,8 +103,11 @@ if (!$all) {
             new pix_icon('t/delete', get_string('delete')));
         $chip = html_writer::span(format_string($b->name), 'nittu-badge nittu-badge--' . $b->color);
         $desc = trim((string) $b->description) !== '' ? html_writer::div(format_string($b->description), 'small text-muted') : '';
+        // The teachers of this badge: who wears it, give it / withhold it per teacher.
+        $teachersurl = new moodle_url('/local/nit_tutors/admin/badge_teachers.php', ['id' => $b->id]);
         $table->data[] = [$chip . $desc, $str('badgemethod_' . $b->method), s(badge::rules_text($b)),
-            (int) ($holders[$b->id] ?? 0), $b->active ? get_string('yes') : '', implode(' ', $links)];
+            html_writer::link($teachersurl, (int) ($holders[$b->id] ?? 0) . ' · ' . $str('badge_manage')),
+            $b->active ? get_string('yes') : '', implode(' ', $links)];
     }
     echo html_writer::table($table);
 }

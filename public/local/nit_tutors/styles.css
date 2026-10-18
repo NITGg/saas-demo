@@ -87,84 +87,227 @@
     margin: 6px 0 0;
     padding-inline-start: 20px;
 }
-/* The moodleform's sections drawn as the account page's cards. */
-.nittu-app .mform fieldset {
-    background: var(--t-bg, var(--nit-brand-surface, #fff));
-    border: 1px solid var(--t-border, var(--nit-brand-borderprimary, #ededE9));
-    border-radius: 16px;
-    padding: 0 22px 18px;
-    margin-bottom: 18px;
+/* Teacher sign-up steps (template signup_steps) inside /local/academy/register.php: its colour
+   variables (--ink, --muted, --field, --border, --accent…) are set on .nit-reg. */
+.nittu-su__h {
+    font-family: 'Tajawal', 'Almarai', system-ui, sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--ink);
+    margin: 0 0 14px;
 }
-.nittu-app .mform fieldset legend {
-    float: none;
-    width: auto;
-    margin: 0;
-    padding: 18px 0 14px;
-    font-size: 15px;
-    font-weight: 600;
+.nittu-su__help,
+.nittu-su__lbl {
+    font-family: 'Tajawal', system-ui, sans-serif;
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.7;
+    margin: 0 0 10px;
 }
-.nittu-app .mform fieldset legend a,
-.nittu-app .mform fieldset legend .icons-collapse-expand {
-    color: var(--nit-brand-textprimary, #16191d);
-    text-decoration: none;
+.nittu-su__lbl {
+    margin: 0 0 8px;
+    font-weight: 700;
 }
-.nittu-app .mform .collapsible-actions {
-    display: none;
+.nittu-su__warn {
+    font-family: 'Tajawal', system-ui, sans-serif;
+    font-size: 14px;
+    color: var(--err);
 }
-/* Moodle 5 draws the section title as .ftoggler > h3 (the legend itself is visually hidden). */
-.nittu-app .mform fieldset .ftoggler {
-    padding: 16px 0 10px;
-    border-bottom: 1px solid var(--t-line, var(--nit-brand-bordersecondary, #f1f1ed));
+.nittu-su__area textarea {
+    width: 100%;
+    min-height: 130px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--field);
+    color: var(--ink);
+    font-family: 'Tajawal', system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.7;
+    padding: 14px 16px;
+}
+.nittu-su__area textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+.nittu-su__file {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px dashed var(--border);
+    border-radius: 14px;
+    background: var(--field);
+    color: var(--ink);
+    font-family: 'Tajawal', system-ui, sans-serif;
+}
+.nittu-su__qual {
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px;
     margin-bottom: 14px;
 }
-.nittu-app .mform fieldset .ftoggler h3,
-.nittu-app .mform fieldset .ftoggler .h3 {
+.nittu-su__add {
+    width: 100%;
+    flex: none;
+}
+.nittu-su__chips .nittu-chip span {
+    font-family: 'Tajawal', system-ui, sans-serif;
     font-size: 15px;
-    font-weight: 600;
+    padding: 9px 16px;
+    background: var(--field);
+    border-color: var(--border);
+    color: var(--ink);
+}
+.nittu-su__chips .nittu-chip input:checked + span {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--onaccent);
+}
+.nittu-su__seg {
+    font-family: 'Tajawal', system-ui, sans-serif;
+}
+.nittu-su__seg input:checked + span {
+    background: var(--accent);
+    color: var(--onaccent);
+}
+
+/* The profile form (template profile_page): the account page's cards and fields. */
+.nittu-pf {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+.nittu-pf__set {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    border: 0;
     margin: 0;
+    padding: 0;
+    min-width: 0;
+}
+.nittu-pf__set[disabled] {
+    opacity: .75;
+}
+.nittu-pf__bio {
+    min-height: 120px;
+}
+.nittu-pf__help {
+    font-size: 12.5px;
+    color: var(--t-muted, var(--nit-brand-textsecondary, #8a8a82));
+    margin: 6px 0 0;
+}
+.nittu-pf__state {
+    font-weight: 400;
+    font-size: 12.5px;
+    color: var(--t-muted, var(--nit-brand-textsecondary, #8a8a82));
+    margin-inline-start: 8px;
+}
+.nittu-pf__actions {
+    padding: 16px 22px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: flex-end;
+}
+.nittu-req {
+    color: var(--nit-brand-error, #b3261e);
+}
+.nittu-err {
+    color: var(--nit-brand-error, #b3261e);
+    font-size: 12.5px;
+    margin-top: 6px;
+}
+.nittu-file {
+    height: auto;
+    padding: 10px 14px;
+}
+/* Subjects: tappable chips. */
+.nittu-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.nittu-chip {
+    margin: 0;
+    cursor: pointer;
+}
+.nittu-chip input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+.nittu-chip span {
+    display: inline-block;
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--t-border2, var(--nit-brand-borderprimary, #dcdcd7));
+    background: var(--t-field, var(--nit-brand-surface, #fbfbf9));
+    font-size: 13.5px;
     color: var(--nit-brand-textprimary, #16191d);
 }
-.nittu-app .mform .fitem {
-    flex-direction: column;
+.nittu-chip input:checked + span {
+    background: var(--nit-brand-primary, #0e7c66);
+    border-color: var(--nit-brand-primary, #0e7c66);
+    color: var(--nit-brand-on-primary, #fff);
 }
-.nittu-app .mform .fitem > .col-md-3,
-.nittu-app .mform .fitem > .col-md-9 {
-    flex: 0 0 100%;
-    max-width: 100%;
-    padding-inline: 0;
-    text-align: start;
+.nittu-chip input:focus-visible + span {
+    outline: 2px solid var(--nit-brand-primary, #0e7c66);
+    outline-offset: 2px;
 }
-.nittu-app .mform .fitem > .col-md-3 label,
-.nittu-app .mform .fitem > .col-md-3 .col-form-label {
-    font-size: 12px;
-    color: var(--t-muted, var(--nit-brand-textsecondary, #8a8a82));
-    padding-bottom: 6px;
-}
-.nittu-app .mform .form-control,
-.nittu-app .mform .form-select,
-.nittu-app .mform .custom-select {
-    min-height: 46px;
+/* Video: link / upload switch. */
+.nittu-seg {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
     border: 1px solid var(--t-border2, var(--nit-brand-borderprimary, #dcdcd7));
     border-radius: 10px;
-    background-color: var(--t-field, var(--nit-brand-surface, #fbfbf9));
-    font-size: 14px;
+    width: fit-content;
 }
-.nittu-app .mform textarea.form-control {
-    line-height: 1.7;
+.nittu-seg label {
+    margin: 0;
+    cursor: pointer;
 }
-.nittu-app .mform .form-control:focus,
-.nittu-app .mform .form-select:focus {
-    border-color: var(--t-accent, var(--nit-brand-primary, #0e7c66));
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--nit-brand-primary, #0e7c66) 16%, transparent);
+.nittu-seg input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
 }
-.nittu-app .mform .filemanager {
-    border-radius: 10px;
+.nittu-seg span {
+    display: inline-block;
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--t-muted2, var(--nit-brand-textsecondary, #3d4752));
 }
-.nittu-app .mform #fgroup_id_buttonar {
-    background: var(--t-bg, var(--nit-brand-surface, #fff));
-    border: 1px solid var(--t-border, var(--nit-brand-borderprimary, #ededE9));
-    border-radius: 16px;
-    padding: 16px 22px;
+.nittu-seg input:checked + span {
+    background: var(--nit-brand-textprimary, #16191d);
+    color: var(--nit-brand-background, #fff);
+}
+/* Qualifications: one bordered block per row. */
+.nittu-quals {
+    padding: 0 22px 22px;
+}
+.nittu-qual {
+    border: 1px solid var(--t-line, var(--nit-brand-bordersecondary, #f1f1ed));
+    border-radius: 12px;
+    margin-top: 12px;
+}
+.nittu-qual__grid {
+    padding: 16px;
+}
+.nittu-qual__del {
+    font-size: 13px;
+    color: var(--nit-brand-error, #b3261e);
+    margin: 0;
+}
+.nittu-qual__add {
+    margin-top: 12px;
+}
+.nittu-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
 }
 
 /* Header search dialog (theme_nit navbar): the "Teachers" group of the live results. */

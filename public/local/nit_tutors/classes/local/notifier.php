@@ -45,19 +45,19 @@ final class notifier {
     }
 
     /**
-     * An approved teacher changed their intro video.
+     * An approved teacher changed what the academy reviews: the intro video or a qualification.
      *
      * @param int $userid
      */
-    public static function video_waiting(int $userid): void {
+    public static function updates_waiting(int $userid): void {
         $user = \core_user::get_user($userid);
         if (!$user) {
             return;
         }
         $url = new \moodle_url('/local/nit_tutors/admin/application.php', ['userid' => $userid]);
         foreach (self::reviewers() as $reviewer) {
-            self::send('applicationsubmitted', $reviewer, get_string('msg_video_subject', 'local_nit_tutors', fullname($user)),
-                get_string('msg_video_body', 'local_nit_tutors', ['name' => fullname($user), 'url' => $url->out(false)]), $url);
+            self::send('applicationsubmitted', $reviewer, get_string('msg_updates_subject', 'local_nit_tutors', fullname($user)),
+                get_string('msg_updates_body', 'local_nit_tutors', ['name' => fullname($user), 'url' => $url->out(false)]), $url);
         }
     }
 

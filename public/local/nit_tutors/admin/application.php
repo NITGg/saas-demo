@@ -15,12 +15,16 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Review one teacher: everything they sent, the intro video, the certificates (opened in the
- * browser); approve, ask for changes, reject, suspend; verify qualifications; their badges.
+ * Review one teacher: what they filled in (about, subjects, video, qualifications with the
+ * certificates opened in the browser, the extra fields) and two decisions — Approve, or Reject
+ * with the reason the teacher reads.
  *
- * One Approve and one Reject button: while an approved teacher's new intro video waits, they decide
- * the video (Reject needs the reason, which the teacher sees); otherwise the application. A video
- * sent with a pending application is approved together with it.
+ *   new application          Approve = approve the teacher (qualifications verified) | Reject = reject
+ *   approved, with changes   Approve = approve the new video / qualifications        | Reject = refuse them
+ *   approved, no changes     Reject = stop the teacher (suspend)
+ *   suspended                Approve = reinstate
+ *
+ * Badges are given on the Badges tab, not here.
  *
  * @package    local_nit_tutors
  * @copyright  2026 NIT
@@ -31,7 +35,6 @@ require(__DIR__ . '/../../../config.php');
 
 use local_nit_tutors\local\admin_tabs;
 use local_nit_tutors\local\application;
-use local_nit_tutors\local\badge;
 use local_nit_tutors\local\fields;
 use local_nit_tutors\local\qualifications;
 use local_nit_tutors\local\video;
@@ -49,45 +52,27 @@ $str = fn(string $k, $a = null) => get_string($k, 'local_nit_tutors', $a);
 $row = application::get($userid) ?? (object) ['status' => application::DRAFT, 'timesubmitted' => 0, 'timereviewed' => 0,
     'reviewnote' => '', 'videostatus' => '', 'videonote' => ''];
 $status = (string) $row->status;
-// An approved teacher's new intro video: Approve / Reject decide the video, not the application.
-$videoonly = $status === application::APPROVED && $row->videostatus === 'pending';
+$updates = application::has_updates($userid);
+$mode = $status === application::APPROVED ? ($updates ? 'updates' : 'approved')
+    : ($status === application::SUSPENDED ? 'suspended' : 'application');
 
-// ── Actions ──────────────────────────────────────────────────────────────────
+// ── Decision ─────────────────────────────────────────────────────────────────
 $action = optional_param('action', '', PARAM_ALPHA);
-if ($action !== '' && confirm_sesskey()) {
+if (in_array($action, ['approve', 'reject'], true) && confirm_sesskey()) {
     $note = trim(optional_param('note', '', PARAM_TEXT));
     $reviewer = (int) $USER->id;
     try {
-        switch ($action) {
-            case 'approve':
-                $videoonly ? video::review($userid, true, $note) : application::approve($userid, $reviewer, $note);
-                break;
-            case 'reject':
-                if ($note === '') {
-                    throw new moodle_exception('err_notereq', 'local_nit_tutors');
-                }
-                $videoonly ? video::review($userid, false, $note) : application::reject($userid, $reviewer, $note);
-                break;
-            case 'changes':
-                application::request_changes($userid, $reviewer, $note);
-                break;
-            case 'suspend':
-                application::suspend($userid, $reviewer, $note);
-                break;
-            case 'verify':
-            case 'unverify':
-                $qualid = required_param('qualid', PARAM_INT);
-                if ($DB->record_exists(qualifications::TABLE, ['id' => $qualid, 'userid' => $userid])) {
-                    qualifications::verify($qualid, $action === 'verify');
-                }
-                break;
-            case 'badges':
-                foreach (optional_param_array('mode', [], PARAM_ALPHA) as $badgeid => $mode) {
-                    if (badge::get((int) $badgeid) && badge::mode((int) $badgeid, $userid) !== $mode) {
-                        badge::set_mode($userid, (int) $badgeid, $mode);
-                    }
-                }
-                break;
+        if ($action === 'reject' && $note === '') {
+            throw new moodle_exception('err_notereq', 'local_nit_tutors');
+        }
+        if ($mode === 'updates') {
+            application::review_updates($userid, $action === 'approve', $note);
+        } else if ($action === 'approve') {
+            application::approve($userid, $reviewer, $note);
+        } else if ($mode === 'approved') {
+            application::suspend($userid, $reviewer, $note);
+        } else {
+            application::reject($userid, $reviewer, $note);
         }
         redirect($url, $str('done'), null, \core\output\notification::NOTIFY_SUCCESS);
     } catch (moodle_exception $e) {
@@ -101,14 +86,7 @@ $player = video::player($userid, false);
 $usercontext = context_user::instance($userid);
 $date = get_string('strftimedatetimeshort', 'langconfig');
 
-/**
- * A stored file as a link that opens in the browser (not a download), with a preview for an image.
- *
- * @param stored_file|null $file
- * @param string $area
- * @param int $itemid
- * @return array {fileurl, filename, isimage}
- */
+// A stored file as a link that opens in the browser (not a download), with a preview for an image.
 $fileview = function(?stored_file $file, string $area, int $itemid) use ($usercontext): array {
     if (!$file) {
         return ['fileurl' => '', 'filename' => '', 'isimage' => false];
@@ -124,48 +102,35 @@ $fileview = function(?stored_file $file, string $area, int $itemid) use ($userco
 $quals = [];
 foreach (qualifications::list($userid) as $q) {
     $quals[] = [
-        'id' => (int) $q->id,
         'title' => format_string($q->title),
         'institution' => format_string((string) $q->institution),
         'year' => (int) $q->year ?: '',
-        'verified' => (bool) $q->verified,
+        'isnew' => $status === application::APPROVED && !$q->verified,
     ] + $fileview(qualifications::file($userid, (int) $q->id), qualifications::AREA, (int) $q->id);
 }
 $answers = [];
 $values = fields::answers($userid);
 foreach (fields::all(false) as $f) {
-    $value = (string) ($values[$f->id] ?? '');
     $file = null;
     if ($f->datatype === 'file') {
         $files = get_file_storage()->get_area_files($usercontext->id, 'local_nit_tutors', fields::AREA, $f->id, 'filename', false);
         $file = reset($files) ?: null;
     }
-    $answers[] = ['label' => format_string($f->name), 'value' => fields::display($f, $value)]
+    $answers[] = ['label' => format_string($f->name), 'value' => fields::display($f, (string) ($values[$f->id] ?? ''))]
         + $fileview($file, fields::AREA, (int) $f->id);
-}
-
-// Badges: each one with the reviewer's choice, the rules and whether this teacher wears it.
-$stats = badge::stats($userid);
-$wearing = array_map(fn($b) => (int) $b->id, badge::held($userid));
-$badges = [];
-foreach (badge::all() as $b) {
-    $mode = badge::mode((int) $b->id, $userid);
-    $badges[] = [
-        'id' => (int) $b->id,
-        'name' => format_string($b->name),
-        'color' => $b->color,
-        'rules' => badge::rules_text($b),
-        'isauto' => $b->method === badge::METHOD_AUTO,
-        'meets' => badge::meets($b, $stats),
-        'wears' => in_array((int) $b->id, $wearing, true),
-        'modes' => array_map(fn($m) => ['value' => $m, 'selected' => $m === $mode,
-            'label' => $str('badgemode_' . $m . ($b->method === badge::METHOD_MANUAL && $m === badge::AUTO ? '_manual' : ''))],
-            [badge::AUTO, badge::ON, badge::OFF]),
-    ];
 }
 
 $picture = new user_picture($user);
 $picture->size = 120;
+$labels = [
+    'application' => ['act_approve', 'act_reject'],
+    'updates' => ['act_approveupdates', 'act_rejectupdates'],
+    'approved' => ['', 'act_suspend'],
+    'suspended' => ['act_reinstate', ''],
+];
+[$approvelabel, $rejectlabel] = $labels[$mode];
+$canact = $mode !== 'application' || in_array($status, [application::PENDING, application::CHANGES, application::REJECTED,
+    application::DRAFT], true);
 
 $context = [
     'sesskey' => sesskey(),
@@ -187,6 +152,7 @@ $context = [
     'price' => $profile['lesson_flex'],
     'hasvideo' => $player !== null,
     'video' => $player,
+    'videonew' => $updates && $row->videostatus === 'pending',
     'videostatus' => $row->videostatus ? $str('videostatus_' . $row->videostatus) : '',
     'videonote' => (string) $row->videonote,
     'quals' => $quals,
@@ -194,21 +160,11 @@ $context = [
     'answers' => $answers,
     'hasanswers' => !empty($answers),
     'missing' => array_map(fn($m) => ['label' => $m], array_values(application::missing($userid))),
-    'videoonly' => $videoonly,
-    'canapprove' => $status !== application::APPROVED || $videoonly,
-    'canchanges' => in_array($status, [application::PENDING, application::REJECTED], true),
-    'canreject' => in_array($status, [application::PENDING, application::CHANGES, application::DRAFT], true) || $videoonly,
-    'cansuspend' => $status === application::APPROVED,
-    'approvelabel' => $str($videoonly ? 'act_approvevideo' : ($status === application::SUSPENDED ? 'act_reinstate' : 'act_approve')),
-    'rejectlabel' => $str($videoonly ? 'act_rejectvideo' : 'act_reject'),
-    'hasbadges' => !empty($badges),
-    'badges' => $badges,
-    'isapproved' => $status === application::APPROVED,
-    'stats' => $str('badge_stats', (object) [
-        'rating' => format_float($stats['rating'], 1), 'reviews' => $stats['reviews'], 'lessons' => $stats['lessons'],
-        'absence' => format_float($stats['absencepct'], 1)]),
-    'badgesurl' => (new moodle_url('/local/nit_tutors/admin/badges.php'))->out(false),
-    'backurl' => (new moodle_url('/local/nit_tutors/admin/applications.php', ['status' => $status]))->out(false),
+    'decisionhelp' => $str('decision_' . $mode),
+    'canact' => $canact,
+    'approvelabel' => $approvelabel ? $str($approvelabel) : '',
+    'rejectlabel' => $rejectlabel ? $str($rejectlabel) : '',
+    'backurl' => (new moodle_url('/local/nit_tutors/admin/applications.php', ['status' => $updates ? 'updates' : $status]))->out(false),
 ];
 
 echo $OUTPUT->header();

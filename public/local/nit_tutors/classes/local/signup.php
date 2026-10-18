@@ -144,6 +144,38 @@ final class signup {
     }
 
     /**
+     * The step-by-step teacher sign-up: the account AND the whole application (about, subjects,
+     * intro video, qualifications, the admin's fields) checked together, then the account is
+     * created, the data saved and the application sent for review — nothing is left for later.
+     *
+     * @param array $raw account values (FIELDS)
+     * @param string $password2 the repeated password
+     * @param bool $agreed
+     * @param array $in teacher_input::from_request()
+     * @param array $files teacher_input::files_from_request()
+     * @return \stdClass the new user
+     * @throws invalid_signup with every field error (account and application) — nothing is created then
+     */
+    public static function register_teacher(array $raw, string $password2, bool $agreed, array $in, array $files): \stdClass {
+        $errors = self::validate(self::clean($raw), $agreed) + teacher_input::validate($in, $files, 0, true);
+        if ($password2 !== (string) ($raw['password'] ?? '')) {
+            $errors['password2'] = get_string('reg_passwordmismatch', 'local_academy');
+        }
+        if ($errors) {
+            throw new invalid_signup($errors);
+        }
+        $user = self::register($raw, $agreed);
+        teacher_input::save((int) $user->id, $in, $files);
+        try {
+            application::submit((int) $user->id);
+        } catch (\moodle_exception $e) {
+            // Cannot happen after the checks above; the draft stays and the teacher sends it later.
+            debugging('local_nit_tutors: sign-up application not sent: ' . $e->getMessage(), DEBUG_DEVELOPER);
+        }
+        return $user;
+    }
+
+    /**
      * Where the confirmation link sends the new teacher: their application.
      *
      * @return \moodle_url

@@ -1,0 +1,182 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_nit_tutors/signup_steps
+
+    Steps 2–5 of the teacher sign-up inside /local/academy/register.php?as=teacher (its wizard, CSS
+    and step JS: .reg-step, .reg-cell, .reg-field, data-next / data-prev). Step 1 (the account) is the
+    page's own. Inputs: local_nit_tutors\local\teacher_input names; values: profile_view::inputs(0).
+    An element's id is f_<error key> so the page marks a server error on it and opens its step.
+
+    Context variables required for this template: those of profile_view::inputs(), plus
+    * agree - the terms box was ticked
+    * filesagain - the page came back with errors: chosen files must be chosen again
+
+    Example context (json):
+    {"headline": "", "bio": "", "subjects": [], "hassubjects": false, "islink": true, "isupload": false, "videourl": "",
+     "videorequired": true, "videoaccept": ".mp4", "videomax": "200 MB", "quals": [{"row": 0, "id": 0, "title": "",
+     "institution": "", "year": "", "error": ""}], "nextqual": 1, "maxquals": 10, "minquals": 1, "fileaccept": ".pdf",
+     "filemax": "10 MB", "hasextra": false, "extra": [], "err": {}, "agree": false, "filesagain": false}
+}}
+<!-- STEP 2: about you -->
+<div class="reg-step" data-step="2">
+  <h2 class="nittu-su__h">{{#str}}form_about, local_nit_tutors{{/str}}</h2>
+  <div class="nit-reg-grid one">
+    <div class="reg-cell"><div class="reg-field">
+      <input type="text" name="headline" id="f_headline" placeholder=" " value="{{headline}}" maxlength="255">
+      <span class="reg-lab"><span>{{#str}}form_headline, local_nit_tutors{{/str}}</span></span>
+    </div><div class="reg-hint">{{#str}}form_headline_ph, local_nit_tutors{{/str}}</div><div class="reg-err"></div></div>
+  </div>
+  <div class="nit-reg-grid one nit-reg-row">
+    <div class="reg-cell"><div class="reg-field nittu-su__area">
+      <textarea name="bio" id="f_bio" rows="5" placeholder="{{#str}}form_bio_ph, local_nit_tutors{{/str}}">{{bio}}</textarea>
+    </div><div class="reg-hint">{{#str}}form_bio, local_nit_tutors{{/str}} *</div><div class="reg-err"></div></div>
+  </div>
+  <div class="nit-reg-row reg-cell">
+    <div class="nittu-su__lbl">{{#str}}form_subjects, local_nit_tutors{{/str}} *</div>
+    <input type="hidden" id="f_subjects">
+    <div class="nittu-chips nittu-su__chips" role="group" aria-label="{{#str}}form_subjects, local_nit_tutors{{/str}}">
+      {{#subjects}}<label class="nittu-chip"><input type="checkbox" name="subjects[]" value="{{value}}" {{#checked}}checked{{/checked}}><span>{{label}}</span></label>{{/subjects}}
+    </div>
+    <div class="reg-err"></div>
+  </div>
+  <div class="nit-reg-btns"><button type="button" class="btn-prev" data-prev>{{#str}}previous{{/str}}</button><button type="button" class="btn-next" data-next>{{#str}}next{{/str}}</button></div>
+</div>
+
+<!-- STEP 3: intro video -->
+<div class="reg-step" data-step="3">
+  <h2 class="nittu-su__h">{{#str}}form_video, local_nit_tutors{{/str}}{{#videorequired}} *{{/videorequired}}</h2>
+  <p class="nittu-su__help">{{#str}}form_video_help, local_nit_tutors{{/str}}</p>
+  <div class="reg-cell">
+    <input type="hidden" id="f_video">
+    <div class="nittu-seg nittu-su__seg" role="radiogroup" aria-label="{{#str}}form_videotype, local_nit_tutors{{/str}}">
+      <label><input type="radio" name="videotype" value="link" {{#islink}}checked{{/islink}} data-nittu-vtype><span>{{#str}}form_videotype_link, local_nit_tutors{{/str}}</span></label>
+      <label><input type="radio" name="videotype" value="upload" {{#isupload}}checked{{/isupload}} data-nittu-vtype><span>{{#str}}form_videotype_upload, local_nit_tutors{{/str}}</span></label>
+    </div>
+    <div class="nit-reg-row" data-nittu-vpane="link" {{^islink}}hidden{{/islink}}>
+      <div class="reg-field"><input type="url" name="videourl" placeholder=" " value="{{videourl}}" dir="ltr">
+        <span class="reg-lab"><span>{{#str}}form_videourl, local_nit_tutors{{/str}}</span></span></div>
+      <div class="reg-hint">https://www.youtube.com/watch?v=… · https://vimeo.com/…</div>
+    </div>
+    <div class="nit-reg-row" data-nittu-vpane="upload" {{^isupload}}hidden{{/isupload}}>
+      <input class="nittu-su__file" type="file" name="videofile" accept="{{videoaccept}}" aria-label="{{#str}}form_videofile, local_nit_tutors{{/str}}">
+      <div class="reg-hint">{{#str}}filelimit, local_nit_tutors, {{videomax}}{{/str}}</div>
+    </div>
+    <div class="reg-err"></div>
+  </div>
+  <div class="nit-reg-btns"><button type="button" class="btn-prev" data-prev>{{#str}}previous{{/str}}</button><button type="button" class="btn-next" data-next>{{#str}}next{{/str}}</button></div>
+</div>
+
+<!-- STEP 4: qualifications -->
+<div class="reg-step" data-step="4">
+  <h2 class="nittu-su__h">{{#str}}form_quals, local_nit_tutors{{/str}}{{#minquals}} *{{/minquals}}</h2>
+  <p class="nittu-su__help">{{#str}}form_quals_help, local_nit_tutors{{/str}}</p>
+  <div class="reg-cell"><input type="hidden" id="f_quals"><div class="reg-err"></div></div>
+  <div data-nittu-quals data-next="{{nextqual}}" data-max="{{maxquals}}">
+    {{#quals}}
+    <div class="nittu-su__qual reg-cell" data-nittu-qual>
+      <input type="hidden" id="f_qual{{row}}">
+      <input type="hidden" name="qualid[{{row}}]" value="0">
+      <div class="reg-field"><input type="text" name="qualtitle[{{row}}]" placeholder=" " value="{{title}}">
+        <span class="reg-lab"><span>{{#str}}form_qualtitle, local_nit_tutors{{/str}}</span></span></div>
+      <div class="nit-reg-grid nit-reg-row">
+        <div class="reg-field"><input type="text" name="qualinstitution[{{row}}]" placeholder=" " value="{{institution}}">
+          <span class="reg-lab"><span>{{#str}}form_qualinstitution, local_nit_tutors{{/str}}</span></span></div>
+        <div class="reg-field"><input type="number" min="1950" max="2100" name="qualyear[{{row}}]" placeholder=" " value="{{year}}" dir="ltr">
+          <span class="reg-lab"><span>{{#str}}form_qualyear, local_nit_tutors{{/str}}</span></span></div>
+      </div>
+      <div class="nit-reg-row"><div class="nittu-su__lbl">{{#str}}form_qualfile, local_nit_tutors{{/str}}</div>
+        <input class="nittu-su__file" type="file" name="qualfile[{{row}}]" accept="{{fileaccept}}"></div>
+      <div class="reg-err"></div>
+    </div>
+    {{/quals}}
+    <button type="button" class="btn-prev nittu-su__add" data-nittu-addqual>+ {{#str}}form_qualadd, local_nit_tutors{{/str}}</button>
+  </div>
+  <template data-nittu-qualtpl>
+    <div class="nittu-su__qual reg-cell" data-nittu-qual>
+      <input type="hidden" name="qualid[__ROW__]" value="0">
+      <div class="reg-field"><input type="text" name="qualtitle[__ROW__]" placeholder=" ">
+        <span class="reg-lab"><span>{{#str}}form_qualtitle, local_nit_tutors{{/str}}</span></span></div>
+      <div class="nit-reg-grid nit-reg-row">
+        <div class="reg-field"><input type="text" name="qualinstitution[__ROW__]" placeholder=" ">
+          <span class="reg-lab"><span>{{#str}}form_qualinstitution, local_nit_tutors{{/str}}</span></span></div>
+        <div class="reg-field"><input type="number" min="1950" max="2100" name="qualyear[__ROW__]" placeholder=" " dir="ltr">
+          <span class="reg-lab"><span>{{#str}}form_qualyear, local_nit_tutors{{/str}}</span></span></div>
+      </div>
+      <div class="nit-reg-row"><div class="nittu-su__lbl">{{#str}}form_qualfile, local_nit_tutors{{/str}}</div>
+        <input class="nittu-su__file" type="file" name="qualfile[__ROW__]" accept="{{fileaccept}}"></div>
+    </div>
+  </template>
+  <div class="reg-hint">{{#str}}filelimit, local_nit_tutors, {{filemax}}{{/str}}</div>
+  <div class="nit-reg-btns"><button type="button" class="btn-prev" data-prev>{{#str}}previous{{/str}}</button><button type="button" class="btn-next" data-next>{{#str}}next{{/str}}</button></div>
+</div>
+
+<!-- STEP 5: the admin's fields, terms, send -->
+<div class="reg-step" data-step="5">
+  <h2 class="nittu-su__h">{{#hasextra}}{{#str}}form_more, local_nit_tutors{{/str}}{{/hasextra}}{{^hasextra}}{{#str}}signup_laststep, local_nit_tutors{{/str}}{{/hasextra}}</h2>
+  {{#extra}}
+  <div class="reg-cell nit-reg-row">
+    <input type="hidden" id="f_field{{id}}">
+    {{^ischeckbox}}<div class="nittu-su__lbl">{{label}}{{#required}} *{{/required}}</div>{{/ischeckbox}}
+    {{#istext}}<div class="reg-field"><input type="text" name="field[{{id}}]" value="{{value}}"></div>{{/istext}}
+    {{#isnumber}}<div class="reg-field"><input type="number" name="field[{{id}}]" value="{{value}}" dir="ltr"></div>{{/isnumber}}
+    {{#isurl}}<div class="reg-field"><input type="url" name="field[{{id}}]" value="{{value}}" dir="ltr"></div>{{/isurl}}
+    {{#isdate}}<div class="reg-field"><input type="date" name="field[{{id}}]" value="{{value}}"></div>{{/isdate}}
+    {{#istextarea}}<div class="reg-field nittu-su__area"><textarea name="field[{{id}}]" rows="3">{{value}}</textarea></div>{{/istextarea}}
+    {{#isselect}}<div class="reg-field reg-sel"><select name="field[{{id}}]"><option value="">{{#str}}choosedots{{/str}}</option>{{#options}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/options}}</select></div>{{/isselect}}
+    {{#ischeckbox}}<input type="hidden" name="field[{{id}}]" value="0"><label class="nittu-check"><input type="checkbox" name="field[{{id}}]" value="1" {{#checked}}checked{{/checked}}> {{label}}</label>{{/ischeckbox}}
+    {{#isfile}}<input class="nittu-su__file" type="file" name="fieldfile[{{id}}]" accept="{{fileaccept}}">{{/isfile}}
+    {{#description}}<div class="reg-hint">{{description}}</div>{{/description}}
+    <div class="reg-err"></div>
+  </div>
+  {{/extra}}
+  <p class="nittu-su__help">{{#str}}signup_review_note, local_nit_tutors{{/str}}</p>
+  {{#filesagain}}<p class="nittu-su__warn">{{#str}}signup_filesagain, local_nit_tutors{{/str}}</p>{{/filesagain}}
+  <label class="nit-reg-terms"><input type="checkbox" name="agree" value="1" id="f_agree" {{#agree}}checked{{/agree}}><span>{{#str}}signup_agree, local_nit_tutors{{/str}} <a href="#" class="reg-terms-open">{{#str}}signup_terms, local_nit_tutors{{/str}}</a></span></label>
+  <div class="reg-err" id="agree-err" style="margin-top:6px;"></div>
+  <div class="nit-reg-btns"><button type="button" class="btn-prev" data-prev>{{#str}}previous{{/str}}</button><button type="submit" class="btn-next">{{#str}}signup_send, local_nit_tutors{{/str}}</button></div>
+</div>
+{{#js}}
+(function() {
+    var form = document.getElementById('regform');
+    if (!form) {
+        return;
+    }
+    // Video: link or upload.
+    var panes = form.querySelectorAll('[data-nittu-vpane]');
+    form.querySelectorAll('[data-nittu-vtype]').forEach(function(r) {
+        r.addEventListener('change', function() {
+            panes.forEach(function(p) { p.hidden = p.getAttribute('data-nittu-vpane') !== r.value; });
+        });
+    });
+    // Qualifications: one more row.
+    var box = form.querySelector('[data-nittu-quals]');
+    var tpl = form.querySelector('[data-nittu-qualtpl]');
+    var add = form.querySelector('[data-nittu-addqual]');
+    if (box && tpl && add) {
+        add.addEventListener('click', function() {
+            if (box.querySelectorAll('[data-nittu-qual]').length >= parseInt(box.getAttribute('data-max'), 10)) {
+                add.disabled = true;
+                return;
+            }
+            var next = parseInt(box.getAttribute('data-next'), 10);
+            box.setAttribute('data-next', next + 1);
+            add.insertAdjacentHTML('beforebegin', tpl.innerHTML.replace(/__ROW__/g, String(next)));
+        });
+    }
+})();
+{{/js}}

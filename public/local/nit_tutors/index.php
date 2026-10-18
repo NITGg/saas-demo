@@ -130,8 +130,8 @@ $context = [
     'total' => $result['total'],
     'teachers' => $cards,
     'hasteachers' => !empty($cards),
-    'coursesurl' => $filters['q'] !== ''
-        ? (new moodle_url('/local/nit_category/index.php', ['q' => $filters['q']]))->out(false) : '',
+    // Courses | Teachers tabs, always (the courses tab keeps the words, if any).
+    'coursesurl' => (new moodle_url('/local/nit_category/index.php', $filters['q'] !== '' ? ['q' => $filters['q']] : []))->out(false),
     'applyurl' => (new moodle_url('/local/nit_tutors/apply.php'))->out(false),
 ];
 

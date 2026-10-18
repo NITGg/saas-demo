@@ -174,3 +174,9 @@ $string['player_of'] = 'من';
 $string['studentmessaging'] = 'منع المراسلة بين الطلاب';
 $string['studentmessaging_desc'] = 'لا يستطيع الطلاب مراسلة بعضهم أو إرسال طلبات إضافة لبعضهم، على الموقع والتطبيق. يظل الطالب قادرًا على مراسلة معلميه، ويستطيع المعلمون والمشرفون والأدمن مراسلة أي شخص. المعلم/المشرف هنا هو كل من لديه صلاحية moodle/site:messageanyuser (المعلم، المعلم غير المحرر، المدير). لا تتأثر محادثات المجموعات التي يفعّلها المعلم لمجموعة داخل الكورس.';
 $string['studentmessaging_blocked'] = 'لا يمكنك إرسال رسائل إلى طلاب آخرين.';
+
+// Account page: change photo (classes/local/account_photo.php).
+$string['photo_failed'] = 'تعذّر حفظ الصورة. اختر الصورة مرة أخرى.';
+$string['photo_notallowed'] = 'لا يمكنك تغيير صورتك على هذا الموقع.';
+$string['photo_toobig'] = 'الصورة أكبر من المسموح (الحد {$a}).';
+$string['photo_notimage'] = 'اختر صورة بصيغة JPG أو PNG أو GIF أو WebP.';

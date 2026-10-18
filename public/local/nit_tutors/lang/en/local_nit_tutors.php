@@ -66,19 +66,15 @@ $string['missing_qualifications'] = 'At least {$a} qualification(s)';
 // Application form.
 $string['form_about'] = 'About you';
 $string['form_headline'] = 'Headline';
-$string['form_headline_help'] = 'One line students see under your name, e.g. "IELTS coach — 8 years of experience".';
 $string['form_bio'] = 'About you';
 $string['form_subjects'] = 'Subjects';
-$string['form_subjects_none'] = 'No subject chosen';
 $string['form_video'] = 'Intro video';
 $string['form_video_help'] = 'A short video (1–3 minutes) introducing yourself and how you teach. Upload a file or paste a YouTube / Vimeo link. Students see it after the academy approves it.';
 $string['form_videotype'] = 'Video';
-$string['form_videotype_none'] = 'No video';
 $string['form_videotype_upload'] = 'Upload a video file';
 $string['form_videotype_link'] = 'YouTube or Vimeo link';
 $string['form_videofile'] = 'Video file';
 $string['form_videourl'] = 'Video link';
-$string['form_videostate'] = 'Video review';
 $string['form_quals'] = 'Qualifications';
 $string['form_quals_help'] = 'Degrees and certificates. Attach the certificate: only the academy sees the file; students see the title and a "verified" mark once the academy checks it.';
 $string['form_qualtitle'] = 'Qualification';
@@ -91,7 +87,6 @@ $string['form_more'] = 'More about you';
 $string['form_save'] = 'Save';
 $string['form_submit'] = 'Save and send for review';
 $string['qual_verified'] = 'Verified';
-$string['qual_unverified'] = 'Not verified yet';
 
 // Join as a teacher.
 
@@ -113,7 +108,6 @@ $string['err_agree'] = 'You must agree to the terms and conditions.';
 $string['err_signup'] = 'Check the form: {$a}';
 
 // Admin: list and review.
-$string['tab_videos'] = 'New videos';
 $string['searchapplicants'] = 'Name or email';
 $string['noapplications'] = 'No applications here.';
 $string['col_status'] = 'Status';
@@ -126,20 +120,12 @@ $string['userprofile'] = 'User account';
 $string['decision'] = 'Decision';
 $string['act_approve'] = 'Approve';
 $string['act_reinstate'] = 'Reinstate';
-$string['act_changes'] = 'Ask for changes';
 $string['act_reject'] = 'Reject';
 $string['act_suspend'] = 'Suspend';
-$string['act_videook'] = 'Approve video';
-$string['act_videono'] = 'Refuse video';
-$string['act_verify'] = 'Mark verified';
-$string['act_unverify'] = 'Unverify';
 $string['novideo'] = 'No intro video.';
 $string['noquals'] = 'No qualifications.';
 $string['price'] = 'Price';
 $string['priceflex'] = '{$a} Flex';
-$string['badge_stats'] = 'Rating {$a->rating} from {$a->reviews} ratings · {$a->lessons} completed lessons · {$a->absence}% teacher no-shows';
-$string['badge_meets'] = 'Meets the rules.';
-$string['badge_notmeets'] = 'Does not meet the rules yet.';
 
 // Admin: fields.
 $string['fields_intro'] = 'Questions a teacher answers in their application, besides the fixed ones (about, subjects, intro video, qualifications). A field can be shown on the public teacher page, and a dropdown can be a filter of the teacher search (e.g. "Languages spoken", "Country").';
@@ -180,8 +166,6 @@ $string['set_allowreapply'] = 'Allow applying again after a rejection';
 // Messages.
 $string['msg_submitted_subject'] = 'New teacher application: {$a}';
 $string['msg_submitted_body'] = '{$a->name} sent a teacher application. Review it: {$a->url}';
-$string['msg_video_subject'] = 'New intro video to review: {$a}';
-$string['msg_video_body'] = '{$a->name} changed their intro video. Review it: {$a->url}';
 $string['msg_approved_subject'] = 'You are now a teacher on the academy';
 $string['msg_approved_body'] = 'Hello {$a->name}, your teacher application was approved. Students can now find and book you. Set your weekly hours and price on your profile: {$a->url}';
 $string['msg_rejected_subject'] = 'Your teacher application';
@@ -256,9 +240,6 @@ $string['tab_applications'] = 'Applications';
 $string['tab_fields'] = 'Application fields';
 $string['tab_badges'] = 'Badges';
 $string['tab_settings'] = 'Settings';
-$string['decision_videoonly'] = 'This approved teacher sent a new intro video. Approve or Reject here decides the video only; to refuse it, write the reason for the teacher.';
-$string['act_approvevideo'] = 'Approve the video';
-$string['act_rejectvideo'] = 'Reject the video';
 $string['opencertificate'] = 'Open the certificate';
 
 // Application fields tab: the fixed parts.
@@ -271,7 +252,7 @@ $string['builtin_atleast'] = 'At least {$a}';
 
 // Badges.
 $string['badge'] = 'Badge';
-$string['badges_intro'] = 'Badges show on the teacher page and in the teacher search, and students can filter by them. A badge is earned automatically when a teacher meets its rules (checked every day, and taken away when they stop meeting them), or given by hand by a reviewer. On each teacher\'s review page a reviewer can also give or withhold any badge for that teacher.';
+$string['badges_intro'] = 'Badges show on the teacher page and in the teacher search, and students can filter by them. A badge is earned automatically when a teacher meets its rules (checked every day, and taken away when they stop meeting them), or given by hand: open Teachers next to the badge and choose, for each teacher, by the rules, always or never.';
 $string['addbadge'] = 'Add a badge';
 $string['editbadge'] = 'Edit badge';
 $string['nobadges'] = 'No badges yet.';
@@ -292,10 +273,6 @@ $string['badge_minlessons'] = 'Minimum completed lessons';
 $string['badge_maxabsence'] = 'Maximum teacher no-show rate (%)';
 $string['badge_holders'] = 'Teachers wearing it';
 $string['badge_wears'] = 'Wears it';
-$string['badge_notwears'] = 'Does not wear it';
-$string['badge_teacherstats'] = 'This teacher now';
-$string['badges_review_help'] = 'For each badge choose how this teacher gets it: by the badge\'s own method, always, or never.';
-$string['badges_notapproved'] = 'Badges show only once the teacher is approved.';
 $string['badgemode_auto'] = 'By its rules';
 $string['badgemode_auto_manual'] = 'Not given';
 $string['badgemode_on'] = 'Always give it';
@@ -319,3 +296,44 @@ $string['privacy:metadata:badgeuser'] = 'The badges a teacher wears, and a revie
 $string['privacy:metadata:badgeuser:userid'] = 'The teacher.';
 $string['privacy:metadata:badgeuser:mode'] = 'The reviewer\'s choice (by the rules, always, never).';
 $string['privacy:metadata:badgeuser:awarded'] = 'Whether the teacher wears the badge.';
+
+// Teacher sign-up steps and the profile page (teacher_input).
+$string['signup_sent'] = 'Your account was created and your teacher application was sent for review.';
+$string['signup_laststep'] = 'Send for review';
+$string['signup_review_note'] = 'When you send it, the academy reviews your profile. You will get a message with the decision; once approved, students can find and book you.';
+$string['signup_filesagain'] = 'Please choose your video and certificate files again (the page had to reload).';
+$string['signup_agree'] = 'I agree to the';
+$string['signup_terms'] = 'terms and conditions';
+$string['signup_send'] = 'Create my account and send for review';
+$string['form_headline_ph'] = 'One line under your name, e.g. "IELTS coach — 8 years of experience"';
+$string['form_bio_ph'] = 'Introduce yourself to students: your experience and how you teach.';
+$string['form_qualtitle_ph'] = 'e.g. BA in English';
+$string['currentfile'] = 'Current file: {$a}';
+$string['filelimit'] = 'Up to {$a}';
+$string['err_form'] = 'Please correct the highlighted parts.';
+$string['err_toolong'] = 'At most {$a} characters.';
+$string['err_choosevideo'] = 'Choose a video file to upload, or paste a link.';
+$string['err_qualyear'] = 'Enter a year between 1950 and next year.';
+$string['err_filetype'] = 'This file type is not accepted. Accepted: {$a}';
+$string['err_filesize'] = 'The file is too large (at most {$a}).';
+$string['savedforreview'] = 'Saved. Your new video / qualifications are shown after the academy reviews them.';
+$string['nocertificate'] = 'No certificate attached.';
+$string['isnew'] = 'New — to review';
+
+// Review page.
+$string['tab_updates'] = 'New changes';
+$string['act_approveupdates'] = 'Approve the changes';
+$string['act_rejectupdates'] = 'Reject the changes';
+$string['decision_application'] = 'Approve the teacher, or reject the application with the reason the teacher reads (they can update it and apply again).';
+$string['decision_updates'] = 'This approved teacher changed their intro video or qualifications. Approve shows them to students; Reject (with the reason) keeps the old ones out — the teacher stays approved.';
+$string['decision_approved'] = 'This teacher is approved. To stop them (not listed, not bookable), write the reason and press Stop.';
+$string['decision_suspended'] = 'This teacher is stopped. Reinstate them to list them again.';
+$string['msg_updates_subject'] = 'Teacher profile changes to review: {$a}';
+$string['msg_updates_body'] = '{$a->name} changed their intro video or qualifications. Review them: {$a->url}';
+$string['msg_updatesrejected_subject'] = 'Your profile changes were not approved';
+$string['msg_updatesrejected_body'] = 'Hello {$a->name}, the changes to your teacher profile were not approved: {$a->note}. {$a->url}';
+
+// Badges tab: the teachers of a badge.
+$string['badge_manage'] = 'Teachers';
+$string['badgeteachers_help'] = 'For each approved teacher choose how they get this badge: by its rules, always, or never. This is how a manual badge is given.';
+$string['noapprovedteachers'] = 'No approved teachers yet.';

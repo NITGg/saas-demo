@@ -62,6 +62,7 @@ $homeurl = (new moodle_url('/'))->out(false);
 // ---- submit: create the account, then "check your email" (or sign in and go home) ----
 $regold = [];     // Values to put back in the form after a failed submit (never the password).
 $regerrors = [];  // Field name => message.
+$teacherin = null; // Teacher sign-up: the application part as posted (local_nit_tutors\local\teacher_input).
 if (data_submitted()) {
     $raw = [];
     foreach ($asteacher ? $teachersignup::FIELDS : \local_academy\local\registration::FIELDS as $name) {
@@ -75,11 +76,17 @@ if (data_submitted()) {
         if (!confirm_sesskey()) {
             throw new \moodle_exception('reg_sessionexpired', 'local_academy');
         }
-        if (optional_param('password2', '', PARAM_RAW) !== $raw['password']) {
-            throw new \local_academy\local\invalid_registration(['password2' => get_string('reg_passwordmismatch', 'local_academy')]);
+        if ($asteacher) {
+            // Account + the whole application, checked together; then created and sent for review.
+            $teacherin = \local_nit_tutors\local\teacher_input::from_request();
+            $newuser = $teachersignup::register_teacher($raw, optional_param('password2', '', PARAM_RAW), $agreed,
+                $teacherin, \local_nit_tutors\local\teacher_input::files_from_request());
+        } else {
+            if (optional_param('password2', '', PARAM_RAW) !== $raw['password']) {
+                throw new \local_academy\local\invalid_registration(['password2' => get_string('reg_passwordmismatch', 'local_academy')]);
+            }
+            $newuser = \local_academy\local\registration::register($raw, $agreed);
         }
-        $newuser = $asteacher ? $teachersignup::register($raw, $agreed)
-            : \local_academy\local\registration::register($raw, $agreed);
         if (empty($newuser->confirmed)) {
             // Moodle's email self-registration: "check your email" (core strings), no sign-in yet.
             $PAGE->set_title(get_string('emailconfirm'));
@@ -93,9 +100,10 @@ if (data_submitted()) {
             die;
         }
         complete_user_login($newuser);
-        // A new teacher continues with the application (bio, subjects, video, qualifications).
+        // A new teacher lands on their teacher profile: "waiting for review".
         redirect($asteacher ? new moodle_url('/local/nit_tutors/application.php') : new moodle_url('/'),
-            get_string('reg_success', 'local_academy'), null, \core\output\notification::NOTIFY_SUCCESS);
+            $asteacher ? get_string('signup_sent', 'local_nit_tutors') : get_string('reg_success', 'local_academy'),
+            null, \core\output\notification::NOTIFY_SUCCESS);
     } catch (\local_academy\local\invalid_registration $e) {
         $regerrors = $e->errors;
     } catch (\local_nit_tutors\local\invalid_signup $e) {
@@ -278,7 +286,7 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
     </a>
     <div class="nit-reg-inner">
-      <div class="nit-reg-progress"<?php echo $asteacher ? ' hidden' : ''; ?>>
+      <div class="nit-reg-progress">
         <div class="nit-reg-progrow"><span class="pct" id="reg-pct">30%</span><span class="step" id="reg-step-label"><?php echo s($t('Step one', 'الخطوه الاولى')); ?></span></div>
         <div class="nit-reg-track"><div class="nit-reg-fill" id="reg-fill" style="width:30%"></div></div>
       </div>
@@ -292,7 +300,7 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
       <?php endif; ?>
       <?php if ($asteacher): ?>
       <h1><?php echo s($t('Join as a teacher:', 'انضم كمدرس :')); ?></h1>
-      <p class="nit-reg-sub"><?php echo s($t('Create your account, then complete your teacher profile (about you, subjects, intro video, qualifications) and send it for review. Once approved, students can find and book you.', 'أنشئ حسابك، ثم أكمل ملفك كمدرس (نبذة عنك، والمواد، والفيديو التعريفي، والمؤهلات) وأرسله للمراجعة. بعد الاعتماد يستطيع الطلاب العثور عليك وحجز حصص معك.')); ?></p>
+      <p class="nit-reg-sub"><?php echo s($t('Fill in your account and your teacher profile step by step: about you, subjects, intro video and qualifications. At the end it is sent to the academy for review; once approved, students can find and book you.', 'املأ بيانات حسابك وملفك كمدرس خطوة بخطوة: نبذة عنك، والمواد، والفيديو التعريفي، والمؤهلات. في النهاية يُرسل للأكاديمية للمراجعة، وبعد الاعتماد يستطيع الطلاب العثور عليك وحجز حصص معك.')); ?></p>
       <?php else: ?>
       <h1><?php echo s($t('Create an account:', 'طلب انشاء حساب :')); ?></h1>
       <p class="nit-reg-sub"><?php echo s($t('Enter your details correctly. Your request is reviewed within a few hours to a few days, and you can log in to see its status.', 'ادخل بياناتك بشكل صحيح وسيتم مراجعة طلبك خلال ساعات لـ بضع ايام, وتقدر تسجل دخول عشان تشوف حالة الطلب بتاعك')); ?></p>
@@ -302,11 +310,12 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
           echo $OUTPUT->notification($regerrors['_form'] ?? get_string('reg_failed', 'local_academy'),
               \core\output\notification::NOTIFY_ERROR);
       } ?>
-      <form method="post" action="<?php echo $PAGE->url->out(false); ?>" id="regform" autocomplete="off">
+      <form method="post" action="<?php echo $PAGE->url->out(false); ?>" id="regform" autocomplete="off"<?php echo $asteacher ? ' enctype="multipart/form-data"' : ''; ?>>
         <input type="hidden" name="sesskey" value="<?php echo sesskey(); ?>">
 
         <?php if ($asteacher): ?>
-        <!-- TEACHER: one step -->
+        <!-- TEACHER, step 1: the account. Steps 2–5 (about, video, qualifications, send) come from
+             local_nit_tutors/signup_steps; everything is checked and created together at the end. -->
         <div class="reg-step active" data-step="1">
           <div class="nit-reg-grid">
             <?php echo reg_text('firstname', $t('First name', 'الاسم الأول'), $ic['user']); ?>
@@ -318,11 +327,12 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
             <?php echo reg_text('password', $t('Password', 'كلمة السر'), $ic['lock'], '', 'password', true); ?>
             <?php echo reg_text('password2', $t('Confirm password', 'تأكيد كلمة السر'), $ic['lock'], '', 'password', true); ?>
           </div>
-          <label class="nit-reg-terms"><input type="checkbox" name="agree" value="1" id="f_agree"<?php echo !empty($regold['agree']) ? ' checked' : ''; ?>><span><?php echo s($t('I agree to the', 'أوافق على')); ?> <a href="#" class="reg-terms-open"><?php echo s($t('terms and conditions', 'الشروط والأحكام')); ?></a></span></label>
-          <div class="reg-err" id="agree-err" style="margin-top:6px;"></div>
-          <div class="nit-reg-btns"><button type="submit" class="btn-next"><?php echo s($t('Create account and continue', 'إنشاء الحساب والمتابعة')); ?></button></div>
+          <div class="nit-reg-btns"><button type="button" class="btn-next" data-next><?php echo s($t('Next', 'التالي')); ?></button></div>
           <div class="nit-reg-bottom"><?php echo s($t('Already have an account?', 'يوجد لديك حساب بالفعل؟')); ?> <a href="<?php echo $loginurl; ?>"><?php echo s($t('Log in now!', 'ادخل إلى حسابك الآن !')); ?></a></div>
         </div>
+        <?php echo $OUTPUT->render_from_template('local_nit_tutors/signup_steps',
+            \local_nit_tutors\local\profile_view::inputs(0, $teacherin, $regerrors)
+            + ['agree' => !empty($regold['agree']), 'filesagain' => $teacherin !== null]); ?>
         <?php else: ?>
 
         <!-- STEP 1 -->
@@ -422,6 +432,7 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
       'step1' => $t('Step one', 'الخطوه الاولى'),
       'step2' => $t('Step two', 'الخطوه التانيه'),
       'step3' => $t('Last step', 'الخطوه الاخيره'),
+      'stepof' => $t('Step %s of %n', 'الخطوة %s من %n'), // Teacher sign-up (any number of steps).
       'required' => $t('This field is required', 'هذا الحقل مطلوب'),
       'email' => $t('Invalid email address', 'بريد إلكتروني غير صحيح'),
       'number' => $t('Enter a valid number (digits only)', 'ادخل رقمًا صحيحًا (أرقام فقط)'),
@@ -450,7 +461,9 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
   var OLD_DIVISION = <?php echo json_encode((string) ($regold['division'] ?? ''), JSON_UNESCAPED_UNICODE); ?>;
   var HAS_OLD = <?php echo $regold ? 'true' : 'false'; ?>;
   var steps = [].slice.call(document.querySelectorAll('.reg-step'));
-  var meta = [{p:'30%',l:L.step1},{p:'60%',l:L.step2},{p:'90%',l:L.step3}];
+  // Student: three named steps. Teacher (?as=teacher): "Step n of N" and an even share each.
+  var meta = steps.length === 3 ? [{p:'30%',l:L.step1},{p:'60%',l:L.step2},{p:'90%',l:L.step3}]
+    : steps.map(function(s, i){ return {p: Math.round((i + 1) * 100 / steps.length) + '%', l: L.stepof.replace('%s', i + 1).replace('%n', steps.length)}; });
   var cur = 0;
   function show(i){
     cur = Math.max(0, Math.min(steps.length-1, i));
@@ -683,6 +696,7 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
   });
   if(firstStep >= 0){ show(firstStep); }
   else if(HAS_OLD){ show(steps.length - 1); }
+  else if(steps.length !== 3){ show(0); } // Teacher sign-up: "Step 1 of N" from the start.
 
   // ---- terms modal ----
   var modal = document.getElementById('reg-terms-modal');

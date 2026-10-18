@@ -1,0 +1,220 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_nit_tutors/profile_page
+
+    The teacher profile (application.php) inside the account frame (local_academy account_shell):
+    the cards of /local/academy/profile.php. Inputs: local_nit_tutors\local\teacher_input names;
+    values: profile_view::inputs().
+
+    Context variables required for this template:
+    * title, navhtml (HTML), statushtml (HTML), actionurl, sesskey, editable, cansubmit
+    * headline, bio, subjects [{value, label, checked, idx}], hassubjects
+    * islink, isupload, videourl, videorequired, hasplayer, player {embed, src}, videofilename, videostatus,
+      videoaccept, videomax
+    * quals [{row, id, title, institution, year, error, filename, fileurl}], nextqual, maxquals, minquals,
+      fileaccept, filemax
+    * hasextra, extra [{id, label, description, required, value, error, istext|istextarea|isselect|isnumber|isurl|
+      isdate|ischeckbox|isfile, options, checked, filename, fileurl}]
+    * err {headline, bio, subjects, video, quals}
+
+    Example context (json):
+    {"title": "Teacher profile", "navhtml": "", "statushtml": "", "actionurl": "#", "sesskey": "x", "editable": true,
+     "cansubmit": true, "headline": "", "bio": "", "subjects": [], "hassubjects": false, "islink": true, "isupload": false,
+     "videourl": "", "videorequired": true, "hasplayer": false, "videofilename": "", "videostatus": "", "videoaccept": ".mp4",
+     "videomax": "200 MB", "quals": [{"row": 0, "id": 0, "title": "", "institution": "", "year": "", "error": "",
+     "filename": "", "fileurl": ""}], "nextqual": 1, "maxquals": 10, "minquals": 1, "fileaccept": ".pdf", "filemax": "10 MB",
+     "hasextra": false, "extra": [], "err": {} }
+}}
+<div class="nit-prof nittu-app">
+  <h1>{{title}}</h1>
+  <div class="nit-prof-grid">
+    {{{navhtml}}}
+    <div class="nit-prof-main">
+      {{{statushtml}}}
+      <form method="post" action="{{actionurl}}" enctype="multipart/form-data" class="nittu-pf" data-nittu-pf>
+        <input type="hidden" name="sesskey" value="{{sesskey}}">
+        <fieldset class="nittu-pf__set" {{^editable}}disabled{{/editable}}>
+
+        {{! About you }}
+        <section class="nit-prof-card">
+          <div class="nit-prof-cardhd">{{#str}}form_about, local_nit_tutors{{/str}}</div>
+          <div class="nit-prof-body">
+            <div class="full">
+              <label class="nit-prof-lbl" for="nittu-headline">{{#str}}form_headline, local_nit_tutors{{/str}}</label>
+              <input class="nit-prof-field" id="nittu-headline" name="headline" value="{{headline}}" maxlength="255"
+                placeholder="{{#str}}form_headline_ph, local_nit_tutors{{/str}}">
+              {{#err.headline}}<div class="nittu-err">{{err.headline}}</div>{{/err.headline}}
+            </div>
+            <div class="full">
+              <label class="nit-prof-lbl" for="nittu-bio">{{#str}}form_bio, local_nit_tutors{{/str}} <span class="nittu-req">*</span></label>
+              <textarea class="nit-prof-field nittu-pf__bio" id="nittu-bio" name="bio" rows="5"
+                placeholder="{{#str}}form_bio_ph, local_nit_tutors{{/str}}">{{bio}}</textarea>
+              {{#err.bio}}<div class="nittu-err">{{err.bio}}</div>{{/err.bio}}
+            </div>
+            <div class="full">
+              <div class="nit-prof-lbl">{{#str}}form_subjects, local_nit_tutors{{/str}} <span class="nittu-req">*</span></div>
+              <div class="nittu-chips" role="group" aria-label="{{#str}}form_subjects, local_nit_tutors{{/str}}">
+                {{#subjects}}
+                <label class="nittu-chip"><input type="checkbox" name="subjects[]" value="{{value}}" {{#checked}}checked{{/checked}}><span>{{label}}</span></label>
+                {{/subjects}}
+              </div>
+              {{#err.subjects}}<div class="nittu-err">{{err.subjects}}</div>{{/err.subjects}}
+            </div>
+          </div>
+        </section>
+
+        {{! Intro video }}
+        <section class="nit-prof-card">
+          <div class="nit-prof-cardhd">{{#str}}form_video, local_nit_tutors{{/str}} {{#videorequired}}<span class="nittu-req">*</span>{{/videorequired}}
+            {{#videostatus}}<span class="nittu-pf__state">{{videostatus}}</span>{{/videostatus}}</div>
+          <div class="nit-prof-body">
+            <p class="full nittu-pf__help">{{#str}}form_video_help, local_nit_tutors{{/str}}</p>
+            {{#hasplayer}}
+            <div class="full nittu-tp__video">
+              {{#player.embed}}<iframe src="{{player.embed}}" title="{{#str}}form_video, local_nit_tutors{{/str}}" allow="fullscreen; picture-in-picture" allowfullscreen loading="lazy"></iframe>{{/player.embed}}
+              {{#player.src}}<video controls preload="metadata" src="{{player.src}}"></video>{{/player.src}}
+            </div>
+            {{/hasplayer}}
+            <div class="full nittu-seg" role="radiogroup" aria-label="{{#str}}form_videotype, local_nit_tutors{{/str}}">
+              <label><input type="radio" name="videotype" value="link" {{#islink}}checked{{/islink}} data-nittu-vtype><span>{{#str}}form_videotype_link, local_nit_tutors{{/str}}</span></label>
+              <label><input type="radio" name="videotype" value="upload" {{#isupload}}checked{{/isupload}} data-nittu-vtype><span>{{#str}}form_videotype_upload, local_nit_tutors{{/str}}</span></label>
+            </div>
+            <div class="full" data-nittu-vpane="link" {{^islink}}hidden{{/islink}}>
+              <label class="nit-prof-lbl" for="nittu-videourl">{{#str}}form_videourl, local_nit_tutors{{/str}}</label>
+              <input class="nit-prof-field" id="nittu-videourl" name="videourl" value="{{videourl}}" dir="ltr"
+                placeholder="https://www.youtube.com/watch?v=…">
+            </div>
+            <div class="full" data-nittu-vpane="upload" {{^isupload}}hidden{{/isupload}}>
+              <label class="nit-prof-lbl" for="nittu-videofile">{{#str}}form_videofile, local_nit_tutors{{/str}}</label>
+              <input class="nit-prof-field nittu-file" type="file" id="nittu-videofile" name="videofile" accept="{{videoaccept}}">
+              <div class="nittu-pf__help">{{#videofilename}}{{#str}}currentfile, local_nit_tutors, {{videofilename}}{{/str}} · {{/videofilename}}{{#str}}filelimit, local_nit_tutors, {{videomax}}{{/str}}</div>
+            </div>
+            {{#err.video}}<div class="full nittu-err">{{err.video}}</div>{{/err.video}}
+          </div>
+        </section>
+
+        {{! Qualifications }}
+        <section class="nit-prof-card">
+          <div class="nit-prof-cardhd">{{#str}}form_quals, local_nit_tutors{{/str}} {{#minquals}}<span class="nittu-req">*</span>{{/minquals}}</div>
+          <div class="nittu-quals" data-nittu-quals data-next="{{nextqual}}" data-max="{{maxquals}}">
+            <p class="nittu-pf__help">{{#str}}form_quals_help, local_nit_tutors{{/str}}</p>
+            {{#quals}}
+            <div class="nittu-qual" data-nittu-qual>
+              <input type="hidden" name="qualid[{{row}}]" value="{{id}}">
+              <div class="nit-prof-body nittu-qual__grid">
+                <div class="full"><label class="nit-prof-lbl">{{#str}}form_qualtitle, local_nit_tutors{{/str}}</label>
+                  <input class="nit-prof-field" name="qualtitle[{{row}}]" value="{{title}}" placeholder="{{#str}}form_qualtitle_ph, local_nit_tutors{{/str}}"></div>
+                <div><label class="nit-prof-lbl">{{#str}}form_qualinstitution, local_nit_tutors{{/str}}</label>
+                  <input class="nit-prof-field" name="qualinstitution[{{row}}]" value="{{institution}}"></div>
+                <div><label class="nit-prof-lbl">{{#str}}form_qualyear, local_nit_tutors{{/str}}</label>
+                  <input class="nit-prof-field" type="number" min="1950" max="2100" name="qualyear[{{row}}]" value="{{year}}" dir="ltr"></div>
+                <div class="full"><label class="nit-prof-lbl">{{#str}}form_qualfile, local_nit_tutors{{/str}}</label>
+                  <input class="nit-prof-field nittu-file" type="file" name="qualfile[{{row}}]" accept="{{fileaccept}}">
+                  <div class="nittu-pf__help">{{#fileurl}}<a href="{{fileurl}}" target="_blank" rel="noopener">{{filename}}</a> · {{/fileurl}}{{#str}}filelimit, local_nit_tutors, {{filemax}}{{/str}}</div></div>
+                {{#id}}<label class="full nittu-qual__del"><input type="checkbox" name="qualdelete[{{row}}]" value="1"> {{#str}}form_qualdelete, local_nit_tutors{{/str}}</label>{{/id}}
+                {{#error}}<div class="full nittu-err">{{error}}</div>{{/error}}
+              </div>
+            </div>
+            {{/quals}}
+            {{#err.quals}}<div class="nittu-err">{{err.quals}}</div>{{/err.quals}}
+            <button type="button" class="btn-out nittu-qual__add" data-nittu-addqual>+ {{#str}}form_qualadd, local_nit_tutors{{/str}}</button>
+          </div>
+          <template data-nittu-qualtpl>
+            <div class="nittu-qual" data-nittu-qual>
+              <input type="hidden" name="qualid[__ROW__]" value="0">
+              <div class="nit-prof-body nittu-qual__grid">
+                <div class="full"><label class="nit-prof-lbl">{{#str}}form_qualtitle, local_nit_tutors{{/str}}</label>
+                  <input class="nit-prof-field" name="qualtitle[__ROW__]" placeholder="{{#str}}form_qualtitle_ph, local_nit_tutors{{/str}}"></div>
+                <div><label class="nit-prof-lbl">{{#str}}form_qualinstitution, local_nit_tutors{{/str}}</label>
+                  <input class="nit-prof-field" name="qualinstitution[__ROW__]"></div>
+                <div><label class="nit-prof-lbl">{{#str}}form_qualyear, local_nit_tutors{{/str}}</label>
+                  <input class="nit-prof-field" type="number" min="1950" max="2100" name="qualyear[__ROW__]" dir="ltr"></div>
+                <div class="full"><label class="nit-prof-lbl">{{#str}}form_qualfile, local_nit_tutors{{/str}}</label>
+                  <input class="nit-prof-field nittu-file" type="file" name="qualfile[__ROW__]" accept="{{fileaccept}}"></div>
+              </div>
+            </div>
+          </template>
+        </section>
+
+        {{#hasextra}}
+        <section class="nit-prof-card">
+          <div class="nit-prof-cardhd">{{#str}}form_more, local_nit_tutors{{/str}}</div>
+          <div class="nit-prof-body">
+            {{#extra}}
+            <div class="full">
+              {{^ischeckbox}}<label class="nit-prof-lbl" for="nittu-f{{id}}">{{label}} {{#required}}<span class="nittu-req">*</span>{{/required}}</label>{{/ischeckbox}}
+              {{#istext}}<input class="nit-prof-field" id="nittu-f{{id}}" name="field[{{id}}]" value="{{value}}">{{/istext}}
+              {{#isnumber}}<input class="nit-prof-field" id="nittu-f{{id}}" type="number" name="field[{{id}}]" value="{{value}}" dir="ltr">{{/isnumber}}
+              {{#isurl}}<input class="nit-prof-field" id="nittu-f{{id}}" type="url" name="field[{{id}}]" value="{{value}}" dir="ltr">{{/isurl}}
+              {{#isdate}}<input class="nit-prof-field" id="nittu-f{{id}}" type="date" name="field[{{id}}]" value="{{value}}">{{/isdate}}
+              {{#istextarea}}<textarea class="nit-prof-field" id="nittu-f{{id}}" name="field[{{id}}]" rows="3">{{value}}</textarea>{{/istextarea}}
+              {{#isselect}}<select class="nit-prof-field" id="nittu-f{{id}}" name="field[{{id}}]"><option value="">{{#str}}choosedots{{/str}}</option>{{#options}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/options}}</select>{{/isselect}}
+              {{#ischeckbox}}<input type="hidden" name="field[{{id}}]" value="0"><label class="nittu-check"><input type="checkbox" name="field[{{id}}]" value="1" {{#checked}}checked{{/checked}}> {{label}}</label>{{/ischeckbox}}
+              {{#isfile}}<input class="nit-prof-field nittu-file" id="nittu-f{{id}}" type="file" name="fieldfile[{{id}}]" accept="{{fileaccept}}">
+                {{#fileurl}}<div class="nittu-pf__help"><a href="{{fileurl}}" target="_blank" rel="noopener">{{filename}}</a></div>{{/fileurl}}{{/isfile}}
+              {{#description}}<div class="nittu-pf__help">{{description}}</div>{{/description}}
+              {{#error}}<div class="nittu-err">{{error}}</div>{{/error}}
+            </div>
+            {{/extra}}
+          </div>
+        </section>
+        {{/hasextra}}
+        </fieldset>
+
+        {{#editable}}
+        <div class="nit-prof-card nittu-pf__actions">
+          <button type="submit" name="save" value="1" class="btn-out">{{#str}}form_save, local_nit_tutors{{/str}}</button>
+          {{#cansubmit}}<button type="submit" name="send" value="1" class="btn-dark">{{#str}}form_submit, local_nit_tutors{{/str}}</button>{{/cansubmit}}
+        </div>
+        {{/editable}}
+      </form>
+    </div>
+  </div>
+</div>
+{{#js}}
+(function() {
+    var form = document.querySelector('[data-nittu-pf]');
+    if (!form) {
+        return;
+    }
+    // Video: link or upload.
+    var panes = form.querySelectorAll('[data-nittu-vpane]');
+    form.querySelectorAll('[data-nittu-vtype]').forEach(function(r) {
+        r.addEventListener('change', function() {
+            panes.forEach(function(p) { p.hidden = p.getAttribute('data-nittu-vpane') !== r.value; });
+        });
+    });
+    // Qualifications: add a row from the template.
+    var box = form.querySelector('[data-nittu-quals]');
+    var tpl = form.querySelector('[data-nittu-qualtpl]');
+    var add = form.querySelector('[data-nittu-addqual]');
+    if (box && tpl && add) {
+        add.addEventListener('click', function() {
+            var rows = box.querySelectorAll('[data-nittu-qual]').length;
+            if (rows >= parseInt(box.getAttribute('data-max'), 10)) {
+                add.disabled = true;
+                return;
+            }
+            var next = parseInt(box.getAttribute('data-next'), 10);
+            box.setAttribute('data-next', next + 1);
+            var html = tpl.innerHTML.replace(/__ROW__/g, String(next));
+            add.insertAdjacentHTML('beforebegin', html);
+        });
+    }
+})();
+{{/js}}

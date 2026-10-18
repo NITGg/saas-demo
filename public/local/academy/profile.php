@@ -49,6 +49,13 @@ $PAGE->add_body_class('nit-profile-page');
 $isar = (strpos(current_language(), 'ar') === 0);
 $t = fn(string $en, string $ar) => $isar ? $ar : $en;
 
+// ── Change photo (its own small form, posted as soon as a picture is chosen) ──
+if (optional_param('nitphoto', 0, PARAM_BOOL) && confirm_sesskey()) {
+    $photoerror = \local_academy\local\account_photo::save_upload((int) $USER->id, $_FILES['photo'] ?? []);
+    redirect($pageurl, $photoerror ?? $t('Photo updated.', 'تم تحديث الصورة.'), null,
+        $photoerror ? \core\output\notification::NOTIFY_ERROR : \core\output\notification::NOTIFY_SUCCESS);
+}
+
 // ── Save (personal details + language preference) ────────────────────────────
 if (data_submitted() && confirm_sesskey()) {
     // Teachers: the live-lesson card (bookings, subjects, weekly hours) posts with this form.
@@ -233,7 +240,11 @@ echo $OUTPUT->header();
           <div class="sub"><?php echo $e($USER->email); ?><?php echo $joined !== '' ? ' · ' . $e($t('Joined ', 'انضم ') . $joined) : ''; ?></div>
         </div>
         <div class="nit-prof-idbtns">
-          <a class="btn-out" href="<?php echo (new moodle_url('/user/editadvanced.php', ['id' => $USER->id]))->out(false); ?>"><?php echo $e($t('Change photo', 'تغيير الصورة')); ?></a>
+          <?php if (\local_academy\local\account_photo::can_change((int) $USER->id)): // Uploads here; the input belongs to #nit-photo-form below. ?>
+          <label class="btn-out" for="nit-photo-input" style="margin:0;"><?php echo $e($t('Change photo', 'تغيير الصورة')); ?></label>
+          <input type="file" id="nit-photo-input" name="photo" form="nit-photo-form" accept="image/jpeg,image/png,image/gif,image/webp" hidden
+            onchange="if (this.files.length) { this.form.submit(); }">
+          <?php endif; ?>
           <button type="submit" class="btn-dark"><?php echo $e($t('Save changes', 'حفظ التغييرات')); ?></button>
         </div>
       </div>
@@ -333,6 +344,9 @@ echo $OUTPUT->header();
       </div>
     </div>
   </div>
+</form>
+<form id="nit-photo-form" method="post" enctype="multipart/form-data" action="<?php echo $pageurl->out(false); ?>" hidden>
+  <input type="hidden" name="sesskey" value="<?php echo sesskey(); ?>"><input type="hidden" name="nitphoto" value="1">
 </form>
 <script>
 (function(){

@@ -45,7 +45,7 @@ $filters = [];
 foreach (application::STATUSES as $st) {
     $filters[$st] = $str('status_' . $st) . ' (' . $counts[$st] . ')';
 }
-$filters['video'] = $str('tab_videos') . ' (' . application::videos_waiting() . ')';
+$filters['updates'] = $str('tab_updates') . ' (' . application::updates_waiting() . ')';
 $filters['all'] = get_string('all') . ' (' . array_sum($counts) . ')';
 echo html_writer::start_tag('nav', ['class' => 'nittu-tabs mb-3', 'aria-label' => $str('col_status')]);
 foreach ($filters as $st => $label) {

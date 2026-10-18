@@ -200,11 +200,13 @@ final class application {
         }
         $transaction = $DB->start_delegated_transaction();
         $row->status = self::APPROVED;
-        // Approving the application approves the video sent with it.
+        // Approving the application approves the video sent with it, and the reviewer has seen the
+        // certificates: every qualification is verified.
         if ($row->videostatus === 'pending') {
             $row->videostatus = 'approved';
             $row->videonote = '';
         }
+        $DB->set_field(qualifications::TABLE, 'verified', 1, ['userid' => $userid]);
         self::stamp($row, $reviewerid, $note);
         tutor_role::grant($userid);
         // The teacher takes bookings from now on (they can switch it off on their profile).
@@ -214,6 +216,46 @@ final class application {
         $transaction->allow_commit();
         badge::refresh($userid);
         notifier::reviewed($userid, self::APPROVED, $note);
+    }
+
+    /**
+     * Does an approved teacher have changes waiting for review (a new intro video, a new or
+     * changed qualification)?
+     *
+     * @param int $userid
+     * @return bool
+     */
+    public static function has_updates(int $userid): bool {
+        global $DB;
+        $row = self::get($userid);
+        return $row && $row->status === self::APPROVED && ($row->videostatus === 'pending'
+            || $DB->record_exists(qualifications::TABLE, ['userid' => $userid, 'verified' => 0]));
+    }
+
+    /**
+     * Decide an approved teacher's changes: approve (the video is shown, the qualifications are
+     * verified) or reject with a reason (the video is refused; changed qualifications stay without
+     * the "verified" mark). The teacher stays approved either way.
+     *
+     * @param int $userid
+     * @param bool $approve
+     * @param string $note required to reject
+     */
+    public static function review_updates(int $userid, bool $approve, string $note = ''): void {
+        global $DB;
+        if (!$approve && trim($note) === '') {
+            throw new \moodle_exception('err_notereq', 'local_nit_tutors');
+        }
+        $row = self::ensure($userid);
+        if ($row->videostatus === 'pending') {
+            video::review($userid, $approve, $note);
+        } else if (!$approve) {
+            notifier::reviewed($userid, 'updatesrejected', $note);
+        }
+        if ($approve) {
+            $DB->set_field(qualifications::TABLE, 'verified', 1, ['userid' => $userid]);
+        }
+        $DB->set_field(self::TABLE, 'timemodified', time(), ['id' => $row->id]);
     }
 
     /**
@@ -301,20 +343,24 @@ final class application {
         return $out;
     }
 
+    /** SQL (on alias t) of an approved teacher with changes waiting: a new video or an unverified qualification. */
+    const UPDATES_SQL = "t.status = 'approved' AND (t.videostatus = 'pending' OR EXISTS (SELECT 1 FROM {nit_tutor_qual} uq
+        WHERE uq.userid = t.userid AND uq.verified = 0))";
+
     /**
-     * Number of approved teachers whose new intro video waits for review.
+     * Number of approved teachers whose changes wait for review.
      *
      * @return int
      */
-    public static function videos_waiting(): int {
+    public static function updates_waiting(): int {
         global $DB;
-        return $DB->count_records(self::TABLE, ['status' => self::APPROVED, 'videostatus' => 'pending']);
+        return (int) $DB->count_records_sql("SELECT COUNT(1) FROM {" . self::TABLE . "} t WHERE " . self::UPDATES_SQL);
     }
 
     /**
      * Applications for the admin list.
      *
-     * @param string $status '' = all, 'video' = approved teachers with a video to review
+     * @param string $status '' = all, 'updates' = approved teachers with changes to review
      * @param string $search name or email
      * @param int $page
      * @param int $perpage
@@ -324,9 +370,8 @@ final class application {
         global $DB;
         $where = ['u.deleted = 0'];
         $params = [];
-        if ($status === 'video') {
-            $where[] = "t.status = :st AND t.videostatus = 'pending'";
-            $params['st'] = self::APPROVED;
+        if ($status === 'updates') {
+            $where[] = self::UPDATES_SQL;
         } else if (in_array($status, self::STATUSES, true)) {
             $where[] = 't.status = :st';
             $params['st'] = $status;

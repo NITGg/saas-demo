@@ -66,19 +66,15 @@ $string['missing_qualifications'] = 'مؤهل واحد على الأقل (الم
 // Application form.
 $string['form_about'] = 'عنك';
 $string['form_headline'] = 'العنوان';
-$string['form_headline_help'] = 'سطر واحد يظهر للطلاب تحت اسمك، مثل: «مدرب IELTS — خبرة 8 سنوات».';
 $string['form_bio'] = 'نبذة عنك';
 $string['form_subjects'] = 'المواد';
-$string['form_subjects_none'] = 'لم تختر أي مادة';
 $string['form_video'] = 'الفيديو التعريفي';
 $string['form_video_help'] = 'فيديو قصير (من دقيقة إلى 3 دقائق) تعرّف فيه بنفسك وبطريقتك في التدريس. ارفع ملفًا أو الصق رابط YouTube أو Vimeo. يظهر للطلاب بعد اعتماده من الأكاديمية.';
 $string['form_videotype'] = 'الفيديو';
-$string['form_videotype_none'] = 'بدون فيديو';
 $string['form_videotype_upload'] = 'رفع ملف فيديو';
 $string['form_videotype_link'] = 'رابط YouTube أو Vimeo';
 $string['form_videofile'] = 'ملف الفيديو';
 $string['form_videourl'] = 'رابط الفيديو';
-$string['form_videostate'] = 'مراجعة الفيديو';
 $string['form_quals'] = 'المؤهلات';
 $string['form_quals_help'] = 'الشهادات والمؤهلات الدراسية. أرفق صورة الشهادة: الملف تراه الأكاديمية فقط، ويرى الطلاب اسم المؤهل وعلامة «موثّق» بعد أن تتحقق منه الأكاديمية.';
 $string['form_qualtitle'] = 'المؤهل';
@@ -91,7 +87,6 @@ $string['form_more'] = 'معلومات إضافية';
 $string['form_save'] = 'حفظ';
 $string['form_submit'] = 'حفظ وإرسال للمراجعة';
 $string['qual_verified'] = 'موثّق';
-$string['qual_unverified'] = 'لم يُوثّق بعد';
 
 // Join as a teacher.
 
@@ -113,7 +108,6 @@ $string['err_agree'] = 'يجب الموافقة على الشروط والأحك
 $string['err_signup'] = 'راجع البيانات: {$a}';
 
 // Admin: list and review.
-$string['tab_videos'] = 'فيديوهات جديدة';
 $string['searchapplicants'] = 'الاسم أو البريد';
 $string['noapplications'] = 'لا توجد طلبات هنا.';
 $string['col_status'] = 'الحالة';
@@ -126,20 +120,12 @@ $string['userprofile'] = 'حساب المستخدم';
 $string['decision'] = 'القرار';
 $string['act_approve'] = 'اعتماد';
 $string['act_reinstate'] = 'إعادة التفعيل';
-$string['act_changes'] = 'طلب تعديلات';
 $string['act_reject'] = 'رفض';
 $string['act_suspend'] = 'إيقاف';
-$string['act_videook'] = 'اعتماد الفيديو';
-$string['act_videono'] = 'رفض الفيديو';
-$string['act_verify'] = 'توثيق';
-$string['act_unverify'] = 'إلغاء التوثيق';
 $string['novideo'] = 'لا يوجد فيديو تعريفي.';
 $string['noquals'] = 'لا توجد مؤهلات.';
 $string['price'] = 'السعر';
 $string['priceflex'] = '{$a} فلكس';
-$string['badge_stats'] = 'التقييم {$a->rating} من {$a->reviews} تقييم · {$a->lessons} حصة مكتملة · {$a->absence}% غياب المدرس';
-$string['badge_meets'] = 'يحقق القواعد.';
-$string['badge_notmeets'] = 'لا يحقق القواعد بعد.';
 
 // Admin: fields.
 $string['fields_intro'] = 'أسئلة يجيب عنها المدرس في طلب الانضمام، بجانب الأجزاء الثابتة (النبذة، والمواد، والفيديو التعريفي، والمؤهلات). يمكن إظهار الحقل في صفحة المدرس العامة، ويمكن جعل القائمة المنسدلة فلترًا في بحث المدرسين (مثل «اللغات التي يتحدثها» أو «الدولة»).';
@@ -180,8 +166,6 @@ $string['set_allowreapply'] = 'السماح بالتقديم مرة أخرى ب�
 // Messages.
 $string['msg_submitted_subject'] = 'طلب انضمام مدرس جديد: {$a}';
 $string['msg_submitted_body'] = 'أرسل {$a->name} طلب انضمام كمدرس. راجعه من هنا: {$a->url}';
-$string['msg_video_subject'] = 'فيديو تعريفي جديد للمراجعة: {$a}';
-$string['msg_video_body'] = 'غيّر {$a->name} الفيديو التعريفي. راجعه من هنا: {$a->url}';
 $string['msg_approved_subject'] = 'أصبحت مدرسًا معتمدًا في الأكاديمية';
 $string['msg_approved_body'] = 'مرحبًا {$a->name}، تم اعتماد طلب انضمامك كمدرس. يستطيع الطلاب الآن العثور عليك وحجز حصص معك. حدّد مواعيدك الأسبوعية وسعرك من ملفك: {$a->url}';
 $string['msg_rejected_subject'] = 'بخصوص طلب انضمامك كمدرس';
@@ -256,9 +240,6 @@ $string['tab_applications'] = 'الطلبات';
 $string['tab_fields'] = 'حقول الطلب';
 $string['tab_badges'] = 'الشارات';
 $string['tab_settings'] = 'الإعدادات';
-$string['decision_videoonly'] = 'هذا المدرس معتمد وأرسل فيديو تعريفيًا جديدًا. «اعتماد» و«رفض» هنا يخصّان الفيديو فقط، وعند الرفض اكتب السبب ليراه المدرس.';
-$string['act_approvevideo'] = 'اعتماد الفيديو';
-$string['act_rejectvideo'] = 'رفض الفيديو';
 $string['opencertificate'] = 'فتح الشهادة';
 
 // Application fields tab: the fixed parts.
@@ -271,7 +252,7 @@ $string['builtin_atleast'] = '{$a} على الأقل';
 
 // Badges.
 $string['badge'] = 'الشارة';
-$string['badges_intro'] = 'تظهر الشارات في صفحة المدرس وفي بحث المدرسين، ويستطيع الطلاب الفلترة بها. الشارة إما تُمنح تلقائيًا للمدرس الذي يحقق قواعدها (تُراجع يوميًا وتُسحب عندما لا تعود متحققة)، أو يمنحها المراجِع يدويًا. وفي صفحة مراجعة كل مدرس يستطيع المراجِع منح أي شارة أو منعها لهذا المدرس بالذات.';
+$string['badges_intro'] = 'تظهر الشارات في صفحة المدرس وفي بحث المدرسين، ويستطيع الطلاب الفلترة بها. الشارة إما تُمنح تلقائيًا للمدرس الذي يحقق قواعدها (تُراجع يوميًا وتُسحب عندما لا تعود متحققة)، أو يدويًا: افتح «المدرسون» بجانب الشارة واختر لكل مدرس: حسب القواعد، أو دائمًا، أو أبدًا.';
 $string['addbadge'] = 'إضافة شارة';
 $string['editbadge'] = 'تعديل الشارة';
 $string['nobadges'] = 'لا توجد شارات بعد.';
@@ -292,10 +273,6 @@ $string['badge_minlessons'] = 'أقل عدد حصص مكتملة';
 $string['badge_maxabsence'] = 'أقصى نسبة غياب للمدرس (%)';
 $string['badge_holders'] = 'عدد من يحملها';
 $string['badge_wears'] = 'يحملها';
-$string['badge_notwears'] = 'لا يحملها';
-$string['badge_teacherstats'] = 'أرقام المدرس الآن';
-$string['badges_review_help'] = 'لكل شارة اختر كيف يحصل عليها هذا المدرس: حسب طريقة الشارة نفسها، أو دائمًا، أو أبدًا.';
-$string['badges_notapproved'] = 'لا تظهر الشارات إلا بعد اعتماد المدرس.';
 $string['badgemode_auto'] = 'حسب قواعدها';
 $string['badgemode_auto_manual'] = 'غير ممنوحة';
 $string['badgemode_on'] = 'امنحها دائمًا';
@@ -319,3 +296,44 @@ $string['privacy:metadata:badgeuser'] = 'الشارات التي يحملها ا
 $string['privacy:metadata:badgeuser:userid'] = 'المدرس.';
 $string['privacy:metadata:badgeuser:mode'] = 'اختيار المراجِع (حسب القواعد، دائمًا، أبدًا).';
 $string['privacy:metadata:badgeuser:awarded'] = 'هل يحمل المدرس الشارة.';
+
+// Teacher sign-up steps and the profile page (teacher_input).
+$string['signup_sent'] = 'تم إنشاء حسابك وإرسال طلب انضمامك كمدرس للمراجعة.';
+$string['signup_laststep'] = 'الإرسال للمراجعة';
+$string['signup_review_note'] = 'عند الإرسال تراجع الأكاديمية ملفك، وتصلك رسالة بالقرار. بعد الاعتماد يستطيع الطلاب العثور عليك وحجز حصص معك.';
+$string['signup_filesagain'] = 'من فضلك اختر ملف الفيديو وملفات الشهادات مرة أخرى (أُعيد تحميل الصفحة).';
+$string['signup_agree'] = 'أوافق على';
+$string['signup_terms'] = 'الشروط والأحكام';
+$string['signup_send'] = 'إنشاء حسابي وإرسال الطلب للمراجعة';
+$string['form_headline_ph'] = 'سطر واحد تحت اسمك، مثل: «مدرب IELTS — خبرة 8 سنوات»';
+$string['form_bio_ph'] = 'عرّف الطلاب بنفسك: خبرتك وطريقتك في التدريس.';
+$string['form_qualtitle_ph'] = 'مثل: ليسانس آداب لغة إنجليزية';
+$string['currentfile'] = 'الملف الحالي: {$a}';
+$string['filelimit'] = 'حتى {$a}';
+$string['err_form'] = 'من فضلك صحّح الأجزاء المحددة.';
+$string['err_toolong'] = '{$a} حرفًا على الأكثر.';
+$string['err_choosevideo'] = 'اختر ملف فيديو لرفعه، أو الصق رابطًا.';
+$string['err_qualyear'] = 'أدخل سنة بين 1950 والسنة القادمة.';
+$string['err_filetype'] = 'نوع الملف غير مقبول. المقبول: {$a}';
+$string['err_filesize'] = 'الملف أكبر من المسموح (الحد {$a}).';
+$string['savedforreview'] = 'تم الحفظ. الفيديو أو المؤهلات الجديدة تظهر بعد مراجعة الأكاديمية لها.';
+$string['nocertificate'] = 'لم تُرفق شهادة.';
+$string['isnew'] = 'جديد — للمراجعة';
+
+// Review page.
+$string['tab_updates'] = 'تعديلات جديدة';
+$string['act_approveupdates'] = 'اعتماد التعديلات';
+$string['act_rejectupdates'] = 'رفض التعديلات';
+$string['decision_application'] = 'اعتمد المدرس، أو ارفض الطلب مع كتابة السبب الذي سيقرؤه المدرس (يستطيع التعديل والتقديم مرة أخرى).';
+$string['decision_updates'] = 'هذا المدرس معتمد وغيّر الفيديو التعريفي أو المؤهلات. «اعتماد» يُظهرها للطلاب، و«رفض» (مع السبب) لا يُظهرها، ويبقى المدرس معتمدًا.';
+$string['decision_approved'] = 'هذا المدرس معتمد. لإيقافه (لا يظهر في البحث ولا يمكن حجزه) اكتب السبب واضغط «إيقاف».';
+$string['decision_suspended'] = 'هذا المدرس موقوف. أعد اعتماده ليظهر مرة أخرى.';
+$string['msg_updates_subject'] = 'تعديلات على ملف مدرس للمراجعة: {$a}';
+$string['msg_updates_body'] = 'غيّر {$a->name} الفيديو التعريفي أو المؤهلات. راجعها من هنا: {$a->url}';
+$string['msg_updatesrejected_subject'] = 'لم تُعتمد تعديلات ملفك';
+$string['msg_updatesrejected_body'] = 'مرحبًا {$a->name}، لم تُعتمد التعديلات على ملفك كمدرس: {$a->note}. {$a->url}';
+
+// Badges tab: the teachers of a badge.
+$string['badge_manage'] = 'المدرسون';
+$string['badgeteachers_help'] = 'لكل مدرس معتمد اختر كيف يحصل على هذه الشارة: حسب قواعدها، أو دائمًا، أو أبدًا. وبهذه الطريقة تُمنح الشارة اليدوية.';
+$string['noapprovedteachers'] = 'لا يوجد مدرسون معتمدون بعد.';
