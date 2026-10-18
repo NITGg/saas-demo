@@ -1,0 +1,155 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_nit_tutors/search_page
+
+    Find a teacher (/local/nit_tutors/index.php). Styles: local/nit_tutors/styles.css (brand variables).
+
+    Context variables required for this template:
+    * actionurl, reseturl, coursesurl, applyurl
+    * q, pricemin, pricemax, super, hasfilters, total
+    * subjects, days, times, ratings, sorts - [{value, label, selected}]
+    * fieldfilters - [{id, label, options: [{value, label, selected}]}]
+    * hasteachers, teachers - cards: id, name, photo, headline, subjects [{name}], price, hasrating, rating,
+      reviews, lessons, badge, hasvideo, url, bookurl
+
+    Example context (json):
+    {"actionurl": "#", "reseturl": "#", "coursesurl": "#", "applyurl": "#", "q": "", "pricemin": "", "pricemax": "",
+     "super": false, "hasfilters": false, "total": 1, "subjects": [], "days": [], "times": [], "ratings": [],
+     "sorts": [], "fieldfilters": [], "hasteachers": true,
+     "teachers": [{"id": 3, "name": "Sara Ali", "photo": "", "headline": "IELTS coach", "subjects": [{"name": "English"}],
+       "price": 2, "hasrating": true, "rating": "4.9", "reviews": 12, "lessons": 40, "badge": true, "hasvideo": true,
+       "url": "#", "bookurl": "#"}]}
+}}
+<div class="nittu-search">
+    <header class="nittu-search__head">
+        <h1 class="nittu-search__title">{{#str}}findteacher, local_nit_tutors{{/str}}</h1>
+        <p class="nittu-search__count">{{#str}}nteachers, local_nit_tutors, {{total}}{{/str}}</p>
+        {{#coursesurl}}
+        <nav class="nittu-tabs" aria-label="{{#str}}searchin, local_nit_tutors{{/str}}">
+            <a class="nittu-tab" href="{{coursesurl}}">{{#str}}tab_courses, local_nit_tutors{{/str}}</a>
+            <span class="nittu-tab is-active" aria-current="page">{{#str}}tab_teachers, local_nit_tutors{{/str}}</span>
+        </nav>
+        {{/coursesurl}}
+    </header>
+
+    <form class="nittu-search__form" method="get" action="{{actionurl}}">
+        <div class="nittu-search__bar">
+            <input class="form-control" type="search" name="q" value="{{q}}" placeholder="{{#str}}searchplaceholder, local_nit_tutors{{/str}}"
+                aria-label="{{#str}}searchplaceholder, local_nit_tutors{{/str}}">
+            <button class="btn btn-primary" type="submit">{{#str}}search{{/str}}</button>
+        </div>
+
+        <div class="nittu-search__layout">
+            <aside class="nittu-filters" aria-label="{{#str}}filters, local_nit_tutors{{/str}}">
+                <label class="nittu-filter">
+                    <span>{{#str}}form_subjects, local_nit_tutors{{/str}}</span>
+                    <select class="form-select" name="subject">
+                        <option value="">{{#str}}any, local_nit_tutors{{/str}}</option>
+                        {{#subjects}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/subjects}}
+                    </select>
+                </label>
+                <div class="nittu-filter">
+                    <span>{{#str}}pricerange, local_nit_tutors{{/str}}</span>
+                    <div class="nittu-filter__pair">
+                        <input class="form-control" type="number" min="0" name="pricemin" value="{{pricemin}}"
+                            placeholder="{{#str}}min, local_nit_tutors{{/str}}" aria-label="{{#str}}min, local_nit_tutors{{/str}}">
+                        <input class="form-control" type="number" min="0" name="pricemax" value="{{pricemax}}"
+                            placeholder="{{#str}}max, local_nit_tutors{{/str}}" aria-label="{{#str}}max, local_nit_tutors{{/str}}">
+                    </div>
+                </div>
+                <label class="nittu-filter">
+                    <span>{{#str}}availableday, local_nit_tutors{{/str}}</span>
+                    <select class="form-select" name="day">
+                        <option value="">{{#str}}any, local_nit_tutors{{/str}}</option>
+                        {{#days}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/days}}
+                    </select>
+                </label>
+                <label class="nittu-filter">
+                    <span>{{#str}}availabletime, local_nit_tutors{{/str}}</span>
+                    <select class="form-select" name="time">
+                        <option value="">{{#str}}any, local_nit_tutors{{/str}}</option>
+                        {{#times}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/times}}
+                    </select>
+                </label>
+                <label class="nittu-filter">
+                    <span>{{#str}}rating, local_nit_tutors{{/str}}</span>
+                    <select class="form-select" name="rating">
+                        <option value="">{{#str}}any, local_nit_tutors{{/str}}</option>
+                        {{#ratings}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/ratings}}
+                    </select>
+                </label>
+                {{#fieldfilters}}
+                <label class="nittu-filter">
+                    <span>{{label}}</span>
+                    <select class="form-select" name="f[{{id}}]">
+                        <option value="">{{#str}}any, local_nit_tutors{{/str}}</option>
+                        {{#options}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/options}}
+                    </select>
+                </label>
+                {{/fieldfilters}}
+                <label class="nittu-filter nittu-filter--check">
+                    <input type="checkbox" name="super" value="1" {{#super}}checked{{/super}}>
+                    <span>{{#str}}supertutoronly, local_nit_tutors{{/str}}</span>
+                </label>
+                <label class="nittu-filter">
+                    <span>{{#str}}sortby, local_nit_tutors{{/str}}</span>
+                    <select class="form-select" name="sort">
+                        {{#sorts}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/sorts}}
+                    </select>
+                </label>
+                <button class="btn btn-primary w-100" type="submit">{{#str}}applyfilters, local_nit_tutors{{/str}}</button>
+                {{#hasfilters}}<a class="nittu-filters__reset" href="{{reseturl}}">{{#str}}clearfilters, local_nit_tutors{{/str}}</a>{{/hasfilters}}
+            </aside>
+
+            <section class="nittu-results" aria-live="polite">
+                {{#hasteachers}}
+                <ul class="nittu-grid">
+                    {{#teachers}}
+                    <li class="nittu-card">
+                        <a class="nittu-card__photo" href="{{url}}" tabindex="-1" aria-hidden="true">
+                            <img src="{{photo}}" alt="" loading="lazy">
+                            {{#hasvideo}}<span class="nittu-card__play" title="{{#str}}hasvideo, local_nit_tutors{{/str}}">▶</span>{{/hasvideo}}
+                        </a>
+                        <div class="nittu-card__body">
+                            <h2 class="nittu-card__name"><a href="{{url}}">{{name}}</a></h2>
+                            {{#badge}}<span class="nittu-badge">{{#str}}supertutor, local_nit_tutors{{/str}}</span>{{/badge}}
+                            {{#headline}}<p class="nittu-card__headline">{{headline}}</p>{{/headline}}
+                            <ul class="nittu-card__subjects">{{#subjects}}<li>{{name}}</li>{{/subjects}}</ul>
+                            <div class="nittu-card__meta">
+                                {{#hasrating}}<span class="nittu-card__rating">★ {{rating}} <small>({{reviews}})</small></span>{{/hasrating}}
+                                {{^hasrating}}<span class="nittu-card__new">{{#str}}newteacher, local_nit_tutors{{/str}}</span>{{/hasrating}}
+                                <span>{{#str}}nlessons, local_nit_tutors, {{lessons}}{{/str}}</span>
+                            </div>
+                        </div>
+                        <div class="nittu-card__side">
+                            <div class="nittu-card__price">{{#str}}priceflex, local_nit_tutors, {{price}}{{/str}}<small>{{#str}}perlesson, local_nit_tutors{{/str}}</small></div>
+                            <a class="btn btn-primary" href="{{bookurl}}">{{#str}}booklesson, local_nit_tutors{{/str}}</a>
+                            <a class="btn btn-outline-primary" href="{{url}}">{{#str}}viewprofile, local_nit_tutors{{/str}}</a>
+                        </div>
+                    </li>
+                    {{/teachers}}
+                </ul>
+                {{/hasteachers}}
+                {{^hasteachers}}
+                <p class="nittu-empty">{{#str}}noteachers, local_nit_tutors{{/str}}</p>
+                {{/hasteachers}}
+                <p class="nittu-join">{{#str}}areyouteacher, local_nit_tutors{{/str}} <a href="{{applyurl}}">{{#str}}jointeacher, local_nit_tutors{{/str}}</a></p>
+            </section>
+        </div>
+    </form>
+</div>

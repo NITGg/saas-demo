@@ -1,0 +1,279 @@
+<?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Arabic strings for local_nit_tutors.
+ *
+ * @package    local_nit_tutors
+ * @copyright  2026 NIT
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+defined('MOODLE_INTERNAL') || die();
+
+$string['pluginname'] = 'المدرسون (NIT Tutors)';
+$string['admincategory'] = 'طلبات انضمام المدرسين';
+$string['applications'] = 'الطلبات';
+$string['applicationfields'] = 'حقول طلب الانضمام';
+$string['settings'] = 'الإعدادات';
+$string['task_refreshbadges'] = 'تحديث شارات Super Tutor';
+$string['nit_tutors:review'] = 'مراجعة طلبات انضمام المدرسين';
+$string['nit_tutors:manage'] = 'إدارة حقول طلب الانضمام';
+$string['messageprovider:applicationupdate'] = 'تحديثات طلب انضمامي كمدرس';
+$string['messageprovider:applicationsubmitted'] = 'طلبات انضمام جديدة للمراجعة';
+
+// Statuses.
+$string['status_draft'] = 'لم يُرسل بعد';
+$string['status_pending'] = 'قيد المراجعة';
+$string['status_changes'] = 'مطلوب تعديلات';
+$string['status_approved'] = 'معتمد';
+$string['status_rejected'] = 'مرفوض';
+$string['status_suspended'] = 'موقوف';
+$string['statushelp_draft'] = 'أكمل ملفك كمدرس ثم أرسله للمراجعة. سيظهر ملفك للطلاب بعد اعتماده من الأكاديمية.';
+$string['statushelp_pending'] = 'طلبك عند الأكاديمية الآن، وسنراسلك فور مراجعته.';
+$string['statushelp_changes'] = 'طلبت الأكاديمية بعض التعديلات. عدّل ملفك ثم أرسله مرة أخرى.';
+$string['statushelp_approved'] = 'أنت مدرس معتمد: يمكن للطلاب العثور عليك وحجز حصص معك. أي فيديو تعريفي جديد يظهر بعد اعتماده.';
+$string['statushelp_rejected'] = 'لم يُقبل طلبك. يمكنك تعديله والتقديم مرة أخرى.';
+$string['statushelp_suspended'] = 'ملفك كمدرس موقوف: لا يظهر للطلاب ولا يمكن حجزك. الحصص المحجوزة بالفعل لا تتأثر.';
+$string['videostatus_pending'] = 'قيد المراجعة';
+$string['videostatus_approved'] = 'معتمد';
+$string['videostatus_rejected'] = 'غير معتمد';
+$string['reviewnote'] = 'رسالة المراجِع';
+$string['reviewnote_help'] = 'السبب أو المطلوب تعديله. إلزامية عند الرفض أو طلب التعديل أو الإيقاف أو رفض الفيديو، ويراها المدرس.';
+$string['stillmissing'] = 'ما زال ناقصًا';
+$string['viewpublicpage'] = 'عرض الصفحة العامة';
+$string['supertutor'] = 'Super Tutor';
+$string['teacherprofile'] = 'ملف المدرس';
+$string['saved'] = 'تم الحفظ.';
+$string['submitted'] = 'تم إرسال طلبك للمراجعة.';
+$string['done'] = 'تم.';
+
+// What blocks submitting.
+$string['missing_bio'] = 'نبذة عنك';
+$string['missing_subjects'] = 'مادة واحدة على الأقل';
+$string['missing_video'] = 'فيديو تعريفي';
+$string['missing_qualifications'] = 'مؤهل واحد على الأقل (المطلوب: {$a})';
+
+// Application form.
+$string['form_about'] = 'عنك';
+$string['form_headline'] = 'العنوان';
+$string['form_headline_help'] = 'سطر واحد يظهر للطلاب تحت اسمك، مثل: «مدرب IELTS — خبرة 8 سنوات».';
+$string['form_bio'] = 'نبذة عنك';
+$string['form_subjects'] = 'المواد';
+$string['form_subjects_none'] = 'لم تختر أي مادة';
+$string['form_video'] = 'الفيديو التعريفي';
+$string['form_video_help'] = 'فيديو قصير (من دقيقة إلى 3 دقائق) تعرّف فيه بنفسك وبطريقتك في التدريس. ارفع ملفًا أو الصق رابط YouTube أو Vimeo. يظهر للطلاب بعد اعتماده من الأكاديمية.';
+$string['form_videotype'] = 'الفيديو';
+$string['form_videotype_none'] = 'بدون فيديو';
+$string['form_videotype_upload'] = 'رفع ملف فيديو';
+$string['form_videotype_link'] = 'رابط YouTube أو Vimeo';
+$string['form_videofile'] = 'ملف الفيديو';
+$string['form_videourl'] = 'رابط الفيديو';
+$string['form_videostate'] = 'مراجعة الفيديو';
+$string['form_quals'] = 'المؤهلات';
+$string['form_quals_help'] = 'الشهادات والمؤهلات الدراسية. أرفق صورة الشهادة: الملف تراه الأكاديمية فقط، ويرى الطلاب اسم المؤهل وعلامة «موثّق» بعد أن تتحقق منه الأكاديمية.';
+$string['form_qualtitle'] = 'المؤهل';
+$string['form_qualinstitution'] = 'الجامعة / الجهة';
+$string['form_qualyear'] = 'السنة';
+$string['form_qualfile'] = 'الشهادة (PDF أو صورة)';
+$string['form_qualdelete'] = 'حذف هذا المؤهل';
+$string['form_qualadd'] = 'إضافة مؤهل آخر';
+$string['form_more'] = 'معلومات إضافية';
+$string['form_save'] = 'حفظ';
+$string['form_submit'] = 'حفظ وإرسال للمراجعة';
+$string['qual_verified'] = 'موثّق';
+$string['qual_unverified'] = 'لم يُوثّق بعد';
+
+// Join as a teacher.
+$string['apply_title'] = 'انضم كمدرس';
+$string['apply_lead'] = 'قدّم حصصًا فردية مباشرة على الأكاديمية.';
+$string['apply_step1'] = 'أنشئ حسابك.';
+$string['apply_step2'] = 'أكمل ملفك كمدرس: نبذة عنك، والمواد، والفيديو التعريفي، والمؤهلات.';
+$string['apply_step3'] = 'أرسله للمراجعة، وبعد الاعتماد يستطيع الطلاب العثور عليك وحجز حصص معك.';
+$string['apply_haveaccount'] = 'لديك حساب بالفعل؟';
+$string['apply_asstudent'] = 'التسجيل كطالب';
+$string['apply_phone'] = 'رقم الهاتف';
+$string['apply_agree'] = 'أوافق على <a href="{$a}" target="_blank">الشروط والأحكام</a>';
+$string['apply_create'] = 'إنشاء الحساب والمتابعة';
+
+// Errors.
+$string['err_noteditable'] = 'طلبك قيد المراجعة ولا يمكن تعديله الآن.';
+$string['err_noreapply'] = 'لا تقبل هذه الأكاديمية طلبًا جديدًا بعد الرفض.';
+$string['err_incomplete'] = 'أكمل طلبك أولًا: {$a}';
+$string['err_notereq'] = 'اكتب رسالة للمدرس أولًا.';
+$string['err_badvideourl'] = 'الصق رابط فيديو من YouTube أو Vimeo.';
+$string['err_qualtitle'] = 'اكتب اسم المؤهل.';
+$string['err_badanswer'] = 'إجابة «{$a}» غير صحيحة.';
+$string['err_shortname'] = 'اكتب اسمًا مختصرًا للحقل (حروف إنجليزية وأرقام و - و _).';
+$string['err_shortnametaken'] = 'هذا الاسم المختصر مستخدم لحقل آخر.';
+$string['err_badtype'] = 'نوع حقل غير معروف.';
+$string['err_fieldname'] = 'اكتب اسم الحقل.';
+$string['err_nooptions'] = 'القائمة المنسدلة تحتاج خيارات، كل خيار في سطر.';
+$string['err_phone'] = 'أدخل رقم هاتف صحيحًا (أرقام فقط، من 7 إلى 15 رقمًا).';
+$string['err_agree'] = 'يجب الموافقة على الشروط والأحكام.';
+$string['err_signup'] = 'راجع البيانات: {$a}';
+
+// Admin: list and review.
+$string['tab_videos'] = 'فيديوهات جديدة';
+$string['searchapplicants'] = 'الاسم أو البريد';
+$string['noapplications'] = 'لا توجد طلبات هنا.';
+$string['col_status'] = 'الحالة';
+$string['col_submitted'] = 'تاريخ الإرسال';
+$string['col_reviewed'] = 'تاريخ المراجعة';
+$string['col_video'] = 'الفيديو';
+$string['col_quals'] = 'المؤهلات الموثّقة';
+$string['review'] = 'مراجعة';
+$string['userprofile'] = 'حساب المستخدم';
+$string['decision'] = 'القرار';
+$string['act_approve'] = 'اعتماد';
+$string['act_reinstate'] = 'إعادة التفعيل';
+$string['act_changes'] = 'طلب تعديلات';
+$string['act_reject'] = 'رفض';
+$string['act_suspend'] = 'إيقاف';
+$string['act_videook'] = 'اعتماد الفيديو';
+$string['act_videono'] = 'رفض الفيديو';
+$string['act_verify'] = 'توثيق';
+$string['act_unverify'] = 'إلغاء التوثيق';
+$string['novideo'] = 'لا يوجد فيديو تعريفي.';
+$string['noquals'] = 'لا توجد مؤهلات.';
+$string['price'] = 'السعر';
+$string['priceflex'] = '{$a} فلكس';
+$string['badgemode_auto'] = 'حسب القواعد';
+$string['badgemode_on'] = 'مفعّلة دائمًا';
+$string['badgemode_off'] = 'متوقفة دائمًا';
+$string['badge_stats'] = 'التقييم {$a->rating} من {$a->reviews} تقييم · {$a->lessons} حصة مكتملة · {$a->absence}% غياب المدرس';
+$string['badge_rules'] = 'القواعد: تقييم ≥ {$a->rating}، و{$a->reviews} تقييم على الأقل، و{$a->lessons} حصة مكتملة على الأقل، وغياب ≤ {$a->absence}%';
+$string['badge_meets'] = 'يحقق القواعد.';
+$string['badge_notmeets'] = 'لا يحقق القواعد بعد.';
+
+// Admin: fields.
+$string['fields_intro'] = 'أسئلة يجيب عنها المدرس في طلب الانضمام، بجانب الأجزاء الثابتة (النبذة، والمواد، والفيديو التعريفي، والمؤهلات). يمكن إظهار الحقل في صفحة المدرس العامة، ويمكن جعل القائمة المنسدلة فلترًا في بحث المدرسين (مثل «اللغات التي يتحدثها» أو «الدولة»).';
+$string['addfield'] = 'إضافة حقل';
+$string['editfield'] = 'تعديل الحقل';
+$string['nofields'] = 'لا توجد حقول بعد.';
+$string['confirmdeletefield'] = 'حذف الحقل «{$a}» وإجابات كل المدرسين عليه؟';
+$string['field_name'] = 'العنوان';
+$string['field_name_help'] = 'يظهر للمدرس. استخدم {mlang ar}…{mlang}{mlang en}…{mlang} للغتين.';
+$string['field_shortname'] = 'الاسم المختصر';
+$string['field_type'] = 'النوع';
+$string['field_options'] = 'الخيارات (كل خيار في سطر)';
+$string['field_description'] = 'نص المساعدة';
+$string['field_required'] = 'إلزامي';
+$string['field_public'] = 'يظهر في صفحة المدرس';
+$string['field_public_help'] = 'يرى الطلاب هذه الإجابة في صفحة المدرس العامة.';
+$string['field_filter'] = 'فلتر في بحث المدرسين';
+$string['field_filter_help'] = 'يستطيع الطلاب فلترة بحث المدرسين بهذه القائمة.';
+$string['field_active'] = 'مفعّل';
+$string['type_text'] = 'نص قصير';
+$string['type_textarea'] = 'نص طويل';
+$string['type_select'] = 'قائمة منسدلة';
+$string['type_number'] = 'رقم';
+$string['type_url'] = 'رابط';
+$string['type_date'] = 'تاريخ';
+$string['type_checkbox'] = 'نعم / لا';
+$string['type_file'] = 'ملف';
+
+// Settings.
+$string['set_h_apply'] = 'الطلبات';
+$string['set_requireapproval'] = 'الاعتماد مطلوب';
+$string['set_requireapproval_desc'] = 'يظهر في بحث المدرسين ويمكن حجزه فقط المدرس المعتمد طلبه. عند الإيقاف: يظهر كل مدرس يقبل الحجز.';
+$string['set_requirevideo'] = 'الفيديو التعريفي إلزامي';
+$string['set_minqualifications'] = 'عدد المؤهلات المطلوبة';
+$string['set_videomaxmb'] = 'أقصى حجم لرفع الفيديو (ميجابايت)';
+$string['set_videomaxmb_desc'] = 'ويحدّه أيضًا حد الرفع في الخادم.';
+$string['set_allowreapply'] = 'السماح بالتقديم مرة أخرى بعد الرفض';
+$string['set_h_badge'] = 'شارة Super Tutor';
+$string['set_h_badge_desc'] = 'يحصل على الشارة المدرس المعتمد الذي يحقق كل القواعد. تُراجع يوميًا وتُسحب تلقائيًا إذا لم تعد القواعد متحققة. ويستطيع المراجِع تثبيتها أو إيقافها لمدرس بعينه.';
+$string['set_badge_minrating'] = 'أقل متوسط تقييم';
+$string['set_badge_minreviews'] = 'أقل عدد تقييمات';
+$string['set_badge_minlessons'] = 'أقل عدد حصص مكتملة';
+$string['set_badge_maxabsence'] = 'أقصى نسبة غياب للمدرس (%)';
+
+// Messages.
+$string['msg_submitted_subject'] = 'طلب انضمام مدرس جديد: {$a}';
+$string['msg_submitted_body'] = 'أرسل {$a->name} طلب انضمام كمدرس. راجعه من هنا: {$a->url}';
+$string['msg_video_subject'] = 'فيديو تعريفي جديد للمراجعة: {$a}';
+$string['msg_video_body'] = 'غيّر {$a->name} الفيديو التعريفي. راجعه من هنا: {$a->url}';
+$string['msg_approved_subject'] = 'أصبحت مدرسًا معتمدًا في الأكاديمية';
+$string['msg_approved_body'] = 'مرحبًا {$a->name}، تم اعتماد طلب انضمامك كمدرس. يستطيع الطلاب الآن العثور عليك وحجز حصص معك. حدّد مواعيدك الأسبوعية وسعرك من ملفك: {$a->url}';
+$string['msg_rejected_subject'] = 'بخصوص طلب انضمامك كمدرس';
+$string['msg_rejected_body'] = 'مرحبًا {$a->name}، لم يُقبل طلب انضمامك كمدرس. السبب: {$a->note}. {$a->url}';
+$string['msg_changes_subject'] = 'مطلوب تعديلات على طلب انضمامك';
+$string['msg_changes_body'] = 'مرحبًا {$a->name}، من فضلك عدّل طلب انضمامك: {$a->note}. ثم أرسله مرة أخرى: {$a->url}';
+$string['msg_suspended_subject'] = 'تم إيقاف ملفك كمدرس';
+$string['msg_suspended_body'] = 'مرحبًا {$a->name}، تم إيقاف ملفك كمدرس: {$a->note}. لن يظهر ملفك للطلاب ولن يمكن حجزك. {$a->url}';
+$string['msg_videook_subject'] = 'تم اعتماد الفيديو التعريفي';
+$string['msg_videook_body'] = 'يرى الطلاب الآن الفيديو التعريفي الجديد. {$a->url}';
+$string['msg_videono_subject'] = 'لم يُعتمد الفيديو التعريفي';
+$string['msg_videono_body'] = 'السبب: {$a->note}. ارفع فيديو آخر: {$a->url}';
+
+// Teacher search.
+$string['findteacher'] = 'ابحث عن مدرس';
+$string['nteachers'] = '{$a} مدرس';
+$string['searchin'] = 'البحث في';
+$string['tab_courses'] = 'الدورات';
+$string['tab_teachers'] = 'المدرسين';
+$string['viewallteachers'] = 'كل المدرسين المطابقين';
+$string['searchplaceholder'] = 'اسم المدرس أو المادة…';
+$string['filters'] = 'الفلاتر';
+$string['any'] = 'الكل';
+$string['pricerange'] = 'سعر الحصة (فلكس)';
+$string['min'] = 'من';
+$string['max'] = 'إلى';
+$string['availableday'] = 'متاح يوم';
+$string['availabletime'] = 'وقت اليوم';
+$string['time_morning'] = 'صباحًا (6:00–12:00)';
+$string['time_afternoon'] = 'ظهرًا (12:00–17:00)';
+$string['time_evening'] = 'مساءً (17:00–24:00)';
+$string['rating'] = 'التقييم';
+$string['ratingup'] = '{$a} ★ فأكثر';
+$string['supertutoronly'] = 'Super Tutor فقط';
+$string['sortby'] = 'الترتيب';
+$string['sort_recommended'] = 'موصى به';
+$string['sort_rating'] = 'الأعلى تقييمًا';
+$string['sort_price_asc'] = 'السعر: من الأقل';
+$string['sort_price_desc'] = 'السعر: من الأعلى';
+$string['sort_lessons'] = 'الأكثر حصصًا';
+$string['applyfilters'] = 'عرض المدرسين';
+$string['clearfilters'] = 'مسح الفلاتر';
+$string['hasvideo'] = 'لديه فيديو تعريفي';
+$string['newteacher'] = 'مدرس جديد';
+$string['nlessons'] = '{$a} حصة';
+$string['perlesson'] = 'للحصة';
+$string['booklesson'] = 'احجز حصة';
+$string['viewprofile'] = 'عرض الملف';
+$string['noteachers'] = 'لا يوجد مدرس يطابق هذه الفلاتر.';
+$string['areyouteacher'] = 'هل أنت مدرس؟';
+$string['jointeacher'] = 'قدّم طلب انضمام';
+$string['availability'] = 'المواعيد الأسبوعية';
+$string['timesin'] = 'المواعيد بتوقيت {$a}.';
+
+// Privacy.
+$string['privacy:metadata:tutor'] = 'طلب انضمام المدرس والفيديو التعريفي والشارة.';
+$string['privacy:metadata:tutor:userid'] = 'المدرس.';
+$string['privacy:metadata:tutor:status'] = 'حالة الطلب.';
+$string['privacy:metadata:tutor:reviewnote'] = 'رسالة المراجِع للمدرس.';
+$string['privacy:metadata:tutor:videourl'] = 'رابط الفيديو التعريفي.';
+$string['privacy:metadata:tutor:badge'] = 'هل يحمل المدرس شارة Super Tutor.';
+$string['privacy:metadata:qual'] = 'مؤهلات المدرس.';
+$string['privacy:metadata:qual:userid'] = 'المدرس.';
+$string['privacy:metadata:qual:title'] = 'المؤهل.';
+$string['privacy:metadata:qual:institution'] = 'الجهة.';
+$string['privacy:metadata:qual:year'] = 'السنة.';
+$string['privacy:metadata:data'] = 'إجابات المدرس على حقول الطلب.';
+$string['privacy:metadata:data:userid'] = 'المدرس.';
+$string['privacy:metadata:data:value'] = 'الإجابة.';
+$string['privacy:metadata:files'] = 'الفيديو التعريفي والشهادات والملفات المرفقة.';

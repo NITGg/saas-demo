@@ -286,6 +286,16 @@ echo $OUTPUT->header();
             <?= $t('Results for', 'نتائج البحث عن') ?> «<?= s($qtext) ?>»
             <a href="<?= (new moodle_url('/local/nit_category/index.php', array_filter(['id' => $categoryid, 'sub' => $subid, 'sort' => $sort !== 'recommended' ? $sort : null, 'price' => $pricefilter !== 'all' ? $pricefilter : null, 'level' => $levelfilter !== '' ? $levelfilter : null, 'rating' => $ratingfilter ?: null])))->out() ?>"><?= $t('Clear search', 'مسح البحث') ?></a>
           </div>
+          <?php if (class_exists('\local_nit_tutors\local\search')):
+              // The same words also find teachers: a "Teachers" tab to the teacher search (local_nit_tutors).
+              $tutorsearch = '\local_nit_tutors\local\search';
+              $teachercount = $tutorsearch::run($tutorsearch::normalise(['q' => $qtext]),
+                  isloggedin() && !isguestuser() ? (int) $USER->id : 0, 0, 1)['total']; ?>
+            <nav class="nittu-tabs" aria-label="<?= s($t('Search in', 'البحث في')) ?>">
+              <span class="nittu-tab is-active" aria-current="page"><?= $t('Courses', 'الدورات') ?> (<?= (int) $totalcourses ?>)</span>
+              <a class="nittu-tab" href="<?= (new moodle_url('/local/nit_tutors/index.php', ['q' => $qtext]))->out() ?>"><?= $t('Teachers', 'المدرسين') ?> (<?= (int) $teachercount ?>)</a>
+            </nav>
+          <?php endif; ?>
         <?php endif; ?>
       </div>
       <form method="get" class="nit-cat-sort" action="<?= (new moodle_url('/local/nit_category/index.php'))->out(false) ?>">

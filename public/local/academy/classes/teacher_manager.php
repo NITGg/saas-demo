@@ -45,7 +45,10 @@ class teacher_manager {
         return str_replace('u.', '', self::user_fields());
     }
 
-    /** Is this user a teacher anywhere? (archetype-based, so admins are excluded.) */
+    /**
+     * Is this user a teacher anywhere? A course teacher role (archetype-based, so admins are
+     * excluded) or the site-level approved-tutor role (local/nit_lessons:teach, local_nit_tutors).
+     */
     public static function is_teacher(int $userid): bool {
         global $DB;
         if (empty($userid) || isguestuser($userid)) {
@@ -55,7 +58,9 @@ class teacher_manager {
                   FROM {role_assignments} ra
                   JOIN {role} r ON r.id = ra.roleid
                  WHERE ra.userid = :uid AND r.archetype IN ('teacher', 'editingteacher')";
-        return $DB->record_exists_sql($sql, ['uid' => $userid]);
+        return $DB->record_exists_sql($sql, ['uid' => $userid])
+            || (get_capability_info('local/nit_lessons:teach')
+                && has_capability('local/nit_lessons:teach', \context_system::instance(), $userid, false));
     }
 
     /**

@@ -29,6 +29,9 @@
     * rating - {has, avg, count} the approved learner rating (local_nit_reviews)
     * canrate, rateurl - the "rate the teacher" button for a learner who may rate them
     * hasreviews, reviews - the latest approved comments: name, picture, starson, starsoff, rating, date, text, course
+    * hascourses - whether the teacher has a visible course (an approved tutor may have none)
+    * tutor - local_nit_tutors\local\public_profile::extras(): listed, badge, headline, price, subjects, hasvideo,
+      video {embed, src}, hasquals, quals, hasanswers, answers, hashours, hours, timezone, lessons, bookurl (null without it)
     * courses - course cards: id, fullname, url, enrolurl, image, year, price, summary,
       createdtext, modifiedtext, yearid, enrolled, free
 
@@ -48,6 +51,7 @@
         <div class="bthtp__pattern" aria-hidden="true"></div>
         <div class="bthtp__hero-in">
             <div class="bthtp__info">
+                {{#hascourses}}
                 <ul class="bthtp__chips">
                     <li class="bthtp__chip">
                         <span class="bthtp__chip-num">+ {{counts.years}}</span>
@@ -58,8 +62,11 @@
                         <span class="bthtp__tag bthtp__tag--courses">{{#str}}teacherpage_courses, local_academy{{/str}}</span>
                     </li>
                 </ul>
+                {{/hascourses}}
                 <h1 class="bthtp__name">{{name}}</h1>
+                {{#tutor.badge}}<p class="bthtp__badge"><span class="nittu-badge">{{#str}}supertutor, local_nit_tutors{{/str}}</span></p>{{/tutor.badge}}
                 {{#title}}<p class="bthtp__title">{{title}}</p>{{/title}}
+                {{^title}}{{#tutor.headline}}<p class="bthtp__title">{{tutor.headline}}</p>{{/tutor.headline}}{{/title}}
                 {{#hasyears}}
                 <ul class="bthtp__pills">
                     {{#years}}<li class="bthtp__pill">{{label}}</li>{{/years}}
@@ -75,6 +82,7 @@
                 <img src="{{photo}}" alt="{{name}}">
             </div>
             <dl class="bthtp__stats">
+                {{#hascourses}}
                 <div class="bthtp__stat">
                     <dt>
                         <svg class="bthtp__ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6H2v14a2 2 0 0 0 2 2h14v-2H4zm16-4H8a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2m0 14H8V4h12zM10 9h8v2h-8zm0 3h4v2h-4zm0-6h8v2h-8z"/></svg>
@@ -96,6 +104,7 @@
                     </dt>
                     <dd>{{counts.students}}</dd>
                 </div>
+                {{/hascourses}}
                 {{#rating.has}}
                 <div class="bthtp__stat">
                     <dt>
@@ -118,6 +127,63 @@
         {{/bio}}
     </div>
 
+    {{#tutor}}
+    {{! Private-lesson profile (local_nit_tutors): intro video, booking, qualifications, hours. Below the
+        hero card row, so it never grows up into the hero. }}
+    <div class="bthtp__courses nittu-tp">
+            {{#hasvideo}}
+            <section class="nittu-tp__box">
+                <h2>{{#str}}form_video, local_nit_tutors{{/str}}</h2>
+                <div class="nittu-tp__video">
+                    {{#video.embed}}<iframe src="{{video.embed}}" title="{{name}}" allow="fullscreen; picture-in-picture" allowfullscreen loading="lazy"></iframe>{{/video.embed}}
+                    {{#video.src}}<video controls preload="metadata" playsinline src="{{video.src}}"></video>{{/video.src}}
+                </div>
+            </section>
+            {{/hasvideo}}
+            {{#listed}}
+            <section class="nittu-tp__box nittu-tp__book">
+                <div>
+                    <div class="nittu-tp__price">{{#str}}priceflex, local_nit_tutors, {{price}}{{/str}}</div>
+                    <div class="nittu-tp__muted">{{#str}}perlesson, local_nit_tutors{{/str}} · {{#str}}nlessons, local_nit_tutors, {{lessons}}{{/str}}</div>
+                </div>
+                {{#bookurl}}<a class="btn btn-primary" href="{{bookurl}}">{{#str}}booklesson, local_nit_tutors{{/str}}</a>{{/bookurl}}
+            </section>
+            <section class="nittu-tp__box">
+                <h2>{{#str}}form_subjects, local_nit_tutors{{/str}}</h2>
+                <ul class="nittu-card__subjects">{{#subjects}}<li>{{name}}</li>{{/subjects}}</ul>
+            </section>
+            {{/listed}}
+            {{#hasquals}}
+            <section class="nittu-tp__box">
+                <h2>{{#str}}form_quals, local_nit_tutors{{/str}}</h2>
+                <ul class="nittu-tp__list">
+                    {{#quals}}
+                    <li><strong>{{title}}</strong>{{#institution}} — {{institution}}{{/institution}}{{#year}} ({{year}}){{/year}}
+                        {{#verified}}<span class="nittu-tp__verified">✓ {{#str}}qual_verified, local_nit_tutors{{/str}}</span>{{/verified}}</li>
+                    {{/quals}}
+                </ul>
+            </section>
+            {{/hasquals}}
+            {{#hasanswers}}
+            <section class="nittu-tp__box">
+                <dl class="nittu-tp__hours">
+                    {{#answers}}<dt>{{label}}</dt><dd>{{{value}}}</dd>{{/answers}}
+                </dl>
+            </section>
+            {{/hasanswers}}
+            {{#hashours}}
+            <section class="nittu-tp__box">
+                <h2>{{#str}}availability, local_nit_tutors{{/str}}</h2>
+                <dl class="nittu-tp__hours">
+                    {{#hours}}<dt>{{day}}</dt><dd>{{ranges}}</dd>{{/hours}}
+                </dl>
+                <p class="nittu-tp__muted mb-0">{{#str}}timesin, local_nit_tutors, {{timezone}}{{/str}}</p>
+            </section>
+            {{/hashours}}
+    </div>
+    {{/tutor}}
+
+    {{#hascourses}}
     <section class="bthtp__courses" aria-labelledby="bthtp-courses-h">
         <div class="bthtp__head">
             <span class="bthtp__rule" aria-hidden="true"></span>
@@ -141,6 +207,7 @@
         </div>
         <p class="bthtp__empty" data-bthtp-empty hidden>{{#str}}teacherpage_empty, local_academy{{/str}}</p>
     </section>
+    {{/hascourses}}
 
     {{#hasreviews}}
     <section class="bthtp__courses bthtp__reviews" aria-labelledby="bthtp-reviews-h">

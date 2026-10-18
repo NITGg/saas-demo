@@ -43,7 +43,8 @@ class teacher_service extends service {
     const BUSY_STATUSES = ['pending', 'waiting_student', 'waiting_teacher', 'confirmed', 'in_progress'];
 
     /**
-     * Is this user a teacher (teacher / editing teacher role in any course)?
+     * Is this user a teacher: a teacher / editing teacher role in any course, or a site role that
+     * gives local/nit_lessons:teach (the approved-tutor role of local_nit_tutors)?
      *
      * @param int $userid
      * @return bool
@@ -58,7 +59,24 @@ class teacher_service extends service {
                FROM {role_assignments} ra
                JOIN {role} r ON r.id = ra.roleid
               WHERE ra.userid = :uid AND r.archetype IN ('teacher', 'editingteacher')",
-            ['uid' => $userid]);
+            ['uid' => $userid])
+            // Not for admins: they hold every capability, which would make each one a teacher.
+            || has_capability('local/nit_lessons:teach', \context_system::instance(), $userid, false);
+    }
+
+    /**
+     * Does the academy let students book this teacher? Without local_nit_tutors (or with its
+     * "Approval required" off) every teacher can be booked; with it, only an approved one.
+     *
+     * @param int $userid
+     * @return bool
+     */
+    public static function approved(int $userid): bool {
+        if (!class_exists('\local_nit_tutors\local\application')
+                || !\local_nit_tutors\local\application::approval_required()) {
+            return true;
+        }
+        return \local_nit_tutors\local\application::is_approved($userid);
     }
 
     /**
@@ -258,7 +276,7 @@ class teacher_service extends service {
            ORDER BY u.firstname, u.lastname", $params);
         $out = [];
         foreach ($rows as $u) {
-            if (!$this->is_teacher((int) $u->id)) {
+            if (!$this->is_teacher((int) $u->id) || !self::approved((int) $u->id)) {
                 continue;
             }
             $out[] = [
@@ -283,7 +301,8 @@ class teacher_service extends service {
         global $DB;
         return $DB->record_exists('nit_teacher_profile', ['userid' => $teacherid, 'available' => 1])
             && $DB->record_exists('nit_teacher_subject', ['teacherid' => $teacherid])
-            && $this->is_teacher($teacherid);
+            && $this->is_teacher($teacherid)
+            && self::approved($teacherid);
     }
 
     /**

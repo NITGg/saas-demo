@@ -1,0 +1,321 @@
+/* local_nit_tutors — teacher search, teacher page extras, application banner.
+   Colours come from the Brand Colors palette (--nit-brand-*), with neutral fallbacks.
+   Logical properties only (inline-start/end), so RTL needs no mirrored rules. */
+
+.nittu-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.6;
+    background: var(--nit-brand-warning, #f5b301);
+    color: var(--nit-brand-textprimary, #1b1b1b);
+    white-space: nowrap;
+}
+.nittu-badge::before {
+    content: "★";
+}
+
+/* Header search dialog (theme_nit navbar): the "Teachers" group of the live results. */
+.nit-search-group-h {
+    display: block;
+    padding: 10px 12px 2px;
+    font-weight: 700;
+}
+.nit-search-thumb--round {
+    border-radius: 50%;
+}
+
+/* ── Search page ─────────────────────────────────────────────────────────── */
+.nittu-search {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 24px 16px 60px;
+    color: var(--nit-brand-textprimary, #16191d);
+}
+.nittu-search__title {
+    font-size: clamp(28px, 4vw, 40px);
+    margin: 0;
+}
+.nittu-search__count {
+    color: var(--nit-brand-textsecondary, #6b6b66);
+    margin: 4px 0 12px;
+}
+.nittu-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+.nittu-tab {
+    padding: 6px 16px;
+    border-radius: 999px;
+    border: 1px solid var(--nit-brand-borderprimary, #dcdcd7);
+    color: var(--nit-brand-textprimary, #16191d);
+    text-decoration: none;
+}
+.nittu-tab:hover {
+    background: var(--nit-brand-hoverbackground, #f1f1ed);
+    color: var(--nit-brand-hovertext, #16191d);
+    text-decoration: none;
+}
+.nittu-tab.is-active {
+    background: var(--nit-brand-primary, #0e7c66);
+    border-color: var(--nit-brand-primary, #0e7c66);
+    color: var(--nit-brand-on-primary, #fff);
+}
+.nittu-search__bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.nittu-search__bar .form-control {
+    flex: 1;
+    min-width: 0;
+    height: 48px;
+    border-radius: 999px;
+    padding-inline: 20px;
+}
+.nittu-search__bar .btn {
+    border-radius: 999px;
+    padding-inline: 24px;
+}
+.nittu-search__layout {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+}
+@media (max-width: 860px) {
+    .nittu-search__layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+.nittu-filters {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 16px;
+    border: 1px solid var(--nit-brand-borderprimary, #ededE9);
+    border-radius: 16px;
+    background: var(--nit-brand-surface, #fff);
+}
+.nittu-filter {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+    font-size: 13px;
+    color: var(--nit-brand-textsecondary, #6b6b66);
+}
+.nittu-filter--check {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    color: var(--nit-brand-textprimary, #16191d);
+}
+.nittu-filter__pair {
+    display: flex;
+    gap: 8px;
+}
+.nittu-filters__reset {
+    text-align: center;
+    font-size: 13px;
+}
+.nittu-grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.nittu-card {
+    display: grid;
+    grid-template-columns: 112px minmax(0, 1fr) auto;
+    gap: 18px;
+    padding: 18px;
+    border: 1px solid var(--nit-brand-borderprimary, #ededE9);
+    border-radius: 16px;
+    background: var(--nit-brand-surface, #fff);
+}
+@media (max-width: 640px) {
+    .nittu-card {
+        grid-template-columns: 80px minmax(0, 1fr);
+    }
+    .nittu-card__side {
+        grid-column: 1 / -1;
+    }
+}
+.nittu-card__photo {
+    position: relative;
+    display: block;
+    aspect-ratio: 1;
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--nit-brand-background, #f5f5f2);
+}
+.nittu-card__photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.nittu-card__play {
+    position: absolute;
+    inset-block-end: 6px;
+    inset-inline-end: 6px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 11px;
+    background: var(--nit-brand-primary, #0e7c66);
+    color: var(--nit-brand-on-primary, #fff);
+}
+.nittu-card__name {
+    font-size: 19px;
+    margin: 0 0 4px;
+}
+.nittu-card__name a {
+    color: inherit;
+}
+.nittu-card__headline {
+    margin: 6px 0;
+    color: var(--nit-brand-textsecondary, #6b6b66);
+}
+.nittu-card__subjects {
+    list-style: none;
+    margin: 6px 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.nittu-card__subjects li {
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    background: var(--nit-brand-background, #f5f5f2);
+    color: var(--nit-brand-textprimary, #16191d);
+}
+.nittu-card__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-size: 13px;
+    color: var(--nit-brand-textsecondary, #6b6b66);
+}
+.nittu-card__rating {
+    color: var(--nit-brand-textprimary, #16191d);
+    font-weight: 600;
+}
+.nittu-card__new {
+    color: var(--nit-brand-success, #1f7a45);
+    font-weight: 600;
+}
+.nittu-card__side {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 160px;
+}
+.nittu-card__price {
+    font-size: 20px;
+    font-weight: 700;
+    text-align: center;
+}
+.nittu-card__price small {
+    display: block;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--nit-brand-textsecondary, #6b6b66);
+}
+.nittu-empty,
+.nittu-join {
+    color: var(--nit-brand-textsecondary, #6b6b66);
+    margin-top: 20px;
+}
+
+/* ── Teacher page extras (inside .bthtp) ────────────────────────────────── */
+.nittu-tp {
+    display: grid;
+    gap: 18px;
+    margin-top: 32px;
+}
+@media (min-width: 992px) {
+    .nittu-tp {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+.nittu-tp__box {
+    padding: 20px;
+    border: 1px solid var(--nit-brand-borderprimary, #ededE9);
+    border-radius: 16px;
+    background: var(--nit-brand-surface, #fff);
+    color: var(--nit-brand-textprimary, #16191d);
+}
+.nittu-tp__box h2 {
+    font-size: 18px;
+    margin: 0 0 12px;
+}
+.nittu-tp__video {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #000;
+}
+.nittu-tp__video iframe,
+.nittu-tp__video video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+.nittu-tp__book {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.nittu-tp__price {
+    font-size: 22px;
+    font-weight: 700;
+}
+.nittu-tp__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+}
+.nittu-tp__verified {
+    color: var(--nit-brand-success, #1f7a45);
+    font-size: 12px;
+    font-weight: 700;
+    margin-inline-start: 6px;
+}
+.nittu-tp__hours {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 6px 16px;
+    margin: 0;
+}
+.nittu-tp__hours dt {
+    font-weight: 600;
+}
+.nittu-tp__hours dd {
+    margin: 0;
+    direction: ltr;
+    text-align: start;
+}
+.nittu-tp__muted {
+    color: var(--nit-brand-textsecondary, #6b6b66);
+    font-size: 13px;
+}

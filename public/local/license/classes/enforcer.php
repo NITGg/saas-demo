@@ -141,8 +141,23 @@ class enforcer {
         return self::count_bucket($bucket, $courseid) < $limit;
     }
 
+    /** Roles that take a teacher seat: course editing teachers and approved private-lesson tutors (local_nit_tutors). */
+    const TEACHER_ROLES = ['editingteacher', 'nittutor'];
+
     /**
-     * Count distinct users who hold the editing-teacher role anywhere.
+     * Ids of the roles that take a teacher seat (those that exist on this site).
+     *
+     * @return int[]
+     */
+    public static function teacher_role_ids(): array {
+        global $DB;
+        [$insql, $params] = $DB->get_in_or_equal(self::TEACHER_ROLES);
+        return array_map('intval', $DB->get_fieldset_select('role', 'id', "shortname $insql", $params));
+    }
+
+    /**
+     * Count distinct users who hold a teacher-seat role anywhere (editing teacher in a course, or
+     * the site-level tutor role) — one seat per person however many roles they hold.
      *
      * Site admins are excluded: the academy owner runs on the Moodle `admin`
      * account (send_welcome points it at the owner), and the owner must not
@@ -152,12 +167,12 @@ class enforcer {
      */
     public static function count_teachers(): int {
         global $DB, $CFG;
-        $roleid = $DB->get_field('role', 'id', ['shortname' => 'editingteacher']);
-        if (!$roleid) {
+        $roleids = self::teacher_role_ids();
+        if (!$roleids) {
             return 0;
         }
+        list($rsql, $params) = $DB->get_in_or_equal($roleids);
         $adminids = array_filter(array_map('intval', explode(',', (string) $CFG->siteadmins)));
-        $params = [$roleid];
         $exclude = '';
         if ($adminids) {
             list($insql, $inparams) = $DB->get_in_or_equal($adminids, SQL_PARAMS_QM, 'param', false);
@@ -165,7 +180,24 @@ class enforcer {
             $params = array_merge($params, $inparams);
         }
         return $DB->count_records_sql(
-            "SELECT COUNT(DISTINCT userid) FROM {role_assignments} WHERE roleid = ?{$exclude}", $params);
+            "SELECT COUNT(DISTINCT userid) FROM {role_assignments} WHERE roleid {$rsql}{$exclude}", $params);
+    }
+
+    /**
+     * Does this user already take a teacher seat?
+     *
+     * @param int $userid
+     * @return bool
+     */
+    public static function is_teacher(int $userid): bool {
+        global $DB;
+        $roleids = self::teacher_role_ids();
+        if (!$roleids) {
+            return false;
+        }
+        list($rsql, $params) = $DB->get_in_or_equal($roleids);
+        $params[] = $userid;
+        return $DB->record_exists_select('role_assignments', "roleid {$rsql} AND userid = ?", $params);
     }
 
     /** @return bool can another teacher be added? */

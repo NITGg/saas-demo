@@ -446,10 +446,28 @@
         if(c.category){ text.appendChild(el('span', 'nit-search-cat', plain(c.category))); }
         a.appendChild(img); a.appendChild(text); box.appendChild(a);
       });
-      if(!data.total){ box.appendChild(el('div', 'nit-search-msg', form.dataset.strNone.replace('%Q%', q))); }
-      var all = el('a', 'nit-search-all', data.total ? form.dataset.strViewall.replace('%N%', data.total) : form.dataset.strBrowse);
-      all.href = data.total ? data.moreurl : form.action;
-      box.appendChild(all);
+      // Teachers matching the same words (local_nit_tutors; absent without it).
+      var tch = data.teachers || {total: 0, teachers: []};
+      if(!data.total && !tch.total){ box.appendChild(el('div', 'nit-search-msg', form.dataset.strNone.replace('%Q%', q))); }
+      if(data.total || !tch.total){
+        var all = el('a', 'nit-search-all', data.total ? form.dataset.strViewall.replace('%N%', data.total) : form.dataset.strBrowse);
+        all.href = data.total ? data.moreurl : form.action;
+        box.appendChild(all);
+      }
+      if(tch.total){
+        box.appendChild(el('div', 'nit-search-cat nit-search-group-h', tch.label));
+        tch.teachers.forEach(function(t){
+          var a = el('a', 'nit-search-item'); a.href = t.url;
+          var img = el('img', 'nit-search-thumb nit-search-thumb--round'); img.alt = ''; img.loading = 'lazy';
+          if(t.image){ img.src = t.image; }
+          var text = el('span', 'nit-search-text');
+          text.appendChild(el('span', 'nit-search-name', plain(t.name) + (t.badge ? ' ★' : '')));
+          if(t.headline){ text.appendChild(el('span', 'nit-search-cat', plain(t.headline))); }
+          a.appendChild(img); a.appendChild(text); box.appendChild(a);
+        });
+        var tall = el('a', 'nit-search-all', tch.all + ' (' + tch.total + ')'); tall.href = tch.moreurl;
+        box.appendChild(tall);
+      }
       box.hidden = false;
     };
     input.addEventListener('input', function(){

@@ -65,12 +65,15 @@ class teacher_page {
            ORDER BY c.timecreated DESC, c.id DESC",
             $params
         );
-        if (!$courses) {
+        // An approved tutor (local_nit_tutors) has a page even without a course: private lessons only.
+        $tutors = '\local_nit_tutors\local\public_profile';
+        $istutor = class_exists($tutors) && $tutors::has_page($userid);
+        if (!$courses && !$istutor) {
             return null;
         }
 
         $years = home_data::years_by_category();
-        $answers = home_data::course_answers(array_keys($courses));
+        $answers = $courses ? home_data::course_answers(array_keys($courses)) : [];
         $viewer = (isloggedin() && !isguestuser()) ? (int) $USER->id : 0;
 
         $cards = [];
@@ -124,7 +127,10 @@ class teacher_page {
                 'years' => count($yearlist),
                 'students' => self::count_students(array_keys($courses)),
             ],
-        ] + self::reviews((int) $user->id, $viewer);
+            'hascourses' => !empty($cards),
+        ] + self::reviews((int) $user->id, $viewer)
+            // Intro video, qualifications, Super Tutor, price, hours, "Book a lesson" (local_nit_tutors).
+            + (class_exists($tutors) ? $tutors::extras((int) $user->id, $viewer) : ['tutor' => null]);
     }
 
     /**

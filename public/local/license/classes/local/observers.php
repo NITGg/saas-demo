@@ -37,8 +37,10 @@ class observers {
             return; // unlimited — nothing to enforce.
         }
 
-        $teacherroleid = $DB->get_field('role', 'id', ['shortname' => 'editingteacher']);
-        if (!$teacherroleid || (int) $event->objectid !== (int) $teacherroleid) {
+        // Editing teacher in a course, or the site-level tutor role of local_nit_tutors.
+        $teacherroleids = enforcer::teacher_role_ids();
+        $teacherroleid = (int) $event->objectid;
+        if (!in_array($teacherroleid, $teacherroleids, true)) {
             return; // not a teacher-role assignment.
         }
 
@@ -52,10 +54,11 @@ class observers {
 
         // Was this user ALREADY a teacher through some other assignment? If so this
         // one didn't add a new distinct teacher, so the cap wasn't really exceeded.
+        [$rsql, $rparams] = $DB->get_in_or_equal($teacherroleids, SQL_PARAMS_NAMED, 'tr');
         $alreadyteacher = $DB->record_exists_select(
             'role_assignments',
-            'roleid = :roleid AND userid = :userid AND id <> :thisid',
-            ['roleid' => $teacherroleid, 'userid' => $userid, 'thisid' => $thisraid]
+            "roleid $rsql AND userid = :userid AND id <> :thisid",
+            $rparams + ['userid' => $userid, 'thisid' => $thisraid]
         );
         if ($alreadyteacher) {
             return;

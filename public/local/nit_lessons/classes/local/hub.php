@@ -231,8 +231,9 @@ final class hub {
         $active = purchase::active($userid);
         $remaining = $active ? (int) $active['remaining_flex'] : 0;
         $teachers = [];
+        $only = (int) ($params['teacher'] ?? 0);
         foreach ((new teacher_service())->browse($search) as $t) {
-            if ($t['id'] === $userid) {
+            if ($t['id'] === $userid || ($only && $t['id'] !== $only)) {
                 continue;
             }
             $picture = new \user_picture($t['user']);

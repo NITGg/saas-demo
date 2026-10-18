@@ -215,6 +215,15 @@ if (file_exists($CFG->dirroot . '/local/payments/history.php')) {
     $nav['billing'] = ['label' => $t('Billing & invoices', 'الفواتير'), 'icon' => '🧾', 'url' => (new moodle_url('/local/payments/history.php'))->out(false)];
 }
 $nav['certs'] = ['label' => $t('Certificates', 'الشهادات'), 'icon' => '🎓', 'url' => (new moodle_url('/course/index.php'))->out(false)];
+// Teachers and applicants: their public teacher profile + application (local_nit_tutors).
+if (class_exists('\local_nit_tutors\local\application')) {
+    $tutorurl = (new moodle_url('/local/nit_tutors/application.php'))->out(false);
+    if (\local_academy\teacher_manager::is_teacher((int) $USER->id) || \local_nit_tutors\local\application::get((int) $USER->id)) {
+        $nav = ['tutor' => ['label' => $t('Teacher profile', 'ملف المدرس'), 'icon' => '🧑‍🏫', 'url' => $tutorurl]] + $nav;
+    } else {
+        $nav['tutor'] = ['label' => $t('Apply to teach', 'انضم كمدرس'), 'icon' => '🧑‍🏫', 'url' => $tutorurl];
+    }
+}
 
 echo $OUTPUT->header();
 ?>

@@ -68,6 +68,7 @@ if ($tab === 'flexavailable') {
 $params = [
     'search' => optional_param('search', '', PARAM_TEXT),
     'status' => optional_param('status', '', PARAM_ALPHAEXT),
+    'teacher' => optional_param('teacher', 0, PARAM_INT), // "Book a lesson" from a teacher page / the teacher search.
 ];
 echo $OUTPUT->header();
 echo $OUTPUT->render_from_template('local_nit_lessons/student_hub', hub::context((int) $USER->id, $tab, $params));

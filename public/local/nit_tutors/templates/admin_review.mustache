@@ -1,0 +1,162 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_nit_tutors/admin_review
+
+    The reviewer's page for one teacher (admin/application.php).
+
+    Context variables required for this template:
+    * sesskey, actionurl, backurl
+    * name, email, phone, photo, profileurl, publicurl
+    * status, statuslabel, submitted, reviewed, reviewnote
+    * headline, bio (HTML), subjects [{name}], price
+    * hasvideo, video {embed, src, mimetype}, videostatus, videopending, videonote
+    * hasquals, quals [{id, title, institution, year, verified, fileurl, filename}]
+    * hasanswers, answers [{label, value, fileurl, filename}]
+    * missing [{label}]
+    * canapprove, canchanges, canreject, cansuspend, approvelabel
+    * badge, badgemodes [{value, label, selected}], stats, rules, earned
+
+    Example context (json):
+    {"sesskey": "x", "actionurl": "#", "backurl": "#", "name": "Sara Ali", "email": "s@example.com", "phone": "",
+     "photo": "", "profileurl": "#", "publicurl": "#", "status": "pending", "statuslabel": "Waiting for review",
+     "submitted": "", "reviewed": "", "reviewnote": "", "headline": "", "bio": "", "subjects": [], "price": 1,
+     "hasvideo": false, "videostatus": "", "videopending": false, "videonote": "", "hasquals": false, "quals": [],
+     "hasanswers": false, "answers": [], "missing": [], "canapprove": true, "canchanges": true, "canreject": true,
+     "cansuspend": false, "approvelabel": "Approve", "badge": false, "badgemodes": [], "stats": "", "rules": "",
+     "earned": false}
+}}
+<div class="nittu-review">
+    <p><a href="{{backurl}}">&larr; {{#str}}applications, local_nit_tutors{{/str}}</a></p>
+    <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+        <img src="{{photo}}" alt="" width="72" height="72" class="rounded-circle">
+        <div class="flex-grow-1">
+            <h2 class="h4 mb-1">{{name}} {{#badge}}<span class="nittu-badge">{{#str}}supertutor, local_nit_tutors{{/str}}</span>{{/badge}}</h2>
+            <div class="text-muted"><span dir="ltr">{{email}}</span>{{#phone}} · <span dir="ltr">{{phone}}</span>{{/phone}}</div>
+            <div class="mt-1"><span class="badge bg-secondary nittu-st-{{status}}">{{statuslabel}}</span>
+                {{#submitted}}<small class="text-muted ms-2">{{#str}}col_submitted, local_nit_tutors{{/str}}: {{submitted}}</small>{{/submitted}}
+                {{#reviewed}}<small class="text-muted ms-2">{{#str}}col_reviewed, local_nit_tutors{{/str}}: {{reviewed}}</small>{{/reviewed}}
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-primary btn-sm" href="{{profileurl}}">{{#str}}userprofile, local_nit_tutors{{/str}}</a>
+            <a class="btn btn-outline-primary btn-sm" href="{{publicurl}}" target="_blank">{{#str}}viewpublicpage, local_nit_tutors{{/str}}</a>
+        </div>
+    </div>
+
+    {{#reviewnote}}<div class="alert alert-secondary"><strong>{{#str}}reviewnote, local_nit_tutors{{/str}}:</strong> {{reviewnote}}</div>{{/reviewnote}}
+    {{#missing.0}}
+    <div class="alert alert-warning"><strong>{{#str}}stillmissing, local_nit_tutors{{/str}}:</strong>
+        <ul class="mb-0">{{#missing}}<li>{{label}}</li>{{/missing}}</ul></div>
+    {{/missing.0}}
+
+    <div class="row g-3">
+        <div class="col-lg-7">
+            <section class="card mb-3"><div class="card-body">
+                <h3 class="h5">{{#str}}form_about, local_nit_tutors{{/str}}</h3>
+                {{#headline}}<p class="fw-bold">{{headline}}</p>{{/headline}}
+                <div>{{{bio}}}</div>
+                <p class="mb-1"><strong>{{#str}}form_subjects, local_nit_tutors{{/str}}:</strong>
+                    {{#subjects}}<span class="badge bg-light text-dark me-1">{{name}}</span>{{/subjects}}</p>
+                <p class="mb-0"><strong>{{#str}}price, local_nit_tutors{{/str}}:</strong> {{#str}}priceflex, local_nit_tutors, {{price}}{{/str}}</p>
+            </div></section>
+
+            <section class="card mb-3"><div class="card-body">
+                <h3 class="h5">{{#str}}form_video, local_nit_tutors{{/str}} {{#videostatus}}<small class="text-muted">({{videostatus}})</small>{{/videostatus}}</h3>
+                {{#hasvideo}}
+                <div class="nittu-video ratio ratio-16x9 mb-2">
+                    {{#video.embed}}<iframe src="{{video.embed}}" title="{{name}}" allow="fullscreen; picture-in-picture" allowfullscreen loading="lazy"></iframe>{{/video.embed}}
+                    {{#video.src}}<video controls preload="metadata" src="{{video.src}}"></video>{{/video.src}}
+                </div>
+                {{/hasvideo}}
+                {{^hasvideo}}<p class="text-muted">{{#str}}novideo, local_nit_tutors{{/str}}</p>{{/hasvideo}}
+                {{#videonote}}<p class="text-muted mb-0">{{videonote}}</p>{{/videonote}}
+            </div></section>
+
+            <section class="card mb-3"><div class="card-body">
+                <h3 class="h5">{{#str}}form_quals, local_nit_tutors{{/str}}</h3>
+                {{^hasquals}}<p class="text-muted mb-0">{{#str}}noquals, local_nit_tutors{{/str}}</p>{{/hasquals}}
+                <ul class="list-unstyled mb-0">
+                {{#quals}}
+                    <li class="d-flex flex-wrap align-items-center gap-2 py-2 border-bottom">
+                        <div class="flex-grow-1">
+                            <strong>{{title}}</strong>{{#institution}} — {{institution}}{{/institution}}{{#year}} ({{year}}){{/year}}
+                            {{#verified}}<span class="badge bg-success ms-1">{{#str}}qual_verified, local_nit_tutors{{/str}}</span>{{/verified}}
+                            {{#fileurl}}<div><a href="{{fileurl}}" target="_blank">{{filename}}</a></div>{{/fileurl}}
+                        </div>
+                        <form method="post" action="{{actionurl}}">
+                            <input type="hidden" name="sesskey" value="{{sesskey}}">
+                            <input type="hidden" name="qualid" value="{{id}}">
+                            {{#verified}}<button class="btn btn-sm btn-outline-primary" name="action" value="unverify">{{#str}}act_unverify, local_nit_tutors{{/str}}</button>{{/verified}}
+                            {{^verified}}<button class="btn btn-sm btn-primary" name="action" value="verify">{{#str}}act_verify, local_nit_tutors{{/str}}</button>{{/verified}}
+                        </form>
+                    </li>
+                {{/quals}}
+                </ul>
+            </div></section>
+
+            {{#hasanswers}}
+            <section class="card mb-3"><div class="card-body">
+                <h3 class="h5">{{#str}}form_more, local_nit_tutors{{/str}}</h3>
+                <dl class="mb-0">
+                {{#answers}}
+                    <dt>{{label}}</dt>
+                    <dd>{{#fileurl}}<a href="{{fileurl}}" target="_blank">{{filename}}</a>{{/fileurl}}{{^fileurl}}{{{value}}}{{/fileurl}}</dd>
+                {{/answers}}
+                </dl>
+            </div></section>
+            {{/hasanswers}}
+        </div>
+
+        <div class="col-lg-5">
+            <section class="card mb-3"><div class="card-body">
+                <h3 class="h5">{{#str}}decision, local_nit_tutors{{/str}}</h3>
+                <form method="post" action="{{actionurl}}">
+                    <input type="hidden" name="sesskey" value="{{sesskey}}">
+                    <label class="form-label" for="nittu-note">{{#str}}reviewnote, local_nit_tutors{{/str}}</label>
+                    <textarea class="form-control mb-2" id="nittu-note" name="note" rows="4"
+                        placeholder="{{#str}}reviewnote_help, local_nit_tutors{{/str}}"></textarea>
+                    <div class="d-flex flex-wrap gap-2">
+                        {{#canapprove}}<button class="btn btn-primary" name="action" value="approve">{{approvelabel}}</button>{{/canapprove}}
+                        {{#canchanges}}<button class="btn btn-outline-primary" name="action" value="changes">{{#str}}act_changes, local_nit_tutors{{/str}}</button>{{/canchanges}}
+                        {{#canreject}}<button class="btn btn-outline-primary" name="action" value="reject">{{#str}}act_reject, local_nit_tutors{{/str}}</button>{{/canreject}}
+                        {{#cansuspend}}<button class="btn btn-outline-primary" name="action" value="suspend">{{#str}}act_suspend, local_nit_tutors{{/str}}</button>{{/cansuspend}}
+                        {{#videopending}}
+                        <button class="btn btn-primary" name="action" value="videook">{{#str}}act_videook, local_nit_tutors{{/str}}</button>
+                        <button class="btn btn-outline-primary" name="action" value="videono">{{#str}}act_videono, local_nit_tutors{{/str}}</button>
+                        {{/videopending}}
+                    </div>
+                </form>
+            </div></section>
+
+            <section class="card mb-3"><div class="card-body">
+                <h3 class="h5">{{#str}}supertutor, local_nit_tutors{{/str}}</h3>
+                <p class="mb-1">{{stats}}</p>
+                <p class="text-muted small">{{rules}}</p>
+                <p>{{#earned}}{{#str}}badge_meets, local_nit_tutors{{/str}}{{/earned}}{{^earned}}{{#str}}badge_notmeets, local_nit_tutors{{/str}}{{/earned}}</p>
+                <form method="post" action="{{actionurl}}" class="d-flex gap-2">
+                    <input type="hidden" name="sesskey" value="{{sesskey}}">
+                    <input type="hidden" name="action" value="badge">
+                    <select class="form-select" name="mode" aria-label="{{#str}}supertutor, local_nit_tutors{{/str}}">
+                        {{#badgemodes}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/badgemodes}}
+                    </select>
+                    <button class="btn btn-outline-primary">{{#str}}savechanges{{/str}}</button>
+                </form>
+            </div></section>
+        </div>
+    </div>
+</div>

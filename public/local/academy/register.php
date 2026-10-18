@@ -294,6 +294,9 @@ function reg_select($name, $placeholder, array $opts, $valuefield = null) {
           <div class="nit-reg-grid one nit-reg-row"><?php echo reg_text('national', $t('Student national ID', 'رقم الطالب القومي'), $ic['id'], $t('The student\'s own ID number, not the guardian\'s', 'رقم بطاقة الطالب نفسه، مش ولي الأمر'), 'text', false, 'inputmode="numeric" maxlength="14"'); ?></div>
           <div class="nit-reg-btns"><button type="button" class="btn-next" data-next><?php echo s($t('Next', 'التالي')); ?></button></div>
           <div class="nit-reg-bottom"><?php echo s($t('Already have an account?', 'يوجد لديك حساب بالفعل؟')); ?> <a href="<?php echo $loginurl; ?>"><?php echo s($t('Log in now!', 'ادخل إلى حسابك الآن !')); ?></a></div>
+          <?php if (file_exists($CFG->dirroot . '/local/nit_tutors/apply.php')): // Teachers have their own sign-up (no school questions). ?>
+          <div class="nit-reg-bottom"><?php echo s($t('Are you a teacher?', 'هل أنت مدرس؟')); ?> <a href="<?php echo (new moodle_url('/local/nit_tutors/apply.php'))->out(false); ?>"><?php echo s($t('Apply to teach', 'قدّم طلب انضمام كمدرس')); ?></a></div>
+          <?php endif; ?>
         </div>
 
         <!-- STEP 2 -->

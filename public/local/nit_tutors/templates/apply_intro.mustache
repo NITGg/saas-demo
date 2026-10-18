@@ -1,0 +1,41 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_nit_tutors/apply_intro
+
+    The text above the "Join as a teacher" account form: the three steps, and links to
+    signing in and to the student sign-up.
+
+    Context variables required for this template:
+    * loginurl - the sign-in page
+    * studenturl - the student sign-up page
+
+    Example context (json):
+    {"loginurl": "#", "studenturl": "#"}
+}}
+<div class="nittu-apply mb-4">
+    <p class="lead">{{#str}}apply_lead, local_nit_tutors{{/str}}</p>
+    <ol class="nittu-apply__steps">
+        <li>{{#str}}apply_step1, local_nit_tutors{{/str}}</li>
+        <li>{{#str}}apply_step2, local_nit_tutors{{/str}}</li>
+        <li>{{#str}}apply_step3, local_nit_tutors{{/str}}</li>
+    </ol>
+    <p class="mb-0">
+        {{#str}}apply_haveaccount, local_nit_tutors{{/str}} <a href="{{loginurl}}">{{#str}}login{{/str}}</a> ·
+        <a href="{{studenturl}}">{{#str}}apply_asstudent, local_nit_tutors{{/str}}</a>
+    </p>
+</div>

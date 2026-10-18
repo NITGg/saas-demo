@@ -17,10 +17,12 @@
 /**
  * JSON for the navbar search box (theme/nit/templates/theme_boost/navbar.mustache):
  *
- *   ?q=<text> → {"q", "total", "courses": [{id, name, url, image, category}], "moreurl"}
+ *   ?q=<text> → {"q", "total", "courses": [{id, name, url, image, category}], "moreurl",
+ *                "teachers": {total, teachers: [{id, name, image, url, headline, badge}], moreurl, label, all}}
  *
  * The courses the viewer may see in the catalogue (index.php), so it is public like
- * the catalogue and behind the log-in when the site forces log-in.
+ * the catalogue and behind the log-in when the site forces log-in. "teachers" (bookable
+ * teachers matching the text, local_nit_tutors) is there only when that plugin is.
  *
  * @package    local_nit_category
  * @copyright  2026 NIT
@@ -37,4 +39,11 @@ if (!empty($CFG->forcelogin)) {
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
-echo json_encode(\local_nit_category\catalogue::suggest($q), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+$result = \local_nit_category\catalogue::suggest($q);
+if (class_exists('\local_nit_tutors\local\search')) {
+    $result['teachers'] = \local_nit_tutors\local\search::suggest($q, 3) + [
+        'label' => get_string('tab_teachers', 'local_nit_tutors'),
+        'all' => get_string('viewallteachers', 'local_nit_tutors'),
+    ];
+}
+echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
