@@ -1263,6 +1263,20 @@ class manager {
 
                 invoice_generator::create((int) $transaction->id);
                 self::send_confirmation($transaction);
+
+                // Purchase conversion for the marketing funnel (local_nit_analytics, when installed). The
+                // webhook path records it through the payment_completed observer; same reference, so a
+                // purchase completed here first is never counted twice.
+                if (class_exists('\local_nit_analytics\conversions')) {
+                    try {
+                        \local_nit_analytics\conversions::record_purchase((int) $transaction->userid, 'course',
+                            (int) round(((float) $transaction->amount) * 100), (string) $transaction->currency,
+                            (string) $transaction->id, true);
+                    } catch (\Throwable $e) {
+                        self::log_entry($transaction->provider_id, $transaction->id, 'warning',
+                            'Analytics conversion not recorded: ' . $e->getMessage());
+                    }
+                }
             } else {
                 $enrolled = $notcourse ? false
                     : enrollment_handler::is_enrolled((int) $transaction->userid, (int) $transaction->courseid);
