@@ -33,6 +33,12 @@ if ($hassiteconfig || has_capability('local/nit_lessons:managesettings', context
         new moodle_url('/local/nit_lessons/manage_lessons.php'),
         'local/nit_lessons:managesettings'
     ));
+    $ADMIN->add($parent, new admin_externalpage(
+        'local_nit_lessons_instant',
+        get_string('instantlive', 'local_nit_lessons'),
+        new moodle_url('/local/nit_lessons/instant_live.php'),
+        'local/nit_lessons:managesettings'
+    ));
 }
 
 if ($hassiteconfig) {

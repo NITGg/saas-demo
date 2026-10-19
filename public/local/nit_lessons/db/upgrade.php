@@ -112,5 +112,28 @@ function xmldb_local_nit_lessons_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026102000, 'local', 'nit_lessons');
     }
 
+    if ($oldversion < 2026102100) {
+        // Instant lessons phase 2: teachers asked in waves, teacher no-show, time to match.
+        $fields = [
+            'nit_lesson' => [new xmldb_field('teacher_joined', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0',
+                'type')],
+            'nit_instant_request' => [
+                new xmldb_field('wave', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '0', 'expiresat'),
+                new xmldb_field('wavestarted', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'wave'),
+                new xmldb_field('redispatched', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'wavestarted'),
+                new xmldb_field('timematched', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'redispatched'),
+            ],
+        ];
+        foreach ($fields as $tablename => $list) {
+            $table = new xmldb_table($tablename);
+            foreach ($list as $field) {
+                if (!$dbman->field_exists($table, $field)) {
+                    $dbman->add_field($table, $field);
+                }
+            }
+        }
+        upgrade_plugin_savepoint(true, 2026102100, 'local', 'nit_lessons');
+    }
+
     return true;
 }

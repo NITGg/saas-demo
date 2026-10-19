@@ -283,6 +283,120 @@ final class instant_test extends \advanced_testcase {
     }
 
     /**
+     * Teachers are asked in waves, best first (the student's previous tutor leads); when a wave rings
+     * out or declines, the next teacher is asked.
+     *
+     * @return void
+     */
+    public function test_waves_best_first(): void {
+        global $DB;
+        set_config('instant_wave_size', 1, 'local_nit_lessons');
+        $sid = (int) $this->student->id;
+        $DB->insert_record('nit_lesson', (object) ['studentid' => $sid, 'teacherid' => $this->t2->id,
+            'subject' => 'Physics', 'status' => 'completed', 'duration' => 60, 'timecreated' => time() - DAYSECS]);
+        $this->service->set_online((int) $this->t1->id, true);
+        $this->service->set_online((int) $this->t2->id, true);
+
+        $r = $this->service->request($sid, 'Physics');
+        $this->assertSame(1, $r['teachers'], 'one teacher per wave');
+        $this->assertCount(1, $this->service->heartbeat((int) $this->t2->id)['offers'], 'previous tutor first');
+        $this->assertSame([], $this->service->heartbeat((int) $this->t1->id)['offers']);
+
+        // The first wave rings out: the next teacher is asked.
+        $DB->set_field('nit_instant_offer', 'timecreated', time() - 31, ['requestid' => $r['id']]);
+        $this->service->expire_due(time());
+        $this->assertSame('missed', $DB->get_field('nit_instant_offer', 'status',
+            ['requestid' => $r['id'], 'teacherid' => $this->t2->id]));
+        $this->assertCount(1, $this->service->heartbeat((int) $this->t1->id)['offers']);
+        $this->assertSame(2, (int) $DB->get_field('nit_instant_request', 'wave', ['id' => $r['id']]));
+
+        // The last teacher declines: nobody is left, the request ends.
+        $this->service->decline((int) $this->t1->id, $r['id']);
+        $this->assertSame('expired', $this->service->status($sid, $r['id'])['status']);
+    }
+
+    /**
+     * A teacher who accepts but never opens the room: lesson cancelled, Flex back, request reopened
+     * once for the other teachers (the one who was "taken" is asked again), student told.
+     *
+     * @return void
+     */
+    public function test_teacher_noshow_reopens_once(): void {
+        global $DB;
+        $sid = (int) $this->student->id;
+        $this->service->set_online((int) $this->t1->id, true);
+        $this->service->set_online((int) $this->t2->id, true);
+        $r = $this->service->request($sid, 'Physics');
+        $lesson = $this->service->accept((int) $this->t1->id, $r['id']);
+        $this->assertSame(1, purchase::active($sid)['reserved_flex']);
+
+        $DB->set_field('nit_lesson', 'actual_start', time() - 4 * MINSECS, ['id' => $lesson['id']]);
+        $sink = $this->redirectMessages();
+        $this->assertSame(1, $this->service->noshow_due(time()));
+
+        $this->assertSame('cancelled_teacher', $DB->get_field('nit_lesson', 'status', ['id' => $lesson['id']]));
+        $this->assertSame(0, purchase::active($sid)['reserved_flex'], 'the Flex is back');
+        $this->assertSame(10, purchase::active($sid)['remaining_flex']);
+        $req = $DB->get_record('nit_instant_request', ['id' => $r['id']]);
+        $this->assertSame('searching', $req->status);
+        $this->assertSame(1, (int) $req->redispatched);
+        $this->assertSame('noshow', $DB->get_field('nit_instant_offer', 'status',
+            ['requestid' => $r['id'], 'teacherid' => $this->t1->id]));
+        $this->assertCount(1, $this->service->heartbeat((int) $this->t2->id)['offers'], 'the other teacher is asked');
+        $this->assertSame([], $this->service->heartbeat((int) $this->t1->id)['offers'], 'not the no-show teacher');
+        $tostudent = array_filter($sink->get_messages(), fn($m) => (int) $m->useridto === $sid);
+        $this->assertCount(1, $tostudent, 'the student is told');
+
+        // A second no-show is not reopened again.
+        $lesson2 = $this->service->accept((int) $this->t2->id, $r['id']);
+        $DB->set_field('nit_lesson', 'actual_start', time() - 4 * MINSECS, ['id' => $lesson2['id']]);
+        $this->service->noshow_due(time());
+        $this->assertSame('matched', $DB->get_field('nit_instant_request', 'status', ['id' => $r['id']]),
+            'not searching again');
+        $this->assertSame(0, purchase::active($sid)['reserved_flex']);
+    }
+
+    /**
+     * A teacher who opened the room is never treated as a no-show.
+     *
+     * @return void
+     */
+    public function test_teacher_who_joined_is_not_a_noshow(): void {
+        global $DB;
+        $this->service->set_online((int) $this->t1->id, true);
+        $r = $this->service->request((int) $this->student->id, 'Physics');
+        $lesson = $this->service->accept((int) $this->t1->id, $r['id']);
+        (new \local_nit_lessons\service\lesson_service())->open_room((int) $this->t1->id, $lesson['id']);
+        $this->assertGreaterThan(0, (int) $DB->get_field('nit_lesson', 'teacher_joined', ['id' => $lesson['id']]));
+
+        $DB->set_field('nit_lesson', 'actual_start', time() - HOURSECS, ['id' => $lesson['id']]);
+        $this->assertSame(0, $this->service->noshow_due(time()));
+        $this->assertSame('in_progress', $DB->get_field('nit_lesson', 'status', ['id' => $lesson['id']]));
+    }
+
+    /**
+     * The admin live view lists online teachers, waiting requests and the day's figures.
+     *
+     * @return void
+     */
+    public function test_live_view(): void {
+        $this->service->set_online((int) $this->t1->id, true);
+        $this->service->set_online((int) $this->t2->id, true);
+        $r = $this->service->request((int) $this->student->id, 'Physics');
+        $view = $this->service->live_view();
+        $this->assertCount(2, $view['teachers']);
+        $this->assertCount(1, $view['requests']);
+        $this->assertSame(2, $view['requests'][0]['ringing']);
+
+        $this->service->accept((int) $this->t1->id, $r['id']);
+        $view = $this->service->live_view();
+        $this->assertSame([], $view['requests']);
+        $this->assertSame(1, $view['stats']['requests']);
+        $this->assertSame(100, $view['stats']['matchrate']);
+        $this->assertSame(1, $view['subjects'][0]['matched']);
+    }
+
+    /**
      * The expiry task is registered for cron.
      *
      * @return void

@@ -143,6 +143,33 @@ class lesson_service extends service {
         return $this->start_lesson($teacherid, (int) $lesson->get('id'));
     }
 
+    /**
+     * An instant lesson whose teacher accepted but never opened the room: the room is closed, the
+     * Flex goes back to the student and the lesson ends as cancelled by the teacher.
+     *
+     * @param int $lessonid
+     * @return array the cancelled lesson
+     */
+    public function cancel_instant_noshow(int $lessonid): array {
+        global $DB;
+        $lesson = $this->owned_lesson($lessonid);
+        if ($lesson->get('type') !== lesson::TYPE_INSTANT || $lesson->get('status') !== lesson::STATUS_IN_PROGRESS
+                || (int) $lesson->get('teacher_joined') > 0) {
+            throw new lesson_exception('err_badstate');
+        }
+        $teacherid = (int) $lesson->get('teacherid');
+        $transaction = $DB->start_delegated_transaction();
+        room_factory::instance()->end_for_lesson($lesson);
+        flex::return_flex((int) $lesson->get('studentid'), (int) $lesson->get('purchaseid'), $lessonid, $teacherid,
+            'Instant lesson: teacher did not join', self::flex_count($lesson));
+        $result = $this->transition($lesson, lesson::STATUS_CANCELLED_TEACHER, $teacherid, [
+            'flex_state' => 'returned',
+            'cancel_reason' => 'Teacher did not join the instant lesson',
+        ]);
+        $transaction->allow_commit();
+        return $result;
+    }
+
     // ── US-LS-2-1 / 2-3: teacher responds ───────────────────────────────────
 
     /**
@@ -293,9 +320,11 @@ class lesson_service extends service {
             $lesson->update();
             $payload = ['join_url' => $created->join_url];
         }
-        if (!$isteacher && (int) $lesson->get('student_joined') === 0) {
-            // Proof the student came: auto-complete only ever closes lessons they joined.
-            $lesson->set('student_joined', time());
+        // First time each side opens the room: proof the student came (auto-complete) and that the
+        // teacher came (instant-lesson no-show).
+        $joined = $isteacher ? 'teacher_joined' : 'student_joined';
+        if ((int) $lesson->get($joined) === 0) {
+            $lesson->set($joined, time());
             $lesson->update();
         }
         return [

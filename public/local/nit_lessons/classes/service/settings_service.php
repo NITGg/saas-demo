@@ -43,8 +43,11 @@ class settings_service extends service {
         'absence_report_minutes'   => 15,
         'auto_complete_minutes'    => 4320,    // 72h (like Preply): a joined lesson completes itself this long after it ends; 0 = off.
         'instant_enabled'          => 1,       // "Get a tutor now" on (1) / off (0).
-        'instant_wait_seconds'     => 90,      // How long a student waits for a teacher to accept.
+        'instant_wait_seconds'     => 120,      // How long a student waits for a teacher to accept.
         'instant_minutes'          => 30,      // Length of an instant lesson.
+        'instant_wave_size'        => 3,       // Teachers asked at once.
+        'instant_ring_seconds'     => 30,      // How long one wave rings before the next teachers are asked.
+        'instant_noshow_minutes'   => 3,       // A teacher who accepted but did not open the room is replaced.
         'lessons_courseid'         => 0,
     ];
 
