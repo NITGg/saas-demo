@@ -3,6 +3,8 @@ namespace local_academy;
 
 defined('MOODLE_INTERNAL') || die();
 
+use local_academy\local\quiz_native;
+use mod_quiz\quiz_attempt;
 use mod_quiz\quiz_settings;
 use mod_quiz\question\bank\qbank_helper;
 
@@ -12,8 +14,10 @@ use mod_quiz\question\bank\qbank_helper;
  * Covers: list quizzes, get quiz questions (structured JSON),
  * start attempt, submit answers, review attempt.
  *
- * Supported question types: multichoice, truefalse.
- * Unsupported types appear in the response with supported=false and no options.
+ * Every core question type is answerable natively (see local\quiz_native::TYPES).
+ * Answers are stored in the attempt's question usage and graded by Moodle's question
+ * engine, so scores, the gradebook and the web review all match the website.
+ * Unsupported types appear with supported=false: open the quiz in a webview.
  *
  * Ported from the old academy (Moodle 3.11) and adapted to the Moodle 4.x/5.x
  * question bank: slots no longer carry questionid, so slot->question is resolved
@@ -187,76 +191,92 @@ class quiz_manager {
     }
 
     /**
-     * Submit answers and finish a quiz attempt.
+     * The questions of a started attempt, ready for the app to draw natively.
      *
-     * $answers format:
-     *   For single-answer MCQ or true/false: { "questionid": 101, "answer": 3 }  (answer = answer row id)
-     *   For multi-answer MCQ:                { "questionid": 102, "answer": [3, 5] }
+     * Unlike get_quiz(), this is the attempt's own copy: calculated questions carry the
+     * numbers this student got, choices are in this attempt's shuffled order and random
+     * slots hold the question that was picked. Each question also carries `response`,
+     * the answer saved so far (same format save_quiz_answer takes), so the app can resume.
      */
-    public static function submit_attempt(int $attemptid, int $userid, array $answers): array {
-        $attemptrow = self::require_open_attempt($attemptid, $userid);
+    public static function get_attempt_questions(int $attemptid, int $userid, bool $is_admin = false): array {
+        $attemptobj = self::load_attempt($attemptid, $userid, $is_admin);
+        $native = self::native();
 
-        // Start from any answers previously saved with save_answer, then let the
-        // answers passed in this call override them.
-        $submitted = self::saved_answers_map($attemptid);
-        foreach ($answers as $a) {
-            $submitted[(int)$a['questionid']] = $a['answer'];
+        $questions = [];
+        foreach ($attemptobj->get_slots() as $slot) {
+            $qa = $attemptobj->get_question_attempt($slot);
+            $data = self::attempt_question($native, $qa, (int) $slot);
+            if ($data['supported']) {
+                $data['response'] = $native->from_response($qa, $qa->get_last_qt_data());
+            }
+            $questions[] = $data;
         }
 
-        return self::grade_and_finish($attemptrow, $userid, $submitted);
+        $attempt = $attemptobj->get_attempt();
+        $quiz = $attemptobj->get_quiz();
+        return [
+            'attemptid'      => (int) $attempt->id,
+            'quizid'         => (int) $quiz->id,
+            'quiz_name'      => $quiz->name,
+            'attempt_number' => (int) $attempt->attempt,
+            'state'          => $attempt->state,
+            'timestart'      => (int) $attempt->timestart,
+            'timelimit'      => (int) $quiz->timelimit,
+            'questions'      => $questions,
+        ];
+    }
+
+    /**
+     * Submit answers and finish a quiz attempt.
+     *
+     * $answers: [{"questionid": 101, "answer": <answer>}, ...] — the answer format of each
+     * question type is the one save_answer() takes. Answers already saved stay unless
+     * this call sends a new one for the same question.
+     */
+    public static function submit_attempt(int $attemptid, int $userid, array $answers): array {
+        self::require_open_attempt($attemptid, $userid);
+        foreach ($answers as $a) {
+            if (!is_array($a) || !isset($a['questionid'])) {
+                throw new \moodle_exception('invalidquizanswer', 'local_academy', '', 'answers: each item needs questionid');
+            }
+            self::save_answer($attemptid, $userid, (int) $a['questionid'], $a['answer'] ?? null, (int) ($a['slot'] ?? 0));
+        }
+        return self::finish_attempt($attemptid, $userid);
     }
 
     /**
      * Save (or update) the answer to a single question WITHOUT finishing the attempt.
      *
-     * @param mixed $answer answer row id (int) for single MCQ / true-false,
-     *                      or an array of answer row ids for multi-answer MCQ
+     * @param mixed $answer the answer in the question type's app format (docs/MOBILE_API.md §3.6);
+     *                      null clears it
+     * @param int $slot optional slot, for a quiz that uses the same question twice
      */
-    public static function save_answer(int $attemptid, int $userid, int $questionid, $answer): array {
+    public static function save_answer(int $attemptid, int $userid, int $questionid, $answer, int $slot = 0): array {
         global $DB;
+        self::require_quiz_lib();
 
-        self::require_answers_table();
         $attemptrow = self::require_open_attempt($attemptid, $userid);
+        $quba = \question_engine::load_questions_usage_by_activity($attemptrow->uniqueid);
+        $slot = self::slot_for_question($quba, $questionid, $slot);
+        $qa = $quba->get_question_attempt($slot);
 
-        // The question must belong to this attempt's quiz. In Moodle 4.x/5.x this is
-        // resolved through the question bank, not a quiz_slots.questionid column.
-        [$cm, $context, $structure] = self::quiz_structure((int)$attemptrow->quiz);
-        $belongs = false;
-        foreach ($structure as $row) {
-            if ((int)($row->questionid ?? 0) === $questionid) {
-                $belongs = true;
-                break;
-            }
+        if (!quiz_native::is_supported($qa->get_question())) {
+            throw new \moodle_exception('invalidquizanswer', 'local_academy', '',
+                $qa->get_question()->qtype->name() . ': answer this question in the webview');
         }
-        if (!$belongs) {
-            throw new \moodle_exception('invalidquestionid', 'question');
-        }
+        $response = self::native()->to_response($qa, $answer);
 
-        $now      = time();
-        $encoded  = json_encode($answer);
-        $existing = $DB->get_record('academy_quiz_answers',
-            ['attemptid' => $attemptid, 'questionid' => $questionid]);
-
-        if ($existing) {
-            $DB->update_record('academy_quiz_answers', (object)[
-                'id'           => $existing->id,
-                'answer'       => $encoded,
-                'timemodified' => $now,
-            ]);
-        } else {
-            $DB->insert_record('academy_quiz_answers', (object)[
-                'attemptid'    => $attemptid,
-                'questionid'   => $questionid,
-                'userid'       => $userid,
-                'answer'       => $encoded,
-                'timecreated'  => $now,
-                'timemodified' => $now,
-            ]);
-        }
+        $now = time();
+        $transaction = $DB->start_delegated_transaction();
+        $quba->process_action($slot, $response, $now);
+        \question_engine::save_questions_usage_by_activity($quba);
+        $DB->set_field('quiz_attempts', 'timemodified', $now, ['id' => $attemptid]);
+        $transaction->allow_commit();
 
         return [
             'attemptid'  => $attemptid,
             'questionid' => $questionid,
+            'slot'       => $slot,
             'saved'      => true,
             'state'      => $attemptrow->state,
         ];
@@ -266,71 +286,89 @@ class quiz_manager {
      * Submit all questions: grade every saved answer and finish the attempt.
      */
     public static function finish_attempt(int $attemptid, int $userid): array {
-        self::require_answers_table();
+        self::require_quiz_lib();
+
         $attemptrow = self::require_open_attempt($attemptid, $userid);
-        $submitted  = self::saved_answers_map($attemptid);
-        return self::grade_and_finish($attemptrow, $userid, $submitted);
+        self::apply_legacy_answers($attemptrow);
+
+        $now = time();
+        $attemptobj = quiz_attempt::create($attemptid);
+        $attemptobj->process_submit($now, false);
+        $attemptobj->process_grade_submission($now);
+
+        $attemptobj = quiz_attempt::create($attemptid);
+        [$score, $maxscore, $results] = self::attempt_marks($attemptobj);
+        return [
+            'attemptid' => (int) $attemptid,
+            'state'     => $attemptobj->get_attempt()->state,
+            'score'     => $score,
+            'max_score' => $maxscore,
+            'percent'   => $maxscore > 0 ? round(($score / $maxscore) * 100, 1) : 0,
+            'results'   => $results,
+        ];
     }
 
     /**
-     * Review a finished attempt.
+     * Review an attempt.
      *
-     * @param bool $show_correct Include correct answers (admin only)
+     * Marks, correctness and right answers follow the quiz's own review options for the
+     * student (Settings → Review options); a platform admin always sees everything.
      */
     public static function get_attempt(int $attemptid, int $userid, bool $is_admin = false): array {
-        global $DB;
+        $attemptobj = self::load_attempt($attemptid, $userid, $is_admin);
+        $attempt = $attemptobj->get_attempt();
+        $quiz = $attemptobj->get_quiz();
+        $native = self::native();
 
-        $attempt = $DB->get_record('quiz_attempts', ['id' => $attemptid], '*', MUST_EXIST);
-        if (!$is_admin && (int)$attempt->userid !== $userid) {
-            throw new \moodle_exception('notyourattempt', 'quiz');
-        }
-
-        $quiz  = $DB->get_record('quiz', ['id' => $attempt->quiz], '*', MUST_EXIST);
-        [$cm, $context, $structure] = self::quiz_structure((int)$quiz->id);
+        $options = $attemptobj->get_display_options(true);
+        $showmarks = $is_admin || $options->marks >= \question_display_options::MARK_AND_MAX;
+        $showcorrect = $is_admin || $options->correctness;
+        $showright = $is_admin || $options->rightanswer;
 
         $maxscore = 0.0;
         $questions = [];
-
-        foreach ($structure as $row) {
-            $q = self::struct_to_q($row);
-            if (!$q) { continue; }
-            $maxmark = (float)$row->maxmark;
+        foreach ($attemptobj->get_slots() as $slot) {
+            $qa = $attemptobj->get_question_attempt($slot);
+            $question = $qa->get_question();
+            $maxmark = (float) $qa->get_max_mark();
             $maxscore += $maxmark;
 
-            $ctx     = self::question_contextid($q);
-            $content = self::content_fields($q->questiontext, $ctx, 'questiontext', (int)$q->id, (int)$q->id);
-            $qdata = [
-                'slot'       => (int)$row->slot,
-                'questionid' => (int)$q->id,
-                'type'       => $q->qtype,
-                'text'       => $content['text'],
-                'images'     => $content['images'],
-                'max_mark'   => round($maxmark, 2),
-            ];
-
-            if ($is_admin && in_array($q->qtype, ['multichoice', 'truefalse'])) {
-                $allAnswers = $DB->get_records('question_answers', ['question' => $q->id], 'id ASC');
-                $qdata['correct_answers'] = array_values(array_map(function($a) use ($ctx, $q) {
-                    $c = self::content_fields($a->answer, $ctx, 'answer', (int)$a->id, (int)$q->id);
-                    return ['id' => (int)$a->id, 'text' => $c['text'], 'images' => $c['images'], 'correct' => (float)$a->fraction > 0];
-                }, $allAnswers));
-                self::dedupe_question_images($qdata, 'correct_answers');
+            $data = self::attempt_question($native, $qa, (int) $slot);
+            $data['max_mark'] = round($maxmark, 2);
+            $data['response'] = $data['supported'] ? $native->from_response($qa, $qa->get_last_qt_data()) : null;
+            $data['response_summary'] = $qa->get_response_summary();
+            $data['state'] = (string) $qa->get_state();
+            if ($showmarks) {
+                $data['mark'] = $qa->get_mark() === null ? null : round((float) $qa->get_mark(), 2);
             }
-
-            $questions[] = $qdata;
+            if ($showcorrect) {
+                $data['correct'] = $qa->get_state() === \question_state::$gradedright;
+            }
+            if ($showright) {
+                $data['right_answer'] = $qa->get_right_answer_summary();
+                $data['correct_response'] = $data['supported']
+                    ? $native->from_response($qa, $question->get_correct_response() ?? []) : null;
+                if (in_array($question->qtype->name(), ['multichoice', 'truefalse'], true)) {
+                    // Kept for apps written against the first version of this endpoint.
+                    $data['correct_answers'] = self::legacy_correct_answers($question);
+                    self::dedupe_question_images($data, 'correct_answers');
+                }
+            }
+            $questions[] = $data;
         }
 
+        $score = round((float) ($attempt->sumgrades ?? 0), 2);
         return [
-            'attemptid'      => (int)$attempt->id,
-            'quizid'         => (int)$quiz->id,
+            'attemptid'      => (int) $attempt->id,
+            'quizid'         => (int) $quiz->id,
             'quiz_name'      => $quiz->name,
-            'attempt_number' => (int)$attempt->attempt,
+            'attempt_number' => (int) $attempt->attempt,
             'state'          => $attempt->state,
-            'timestart'      => (int)$attempt->timestart,
-            'timefinish'     => (int)$attempt->timefinish,
-            'score'          => round((float)($attempt->sumgrades ?? 0), 2),
+            'timestart'      => (int) $attempt->timestart,
+            'timefinish'     => (int) $attempt->timefinish,
+            'score'          => $showmarks ? $score : null,
             'max_score'      => round($maxscore, 2),
-            'percent'        => $maxscore > 0 ? round(((float)($attempt->sumgrades ?? 0) / $maxscore) * 100, 1) : 0,
+            'percent'        => $showmarks && $maxscore > 0 ? round(($score / $maxscore) * 100, 1) : null,
             'questions'      => $questions,
         ];
     }
@@ -377,7 +415,7 @@ class quiz_manager {
             'text'        => $content['text'],
             'images'      => $content['images'],
             'defaultmark' => (float)$q->defaultmark,
-            'supported'   => in_array($q->qtype, ['multichoice', 'truefalse']),
+            'supported'   => self::type_supported($q),
         ];
 
         switch ($q->qtype) {
@@ -388,6 +426,207 @@ class quiz_manager {
 
         self::dedupe_question_images($result);
         return $result;
+    }
+
+    /**
+     * The quiz library and the question engine (api.php loads neither).
+     */
+    private static function require_quiz_lib(): void {
+        global $CFG;
+        require_once($CFG->dirroot . '/mod/quiz/locallib.php');
+    }
+
+    /**
+     * Is this bank question answerable natively? (get_quiz() runs before any attempt.)
+     */
+    private static function type_supported(\stdClass $q): bool {
+        self::require_quiz_lib();
+        if (!in_array($q->qtype, quiz_native::TYPES, true)) {
+            return false;
+        }
+        if ($q->qtype !== 'essay') {
+            return true;
+        }
+        try {
+            return quiz_native::is_supported(\question_bank::load_question((int) $q->id));
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
+     * The converter, wired to this API's text + token-authorised file URLs.
+     */
+    private static function native(): quiz_native {
+        return new quiz_native(
+            function (string $html, int $contextid, string $component, string $filearea, int $itemid, int $questionid) {
+                return self::content_fields($html, $contextid, $filearea, $itemid, $questionid, $component ?: 'question');
+            },
+            function (int $contextid, string $component, string $filearea, int $itemid) {
+                return self::area_image($contextid, $component, $filearea, $itemid);
+            }
+        );
+    }
+
+    /**
+     * Shared fields of one question inside an attempt (get_attempt_questions / get_attempt).
+     */
+    private static function attempt_question(quiz_native $native, \question_attempt $qa, int $slot): array {
+        $question = $qa->get_question();
+        $content = self::content_fields($question->questiontext, (int) $question->contextid, 'questiontext',
+            (int) $question->id, (int) $question->id);
+        $supported = quiz_native::is_supported($question);
+        $data = [
+            'slot'        => $slot,
+            'questionid'  => (int) $question->id,
+            'type'        => $question->qtype->name(),
+            'text'        => $content['text'],
+            'images'      => $content['images'],
+            'defaultmark' => (float) $question->defaultmark,
+            'max_mark'    => round((float) $qa->get_max_mark(), 2),
+            'supported'   => $supported,
+        ];
+        if ($supported) {
+            $data += $native->render($qa);
+            self::dedupe_question_images($data);
+        }
+        return $data;
+    }
+
+    /**
+     * Load an attempt the user may look at (their own, or any for an admin).
+     */
+    private static function load_attempt(int $attemptid, int $userid, bool $is_admin): quiz_attempt {
+        self::require_quiz_lib();
+        $attemptobj = quiz_attempt::create($attemptid);
+        if (!$is_admin && (int) $attemptobj->get_userid() !== $userid) {
+            throw new \moodle_exception('notyourattempt', 'quiz');
+        }
+        return $attemptobj;
+    }
+
+    /**
+     * The attempt slot holding a question. $slot picks one when the question is used twice.
+     */
+    private static function slot_for_question(\question_usage_by_activity $quba, int $questionid, int $slot): int {
+        foreach ($quba->get_slots() as $candidate) {
+            if ($slot && (int) $candidate !== $slot) {
+                continue;
+            }
+            if ((int) $quba->get_question($candidate, false)->id === $questionid) {
+                return (int) $candidate;
+            }
+        }
+        throw new \moodle_exception('invalidquestionid', 'question');
+    }
+
+    /**
+     * Per-question marks of a graded attempt: [score, max score, results[]].
+     */
+    private static function attempt_marks(quiz_attempt $attemptobj): array {
+        $maxscore = 0.0;
+        $results = [];
+        foreach ($attemptobj->get_slots() as $slot) {
+            $qa = $attemptobj->get_question_attempt($slot);
+            $maxmark = (float) $qa->get_max_mark();
+            $maxscore += $maxmark;
+            $state = $qa->get_state();
+            $results[] = [
+                'slot'           => (int) $slot,
+                'questionid'     => (int) $qa->get_question()->id,
+                'type'           => $qa->get_question()->qtype->name(),
+                'mark'           => $qa->get_mark() === null ? null : round((float) $qa->get_mark(), 2),
+                'max_mark'       => round($maxmark, 2),
+                'correct'        => $state === \question_state::$gradedright,
+                'state'          => (string) $state,
+                // An essay waits for the teacher: its mark is null until graded by hand.
+                'needs_grading'  => $state === \question_state::$needsgrading,
+            ];
+        }
+        $score = round((float) ($attemptobj->get_attempt()->sumgrades ?? 0), 2);
+        return [$score, round($maxscore, 2), $results];
+    }
+
+    /**
+     * Answers saved by the first version of save_quiz_answer lived in academy_quiz_answers,
+     * outside the question engine. Carry them into the attempt before it is graded, unless
+     * the question has been answered through the engine since.
+     */
+    private static function apply_legacy_answers(\stdClass $attemptrow): void {
+        global $DB;
+        $legacy = self::saved_answers_map((int) $attemptrow->id);
+        if (!$legacy) {
+            return;
+        }
+        $quba = \question_engine::load_questions_usage_by_activity($attemptrow->uniqueid);
+        $native = self::native();
+        $changed = false;
+        foreach ($quba->get_slots() as $slot) {
+            $qa = $quba->get_question_attempt($slot);
+            $questionid = (int) $qa->get_question()->id;
+            // Fields starting with "_" are the engine's own state (e.g. the choice order), not an answer.
+            $answered = array_filter(array_keys($qa->get_last_qt_data()), fn($name) => $name[0] !== '_');
+            if (!array_key_exists($questionid, $legacy) || $answered
+                    || !quiz_native::is_supported($qa->get_question())) {
+                continue;
+            }
+            try {
+                $quba->process_action($slot, $native->to_response($qa, $legacy[$questionid]));
+                $changed = true;
+            } catch (\moodle_exception $e) {
+                // An old answer that no longer fits the question is dropped, not fatal.
+                debugging('academy quiz: legacy answer skipped for question ' . $questionid, DEBUG_DEVELOPER);
+            }
+        }
+        if ($changed) {
+            \question_engine::save_questions_usage_by_activity($quba);
+        }
+        $DB->delete_records('academy_quiz_answers', ['attemptid' => $attemptrow->id]);
+    }
+
+    /**
+     * The first review format: every option of a multichoice/truefalse with its correct flag.
+     */
+    private static function legacy_correct_answers(\question_definition $question): array {
+        global $DB;
+        $answers = $DB->get_records('question_answers', ['question' => $question->id], 'id ASC');
+        $out = [];
+        foreach ($answers as $a) {
+            $c = self::content_fields($a->answer, (int) $question->contextid, 'answer', (int) $a->id, (int) $question->id);
+            $out[] = ['id' => (int) $a->id, 'text' => $c['text'], 'images' => $c['images'], 'correct' => (float) $a->fraction > 0];
+        }
+        return $out;
+    }
+
+    /**
+     * The first image in a question-type file area (drag-and-drop backgrounds and drag
+     * images) as a token-authorised URL plus its pixel size, or null when the area is empty.
+     * Drop-zone and marker coordinates are in these pixels.
+     */
+    private static function area_image(int $contextid, string $component, string $filearea, int $itemid): ?array {
+        $fs = get_file_storage();
+        foreach ($fs->get_area_files($contextid, $component, $filearea, $itemid, 'id', false) as $file) {
+            $info = $file->get_imageinfo() ?: [];
+            $pluginfile = \moodle_url::make_pluginfile_url($contextid, $component, $filearea, $itemid,
+                $file->get_filepath(), $file->get_filename());
+            return [
+                'url'    => self::local_file_url($pluginfile->out(false), self::area_questionid($component, $filearea, $itemid)),
+                'width'  => (int) ($info['width'] ?? 0),
+                'height' => (int) ($info['height'] ?? 0),
+            ];
+        }
+        return null;
+    }
+
+    /**
+     * The question a qtype file area belongs to (qfile.php authorises by question).
+     */
+    private static function area_questionid(string $component, string $filearea, int $itemid): int {
+        global $DB;
+        if ($filearea === 'dragimage') {
+            return (int) $DB->get_field('qtype_ddimageortext_drags', 'questionid', ['id' => $itemid]);
+        }
+        return $itemid;
     }
 
     /**
@@ -482,14 +721,15 @@ class quiz_manager {
      *
      * @return array{text: string, images: string[]}
      */
-    private static function content_fields($html, int $contextid, string $filearea, int $itemid, int $questionid): array {
+    private static function content_fields($html, int $contextid, string $filearea, int $itemid, int $questionid,
+            string $component = 'question'): array {
         global $CFG;
         require_once($CFG->dirroot . '/lib/filelib.php');
 
         $html = (string)$html;
         if ($contextid) {
             $html = \file_rewrite_pluginfile_urls(
-                $html, 'pluginfile.php', $contextid, 'question', $filearea, $itemid);
+                $html, 'pluginfile.php', $contextid, $component, $filearea, $itemid);
         }
 
         $images = [];
@@ -532,18 +772,23 @@ class quiz_manager {
         if (count($segs) < 5) {
             return $src;
         }
+        $component = clean_param($segs[1], PARAM_COMPONENT);
         $filearea = clean_param($segs[2], PARAM_ALPHANUMEXT);
         $fileitem = (int)$segs[3];
         $filename = rawurldecode(implode('/', array_slice($segs, 4)));
 
-        $url = new \moodle_url('/local/academy/qfile.php', [
+        $params = [
             'questionid' => $questionid,
             'area'       => $filearea,
             'itemid'     => $fileitem,
             'file'       => $filename,
             'token'      => self::$token,
-        ]);
-        return $url->out(false);
+        ];
+        if ($component !== 'question') {
+            // Drag-and-drop images and matching stems live in their question type's own areas.
+            $params['component'] = $component;
+        }
+        return (new \moodle_url('/local/academy/qfile.php', $params))->out(false);
     }
 
     /**
@@ -555,7 +800,8 @@ class quiz_manager {
         if ((int)$attemptrow->userid !== $userid) {
             throw new \moodle_exception('notyourattempt', 'quiz');
         }
-        if ($attemptrow->state === 'finished') {
+        // Moodle 5 adds `submitted` (handed in, waiting to be graded) before `finished`.
+        if (in_array($attemptrow->state, [quiz_attempt::FINISHED, quiz_attempt::SUBMITTED, quiz_attempt::ABANDONED], true)) {
             throw new \moodle_exception('attemptalreadyclosed', 'quiz');
         }
         return $attemptrow;
@@ -575,118 +821,5 @@ class quiz_manager {
             $map[(int)$r->questionid] = json_decode($r->answer, true);
         }
         return $map;
-    }
-
-    /**
-     * The per-question save/finish flow needs the academy_quiz_answers table.
-     */
-    private static function require_answers_table(): void {
-        global $DB;
-        if (!$DB->get_manager()->table_exists('academy_quiz_answers')) {
-            throw new \Exception('Per-question answer storage is not installed yet — run the '
-                . 'Academy plugin upgrade (Site administration → Notifications, or '
-                . 'php admin/cli/upgrade.php).');
-        }
-    }
-
-    /**
-     * Grade the given answers against every question in the attempt's quiz, mark the
-     * attempt finished, update the gradebook and return the score payload.
-     *
-     * @param array $submitted questionid => answer (int or array of ints)
-     */
-    private static function grade_and_finish(\stdClass $attemptrow, int $userid, array $submitted): array {
-        global $DB, $CFG;
-        require_once($CFG->dirroot . '/mod/quiz/locallib.php');
-
-        $quiz = $DB->get_record('quiz', ['id' => $attemptrow->quiz], '*', MUST_EXIST);
-        [$cm, $context, $structure] = self::quiz_structure((int)$quiz->id);
-
-        $results   = [];
-        $sumgrades = 0.0;
-        $maxscore  = 0.0;
-
-        foreach ($structure as $row) {
-            $q = self::struct_to_q($row);
-            if (!$q) { continue; }
-            $maxmark = (float)$row->maxmark;
-            $maxscore += $maxmark;
-            $answer  = $submitted[(int)$q->id] ?? null;
-
-            list($mark, $correct) = self::grade_one($q, $answer, $maxmark);
-
-            $sumgrades += $mark;
-            $results[] = [
-                'questionid' => (int)$q->id,
-                'type'       => $q->qtype,
-                'mark'       => round($mark, 2),
-                'max_mark'   => round($maxmark, 2),
-                'correct'    => $correct,
-            ];
-        }
-
-        // Mark attempt as finished.
-        $now = time();
-        $DB->update_record('quiz_attempts', (object)[
-            'id'           => $attemptrow->id,
-            'state'        => 'finished',
-            'timefinish'   => $now,
-            'timemodified' => $now,
-            'sumgrades'    => $sumgrades,
-        ]);
-
-        // Update gradebook. quiz_save_best_grade() was removed in Moodle 4.x/5.x;
-        // the grade calculator now owns this.
-        $quizobj = quiz_settings::create($quiz->id, $userid);
-        $quizobj->get_grade_calculator()->recompute_final_grade($userid);
-
-        return [
-            'attemptid' => (int)$attemptrow->id,
-            'state'     => 'finished',
-            'score'     => round($sumgrades, 2),
-            'max_score' => round((float)$maxscore, 2),
-            'percent'   => $maxscore > 0 ? round(($sumgrades / $maxscore) * 100, 1) : 0,
-            'results'   => $results,
-        ];
-    }
-
-    /**
-     * Grade a single question. Returns [mark, correct].
-     *
-     * @param mixed $answer answer row id (int) or array of ids (multi-answer MCQ)
-     */
-    private static function grade_one(\stdClass $q, $answer, float $maxmark): array {
-        global $DB;
-
-        $mark    = 0.0;
-        $correct = false;
-
-        if ($answer !== null && in_array($q->qtype, ['multichoice', 'truefalse'])) {
-            $allAnswers = array_values($DB->get_records('question_answers', ['question' => $q->id], 'id ASC'));
-
-            if ($q->qtype === 'truefalse' || !is_array($answer)) {
-                // Single answer: find the fraction for the chosen answer id.
-                foreach ($allAnswers as $a) {
-                    if ((int)$a->id === (int)$answer) {
-                        $frac    = (float)$a->fraction;
-                        $mark    = max(0, $frac * $maxmark);
-                        $correct = $frac >= 1.0;
-                        break;
-                    }
-                }
-            } else {
-                // Multi-answer MCQ: sum fractions of chosen answers.
-                $frac = 0.0;
-                foreach ($allAnswers as $a) {
-                    if (in_array((int)$a->id, array_map('intval', $answer))) {
-                        $frac += (float)$a->fraction;
-                    }
-                }
-                $mark    = max(0, round($frac * $maxmark, 5));
-                $correct = $frac >= 1.0;
-            }
-        }
-
-        return [$mark, $correct];
     }
 }

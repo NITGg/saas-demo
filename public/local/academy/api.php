@@ -50,6 +50,11 @@ api::run(function (string $function) use ($USER, $userid, $token, $DB) {
             api::require_post();
             return \local_academy\quiz_manager::start_attempt(required_param('quizid', PARAM_INT), $userid);
 
+        // The attempt's questions, rendered natively per type, with the answers saved so far.
+        case 'get_attempt_questions':
+            return \local_academy\quiz_manager::get_attempt_questions(
+                required_param('attemptid', PARAM_INT), $userid, $isadmin);
+
         // Submit answers and finish an attempt (one-shot: grade all + close).
         case 'submit_quiz_attempt':
             api::require_post();
@@ -63,12 +68,14 @@ api::run(function (string $function) use ($USER, $userid, $token, $DB) {
             $attemptid  = required_param('attemptid', PARAM_INT);
             $questionid = required_param('questionid', PARAM_INT);
             $raw        = required_param('answer', PARAM_RAW);
-            // Accept either a JSON value ("3" or "[3,5]") or a bare scalar (3).
+            // Accept a JSON value (3, [3,5], {"1":2}, "text") or bare text. Bare text that is
+            // not valid JSON stays a string, so a short answer like 007 keeps its zeros.
             $answer = json_decode($raw, true);
             if ($answer === null && trim($raw) !== 'null') {
-                $answer = is_numeric($raw) ? (int) $raw : $raw;
+                $answer = $raw;
             }
-            return \local_academy\quiz_manager::save_answer($attemptid, $userid, $questionid, $answer);
+            return \local_academy\quiz_manager::save_answer($attemptid, $userid, $questionid, $answer,
+                optional_param('slot', 0, PARAM_INT));
 
         // Submit all saved answers and finish the attempt.
         case 'finish_quiz_attempt':

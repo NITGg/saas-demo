@@ -62,6 +62,7 @@ It is valid for {$a->mins} minutes. If you did not request this, you can ignore 
 
 // Quiz manager.
 $string['notenrolled'] = 'You are not enrolled in this course';
+$string['invalidquizanswer'] = 'This answer does not fit the question ({$a}).';
 
 // Course player.
 $string['player_heading'] = 'Course player';

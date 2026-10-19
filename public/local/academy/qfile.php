@@ -18,11 +18,30 @@ require_once($CFG->libdir . '/filelib.php');
 
 $token      = optional_param('token', '', PARAM_RAW);
 $questionid = required_param('questionid', PARAM_INT);
+$component  = optional_param('component', 'question', PARAM_COMPONENT);
 $area       = required_param('area', PARAM_ALPHANUMEXT);
 $itemid     = required_param('itemid', PARAM_INT);
 $filename   = required_param('file', PARAM_FILE);
 
-if (!in_array($area, ['questiontext', 'answer', 'generalfeedback'], true)) {
+// Which file areas may be served, and how each one's itemid is tied to the question.
+$areas = [
+    'question'            => ['questiontext', 'answer', 'generalfeedback'],
+    'qtype_ddimageortext' => ['bgimage', 'dragimage'],
+    'qtype_ddmarker'      => ['bgimage'],
+    'qtype_match'         => ['subquestion'],
+];
+if (!in_array($area, $areas[$component] ?? [], true)) {
+    send_file_not_found();
+}
+$owned = true;
+if ($area === 'bgimage') {
+    $owned = $itemid === $questionid;
+} else if ($area === 'dragimage') {
+    $owned = $DB->record_exists('qtype_ddimageortext_drags', ['id' => $itemid, 'questionid' => $questionid]);
+} else if ($area === 'subquestion') {
+    $owned = $DB->record_exists('qtype_match_subquestions', ['id' => $itemid, 'questionid' => $questionid]);
+}
+if (!$owned) {
     send_file_not_found();
 }
 
@@ -48,8 +67,18 @@ if (!$isadmin) {
           JOIN {quiz} q ON q.id = slot.quizid
          WHERE qv.questionid = :questionid", ['questionid' => $questionid]);
 
-    $allowed = false;
+    // A question drawn into the user's own attempt (a random slot, or a stem of a random
+    // matching question) is not referenced by a slot, but the attempt shows it to them.
+    $allowed = $DB->record_exists_sql("
+        SELECT 1
+          FROM {question_attempts} qa
+          JOIN {quiz_attempts} quiza ON quiza.uniqueid = qa.questionusageid
+         WHERE qa.questionid = :questionid AND quiza.userid = :userid",
+        ['questionid' => $questionid, 'userid' => $userid]);
     foreach ($courses as $cid) {
+        if ($allowed) {
+            break;
+        }
         if (is_enrolled(context_course::instance($cid), $userid, '', true)) {
             $allowed = true;
             break;
@@ -74,7 +103,7 @@ if (!$contextid) {
 }
 
 $fs   = get_file_storage();
-$file = $fs->get_file($contextid, 'question', $area, $itemid, '/', $filename);
+$file = $fs->get_file($contextid, $component, $area, $itemid, '/', $filename);
 if (!$file || $file->is_directory()) {
     send_file_not_found();
 }

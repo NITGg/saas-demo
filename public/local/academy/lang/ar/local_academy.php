@@ -160,6 +160,7 @@ $string['otp_body'] = 'أهلاً {$a->name}،
 
 الكود صالح لمدة {$a->mins} دقيقة. لو ماطلبتش الكود ده تقدر تتجاهل الرسالة.';
 $string['notenrolled'] = 'أنت غير مشترك في هذا الكورس';
+$string['invalidquizanswer'] = 'هذه الإجابة لا تناسب السؤال ({$a}).';
 $string['player_heading'] = 'مشغّل الكورس';
 $string['player_heading_desc'] = 'طريقة تنقّل الطالب داخل الكورس في المشغّل (كل أنواع الدروس بتفتح في نفس الإطار).';
 $string['player_markcomplete'] = 'إظهار زر "تم الإنجاز"';

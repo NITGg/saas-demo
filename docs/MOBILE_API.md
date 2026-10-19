@@ -783,34 +783,68 @@ covered by the user's subscription.
 
 ### 3.6 Quizzes (app-rendered)
 
-For multiple-choice / true-false quizzes rendered natively. (Moodle's `mod_quiz_*` web services can be
-used instead; `getalltopics` → `nativerender` tells you when a quiz needs a webview.)
+**Every core question type can be drawn and answered natively** — the 17 types in the table below.
+Answers go into the attempt's Moodle question engine and **Moodle grades them**, so marks, the
+gradebook and the website's review match exactly. Only a type outside the table (a third-party
+plugin) or an essay that requires file uploads comes back `supported:false` → open the quiz in a webview.
+In `getalltopics`, a quiz's `nativerender.requires` lists `qtype:<type>` per type it uses: every type in
+the table below, and `qtype:random` (the attempt resolves it to a real question), can be drawn natively.
+
+**Flow:** `start_quiz_attempt` → `get_attempt_questions` (draw) → `save_quiz_answer` per question
+(any time, any order; resaving replaces) → `finish_quiz_attempt` → `get_quiz_attempt` (review).
 
 | function | Method | Params | `data` |
 |---|---|---|---|
 | `get_quizzes` | GET | `courseid` (opt) | `[{"quizid":4,"cmid":57,"courseid":22,"name":"…","intro":"…","timelimit":0,"attempts_allowed":0}]` (my courses; admins: all) |
-| `get_quiz` | GET | `cmid` | quiz + `questions[]` (below) |
+| `get_quiz` | GET | `cmid` | quiz overview + `questions[]` with `supported` per question. Multiple-choice / true-false also list `options`. **Draw from `get_attempt_questions`**, not from here: only the attempt knows the calculated numbers, shuffles and random picks. |
 | `start_quiz_attempt` | POST | `quizid` | `{"attemptid":9,"quizid":4,"attempt_number":1,"timestart":…,"timelimit":0,"state":"inprogress"}` |
-| `save_quiz_answer` | POST | `attemptid`, `questionid`, `answer` (`3` or JSON `[3,5]`) | `{"attemptid":9,"questionid":12,"saved":true,"state":"inprogress"}` |
-| `finish_quiz_attempt` | POST | `attemptid` | result (below) — grades the saved answers |
-| `submit_quiz_attempt` | POST | `attemptid`, `answers` JSON `[{"questionid":12,"answer":3},{"questionid":13,"answer":[5,6]}]` | result — one-shot save + finish |
-| `get_quiz_attempt` | GET | `attemptid` | review: `{attemptid, quizid, quiz_name, attempt_number, state, timestart, timefinish, score, max_score, percent, questions[]}` |
+| `get_attempt_questions` | GET | `attemptid` | `{attemptid, quizid, quiz_name, attempt_number, state, timestart, timelimit, questions[]}` — question shapes below, each with `response` (the answer saved so far, or `null`) for resuming |
+| `save_quiz_answer` | POST | `attemptid`, `questionid`, `answer` (JSON, format per type below; `null` clears), `slot` (opt — only if the quiz uses the same question twice) | `{"attemptid":9,"questionid":12,"slot":1,"saved":true,"state":"inprogress"}` |
+| `finish_quiz_attempt` | POST | `attemptid` | result (below) — Moodle grades every saved answer and closes the attempt |
+| `submit_quiz_attempt` | POST | `attemptid`, `answers` JSON `[{"questionid":12,"answer":…},…]` | result — one-shot save + finish |
+| `get_quiz_attempt` | GET | `attemptid` | review (below) |
 | `get_my_quiz_attempts` | GET | `quizid` | `[{"attemptid":9,"attempt_number":1,"state":"finished","score":2.0,"max_score":3.0,"percent":66.7,"timestart":…,"timefinish":…}]` |
 
-Question shape (`get_quiz.questions[]`):
-```json
-{"slot":1,"questionid":12,"type":"multichoice","text":"…","images":["<url>"],"defaultmark":1.0,
- "supported":true,"single":true,
- "options":[{"id":31,"text":"…","images":[]},{"id":32,"text":"…","images":[]}]}
-```
-- `answer` = the chosen option `id` (or an array of ids when `single` is false). True/false has two options.
-- `supported:false` → question type not rendered natively → open the quiz in a webview.
-- Correct answers (`correct:true`) are shown only to managers.
-- Image URLs (`images[]`) are served by `/local/academy/qfile.php?token=…` and load directly.
-- Result (`finish_quiz_attempt` / `submit_quiz_attempt`):
-  `{"attemptid":9,"state":"finished","score":2.0,"max_score":3.0,"percent":66.7,"results":[{"questionid":12,"type":"multichoice","mark":1.0,"max_mark":1.0,"correct":true}]}`
-- Errors: `notenrolled`, Moodle quiz codes such as `attemptalreadyclosed`, `notyourattempt`,
-  `attemptsexhausted`, `invalidquestionid` (show `error`).
+**Every question** (`get_attempt_questions.questions[]`) has:
+`{"slot":1,"questionid":12,"type":"…","text":"…","images":["<url>"],"defaultmark":1.0,"max_mark":1.0,"supported":true,"response":…}`
+plus the fields of its type. `text` is plain text (for gap types it still contains the `[[n]]` markers —
+draw from `segments` instead). All image URLs carry the token and load directly.
+
+**Per type — what you draw and what you send as `answer`:**
+
+| `type` | Extra fields | `answer` |
+|---|---|---|
+| `multichoice`, `calculatedmulti` | `single`, `options[{id,text,images}]` (already in this attempt's order; calculated values filled in) | `single:true` → one option `id` (`31`); `false` → array of ids (`[31,33]`) |
+| `truefalse` | `options[{id,text,value}]` (`value` true/false) | the option `id`, or `true` / `false` |
+| `shortanswer` | `input:"text"` | text (`"frog"`) |
+| `numerical`, `calculated`, `calculatedsimple` | `input:"number"`, `unit_input` (`none` / `text` = type the unit after the number / `select` = pick from `units`), `units[]`, `units_left` | `"3.14"`; with `unit_input:"select"`: `{"value":"3.14","unit":"cm"}`. Calculated text already contains this student's numbers. |
+| `essay` | `input:"textarea"`, `response_required`, `lines`, `min_words`, `max_words`, `attachments_allowed` | text. Marked by a teacher later: `mark` stays `null`, `needs_grading:true`. |
+| `match`, `randomsamatch` | `stems[{id,text,images}]`, `choices[{id,text}]` | `{"<stem id>": <choice id>, …}` |
+| `gapselect` (dropdowns), `ddwtos` (drag words) | `drag` (bool), `segments[]` = `{"type":"text","text":"The "}` / `{"type":"gap","place":1,"group":1}`, `groups{"1":[{value,text,infinite}]}` | `{"<place>": <value>, …}` — a gap takes a choice from its own `group`. `infinite:true` = the word can be used in several gaps. |
+| `ddimageortext` | `background{url,width,height}`, `drops[{place,group,left,top,label}]`, `groups{"1":[{value,text,image,infinite}]}` | `{"<place>": <value>, …}` — same as gaps. `left`/`top` are pixels of the background's natural size: scale them with the image. `image` set = drag the picture (`text` is its alt text). |
+| `ddmarker` | `background{url,width,height}`, `markers[{no,text,infinite,limit}]` | `{"<marker no>": [[x,y], …]}` — where each copy of the marker was dropped, in background pixels. `limit` = copies allowed (`0` = unlimited). The target areas are never sent. |
+| `ordering` | `layout` (`vertical`/`horizontal`), `items[{key,text,images}]` (starting order) | the item `key`s in the student's order: `["a1b2…","c3d4…",…]` (every key once) |
+| `multianswer` (Cloze) | `segments[]` = text / `{"type":"sub","index":1}`, `subquestions[{index,type,weight,…}]` — `shortanswer`/`numerical` sub: `input`; `multichoice` sub: `single`, `layout` (`dropdown`/`vertical`/`horizontal`), `options` | `{"<index>": <sub answer>, …}` — each sub answer in its own type's format above (text, number, option id or ids) |
+| `description` | `informational:true` | — (nothing to answer) |
+
+An answer that does not fit (unknown option or gap, an ordering missing an item, a marker dropped more
+often than `limit`…) fails with `errorcode:"invalidquizanswer"` and a readable `error`.
+
+**Result** (`finish_quiz_attempt` / `submit_quiz_attempt`):
+`{"attemptid":9,"state":"finished","score":2.0,"max_score":3.0,"percent":66.7,"results":[{"slot":1,"questionid":12,"type":"multichoice","mark":1.0,"max_mark":1.0,"correct":true,"state":"gradedright","needs_grading":false}]}`
+`state` per question: `gradedright`, `gradedpartial`, `gradedwrong`, `gaveup` (not answered),
+`needsgrading` (essay waiting for the teacher).
+
+**Review** (`get_quiz_attempt`): `{attemptid, quizid, quiz_name, attempt_number, state, timestart, timefinish, score, max_score, percent, questions[]}`.
+Each question = the same shape as above (draw it the same way) plus `response` (what the student
+answered), `response_summary`, `state`, and — **as the quiz's Review options allow** (a platform admin
+always sees all): `mark`, `correct`, `right_answer` (text) and `correct_response` (the right answer in
+the same `answer` format, to highlight it). `score`/`percent` are `null` when the quiz hides marks.
+Multiple-choice / true-false keep the earlier `correct_answers[{id,text,images,correct}]` list too.
+
+- Image URLs are served by `/local/academy/qfile.php?token=…` and load directly.
+- Errors: `notenrolled`, `invalidquizanswer`, Moodle quiz codes such as `attemptalreadyclosed`,
+  `notyourattempt`, `attemptsexhausted`, `invalidquestionid` (show `error`).
 
 ### 3.7 Certificates
 
