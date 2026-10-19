@@ -21,6 +21,7 @@ use core_external\external_function_parameters;
 use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
+use local_games\logo;
 use local_games\progress;
 use local_games\mlang;
 use local_games\registry;
@@ -99,6 +100,7 @@ class get_game extends external_api {
         return [
             'id'          => $gameid,
             'emoji'       => $game['emoji'],
+            'logourl'     => (string) logo::url($gameid),
             'category'    => $game['category'],
             'level'       => (int) $game['level'],
             'name'        => mlang::display(registry::name($gameid)),
@@ -122,6 +124,7 @@ class get_game extends external_api {
         return new external_single_structure([
             'id'          => new external_value(PARAM_ALPHANUMEXT, 'Game slug'),
             'emoji'       => new external_value(PARAM_TEXT, 'Card face'),
+            'logourl'     => new external_value(PARAM_URL, 'Uploaded logo shown instead of the emoji; empty when none', VALUE_OPTIONAL),
             'category'    => new external_value(PARAM_ALPHANUMEXT, 'Section the game sits in'),
             'level'       => new external_value(PARAM_INT, 'Difficulty, 1 to 3'),
             'name'        => new external_value(PARAM_TEXT, 'Game name in the current language'),

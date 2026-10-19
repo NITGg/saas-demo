@@ -29,7 +29,8 @@ use local_nit_lessons\service\teacher_service;
  *
  * The catalogue's "Teachers" tab also lists course teachers ({@see course_teachers()}): users with an
  * editing or non-editing teacher role in a visible course. They cannot be booked, so a filter only a
- * bookable tutor can match (subject, price, day / time, filter fields) leaves them out.
+ * bookable tutor can match (subject, price, day / time, filter fields) leaves them out. The tab never
+ * lists admins or managers ({@see staff_ids()}).
  *
  * @package    local_nit_tutors
  * @copyright  2026 NIT
@@ -146,6 +147,10 @@ final class search {
 
         $tutorsonly = $filters['subject'] !== '' || $filters['pricemin'] !== null || $filters['pricemax'] !== null
             || $filters['day'] !== null || $filters['time'] !== '' || $filters['f'];
+        if ($courseteachers) {
+            // The tab never lists the site's admins and managers, whatever else they hold.
+            $rows = array_diff_key($rows, array_flip(self::staff_ids()));
+        }
         $others = $courseteachers && !$tutorsonly ? self::course_teachers($filters['q'], array_keys($rows)) : [];
         $ids = array_merge(array_keys($rows), array_keys($others));
 
@@ -385,7 +390,25 @@ final class search {
     }
 
     /**
-     * Course teachers who are not in $exclude: users (not site admins) with an editing or non-editing
+     * The site's admins and managers: site admins, and users holding a manager-archetype role anywhere
+     * (site, category or course).
+     *
+     * @return int[]
+     */
+    public static function staff_ids(): array {
+        global $CFG, $DB;
+        $ids = array_map('intval', array_filter(explode(',', (string) $CFG->siteadmins)));
+        $roleids = array_keys(get_archetype_roles('manager'));
+        if ($roleids) {
+            [$rsql, $params] = $DB->get_in_or_equal($roleids, SQL_PARAMS_NAMED, 'mgr');
+            $ids = array_merge($ids, array_map('intval',
+                $DB->get_fieldset_select('role_assignments', 'DISTINCT userid', "roleid $rsql", $params)));
+        }
+        return array_values(array_unique($ids));
+    }
+
+    /**
+     * Course teachers who are not in $exclude: users (not admins or managers) with an editing or non-editing
      * teacher role in a visible course, whose name matches $q. The headline is their "teachertitle"
      * profile field (local_academy), as on the home page's teacher cards.
      *
@@ -424,10 +447,11 @@ final class search {
                               JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = :ctxlevel
                               JOIN {course} c ON c.id = ctx.instanceid AND c.visible = 1 AND c.id <> :siteid
                              WHERE ra.userid = u.id AND ra.roleid $rsql)", $params);
+        $staff = array_flip(self::staff_ids());
         $out = [];
         foreach ($users as $u) {
-            // Site admins are enrolled as teacher in every course they create — they are not teachers.
-            if (is_siteadmin((int) $u->id)) {
+            // Admins (enrolled as teacher in every course they create) and managers are not teachers.
+            if (isset($staff[(int) $u->id])) {
                 continue;
             }
             $u->headline = class_exists('\local_academy\local\user_fields')

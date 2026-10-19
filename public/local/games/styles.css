@@ -41,9 +41,15 @@
     --gc-hoverbg: var(--nit-brand-hoverbackground, #16222f);
     --gc-hovertext: var(--nit-brand-hovertext, #7fabdb);
 
-    /* Brand Colors: text on a solid brand fill is Text primary, never
-       Bootstrap's auto-contrast black. Same rule as theme_nit's _buttons.scss. */
-    --gc-onfill: var(--nit-brand-textprimary, #eef3f9);
+    /* Text on every filled button is white. It used to follow Text primary,
+       which is near-black in the light palettes - dark words on a dark fill. */
+    --gc-onfill: #fff;
+
+    /* The secondary ("ghost") button is a filled slate, so it carries white text
+       too; derived from Text secondary so it follows the palette. */
+    --gc-fill-soft: color-mix(in srgb, var(--gc-muted) 55%, #000);
+    --gc-fill-soft-hover: color-mix(in srgb, var(--gc-muted) 40%, #000);
+    --gc-btn-shadow: 0 4px 0 color-mix(in srgb, var(--gc-fill) 55%, #000), 0 8px 18px rgba(0, 0, 0, 0.18);
 
     /* Primary at full strength carries Text primary at only 3.3:1 — under the
        4.5 a 16px label needs, and these labels are read by seven-year-olds.
@@ -226,6 +232,34 @@ a.gc-card__link:focus-visible .gc-card__name {
     line-height: 1;
 }
 
+/* An uploaded logo takes the emoji's place at the emoji's size (1em of the
+   face it sits in), square, never stretched. */
+.gc-logo {
+    display: inline-block;
+    inline-size: 1.15em;
+    block-size: 1.15em;
+    object-fit: contain;
+    vertical-align: middle;
+}
+
+.gc-card__face .gc-logo {
+    inline-size: 1.6em;
+    block-size: 1.6em;
+    border-radius: 14px;
+}
+
+.gc-card-panel__face .gc-logo {
+    inline-size: 1.5em;
+    block-size: 1.5em;
+    border-radius: 18px;
+}
+
+.local-games-logo {
+    object-fit: contain;
+    vertical-align: middle;
+    border-radius: 8px;
+}
+
 .gc-card__body {
     display: flex;
     flex-direction: column;
@@ -258,17 +292,47 @@ a.gc-card__link:focus-visible .gc-card__name {
     color: var(--gc-success);
 }
 
+/* The card's "Play" pill: the whole card is the link, so this is drawn like a
+   button and pressed in with the card. A play triangle leads the word. */
 .gc-card__cta {
-    align-self: flex-start;
-    padding: 0.5rem 1.25rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    align-self: stretch;
+    justify-content: center;
+    margin-block-start: auto;
+    padding: 0.65rem 1.25rem;
     border-radius: 999px;
-    background: var(--gc-fill);
+    background: linear-gradient(180deg, var(--gc-primary), var(--gc-fill));
+    box-shadow: var(--gc-btn-shadow);
     color: var(--gc-onfill);
     font-size: 1.1rem;
     font-weight: 800;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.gc-card__cta:not(.gc-card__cta--soon)::before {
+    content: "";
+    inline-size: 0;
+    block-size: 0;
+    border-block: 0.4em solid transparent;
+    /* A play symbol points right in Arabic too, so it is not a logical side. */
+    border-left: 0.62em solid currentColor;
+}
+
+a.gc-card__link:hover .gc-card__cta,
+a.gc-card__link:focus-visible .gc-card__cta {
+    background: var(--gc-fill-hover);
+    color: var(--gc-onfill);
+}
+
+a.gc-card__link:active .gc-card__cta {
+    transform: translateY(3px);
+    box-shadow: none;
 }
 
 .gc-card__cta--soon {
+    box-shadow: none;
     background: transparent;
     border: 2px dashed var(--gc-border-soft);
     color: var(--gc-muted);
@@ -514,16 +578,25 @@ a.gc-card__link:focus-visible .gc-card__name {
     justify-content: center;
 }
 
+/* Buttons: a solid, slightly raised pill with white text. The ledge under it
+   (the first shadow) sinks when pressed, so a tap visibly lands. */
 .gc-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
     padding: 0.75rem 1.75rem;
-    border: 2px solid transparent;
+    border: 0;
     border-radius: 999px;
-    background: var(--gc-fill);
+    background: linear-gradient(180deg, var(--gc-primary), var(--gc-fill));
+    box-shadow: var(--gc-btn-shadow);
     color: var(--gc-onfill);
     font-weight: 800;
     font-size: 1.2rem;
+    line-height: 1.2;
     cursor: pointer;
     text-decoration: none;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease, filter 0.12s ease;
 }
 
 .gc-btn--big {
@@ -531,49 +604,58 @@ a.gc-card__link:focus-visible .gc-card__name {
     font-size: 1.45rem;
 }
 
-/* The ghost button follows theme_nit's .btn-outline-secondary contract exactly
-   (scss/components/_buttons.scss): Text primary on a transparent fill with a
-   Border secondary edge at rest, filling from the Hover roles on hover. It was
-   drawn with Text secondary before, which read as a disabled control sitting
-   next to the live one. */
+/* The secondary button ("Not now", "Back to the games", "Clear", "Hint"):
+   a quieter slate fill, still with white text. */
 .gc-btn--ghost {
-    background: transparent;
-    border-color: var(--gc-border-soft);
-    color: var(--gc-text);
+    background: var(--gc-fill-soft);
+    box-shadow: 0 4px 0 color-mix(in srgb, var(--gc-fill-soft) 60%, #000), 0 8px 18px rgba(0, 0, 0, 0.14);
+    color: var(--gc-onfill);
 }
 
-/* A solid brand fill keeps its brand foreground on hover and darkens the fill
-   itself - the same contract Bootstrap's --bs-btn-hover-* pair gives core
-   buttons in theme_nit's _buttons.scss. */
+/* Hover darkens the fill and lifts the pill; the text stays white. The
+   !important pair reclaims anchors from theme_nit's site-wide link rule
+   (post.scss), which repaints a hovered/focused/pressed link. */
 .gc-btn:hover,
 .gc-btn:focus,
-.gc-btn:focus-visible {
-    color: var(--gc-onfill);
-    background: var(--gc-fill-hover);
+.gc-btn:focus-visible,
+.gc-btn:active {
+    background: var(--gc-fill-hover) !important;
+    color: var(--gc-onfill) !important;
 }
 
-/* Ghost buttons fill from the Hover roles instead, like .btn-outline-secondary.
-   "Back to the games" is an anchor, so the site-wide link rule in post.scss
-   claims its colour, underline, background and shadow the moment it is hovered
-   - the same five properties reclaimed on the cards above. Without this the
-   button loses its fill and grows an underline mid-hover. */
 .gc-btn--ghost:hover,
 .gc-btn--ghost:focus,
 .gc-btn--ghost:focus-visible,
 .gc-btn--ghost:active {
-    background-color: var(--gc-hoverbg) !important;
-    color: var(--gc-hovertext) !important;
-    border-color: var(--gc-border-soft);
+    background: var(--gc-fill-soft-hover) !important;
+}
+
+.gc-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+}
+
+.gc-btn:active:not(:disabled) {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--gc-fill) 55%, #000);
+}
+
+.gc-btn:focus-visible {
+    outline: 3px solid var(--gc-gold);
+    outline-offset: 3px;
+}
+
+.gc-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+    box-shadow: none;
 }
 
 /* Same reclaim at rest: an anchor styled as a button must not inherit the
    Bootstrap link colour that the theme gives ordinary links. */
-a.gc-btn {
-    text-decoration: none;
-}
-
+a.gc-btn,
 a.gc-btn--ghost {
-    color: var(--gc-text);
+    color: var(--gc-onfill);
+    text-decoration: none;
 }
 
 .gc-newbadge {
@@ -696,24 +778,60 @@ a.gc-btn--ghost {
     gap: 1rem;
 }
 
+/* Answer buttons in every game share one look: a solid brand fill with white
+   text and a ledge that sinks on press. Right/wrong repaint the fill. */
+.gc-answer,
+.gc-quiz__answer,
+.gc-tf__button,
+.gc-who__choice,
+button.gc-tile:not(.gc-tile--static) {
+    border: 3px solid transparent;
+    background: linear-gradient(180deg, var(--gc-primary), var(--gc-fill));
+    box-shadow: var(--gc-btn-shadow);
+    color: var(--gc-onfill);
+    transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease, border-color 0.12s ease;
+}
+
+.gc-answer:hover:not(:disabled),
+.gc-answer:focus-visible,
+.gc-quiz__answer:hover:not(:disabled),
+.gc-quiz__answer:focus-visible,
+.gc-tf__button:hover:not(:disabled),
+.gc-tf__button:focus-visible,
+.gc-who__choice:hover:not(:disabled),
+.gc-who__choice:focus-visible,
+button.gc-tile:not(.gc-tile--static):hover:not(:disabled),
+button.gc-tile:not(.gc-tile--static):focus-visible {
+    transform: translateY(-3px);
+    border-color: transparent;
+    background: var(--gc-fill-hover);
+    color: var(--gc-onfill);
+}
+
+.gc-answer:active:not(:disabled),
+.gc-quiz__answer:active:not(:disabled),
+.gc-tf__button:active:not(:disabled),
+.gc-who__choice:active:not(:disabled),
+button.gc-tile:not(.gc-tile--static):active:not(:disabled) {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--gc-fill) 55%, #000);
+}
+
+.gc-answer:focus-visible,
+.gc-quiz__answer:focus-visible,
+.gc-tf__button:focus-visible,
+.gc-who__choice:focus-visible,
+button.gc-tile:focus-visible {
+    outline: 3px solid var(--gc-gold);
+    outline-offset: 3px;
+}
+
 .gc-answer {
     padding-block: 1.4rem;
-    border: 3px solid var(--gc-border-soft);
     border-radius: var(--gc-radius);
-    background: var(--gc-surface);
-    color: var(--gc-text);
     font-size: clamp(1.6rem, 5vw, 2.2rem);
     font-weight: 800;
     cursor: pointer;
-    transition: transform 0.12s ease, border-color 0.12s ease;
-}
-
-.gc-answer:hover,
-.gc-answer:focus-visible {
-    transform: translateY(-3px);
-    border-color: var(--gc-primary);
-    background: var(--gc-hoverbg);
-    color: var(--gc-hovertext);
 }
 
 .gc-answer--ok {
@@ -1527,21 +1645,10 @@ a.gc-btn--ghost {
 
 .gc-quiz__answer {
     padding: 1.1rem 1.25rem;
-    border: 3px solid var(--gc-border-soft);
     border-radius: var(--gc-radius);
-    background: var(--gc-surface);
-    color: var(--gc-text);
     font-size: 1.3rem;
     font-weight: 800;
     cursor: pointer;
-    transition: transform 0.12s ease, border-color 0.12s ease, background-color 0.12s ease;
-}
-
-.gc-quiz__answer:hover:not(:disabled),
-.gc-quiz__answer:focus-visible {
-    transform: translateY(-3px);
-    border-color: var(--gc-primary);
-    background: var(--gc-hoverbg);
 }
 
 .gc-quiz__answer--ok {
@@ -1587,25 +1694,29 @@ a.gc-btn--ghost {
     align-items: center;
     gap: 0.4rem;
     padding: 1.4rem 1rem;
-    border: 3px solid var(--gc-border-soft);
     border-radius: var(--gc-radius);
-    background: var(--gc-surface);
-    color: var(--gc-text);
     cursor: pointer;
-    transition: transform 0.12s ease, border-color 0.12s ease;
 }
 
-.gc-tf__button:hover,
-.gc-tf__button:focus-visible {
-    transform: translateY(-4px);
+/* "True" and "False" read at a glance by colour, not only by their mark. */
+.gc-tf__button--yes {
+    background: var(--gc-success-fill);
+    box-shadow: 0 4px 0 color-mix(in srgb, var(--gc-success-fill) 55%, #000), 0 8px 18px rgba(0, 0, 0, 0.18);
 }
 
-.gc-tf__button--yes:hover {
-    border-color: var(--gc-success);
+.gc-tf__button--no {
+    background: var(--gc-warn-fill);
+    box-shadow: 0 4px 0 color-mix(in srgb, var(--gc-warn-fill) 55%, #000), 0 8px 18px rgba(0, 0, 0, 0.18);
 }
 
-.gc-tf__button--no:hover {
-    border-color: var(--gc-warn);
+.gc-tf__button--yes:hover:not(:disabled),
+.gc-tf__button--yes:focus-visible {
+    background: color-mix(in srgb, var(--gc-success-fill) 82%, #000);
+}
+
+.gc-tf__button--no:hover:not(:disabled),
+.gc-tf__button--no:focus-visible {
+    background: color-mix(in srgb, var(--gc-warn-fill) 82%, #000);
 }
 
 .gc-tf__mark {
@@ -2096,17 +2207,8 @@ a.gc-btn--ghost {
     align-items: center;
     gap: 0.3rem;
     padding: 0.9rem 0.5rem;
-    border: 3px solid var(--gc-border-soft);
     border-radius: var(--gc-radius);
-    background: var(--gc-surface);
-    color: var(--gc-text);
     cursor: pointer;
-    transition: transform 0.12s ease, border-color 0.12s ease;
-}
-
-.gc-who__choice:hover {
-    transform: translateY(-4px);
-    border-color: var(--gc-primary);
 }
 
 .gc-who__face {
@@ -2127,6 +2229,8 @@ a.gc-btn--ghost {
 
 .gc-who__choice--no {
     border-color: var(--gc-warn);
+    background: var(--gc-warn-fill);
+    color: var(--gc-onfill);
 }
 
 /* ------------------------------------------------------- memory cards --- */

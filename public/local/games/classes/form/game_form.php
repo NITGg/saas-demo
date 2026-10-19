@@ -73,6 +73,11 @@ class game_form extends \moodleform {
             $mform->addHelpButton($element, 'game' . $field, 'local_games');
         }
 
+        // The card face: an uploaded picture, or the shipped emoji when empty.
+        $mform->addElement('filemanager', 'logo', get_string('gamelogo', 'local_games'), null,
+            \local_games\logo::options());
+        $mform->addHelpButton('logo', 'gamelogo', 'local_games');
+
         $mform->addElement('advcheckbox', 'enabled', get_string('gameenabled', 'local_games'));
         $mform->addHelpButton('enabled', 'gameenabled', 'local_games');
         $mform->setDefault('enabled', 1);

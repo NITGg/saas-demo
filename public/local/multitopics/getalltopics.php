@@ -416,6 +416,13 @@ function build_activities(array $cms, object $modinfo, string $wstoken, string $
         }
 
         // ── Assign: description, dates, submission type/status instead of webview ──
+        // ── Game activity: which Games Corner game it plays ────────────────
+        // The app runs the game natively from the slug (local_games_get_game /
+        // get_content) and reports each round to mod_games_record_play.
+        if ($cm->modname === 'games') {
+            $act['gameid'] = (string) $DB->get_field('games', 'gameid', ['id' => $cm->instance]);
+        }
+
         if ($cm->modname === 'assign') {
             $assignrec = $DB->get_record('assign', ['id' => $cm->instance]);
             if ($assignrec) {

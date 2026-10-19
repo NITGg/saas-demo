@@ -7,6 +7,9 @@ existing app).
 
 > Every screen of the platform is covered, including the Bassthalk home page sections, the teacher
 > page and the course details page (§3.10).
+>
+> Games Corner (hub, games, points, badges, Game activity in a course):
+> [`apis/games-mobile-api.md`](apis/games-mobile-api.md).
 
 ## Contents
 

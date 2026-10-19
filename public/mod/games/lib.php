@@ -132,6 +132,10 @@ function games_get_coursemodule_info($coursemodule) {
         $info->content = format_module_intro('games', $game, $coursemodule->id, false);
     }
 
+    // Which game this activity plays. core_course_get_contents hands customdata
+    // to the mobile app, which needs the slug to fetch and run the game.
+    $info->customdata['gameid'] = $game->gameid;
+
     // Custom completion rules have to travel with the module info or the course
     // page cannot describe them without loading every instance.
     if ($coursemodule->completion == COMPLETION_TRACKING_AUTOMATIC) {

@@ -78,6 +78,7 @@ echo $OUTPUT->render_from_template('local_games/play', [
     'gameid'    => $id,
     'name'      => mlang::display(registry::name($id)),
     'emoji'     => $game['emoji'],
+    'logourl'   => \local_games\logo::url($id),
     'huburl'    => (new moodle_url('/local/games/index.php'))->out(false),
     'backlabel' => get_string('backtohub', 'local_games'),
     'cancellabel' => get_string('cancel', 'local_games'),

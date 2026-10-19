@@ -193,7 +193,17 @@ final class search_test extends \advanced_testcase {
         $gen->enrol_user($student, $course->id, 'student');
         $gen->enrol_user($inhidden, $hidden->id, 'editingteacher');
         $gen->enrol_user($gone, $course->id, 'editingteacher');
+        // Admins and managers are never listed: the admin, a site manager and a course manager who teach,
+        // and a tutor who is also a manager.
         $gen->enrol_user((int) get_admin()->id, $course->id, 'editingteacher');
+        $sitemanager = (int) $gen->create_user(['firstname' => 'Site', 'lastname' => 'Manager'])->id;
+        $gen->enrol_user($sitemanager, $course->id, 'editingteacher');
+        $gen->role_assign((int) array_key_first(get_archetype_roles('manager')), $sitemanager, \context_system::instance()->id);
+        $coursemanager = (int) $gen->create_user(['firstname' => 'Course', 'lastname' => 'Manager'])->id;
+        $gen->enrol_user($coursemanager, $course->id, 'editingteacher');
+        $gen->enrol_user($coursemanager, $course->id, 'manager');
+        $managertutor = $this->tutor([], 'English', ['firstname' => 'Boss', 'lastname' => 'Tutor']);
+        $gen->role_assign((int) array_key_first(get_archetype_roles('manager')), $managertutor, \context_system::instance()->id);
         // A tutor who also teaches a course is listed once, as a bookable tutor.
         $gen->enrol_user($tutor, $course->id, 'editingteacher');
 
@@ -203,7 +213,9 @@ final class search_test extends \advanced_testcase {
         sort($expected);
         $this->assertSame($expected, $ids);
         // Without the flag (header suggestions, mobile app) only bookable tutors, as before.
-        $this->assertSame([$tutor], $this->ids());
+        $ids = $this->ids();
+        sort($ids);
+        $this->assertSame([$tutor, $managertutor], $ids);
 
         // The search words match a course teacher's name.
         $this->assertSame([$noneditor], $this->tabids(['q' => 'plain']));

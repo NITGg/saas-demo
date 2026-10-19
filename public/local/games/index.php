@@ -62,6 +62,7 @@ foreach (registry::get_categories() as $catkey => $catemoji) {
         $cards[] = [
             'id'        => $id,
             'emoji'     => $game['emoji'],
+            'logourl'   => \local_games\logo::url($id),
             'name'      => mlang::display(registry::name($id)),
             'desc'      => mlang::display(registry::description($id)),
             'stars'     => str_repeat('⭐', $game['level']),

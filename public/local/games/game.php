@@ -106,12 +106,14 @@ if ($action === 'moveup' && $rowid > 0 && confirm_sesskey()) {
 $override = manager::get_overrides()[$gameid] ?? null;
 
 $form = new game_form($pageurl, ['gameid' => $gameid]);
-$form->set_data(['id' => $gameid] + game_form::to_data($gameid, $override));
+$form->set_data(['id' => $gameid, 'logo' => \local_games\logo::prepare_draft($gameid)]
+    + game_form::to_data($gameid, $override));
 
 if ($form->is_cancelled()) {
     redirect($manageurl);
 } else if ($data = $form->get_data()) {
     manager::save_game($gameid, game_form::to_record($data, $gameid));
+    \local_games\logo::save_draft($gameid, (int) $data->logo);
     redirect($pageurl, get_string('changessaved'), null, \core\output\notification::NOTIFY_SUCCESS);
 }
 
@@ -186,8 +188,11 @@ if ($action === 'restore' && confirm_sesskey() && !$confirm) {
 
 // -- The page -------------------------------------------------------------
 
+$logourl = \local_games\logo::url($gameid);
 echo $OUTPUT->heading(
-    html_writer::span($game['emoji'] . ' ', 'local-games-face', ['aria-hidden' => 'true'])
+    ($logourl
+        ? html_writer::img($logourl, '', ['class' => 'local-games-logo', 'width' => 40, 'height' => 40]) . ' '
+        : html_writer::span($game['emoji'] . ' ', 'local-games-face', ['aria-hidden' => 'true']))
         . s(mlang::display(registry::name($gameid)))
 );
 

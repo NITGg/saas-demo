@@ -26,6 +26,7 @@
     * points, badges - the learner's totals
     * playlabel, soonlabel - card button wording
     * categories - sections, each with key, emoji, name, note, hasnote, games[]
+      (a game's optional logourl - its uploaded picture - replaces its emoji)
     * badgeshelf - every badge the corner can award
     * hasbadgeshelf - whether to render the shelf at all
 
@@ -99,7 +100,7 @@
                     <li class="gc-card {{^live}}gc-card--soon{{/live}}">
                         {{#live}}
                             <a class="gc-card__link" href="{{url}}">
-                                <span class="gc-card__face" aria-hidden="true">{{emoji}}</span>
+                                <span class="gc-card__face" aria-hidden="true">{{#logourl}}<img class="gc-logo" src="{{logourl}}" alt="">{{/logourl}}{{^logourl}}{{emoji}}{{/logourl}}</span>
                                 <span class="gc-card__body">
                                     <span class="gc-card__name">{{name}}</span>
                                     <span class="gc-card__desc">{{desc}}</span>
@@ -113,7 +114,7 @@
                         {{/live}}
                         {{^live}}
                             <div class="gc-card__link" aria-disabled="true">
-                                <span class="gc-card__face" aria-hidden="true">{{emoji}}</span>
+                                <span class="gc-card__face" aria-hidden="true">{{#logourl}}<img class="gc-logo" src="{{logourl}}" alt="">{{/logourl}}{{^logourl}}{{emoji}}{{/logourl}}</span>
                                 <span class="gc-card__body">
                                     <span class="gc-card__name">{{name}}</span>
                                     <span class="gc-card__desc">{{desc}}</span>

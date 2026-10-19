@@ -24,6 +24,7 @@
     Context variables required for this template:
     * gameid - registry slug
     * name, emoji - what the game is called
+    * logourl - its uploaded picture, shown instead of the emoji (optional)
     * huburl, backlabel, cancellabel - the ways out of the game
     * startlabel, readytitle, howto, desc - the start card
     * scorelabel, streaklabel - HUD labels
@@ -87,14 +88,14 @@
          read the rules, and "how you play" is what they need in front of them
          while playing - not the one-line description from the hub card. -->
     <p class="gc-play__desc">
-        <span class="gc-play__descface" aria-hidden="true">{{emoji}}</span> {{howto}}
+        <span class="gc-play__descface" aria-hidden="true">{{#logourl}}<img class="gc-logo" src="{{logourl}}" alt="">{{/logourl}}{{^logourl}}{{emoji}}{{/logourl}}</span> {{howto}}
     </p>
 
     <div class="gc-stage" data-role="stage"></div>
 
     <div class="gc-overlay" data-role="start">
         <div class="gc-card-panel">
-            <div class="gc-card-panel__face" aria-hidden="true">{{emoji}}</div>
+            <div class="gc-card-panel__face" aria-hidden="true">{{#logourl}}<img class="gc-logo" src="{{logourl}}" alt="">{{/logourl}}{{^logourl}}{{emoji}}{{/logourl}}</div>
             <h2 class="gc-card-panel__title">{{readytitle}}</h2>
             <p class="gc-card-panel__desc">{{desc}}</p>
             <p class="gc-card-panel__text">{{howto}}</p>
