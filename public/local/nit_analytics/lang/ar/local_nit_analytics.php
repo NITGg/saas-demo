@@ -92,3 +92,5 @@ $string['links_copy'] = 'نسخ';
 $string['links_copied'] = 'تم النسخ';
 $string['links_missing'] = 'المصدر والوسيلة والحملة مطلوبة كلها.';
 $string['links_googleads'] = 'إعلانات جوجل: يمكنك أيضًا ترك الوسم التلقائي مفعّلًا (يضيف gclid). هذه الزيارات تُحسب تلقائيًا كـ google / cpc، واسم الحملة يأتي من Google Ads داخل Google Analytics.';
+$string['egp_per_usd'] = 'عدد الجنيهات المصرية لكل دولار أمريكي (Meta)';
+$string['egp_per_usd_desc'] = 'بكسل Meta لا يقبل الجنيه المصري، لذلك تُرسل قيم المشتريات بالجنيه إلى Meta بالدولار بهذا السعر. Google Analytics يستقبلها بالجنيه كما هي. القيمة 0 ترسل الجنيه بدون تحويل.';

@@ -167,10 +167,25 @@ final class tracker_test extends \advanced_testcase {
         $this->assertStringContainsString("gtag('event','sign_up')", $html);
         $this->assertStringContainsString("fbq('track','CompleteRegistration')", $html);
         $this->assertStringContainsString('"transaction_id":"flex-7","value":1500.5,"currency":"EGP"', $html);
-        $this->assertStringContainsString("fbq('track','Purchase',{\"value\":1500.5,\"currency\":\"EGP\"}", $html);
+        $this->assertStringContainsString("fbq('track','Purchase',{\"value\":30.01,\"currency\":\"USD\"}", $html,
+            'Meta gets USD at the default 50 EGP per dollar');
         $this->assertStringContainsString("event:'purchase'", $html);
         $this->assertStringContainsString('ns.html?id=GTM-ABCD12', tracker::body_html());
         $this->assertStringNotContainsString('sign_up', tracker::head_html(false));
+    }
+
+    /**
+     * Meta values: EGP is converted to USD at the admin rate; other currencies and rate 0 pass through.
+     *
+     * @return void
+     */
+    public function test_meta_money(): void {
+        $this->assertSame([10.0, 'USD'], tracker::meta_money(500, 'EGP'), 'default 50 EGP per USD');
+        set_config('egp_per_usd', '48.5', 'local_nit_analytics');
+        $this->assertSame([10.31, 'USD'], tracker::meta_money(500, 'EGP'));
+        $this->assertSame([350.0, 'SAR'], tracker::meta_money(350, 'SAR'));
+        set_config('egp_per_usd', '0', 'local_nit_analytics');
+        $this->assertSame([500.0, 'EGP'], tracker::meta_money(500, 'EGP'), '0 turns conversion off');
     }
 
     /**
