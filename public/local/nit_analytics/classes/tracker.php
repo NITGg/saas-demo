@@ -206,7 +206,18 @@ final class tracker {
      * @return bool
      */
     public static function from_google_ads(array $params): bool {
-        foreach (['gclid', 'gbraid', 'wbraid'] as $key) {
+        return self::click_id($params, ['gclid', 'gbraid', 'wbraid']);
+    }
+
+    /**
+     * Whether one of the given click-id parameters is present and well formed.
+     *
+     * @param array $params
+     * @param string[] $keys
+     * @return bool
+     */
+    private static function click_id(array $params, array $keys): bool {
+        foreach ($keys as $key) {
             if (isset($params[$key]) && is_string($params[$key]) && preg_match('/^[A-Za-z0-9_\-]{10,200}$/', $params[$key])) {
                 return true;
             }
@@ -238,6 +249,9 @@ final class tracker {
         if (!isset($utm['utm_source']) && self::from_google_ads($params)) {
             // Google Ads auto-tagging adds a click id instead of UTM parameters.
             $utm = ['utm_source' => 'google', 'utm_medium' => 'cpc'] + $utm;
+        } else if (!isset($utm['utm_source']) && self::click_id($params, ['fbclid'])) {
+            // Facebook / Instagram add fbclid to every link clicked there (ads and posts alike).
+            $utm = ['utm_source' => 'meta', 'utm_medium' => 'social'] + $utm;
         }
         if ($utm) {
             $session->local_nit_analytics_utm = $utm;

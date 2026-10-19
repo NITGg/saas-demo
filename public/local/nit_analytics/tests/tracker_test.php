@@ -260,6 +260,22 @@ final class tracker_test extends \advanced_testcase {
     }
 
     /**
+     * A Facebook / Instagram click (fbclid, no UTM) counts as meta / social; UTM wins.
+     *
+     * @return void
+     */
+    public function test_meta_click_id_counts_as_meta_social(): void {
+        $session = new \stdClass();
+        tracker::capture(['fbclid' => 'IwAR3xYz_abc-123456'], [], $session);
+        $this->assertSame(['utm_source' => 'meta', 'utm_medium' => 'social'], $session->local_nit_analytics_utm);
+
+        $tagged = new \stdClass();
+        tracker::capture(['fbclid' => 'IwAR3xYz_abc-123456', 'utm_source' => 'ig', 'utm_medium' => 'paid_social',
+            'utm_campaign' => 'oct'], [], $tagged);
+        $this->assertSame('ig', $tagged->local_nit_analytics_utm['utm_source'], 'UTM from Meta Ads wins');
+    }
+
+    /**
      * The link builder makes clean UTM links to pages of this site only.
      *
      * @return void
