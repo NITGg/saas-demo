@@ -57,7 +57,9 @@ final class hook_callbacks {
     }
 
     /**
-     * The GTM <noscript> fallback right after <body> (only with consent).
+     * Right after <body>: the consent banner until the visitor answers, or — with consent — the GTM
+     * <noscript> fallback. The banner is printed here, not in the footer: Boost-based themes put
+     * footer HTML inside the hidden "?" popover, where nobody would see it.
      *
      * @param \core\hook\output\before_standard_top_of_body_html_generation $hook
      * @return void
@@ -65,24 +67,14 @@ final class hook_callbacks {
     public static function before_standard_top_of_body_html_generation(
             \core\hook\output\before_standard_top_of_body_html_generation $hook): void {
         global $PAGE;
-        if (during_initial_install() || !tracker::should_track((string) $PAGE->pagelayout, $_COOKIE)) {
+        if (during_initial_install()) {
             return;
         }
-        $hook->add_html(tracker::body_html());
-    }
-
-    /**
-     * The consent banner, until the visitor accepts or declines.
-     *
-     * @param \core\hook\output\before_standard_footer_html_generation $hook
-     * @return void
-     */
-    public static function before_standard_footer_html_generation(
-            \core\hook\output\before_standard_footer_html_generation $hook): void {
-        global $PAGE;
-        if (during_initial_install() || !tracker::should_ask_consent((string) $PAGE->pagelayout, $_COOKIE)) {
-            return;
+        $layout = (string) $PAGE->pagelayout;
+        if (tracker::should_ask_consent($layout, $_COOKIE)) {
+            $hook->add_html(tracker::consent_banner_html());
+        } else if (tracker::should_track($layout, $_COOKIE)) {
+            $hook->add_html(tracker::body_html());
         }
-        $hook->add_html(tracker::consent_banner_html());
     }
 }

@@ -114,6 +114,34 @@ final class conversions_test extends \advanced_testcase {
     }
 
     /**
+     * Buying a lesson / course from the wallet records a conversion (local_nit_finance calls in).
+     *
+     * @return void
+     */
+    public function test_wallet_course_purchase_is_recorded(): void {
+        global $DB;
+        if (!class_exists('\local_nit_finance\local\purchases')) {
+            $this->markTestSkipped('local_nit_finance not installed');
+        }
+        $gen = $this->getDataGenerator();
+        $course = $gen->create_course();
+        $gen->create_and_enrol($course, 'editingteacher');
+        $page = $gen->create_module('page', ['course' => $course->id]);
+        \local_nit_finance\local\catalog::set_price((int) $page->cmid, (int) $course->id, 5000);
+        $student = $gen->create_user();
+        \local_nit_finance\local\wallets::move(\local_nit_finance\local\wallets::STUDENT, (int) $student->id, 8000,
+            \local_nit_finance\local\wallets::KIND_TOPUP);
+        $this->setUser($student);
+
+        \local_nit_finance\local\purchases::buy_with_wallet((int) $student->id, (int) $page->cmid);
+
+        $row = $DB->get_record(conversions::TABLE, ['kind' => 'course', 'userid' => $student->id]);
+        $this->assertNotFalse($row, 'a wallet purchase should be a conversion');
+        $this->assertSame(5000, (int) $row->amount_minor);
+        $this->assertCount(1, conversions::take_pending((int) $student->id));
+    }
+
+    /**
      * Buying a Flex package records a conversion (local_nit_flex calls in).
      *
      * @return void

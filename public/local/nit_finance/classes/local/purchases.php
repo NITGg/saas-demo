@@ -134,6 +134,17 @@ final class purchases {
             $purchase->id = $DB->insert_record('nit_purchase', $purchase);
         }
 
+        // Purchase conversion for the marketing funnel (local_nit_analytics, when installed).
+        if (class_exists('\local_nit_analytics\conversions')) {
+            global $USER;
+            try {
+                \local_nit_analytics\conversions::record_purchase($userid, 'course', max(0, $amountminor), 'EGP',
+                    'fin-' . $purchase->id . '-' . $now, isset($USER->id) && (int) $USER->id === $userid);
+            } catch (\Throwable $e) {
+                debugging('local_nit_finance: analytics conversion not recorded: ' . $e->getMessage(), DEBUG_DEVELOPER);
+            }
+        }
+
         $ref = ['itemtype' => $item->type, 'itemid' => $item->id, 'purchaseid' => $purchase->id, 'note' => $item->name];
         if ($teachershare > 0) {
             wallets::move(wallets::TEACHER, $teacherid, $teachershare, wallets::KIND_EARNING, $ref);

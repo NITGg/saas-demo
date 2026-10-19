@@ -114,6 +114,30 @@ final class tracker_test extends \advanced_testcase {
     }
 
     /**
+     * The banner is printed right after <body> (not in the footer, which Boost hides inside the "?"
+     * popover), and the callback is registered for that hook.
+     *
+     * @covers \local_nit_analytics\local\hook_callbacks
+     * @return void
+     */
+    public function test_banner_is_printed_at_top_of_body(): void {
+        global $PAGE;
+        $this->setGuestUser();
+        set_config('ga4_id', 'G-TEST1234', 'local_nit_analytics');
+        $PAGE->set_url('/');
+        $PAGE->set_pagelayout('frontpage');
+
+        $hook = new \core\hook\output\before_standard_top_of_body_html_generation($PAGE->get_renderer('core'));
+        local\hook_callbacks::before_standard_top_of_body_html_generation($hook);
+        $this->assertStringContainsString('id="nit-analytics-consent"', $hook->get_output());
+
+        $callbacks = \core\hook\manager::get_instance()->get_callbacks_for_hook(
+            \core\hook\output\before_standard_top_of_body_html_generation::class);
+        $ours = array_filter($callbacks, fn($c) => strpos((string) ($c['callback'] ?? ''), 'local_nit_analytics') !== false);
+        $this->assertNotEmpty($ours, 'the top-of-body callback must be registered');
+    }
+
+    /**
      * The banner's buttons store the choice in the consent cookie on the site's own path.
      *
      * @return void
@@ -208,6 +232,55 @@ final class tracker_test extends \advanced_testcase {
         $broken = new \stdClass();
         tracker::capture([], [tracker::UTM_COOKIE => '{not json'], $broken);
         $this->assertObjectNotHasProperty('local_nit_analytics_utm', $broken, 'a bad cookie is ignored');
+    }
+
+    /**
+     * A Google Ads auto-tagged visit (gclid / gbraid / wbraid, no UTM) counts as google / cpc;
+     * explicit UTM wins over the click id; junk click ids are ignored.
+     *
+     * @return void
+     */
+    public function test_google_ads_click_id_counts_as_google_cpc(): void {
+        global $DB;
+        foreach (['gclid', 'gbraid', 'wbraid'] as $key) {
+            $session = new \stdClass();
+            tracker::capture([$key => 'Cj0KCQjw-abc_123XYZ'], [], $session);
+            $this->assertSame(['utm_source' => 'google', 'utm_medium' => 'cpc'], $session->local_nit_analytics_utm, $key);
+        }
+        $this->assertSame(3, $DB->count_records(funnel::LANDING_TABLE, ['source' => 'google', 'medium' => 'cpc']));
+
+        $tagged = new \stdClass();
+        tracker::capture(['gclid' => 'Cj0KCQjw-abc_123XYZ', 'utm_source' => 'newsletter', 'utm_medium' => 'email'],
+            [], $tagged);
+        $this->assertSame('newsletter', $tagged->local_nit_analytics_utm['utm_source'], 'explicit UTM wins');
+
+        $junk = new \stdClass();
+        tracker::capture(['gclid' => '<script>'], [], $junk);
+        $this->assertObjectNotHasProperty('local_nit_analytics_utm', $junk);
+    }
+
+    /**
+     * The link builder makes clean UTM links to pages of this site only.
+     *
+     * @return void
+     */
+    public function test_campaign_url(): void {
+        global $CFG;
+        $url = tracker::campaign_url('/local/academy/course.php?id=3', 'Google', 'CPC', 'Oct English', 'Video A');
+        $this->assertSame($CFG->wwwroot . '/local/academy/course.php?id=3&utm_source=google&utm_medium=cpc'
+            . '&utm_campaign=oct_english&utm_content=video_a', $url);
+
+        $this->assertSame($CFG->wwwroot . '/?utm_source=facebook&utm_medium=paid_social&utm_campaign=x',
+            tracker::campaign_url('', 'facebook', 'paid social', 'x'));
+        $this->assertStringStartsWith($CFG->wwwroot . '/?', tracker::campaign_url('https://evil.example/', 'a', 'b', 'c'),
+            'external pages are not allowed');
+        $this->assertSame('', tracker::campaign_url('/', 'google', '', 'oct'), 'medium is required');
+
+        // A built link is captured as the same campaign.
+        $session = new \stdClass();
+        parse_str((string) parse_url($url, PHP_URL_QUERY), $params);
+        tracker::capture($params, [], $session);
+        $this->assertSame('oct_english', $session->local_nit_analytics_utm['utm_campaign']);
     }
 
     /**
