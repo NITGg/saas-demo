@@ -32,6 +32,9 @@ if ($hassiteconfig) {
                 get_string($key, 'local_nit_analytics'), get_string($key . '_desc', 'local_nit_analytics'),
                 '', PARAM_ALPHANUMEXT, 24));
         }
+        $settings->add(new admin_setting_configtext('local_nit_analytics/egp_per_usd',
+            get_string('egp_per_usd', 'local_nit_analytics'), get_string('egp_per_usd_desc', 'local_nit_analytics'),
+            '50', PARAM_FLOAT, 8));
         $settings->add(new admin_setting_configcheckbox('local_nit_analytics/requireconsent',
             get_string('requireconsent', 'local_nit_analytics'), get_string('requireconsent_desc', 'local_nit_analytics'), 1));
         $settings->add(new admin_setting_configcheckbox('local_nit_analytics/trackadmins',

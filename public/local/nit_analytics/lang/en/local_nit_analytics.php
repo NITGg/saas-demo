@@ -92,3 +92,5 @@ $string['links_copy'] = 'Copy';
 $string['links_copied'] = 'Copied';
 $string['links_missing'] = 'Source, medium and campaign are all needed.';
 $string['links_googleads'] = 'Google Ads: you can also leave auto-tagging on (it adds gclid). Those visits count as google / cpc automatically; the campaign name then comes from Google Ads in Google Analytics.';
+$string['egp_per_usd'] = 'Egyptian pounds per US dollar (Meta)';
+$string['egp_per_usd_desc'] = 'The Meta Pixel does not accept EGP, so EGP purchase values are sent to Meta in US dollars at this rate. Google Analytics still gets EGP. 0 sends EGP unchanged.';

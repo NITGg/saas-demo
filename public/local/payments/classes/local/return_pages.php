@@ -39,6 +39,27 @@ class return_pages {
     }
 
     /**
+     * The clean address of the return page when the gateway added more than we use. Kashier appends
+     * card details (cardDataToken, maskedCard, …) to the redirect; left in the address bar they end
+     * up in browser history and in every analytics hit, and Meta's pixel suppresses the Purchase on
+     * a page whose URL carries card data. Only order_id and paymentStatus are kept.
+     *
+     * @param array $params the request's query parameters ($_GET)
+     * @return \moodle_url|null the URL to redirect to, or null when it is already clean
+     */
+    public static function clean_callback(array $params): ?\moodle_url {
+        $keep = array_intersect_key($params, ['order_id' => 1, 'paymentStatus' => 1]);
+        if (count($keep) === count($params) || !isset($keep['order_id']) || !is_string($keep['order_id'])) {
+            return null;
+        }
+        $clean = ['order_id' => clean_param($keep['order_id'], PARAM_TEXT)];
+        if (isset($keep['paymentStatus']) && is_string($keep['paymentStatus'])) {
+            $clean['paymentStatus'] = clean_param($keep['paymentStatus'], PARAM_ALPHANUMEXT);
+        }
+        return new \moodle_url('/local/payments/callback.php', $clean);
+    }
+
+    /**
      * "Try again" after a failed or cancelled payment.
      *
      * @param \stdClass|null $transaction

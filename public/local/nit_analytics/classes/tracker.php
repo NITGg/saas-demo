@@ -371,8 +371,9 @@ final class tracker {
                 $events[] = "gtag('event','purchase',$data);";
             }
             if ($pixel !== '') {
-                $events[] = "fbq('track','Purchase'," . json_encode(['value' => $value,
-                    'currency' => (string) $p['currency']]) . ',' . json_encode(['eventID' => (string) $p['ref']]) . ');';
+                [$metavalue, $metacurrency] = self::meta_money($value, (string) $p['currency']);
+                $events[] = "fbq('track','Purchase'," . json_encode(['value' => $metavalue,
+                    'currency' => $metacurrency]) . ',' . json_encode(['eventID' => (string) $p['ref']]) . ');';
             }
         }
         if ($session_utm && empty($cookies[self::UTM_COOKIE])) {
@@ -382,6 +383,24 @@ final class tracker {
             $html .= '<script>' . implode('', $events) . "</script>\n";
         }
         return $html;
+    }
+
+    /**
+     * The purchase value as sent to Meta. The Meta Pixel rejects EGP ("currency is invalid") and
+     * then suppresses the Purchase, so EGP amounts go to Meta in US dollars at the admin-set rate
+     * (setting egp_per_usd). Google keeps the original currency.
+     *
+     * @param float $value amount in major units
+     * @param string $currency ISO code
+     * @return array [value, currency]
+     */
+    public static function meta_money(float $value, string $currency): array {
+        $setting = get_config(self::COMPONENT, 'egp_per_usd');
+        $rate = $setting === false ? 50.0 : (float) $setting; // Works before an admin saves the setting.
+        if ($currency === 'EGP' && $rate > 0) {
+            return [round($value / $rate, 2), 'USD'];
+        }
+        return [$value, $currency];
     }
 
     /**

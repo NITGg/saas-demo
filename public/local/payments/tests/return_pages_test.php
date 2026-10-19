@@ -42,6 +42,18 @@ final class return_pages_test extends \basic_testcase {
         $this->assertSame('/local/nit_finance/wallet.php', $this->path(return_pages::retry($this->tx('wallet_topup'))));
     }
 
+    public function test_card_details_are_dropped_from_the_return_page(): void {
+        $url = return_pages::clean_callback(['order_id' => 'PAY-1', 'paymentStatus' => 'SUCCESS',
+            'cardDataToken' => 'tok_123', 'maskedCard' => '512345******1234', 'cardBrand' => 'Mastercard']);
+        $this->assertNotNull($url, 'a URL with card details must be cleaned');
+        $this->assertSame('/local/payments/callback.php?order_id=PAY-1&paymentStatus=SUCCESS', $this->path($url));
+
+        $this->assertNull(return_pages::clean_callback(['order_id' => 'PAY-1', 'paymentStatus' => 'SUCCESS']),
+            'an already clean URL is not redirected again');
+        $this->assertNull(return_pages::clean_callback(['order_id' => 'PAY-1']));
+        $this->assertNull(return_pages::clean_callback(['maskedCard' => 'x']), 'no order id: nothing to keep');
+    }
+
     public function test_only_pages_of_this_site_are_followed(): void {
         $this->assertNull(return_pages::started_from($this->tx('subscription', 0, '//evil.example/x')));
         $this->assertNull(return_pages::started_from($this->tx('subscription', 0, 'https://evil.example/x')));

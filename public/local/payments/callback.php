@@ -17,6 +17,11 @@ if ($owntx && (int) $owntx->userid !== (int) $USER->id
     throw new moodle_exception('invalidaccess', 'error');
 }
 
+// Drop the card details the gateway appended before anything renders (history, analytics, Meta).
+if ($cleanurl = \local_payments\local\return_pages::clean_callback($_GET)) {
+    redirect($cleanurl);
+}
+
 $PAGE->set_url(new moodle_url('/local/payments/callback.php', ['order_id' => $order_id]));
 $PAGE->set_context(context_system::instance());
 $PAGE->set_pagelayout('standard');
