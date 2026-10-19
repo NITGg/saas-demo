@@ -1,0 +1,70 @@
+<!-- NIT — Games Corner home-page block.
+     Paste into an HTML block on the FRONT PAGE (Site home).
+     One wide call-to-action that sends the child to /local/games/ — the hub
+     page that lists every game in the corner.
+
+     Like the other blocks in this folder this is a snippet you paste, not a
+     file the theme loads. Site administration ▸ Front page ▸ Front page
+     settings ▸ turn editing on ▸ Add a block ▸ Text, then paste the whole file
+     into an EMPTY block.
+
+     NEEDS local_nit_mlang's "Include rich text editors" switched OFF. With it
+     on, the content editor is split into one tab per language and this single
+     bilingual file is torn in half on save — the symptom is the first label
+     printing as a raw multilang tag. Turn it off with:
+
+       php admin/cli/cfg.php --component=local_nit_mlang --name=editors --set=0
+
+     The tags also need the "Multi-language content (v2)" filter
+     (filter/multilang2) enabled site-wide. With the filter off, both languages
+     print at once — visible, but wrong.
+
+     The block only points at the corner; the corner itself (the card grid, the
+     points, the badges) is the local_games plugin. Nothing here needs updating
+     when a new game ships.
+
+     The emoji tiles are decorative and carry aria-hidden — the link text is
+     what a screen reader announces.
+-->
+<div class="nit-games-cta" style="
+    display:flex; flex-wrap:wrap; gap:1.5rem; align-items:center;
+    justify-content:space-between; padding:1.75rem;
+    border:2px solid var(--nit-brand-borderprimary, #223244);
+    border-radius:24px;
+    background:var(--nit-brand-surface, #121e2d);">
+
+    <div style="flex:1 1 18rem; min-inline-size:15rem;">
+        <div style="font-size:2.6rem; line-height:1;" aria-hidden="true">🎮</div>
+        <h2 style="margin:.6rem 0 .35rem; font-size:1.7rem; font-weight:800;
+                   color:var(--nit-brand-textprimary, #eef3f9);">
+            {mlang en}Games Corner{mlang}{mlang ar}ركن الألعاب{mlang}
+        </h2>
+        <p style="margin:0; font-size:1.05rem; line-height:1.6;
+                  color:var(--nit-brand-textsecondary, #94a3b8);">
+            {mlang en}Short games that teach something. Play, collect points, earn badges.{mlang}{mlang ar}ألعاب قصيرة بتعلّمك حاجة. العب، اجمع نقاط، واكسب شارات.{mlang}
+        </p>
+        <a href="/local/games/index.php" style="
+            display:inline-block; margin-block-start:1.1rem;
+            padding:.8rem 2rem; border-radius:999px;
+            background:var(--nit-brand-primary, #5488c4);
+            color:#fff; font-weight:800; font-size:1.05rem; text-decoration:none;">
+            {mlang en}Open the corner{mlang}{mlang ar}ادخل الركن{mlang}
+        </a>
+    </div>
+
+    <div style="display:flex; gap:.75rem; flex-wrap:wrap; justify-content:center;" aria-hidden="true">
+        <span style="display:grid; place-items:center; inline-size:5.5rem; block-size:5.5rem;
+                     border:2px solid var(--nit-brand-bordersecondary, #33475e);
+                     border-radius:20px; font-size:2.2rem;
+                     background:var(--nit-brand-background, #0c141f);">🔢</span>
+        <span style="display:grid; place-items:center; inline-size:5.5rem; block-size:5.5rem;
+                     border:2px solid var(--nit-brand-bordersecondary, #33475e);
+                     border-radius:20px; font-size:2.2rem;
+                     background:var(--nit-brand-background, #0c141f);">🧮</span>
+        <span style="display:grid; place-items:center; inline-size:5.5rem; block-size:5.5rem;
+                     border:2px solid var(--nit-brand-bordersecondary, #33475e);
+                     border-radius:20px; font-size:2.2rem;
+                     background:var(--nit-brand-background, #0c141f);">🏅</span>
+    </div>
+
+</div>

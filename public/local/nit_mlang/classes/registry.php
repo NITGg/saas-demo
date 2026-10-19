@@ -80,6 +80,10 @@ class registry {
         's__shortname',
         // local_nit_tutors: a teacher badge's one-line "What it means" (admin/badges.php).
         'badgedescription',
+        // One row of a Games Corner game's content: the question, the word, the
+        // clue. Grouped under one prefix so the corner can add a field to a
+        // game's shape without this list having to learn its name.
+        'gametext[*]',
     ];
 
     /**

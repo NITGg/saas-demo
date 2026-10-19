@@ -1,0 +1,148 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_games/hub
+
+    The Games Corner landing page: the whole catalogue, grouped into sections.
+
+    Context variables required for this template:
+    * title - page heading
+    * intro - one line under the heading
+    * pointslabel, badgeslabel - labels for the two stat pills
+    * points, badges - the learner's totals
+    * playlabel, soonlabel - card button wording
+    * categories - sections, each with key, emoji, name, note, hasnote, games[]
+    * badgeshelf - every badge the corner can award
+    * hasbadgeshelf - whether to render the shelf at all
+
+    Example context (json):
+    {
+        "title": "Games Corner",
+        "intro": "Short games that teach something.",
+        "pointslabel": "Your points",
+        "badgeslabel": "Your badges",
+        "points": 340,
+        "badges": 4,
+        "playlabel": "Play",
+        "soonlabel": "Coming soon",
+        "categories": [
+            {
+                "key": "numbers",
+                "emoji": "1",
+                "name": "Numbers",
+                "hasnote": false,
+                "games": [
+                    {
+                        "id": "math-race",
+                        "emoji": "+",
+                        "name": "Math Race",
+                        "desc": "Pick the right answer and keep the race going.",
+                        "stars": "*",
+                        "live": true,
+                        "url": "#",
+                        "played": true,
+                        "bestscore": "Best: 12"
+                    }
+                ]
+            }
+        ],
+        "hasbadgeshelf": true,
+        "badgeshelf": [
+            {"name": "Sharp Calculator", "hint": "10 correct in a row", "earned": true}
+        ]
+    }
+}}
+<div class="gc-hub">
+
+    <header class="gc-hero">
+        <div class="gc-hero__text">
+            <h1 class="gc-hero__title"><span aria-hidden="true">🎮</span> {{title}}</h1>
+            <p class="gc-hero__intro">{{intro}}</p>
+        </div>
+        <div class="gc-hero__stats">
+            <div class="gc-stat">
+                <span class="gc-stat__icon" aria-hidden="true">⚡</span>
+                <span class="gc-stat__value">{{points}}</span>
+                <span class="gc-stat__label">{{pointslabel}}</span>
+            </div>
+            <div class="gc-stat">
+                <span class="gc-stat__icon" aria-hidden="true">🏅</span>
+                <span class="gc-stat__value">{{badges}}</span>
+                <span class="gc-stat__label">{{badgeslabel}}</span>
+            </div>
+        </div>
+    </header>
+
+    {{#categories}}
+        <section class="gc-section" data-category="{{key}}">
+            <h2 class="gc-section__title">
+                <span aria-hidden="true">{{emoji}}</span> {{name}}
+            </h2>
+            {{#hasnote}}<p class="gc-section__note">{{note}}</p>{{/hasnote}}
+
+            <ul class="gc-grid">
+                {{#games}}
+                    <li class="gc-card {{^live}}gc-card--soon{{/live}}">
+                        {{#live}}
+                            <a class="gc-card__link" href="{{url}}">
+                                <span class="gc-card__face" aria-hidden="true">{{emoji}}</span>
+                                <span class="gc-card__body">
+                                    <span class="gc-card__name">{{name}}</span>
+                                    <span class="gc-card__desc">{{desc}}</span>
+                                    <span class="gc-card__meta">
+                                        <span class="gc-card__stars" aria-hidden="true">{{stars}}</span>
+                                    </span>
+                                    {{#played}}<span class="gc-card__best">{{bestscore}}</span>{{/played}}
+                                </span>
+                                <span class="gc-card__cta">{{playlabel}}</span>
+                            </a>
+                        {{/live}}
+                        {{^live}}
+                            <div class="gc-card__link" aria-disabled="true">
+                                <span class="gc-card__face" aria-hidden="true">{{emoji}}</span>
+                                <span class="gc-card__body">
+                                    <span class="gc-card__name">{{name}}</span>
+                                    <span class="gc-card__desc">{{desc}}</span>
+                                    <span class="gc-card__meta">
+                                        <span class="gc-card__stars" aria-hidden="true">{{stars}}</span>
+                                    </span>
+                                </span>
+                                <span class="gc-card__cta gc-card__cta--soon">{{soonlabel}}</span>
+                            </div>
+                        {{/live}}
+                    </li>
+                {{/games}}
+            </ul>
+        </section>
+    {{/categories}}
+
+    {{#hasbadgeshelf}}
+        <section class="gc-section gc-section--badges">
+            <h2 class="gc-section__title"><span aria-hidden="true">🏅</span> {{badgeslabel}}</h2>
+            <ul class="gc-badges">
+                {{#badgeshelf}}
+                    <li class="gc-badge {{#earned}}gc-badge--earned{{/earned}}">
+                        <span class="gc-badge__icon" aria-hidden="true">{{#earned}}🏅{{/earned}}{{^earned}}🔒{{/earned}}</span>
+                        <span class="gc-badge__name">{{name}}</span>
+                        <span class="gc-badge__hint">{{hint}}</span>
+                    </li>
+                {{/badgeshelf}}
+            </ul>
+        </section>
+    {{/hasbadgeshelf}}
+
+</div>

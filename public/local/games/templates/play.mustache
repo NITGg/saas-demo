@@ -1,0 +1,121 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_games/play
+
+    The shell every game plays inside: a top bar, a HUD, a stage the game fills,
+    and the start / end cards. js/shell.js drives it; js/<gameid>.js fills the
+    stage.
+
+    Context variables required for this template:
+    * gameid - registry slug
+    * name, emoji - what the game is called
+    * huburl, backlabel, cancellabel - the ways out of the game
+    * startlabel, readytitle, howto, desc - the start card
+    * scorelabel, streaklabel - HUD labels
+    * soundonlabel - accessible name of the sound toggle
+    * config - JSON blob read by shell.js
+
+    Example context (json):
+    {
+        "gameid": "math-race",
+        "name": "Math Race",
+        "emoji": "+",
+        "huburl": "#",
+        "backlabel": "Back to the games",
+        "cancellabel": "Not now",
+        "startlabel": "Start",
+        "readytitle": "Ready for the race?",
+        "howto": "A sum appears, three answers under it.",
+        "desc": "Pick the right answer and keep the race going.",
+        "scorelabel": "Score",
+        "streaklabel": "In a row",
+        "soundonlabel": "Sound on",
+        "config": "{}"
+    }
+}}
+<div class="gc-play" data-game="{{gameid}}">
+
+    <script type="application/json" data-role="config">{{{config}}}</script>
+
+    <div class="gc-play__bar">
+        <a class="gc-back" href="{{huburl}}">
+            <span class="gc-back__arrow" aria-hidden="true">&#8592;</span> {{backlabel}}
+        </a>
+
+        <div class="gc-hud" role="status" aria-live="polite">
+            <span class="gc-hud__item">
+                <span class="gc-hud__label">{{scorelabel}}</span>
+                <span class="gc-hud__value" data-hud="score">0</span>
+            </span>
+            <span class="gc-hud__item">
+                <span class="gc-hud__label">{{streaklabel}}</span>
+                <span class="gc-hud__value" data-hud="streak">0</span>
+            </span>
+            <span class="gc-hud__item gc-hud__item--hidden" data-hud="lives-wrap">
+                <span class="gc-hud__value" data-hud="lives"></span>
+            </span>
+            <!-- How far through the round the child is. Every game reports it,
+                 so no game can feel like it goes on for ever. -->
+            <span class="gc-hud__item gc-hud__item--hidden" data-hud="progress-wrap">
+                <span class="gc-hud__value gc-hud__value--progress" data-hud="progress"></span>
+            </span>
+        </div>
+
+        <button type="button" class="gc-sound" data-action="sound" aria-pressed="true" title="{{soundonlabel}}">
+            <span aria-hidden="true">&#128266;</span>
+            <span class="sr-only">{{soundonlabel}}</span>
+        </button>
+    </div>
+
+    <!-- The same how-to-play text the start panel gives, kept on the page
+         behind it. Once the panel is dismissed a child has nowhere else to
+         read the rules, and "how you play" is what they need in front of them
+         while playing - not the one-line description from the hub card. -->
+    <p class="gc-play__desc">
+        <span class="gc-play__descface" aria-hidden="true">{{emoji}}</span> {{howto}}
+    </p>
+
+    <div class="gc-stage" data-role="stage"></div>
+
+    <div class="gc-overlay" data-role="start">
+        <div class="gc-card-panel">
+            <div class="gc-card-panel__face" aria-hidden="true">{{emoji}}</div>
+            <h2 class="gc-card-panel__title">{{readytitle}}</h2>
+            <p class="gc-card-panel__desc">{{desc}}</p>
+            <p class="gc-card-panel__text">{{howto}}</p>
+            <div class="gc-card-panel__actions">
+                <button type="button" class="gc-btn gc-btn--big" data-action="start">{{startlabel}}</button>
+                <a class="gc-btn gc-btn--ghost" href="{{huburl}}">{{cancellabel}}</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="gc-overlay gc-overlay--hidden" data-role="end">
+        <div class="gc-card-panel">
+            <div class="gc-card-panel__face" aria-hidden="true">&#127881;</div>
+            <h2 class="gc-card-panel__title" data-role="end-title"></h2>
+            <p class="gc-card-panel__text" data-role="end-text"></p>
+            <div class="gc-newbadges" data-role="end-badges"></div>
+            <div class="gc-card-panel__actions">
+                <button type="button" class="gc-btn gc-btn--big" data-action="again"></button>
+                <a class="gc-btn gc-btn--ghost" href="{{huburl}}">{{backlabel}}</a>
+            </div>
+        </div>
+    </div>
+
+</div>

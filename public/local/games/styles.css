@@ -1,0 +1,2663 @@
+/* This file is part of Moodle - http://moodle.org/
+ *
+ * Moodle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Moodle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/**
+ * Games Corner.
+ *
+ * Colours come from theme_nit's --nit-brand-* tokens so the corner follows the
+ * site palette, with hard fallbacks for the case where the theme is not active.
+ * Every box uses logical properties: the corner is read right-to-left far more
+ * often than left-to-right.
+ *
+ * @package    local_games
+ * @copyright  2026 NIT
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+.local-games {
+    --gc-surface: var(--nit-brand-surface, #121e2d);
+    --gc-background: var(--nit-brand-background, #0c141f);
+    --gc-border: var(--nit-brand-borderprimary, #223244);
+    --gc-border-soft: var(--nit-brand-bordersecondary, #33475e);
+    --gc-text: var(--nit-brand-textprimary, #eef3f9);
+    --gc-muted: var(--nit-brand-textsecondary, #94a3b8);
+    --gc-primary: var(--nit-brand-primary, #5488c4);
+    --gc-success: var(--nit-brand-success, #3fa877);
+    --gc-warn: var(--nit-brand-error, #d07f43);
+    --gc-gold: var(--nit-brand-warning, #d8c24e);
+    --gc-hoverbg: var(--nit-brand-hoverbackground, #16222f);
+    --gc-hovertext: var(--nit-brand-hovertext, #7fabdb);
+
+    /* Brand Colors: text on a solid brand fill is Text primary, never
+       Bootstrap's auto-contrast black. Same rule as theme_nit's _buttons.scss. */
+    --gc-onfill: var(--nit-brand-textprimary, #eef3f9);
+
+    /* Primary at full strength carries Text primary at only 3.3:1 — under the
+       4.5 a 16px label needs, and these labels are read by seven-year-olds.
+       Derive the fill from the same role rather than picking a new colour, so
+       it still follows the palette (and a .nit-brand-2/3 group) but clears the
+       threshold. Measured 4.9:1 against Group 1. */
+    --gc-fill: color-mix(in srgb, var(--gc-primary) 82%, #000);
+    --gc-fill-hover: color-mix(in srgb, var(--gc-primary) 66%, #000);
+
+    /* Same story for the right/wrong feedback fills: Success and Error at full
+       strength carry Text primary at 2.7:1. These two are the most important
+       words on the screen, so they are darkened until they clear 4.5. The
+       bright roles stay in use for borders, where contrast is not a text rule. */
+    --gc-success-fill: color-mix(in srgb, var(--gc-success) 72%, #000);
+    --gc-warn-fill: color-mix(in srgb, var(--gc-warn) 72%, #000);
+
+    --gc-radius: 18px;
+}
+
+/* ---------------------------------------------------------------- hub ---- */
+
+.gc-hub {
+    max-width: 1120px;
+    margin-inline: auto;
+    padding-block: 0 3rem;
+}
+
+.gc-hero {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.75rem;
+    margin-block-end: 2.25rem;
+    border: 2px solid var(--gc-border);
+    border-radius: calc(var(--gc-radius) + 6px);
+    background: var(--gc-surface);
+}
+
+.gc-hero__title {
+    margin: 0;
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    font-weight: 800;
+    color: var(--gc-text);
+}
+
+.gc-hero__intro {
+    margin-block: 0.5rem 0;
+    color: var(--gc-muted);
+    font-size: 1.2rem;
+}
+
+.gc-hero__stats {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.gc-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 6.5rem;
+    padding: 0.9rem 1.1rem;
+    border: 2px solid var(--gc-border-soft);
+    border-radius: var(--gc-radius);
+    background: var(--gc-background);
+}
+
+.gc-stat__icon {
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+.gc-stat__value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--gc-text);
+}
+
+.gc-stat__label {
+    font-size: 1rem;
+    color: var(--gc-muted);
+}
+
+.gc-section {
+    margin-block-end: 2.5rem;
+}
+
+.gc-section__title {
+    margin-block-end: 0.35rem;
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--gc-text);
+}
+
+.gc-section__note {
+    margin-block-end: 1rem;
+    color: var(--gc-muted);
+    font-size: 1.05rem;
+}
+
+.gc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 1rem;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+/* ---------------------------------------------------------------- card --- */
+
+.gc-card {
+    display: flex;
+}
+
+.gc-card__link {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    inline-size: 100%;
+    padding: 1.25rem;
+    border: 2px solid var(--gc-border);
+    border-radius: var(--gc-radius);
+    background: var(--gc-surface);
+    color: var(--gc-text);
+    text-decoration: none;
+    transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+
+/* ------------------------------------------------------------ no underlines --
+
+   theme_nit's site-wide link affordance (scss/post.scss) underlines every
+   content anchor and repaints it, through a selector carrying eleven :not()
+   classes - more than any plugin stylesheet can outweigh, so the properties it
+   claims are reclaimed with !important.
+
+   It fires on THREE states: :hover, :focus and :active. An earlier version of
+   this file covered :focus-visible instead of :focus, which looks equivalent
+   and is not: :focus-visible is withheld after a mouse click, while :focus is
+   not. So a card looked right on hover and then, the moment it was clicked,
+   kept a blue underline for as long as it held focus - exactly what a child
+   sees after tapping a game. Every state the theme rule names is named here.
+
+   Nothing in the corner is body copy, so nothing in it should ever be
+   underlined. This one rule settles it for every component at once. */
+.local-games a:hover,
+.local-games a:focus,
+.local-games a:focus-visible,
+.local-games a:active {
+    text-decoration: none !important;
+}
+
+a.gc-card__link:hover,
+a.gc-card__link:focus,
+a.gc-card__link:focus-visible,
+a.gc-card__link:active {
+    background-color: var(--gc-hoverbg) !important;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35) !important;
+    transform: translateY(-4px);
+    border-color: var(--gc-primary);
+}
+
+/* Only the game's name takes the Hover Text role. The description, the stars
+   and the best score keep their resting colours, so hovering lifts the card
+   instead of repainting it. */
+a.gc-card__link:hover .gc-card__name,
+a.gc-card__link:focus .gc-card__name,
+a.gc-card__link:focus-visible .gc-card__name {
+    color: var(--gc-hovertext);
+}
+
+/* The description, stars and best score already carry their own colour, so the
+   theme's hover colour on the anchor cannot reach them - a declaration on the
+   element always beats an inherited one. Only the title above inherits it. */
+
+.gc-card__face {
+    font-size: 2.6rem;
+    line-height: 1;
+}
+
+.gc-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    flex: 1;
+}
+
+.gc-card__name {
+    font-size: 1.35rem;
+    font-weight: 800;
+}
+
+.gc-card__desc {
+    font-size: 1.05rem;
+    color: var(--gc-muted);
+    line-height: 1.5;
+}
+
+.gc-card__meta {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    font-size: 1rem;
+    color: var(--gc-muted);
+}
+
+.gc-card__best {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--gc-success);
+}
+
+.gc-card__cta {
+    align-self: flex-start;
+    padding: 0.5rem 1.25rem;
+    border-radius: 999px;
+    background: var(--gc-fill);
+    color: var(--gc-onfill);
+    font-size: 1.1rem;
+    font-weight: 800;
+}
+
+.gc-card__cta--soon {
+    background: transparent;
+    border: 2px dashed var(--gc-border-soft);
+    color: var(--gc-muted);
+}
+
+.gc-card--soon .gc-card__link {
+    opacity: 0.62;
+    cursor: default;
+}
+
+/* -------------------------------------------------------------- badges --- */
+
+.gc-badges {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 0.75rem;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.gc-badge {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    column-gap: 0.75rem;
+    align-items: center;
+    padding: 0.9rem 1.1rem;
+    border: 2px solid var(--gc-border);
+    border-radius: var(--gc-radius);
+    background: var(--gc-surface);
+    opacity: 0.6;
+}
+
+.gc-badge--earned {
+    opacity: 1;
+    border-color: var(--gc-gold);
+}
+
+.gc-badge__icon {
+    grid-row: span 2;
+    font-size: 1.8rem;
+}
+
+.gc-badge__name {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--gc-text);
+}
+
+.gc-badge__hint {
+    font-size: 1rem;
+    color: var(--gc-muted);
+}
+
+/* ------------------------------------------------------------- play bar --- */
+
+.gc-play {
+    position: relative;
+    max-width: 940px;
+    margin-inline: auto;
+}
+
+.gc-play__bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    margin-block-end: 1rem;
+    border: 2px solid var(--gc-border);
+    border-radius: var(--gc-radius);
+    background: var(--gc-surface);
+}
+
+.gc-back {
+    padding: 0.4rem 0.85rem;
+    border: 2px solid transparent;
+    border-radius: 999px;
+    color: var(--gc-muted);
+    font-weight: 700;
+    text-decoration: none;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+/* Same reclaim as the cards, for the same site-wide rule: this is a chrome
+   control, not body copy, so it hovers as a pill rather than as underlined
+   text on a transparent background. */
+.gc-back:hover,
+.gc-back:focus,
+.gc-back:focus-visible,
+.gc-back:active {
+    background-color: var(--gc-hoverbg) !important;
+    color: var(--gc-hovertext);
+    border-color: var(--gc-border-soft);
+}
+
+/* The arrow is a glyph, so it has to be flipped by hand in RTL. */
+[dir="rtl"] .gc-back__arrow {
+    display: inline-block;
+    transform: scaleX(-1);
+}
+
+.gc-hud {
+    display: flex;
+    gap: 1.25rem;
+    align-items: center;
+}
+
+.gc-hud__item {
+    display: flex;
+    gap: 0.4rem;
+    align-items: baseline;
+}
+
+.gc-hud__item--hidden {
+    display: none;
+}
+
+.gc-hud__label {
+    font-size: 0.95rem;
+    color: var(--gc-muted);
+}
+
+.gc-hud__value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--gc-text);
+}
+
+/* How far through the round the child is. Deliberately styled as a pill rather
+   than another bare number: it answers a different question from the score. */
+.gc-hud__value--progress {
+    padding: 0.15rem 0.75rem;
+    border: 2px solid var(--gc-border-soft);
+    border-radius: 999px;
+    font-size: 1.25rem;
+    color: var(--gc-muted);
+}
+
+.gc-sound {
+    padding: 0.4rem 0.7rem;
+    border: 2px solid var(--gc-border-soft);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--gc-text);
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+/* --------------------------------------------------------------- stage --- */
+
+/* The same line the hub card carries, kept on the game page itself. */
+.gc-play__desc {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+    padding-inline: 0.35rem;
+    margin-block-end: 0.9rem;
+    font-size: 1.15rem;
+    line-height: 1.5;
+    color: var(--gc-muted);
+}
+
+.gc-play__descface {
+    font-size: 1.6rem;
+    line-height: 1;
+}
+
+.gc-card-panel__desc {
+    margin-block: 0 0.75rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--gc-text);
+}
+
+/* Boards fade out and back in when a game swaps one for the next. */
+.gc-stage--leaving > * {
+    opacity: 0;
+    transform: scale(0.97);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.gc-stage {
+    position: relative;
+    min-block-size: 460px;
+    padding: 1.25rem;
+    border: 2px solid var(--gc-border);
+    border-radius: calc(var(--gc-radius) + 6px);
+    background: var(--gc-background);
+    overflow: hidden;
+}
+
+.gc-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: color-mix(in srgb, var(--gc-background) 92%, transparent);
+}
+
+.gc-overlay--hidden {
+    display: none;
+}
+
+.gc-card-panel {
+    max-inline-size: 30rem;
+    padding: 2rem;
+    border: 2px solid var(--gc-border-soft);
+    border-radius: calc(var(--gc-radius) + 6px);
+    background: var(--gc-surface);
+    text-align: center;
+}
+
+.gc-card-panel__face {
+    font-size: 3.4rem;
+    line-height: 1;
+}
+
+.gc-card-panel__title {
+    margin-block: 0.75rem 0.5rem;
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--gc-text);
+}
+
+.gc-card-panel__text {
+    margin-block-end: 1.5rem;
+    color: var(--gc-muted);
+    font-size: 1.15rem;
+    line-height: 1.6;
+}
+
+.gc-card-panel__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+}
+
+.gc-btn {
+    padding: 0.75rem 1.75rem;
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background: var(--gc-fill);
+    color: var(--gc-onfill);
+    font-weight: 800;
+    font-size: 1.2rem;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.gc-btn--big {
+    padding: 0.95rem 2.5rem;
+    font-size: 1.45rem;
+}
+
+/* The ghost button follows theme_nit's .btn-outline-secondary contract exactly
+   (scss/components/_buttons.scss): Text primary on a transparent fill with a
+   Border secondary edge at rest, filling from the Hover roles on hover. It was
+   drawn with Text secondary before, which read as a disabled control sitting
+   next to the live one. */
+.gc-btn--ghost {
+    background: transparent;
+    border-color: var(--gc-border-soft);
+    color: var(--gc-text);
+}
+
+/* A solid brand fill keeps its brand foreground on hover and darkens the fill
+   itself - the same contract Bootstrap's --bs-btn-hover-* pair gives core
+   buttons in theme_nit's _buttons.scss. */
+.gc-btn:hover,
+.gc-btn:focus,
+.gc-btn:focus-visible {
+    color: var(--gc-onfill);
+    background: var(--gc-fill-hover);
+}
+
+/* Ghost buttons fill from the Hover roles instead, like .btn-outline-secondary.
+   "Back to the games" is an anchor, so the site-wide link rule in post.scss
+   claims its colour, underline, background and shadow the moment it is hovered
+   - the same five properties reclaimed on the cards above. Without this the
+   button loses its fill and grows an underline mid-hover. */
+.gc-btn--ghost:hover,
+.gc-btn--ghost:focus,
+.gc-btn--ghost:focus-visible,
+.gc-btn--ghost:active {
+    background-color: var(--gc-hoverbg) !important;
+    color: var(--gc-hovertext) !important;
+    border-color: var(--gc-border-soft);
+}
+
+/* Same reclaim at rest: an anchor styled as a button must not inherit the
+   Bootstrap link colour that the theme gives ordinary links. */
+a.gc-btn {
+    text-decoration: none;
+}
+
+a.gc-btn--ghost {
+    color: var(--gc-text);
+}
+
+.gc-newbadge {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+    justify-content: center;
+    padding: 0.7rem 1rem;
+    margin-block-end: 1rem;
+    border: 2px solid var(--gc-gold);
+    border-radius: var(--gc-radius);
+    font-weight: 800;
+    color: var(--gc-text);
+}
+
+.gc-newbadge__icon {
+    font-size: 1.5rem;
+}
+
+/* The "well done" / "try again" chip.
+   Bottom corner, not top: nearly every game puts its question or its rule
+   across the top of the stage, and a chip up there landed straight on the
+   words the child was reading. Down here it is out of the way of both the
+   question and the play area most games centre. */
+.gc-flash {
+    position: absolute;
+    inset-block-end: 0.9rem;
+    inset-inline-end: 0.9rem;
+    z-index: 6;
+    max-inline-size: min(20rem, 70%);
+    padding: 0.6rem 1.2rem;
+    border-radius: 999px;
+    text-align: center;
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--gc-onfill);
+    pointer-events: none;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    /* Two and a half seconds, and most of it is the hold. The message rises
+       into place, sits still long enough to be read, and only then leaves.
+       The old version faded out after 900ms, which never gave a child time to
+       read anything longer than "well done" - the sentence that actually
+       explains a mistake was gone before it registered. */
+    animation: gc-flash-rise 2.5s ease forwards;
+}
+
+.gc-flash--ok {
+    background: var(--gc-success-fill);
+}
+
+.gc-flash--no {
+    background: var(--gc-warn-fill);
+}
+
+@keyframes gc-flash-rise {
+    0% { opacity: 0; transform: translateY(14px) scale(0.92); }
+    8% { opacity: 1; transform: translateY(0) scale(1.04); }
+    14% { transform: translateY(0) scale(1); }
+    82% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(14px) scale(1); }
+}
+
+/* ----------------------------------------------------------- math race --- */
+
+.gc-race {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    block-size: 100%;
+}
+
+.gc-race__track {
+    position: relative;
+    block-size: 62px;
+    border-block-end: 4px dashed var(--gc-border-soft);
+}
+
+.gc-race__runner {
+    position: absolute;
+    inset-block-end: 6px;
+    inset-inline-start: 0;
+    font-size: 2.1rem;
+    line-height: 1;
+    transition: inset-inline-start 0.4s ease;
+}
+
+.gc-race__flag {
+    position: absolute;
+    inset-block-end: 6px;
+    inset-inline-end: 0;
+    font-size: 2.1rem;
+    line-height: 1;
+}
+
+.gc-race__timer {
+    block-size: 10px;
+    border-radius: 999px;
+    background: var(--gc-border);
+    overflow: hidden;
+}
+
+.gc-race__timerbar {
+    display: block;
+    block-size: 100%;
+    inline-size: 100%;
+    background: var(--gc-primary);
+}
+
+.gc-race__question {
+    padding-block: 1.5rem;
+    text-align: center;
+    font-size: clamp(2.2rem, 8vw, 3.6rem);
+    font-weight: 800;
+    color: var(--gc-text);
+}
+
+.gc-race__answers {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+.gc-answer {
+    padding-block: 1.4rem;
+    border: 3px solid var(--gc-border-soft);
+    border-radius: var(--gc-radius);
+    background: var(--gc-surface);
+    color: var(--gc-text);
+    font-size: clamp(1.6rem, 5vw, 2.2rem);
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform 0.12s ease, border-color 0.12s ease;
+}
+
+.gc-answer:hover,
+.gc-answer:focus-visible {
+    transform: translateY(-3px);
+    border-color: var(--gc-primary);
+    background: var(--gc-hoverbg);
+    color: var(--gc-hovertext);
+}
+
+.gc-answer--ok {
+    border-color: var(--gc-success);
+    background: var(--gc-success-fill);
+    color: var(--gc-onfill);
+}
+
+.gc-answer--no {
+    border-color: var(--gc-warn);
+    background: var(--gc-warn-fill);
+    color: var(--gc-onfill);
+}
+
+/* -------------------------------------------------------- math catcher --- */
+
+.gc-catch {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    block-size: 100%;
+}
+
+.gc-catch__rule {
+    margin: 0;
+    padding: 0.75rem 1rem;
+    border: 2px dashed var(--gc-primary);
+    border-radius: var(--gc-radius);
+    text-align: center;
+    font-size: clamp(1.1rem, 3.5vw, 1.5rem);
+    font-weight: 800;
+    color: var(--gc-text);
+}
+
+.gc-catch__canvas {
+    flex: 1;
+    inline-size: 100%;
+    min-block-size: 300px;
+    border-radius: var(--gc-radius);
+    background: var(--gc-surface);
+    touch-action: none;
+}
+
+/* Pinned to ltr on purpose. Everything else in the corner follows the page
+   direction, but this is a steering pad: the button that moves the basket left
+   must stay on the left in Arabic as well, or the child presses the wrong one. */
+.gc-catch__controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    /* rtl:ignore */
+    direction: ltr;
+}
+
+.gc-steer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding-block: 1rem;
+    border: 3px solid var(--gc-border-soft);
+    border-radius: var(--gc-radius);
+    background: var(--gc-surface);
+    color: var(--gc-text);
+    font-size: 1.4rem;
+    font-weight: 800;
+    cursor: pointer;
+    touch-action: manipulation;
+    user-select: none;
+}
+
+/* The label carries its own direction so an Arabic word renders correctly
+   inside the ltr pad without pulling the arrow to the other side. */
+.gc-steer__label {
+    unicode-bidi: isolate;
+}
+
+.gc-steer__arrow {
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+.gc-steer:hover,
+.gc-steer:active {
+    border-color: var(--gc-primary);
+    background: var(--gc-hoverbg);
+    color: var(--gc-hovertext);
+}
+
+/* ------------------------------------------------- letter tiles (shared) --- */
+
+/* Letter Order, Word Builder and the Crossword all hand the child the same
+   thing - one letter on one big key - so they share one tile. Arabic letters
+   are shown in isolated form here by design: each tile is its own letter. */
+.gc-tile {
+    display: grid;
+    place-items: center;
+    min-inline-size: 3.6rem;
+    block-size: 4rem;
+    padding-inline: 0.6rem;
+    border: 3px solid var(--gc-border-soft);
+    border-radius: 14px;
+    background: var(--gc-surface);
+    color: var(--gc-text);
+    font-size: 2.1rem;
+    font-weight: 800;
+    line-height: 1;
+    cursor: pointer;
+    transition: transform 0.12s ease, border-color 0.12s ease;
+}
+
+.gc-tile:hover:not(:disabled),
+.gc-tile:focus-visible {
+    transform: translateY(-3px);
+    border-color: var(--gc-primary);
+}
+
+.gc-tile--used {
+    opacity: 0.32;
+    cursor: default;
+}
+
+.gc-tile--static {
+    cursor: default;
+}
+
+.gc-tile--wide {
+    min-inline-size: 5rem;
+}
+
+/* ----------------------------------------------------------- math shop --- */
+
+.gc-shop {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+    text-align: center;
+}
+
+.gc-shop__purse {
+    margin: 0;
+    padding: 0.6rem 1.4rem;
+    border: 2px dashed var(--gc-gold);
+    border-radius: 999px;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--gc-text);
+}
+
+.gc-shop__shelf {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.gc-shop__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    min-inline-size: 6.5rem;
+    padding: 0.9rem;
+    border: 2px solid var(--gc-border);
+    border-radius: var(--gc-radius);
+    background: var(--gc-surface);
+}
+
+.gc-shop__face {
+    font-size: 2.2rem;
+    line-height: 1;
+}
+
+.gc-shop__name {
+    font-size: 1.1rem;
+    color: var(--gc-muted);
+}
+
+.gc-shop__price {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--gc-text);
+}
+
+.gc-shop__settled {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--gc-success);
+}
+
+.gc-shop__question {
+    margin: 0;
+    font-size: clamp(1.7rem, 5vw, 2.3rem);
+    font-weight: 800;
+    color: var(--gc-text);
+}
+
+.gc-shop__answers {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    inline-size: 100%;
+}
+
+/* -------------------------------------------------------- letter order --- */
+
+.gc-order {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.9rem;
+    text-align: center;
+}
+
+.gc-order__face {
+    font-size: 4rem;
+    line-height: 1;
+}
+
+.gc-order__hint {
+    margin: 0;
+    font-size: 1.2rem;
+    color: var(--gc-muted);
+}
+
+.gc-order__slots,
+.gc-order__tray {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+    align-items: center;
+    /* Both rows hold their height whether or not there is a letter in them.
+       Without this the answer row was flat until the first tile landed in it
+       and then shoved the tray down - the tile a child was aiming at moved
+       out from under their finger. */
+    min-block-size: 5.2rem;
+}
+
+.gc-order__slots {
+    padding: 0.6rem;
+    border-radius: var(--gc-radius);
+    transition: background-color 0.2s ease;
+}
+
+.gc-order__slots--ok {
+    background: color-mix(in srgb, var(--gc-success) 22%, transparent);
+}
+
+.gc-order__slots--no {
+    background: color-mix(in srgb, var(--gc-warn) 22%, transparent);
+}
+
+/* A slot is the same box whether it is empty or full: fixed on both axes, and
+   the letter is centred inside it rather than deciding its size. */
+.gc-slot {
+    display: grid;
+    place-items: center;
+    inline-size: 3.6rem;
+    block-size: 4rem;
+    padding: 0;
+    border: 3px dashed var(--gc-border-soft);
+    border-radius: 14px;
+    background: transparent;
+    color: var(--gc-text);
+    font-size: 2.1rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.gc-slot--filled {
+    border-style: solid;
+    border-color: var(--gc-primary);
+    background: var(--gc-surface);
+    cursor: pointer;
+}
+
+.gc-order__clear {
+    margin-block-start: 0.3rem;
+}
+
+/* -------------------------------------------------------- word builder --- */
+
+.gc-build {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.9rem;
+}
+
+.gc-build__typed {
+    display: flex;
+    gap: 0.4rem;
+    min-block-size: 3.9rem;
+    padding: 0.3rem;
+    align-items: center;
+}
+
+.gc-build__typed--empty::before {
+    content: "";
+    display: block;
+    inline-size: 6rem;
+    block-size: 3px;
+    border-radius: 999px;
+    background: var(--gc-border-soft);
+}
+
+.gc-build__pad {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+}
+
+.gc-build__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    justify-content: center;
+}
+
+/* The board of words to find: one row of boxes per answer, so the child can
+   see the shape of what they are hunting for. */
+.gc-build__targets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.25rem;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.gc-build__target {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.gc-build__box {
+    display: grid;
+    place-items: center;
+    inline-size: 2.2rem;
+    block-size: 2.6rem;
+    border: 2px solid var(--gc-border-soft);
+    border-radius: 8px;
+    background: var(--gc-background);
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--gc-text);
+}
+
+/* A letter a hint has paid for. */
+.gc-build__box--shown {
+    border-color: var(--gc-primary);
+}
+
+.gc-build__target--done .gc-build__box {
+    border-color: var(--gc-success);
+    background: color-mix(in srgb, var(--gc-success) 26%, transparent);
+}
+
+.gc-build__found {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.gc-build__foundcount {
+    inline-size: 100%;
+    text-align: center;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--gc-muted);
+}
+
+.gc-build__word {
+    padding: 0.35rem 0.9rem;
+    border: 2px solid var(--gc-success);
+    border-radius: 999px;
+    color: var(--gc-text);
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+/* ------------------------------------------------------- match connect --- */
+
+.gc-match {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.gc-match__zones {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.75rem;
+}
+
+.gc-match__zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.9rem;
+    border: 3px dashed var(--gc-border-soft);
+    border-radius: var(--gc-radius);
+    background: var(--gc-surface);
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+
+/* The pictures are drop targets and tap targets, so they have to look like
+   something happens when you reach for them. Without this they were the only
+   clickable thing in the corner that gave nothing back on hover. */
+.gc-match__zone:hover:not(.gc-match__zone--done),
+.gc-match__zone:focus-within:not(.gc-match__zone--done) {
+    transform: translateY(-4px) scale(1.03);
+    border-color: var(--gc-primary);
+    background: var(--gc-hoverbg);
+}
+
+.gc-match__zone:hover:not(.gc-match__zone--done) .gc-match__face {
+    transform: scale(1.08);
+}
+
+.gc-match__zone--done {
+    cursor: default;
+}
+
+.gc-match__zone--done {
+    border-style: solid;
+    border-color: var(--gc-success);
+}
+
+.gc-match__zone--no {
+    border-color: var(--gc-warn);
+}
+
+.gc-match__face {
+    font-size: 3.4rem;
+    line-height: 1;
+    transition: transform 0.15s ease;
+}
+
+.gc-match__slot {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--gc-muted);
+}
+
+.gc-match__zone--done .gc-match__slot {
+    font-size: 1.25rem;
+    color: var(--gc-text);
+}
+
+.gc-match__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    justify-content: center;
+}
+
+.gc-match__chip {
+    padding: 0.7rem 1.3rem;
+    border: 3px solid var(--gc-border-soft);
+    border-radius: 999px;
+    background: var(--gc-surface);
+    color: var(--gc-text);
+    font-size: 1.35rem;
+    font-weight: 800;
+    cursor: grab;
+    touch-action: none;
+}
+
+.gc-match__chip--picked {
+    border-color: var(--gc-primary);
+    background: var(--gc-hoverbg);
+}
+
+.gc-match__chip--done {
+    opacity: 0.3;
+    cursor: default;
+}
+
+/* The copy that follows the finger. It must never intercept the pointer, or
+   elementFromPoint would only ever find the ghost itself. */
+.gc-match__ghost {
+    position: fixed;
+    z-index: 20;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    border-color: var(--gc-primary);
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.4);
+}
+
+/* ----------------------------------------------------------- crossword --- */
+
+.gc-cross {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.9rem;
+}
+
+.gc-cross__clue {
+    margin: 0;
+    padding: 0.7rem 1rem;
+    border: 2px dashed var(--gc-primary);
+    border-radius: var(--gc-radius);
+    text-align: center;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--gc-text);
+}
+
+.gc-cross__grid {
+    display: grid;
+    gap: 2px;
+    inline-size: min(100%, 30rem);
+}
+
+.gc-cross__cell {
+    position: relative;
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    border: 2px solid var(--gc-border);
+    border-radius: 6px;
+    background: var(--gc-surface);
+    font-size: clamp(1rem, 3vw, 1.5rem);
+    font-weight: 800;
+    color: var(--gc-text);
+    cursor: pointer;
+}
+
+/* A blocked square is scenery: no border, no cursor, nothing to tap. */
+.gc-cross__cell--blocked {
+    border-color: transparent;
+    background: transparent;
+    cursor: default;
+}
+
+.gc-cross__cell--active {
+    border-color: var(--gc-primary);
+    background: var(--gc-hoverbg);
+}
+
+.gc-cross__cell--solved {
+    border-color: var(--gc-success);
+    background: color-mix(in srgb, var(--gc-success) 20%, transparent);
+}
+
+.gc-cross__number {
+    position: absolute;
+    inset-block-start: 1px;
+    inset-inline-start: 3px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: var(--gc-muted);
+}
+
+.gc-cross__pad {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    justify-content: center;
+}
+
+.gc-cross__pad .gc-tile {
+    min-inline-size: 2.6rem;
+    padding: 0.6rem 0.4rem;
+    font-size: 1.3rem;
+}
+
+/* --------------------------------------------------------- word search --- */
+
+.gc-search {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.9rem;
+}
+
+.gc-search__list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.gc-search__count {
+    inline-size: 100%;
+    text-align: center;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--gc-muted);
+}
+
+.gc-search__word {
+    padding: 0.3rem 0.85rem;
+    border: 2px solid var(--gc-border-soft);
+    border-radius: 999px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--gc-text);
+}
+
+.gc-search__word--done {
+    border-color: var(--gc-success);
+    color: var(--gc-muted);
+    text-decoration: line-through;
+}
+
+.gc-search__grid {
+    position: relative;
+    display: grid;
+    gap: 2px;
+    inline-size: min(100%, 28rem);
+    /* The whole grid is one drag surface; letting the browser scroll on a
+       finger press would cancel every trace on a phone. */
+    touch-action: none;
+}
+
+.gc-search__cell {
+    position: relative;
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    border-radius: 6px;
+    transition: transform 0.1s ease, background-color 0.1s ease, box-shadow 0.1s ease;
+    background: var(--gc-surface);
+    font-size: clamp(0.95rem, 3vw, 1.4rem);
+    font-weight: 700;
+    color: var(--gc-text);
+    user-select: none;
+    cursor: pointer;
+}
+
+/* The selection is a band drawn across the grid, not a per-cell effect.
+   Scaling each cell on its own made the run break up into a line of jumping
+   squares - it read as noise rather than as one word. A single capsule laid
+   over the letters, angled along the drag, is how a word being marked in a
+   puzzle actually looks; the letters underneath simply brighten. */
+/* No transition on the geometry: the band is redrawn every pointer move, so
+   easing would make it lag a moving finger instead of following it. */
+.gc-search__band {
+    position: absolute;
+    /* Above every square's background, so the line is drawn ON the grid rather
+       than behind it. The squares it actually covers go transparent below and
+       let it through; the ones it merely clips a corner of are painted over. */
+    z-index: 2;
+    border-radius: 999px;
+    pointer-events: none;
+    background: color-mix(in srgb, var(--gc-primary) 55%, transparent);
+    box-shadow: 0 0 0 2px var(--gc-primary);
+    transition: opacity 0.12s ease;
+}
+
+.gc-search__band--found {
+    background: color-mix(in srgb, var(--gc-success) 45%, transparent);
+    box-shadow: 0 0 0 2px var(--gc-success);
+    animation: gc-band-lock 0.45s ease;
+}
+
+@keyframes gc-band-lock {
+    0% { opacity: 0; transform-origin: 0 50%; filter: brightness(1.9); }
+    60% { opacity: 1; filter: brightness(1.25); }
+    100% { opacity: 1; filter: brightness(1); }
+}
+
+/* A square the band runs through drops its own fill and sits above the band,
+   so the band shows through where the square was and the letter still reads on
+   top of it. */
+.gc-search__cell--tracing,
+.gc-search__cell--found {
+    position: relative;
+    z-index: 3;
+    background: transparent;
+    color: var(--gc-onfill);
+    font-weight: 800;
+}
+
+/* --------------------------------------------------------- speak words --- */
+
+.gc-speak {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.9rem;
+    text-align: center;
+}
+
+.gc-speak__face {
+    font-size: 4.5rem;
+    line-height: 1;
+}
+
+.gc-speak__ask {
+    margin: 0;
+    font-size: 1.2rem;
+    color: var(--gc-muted);
+}
+
+.gc-speak__word {
+    margin: 0;
+    font-size: clamp(2rem, 7vw, 3rem);
+    font-weight: 800;
+    color: var(--gc-text);
+}
+
+.gc-speak__mic {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 1.2rem 2.4rem;
+    border: 3px solid var(--gc-border-soft);
+    border-radius: var(--gc-radius);
+    background: var(--gc-surface);
+    color: var(--gc-text);
+    font-size: 2.2rem;
+    cursor: pointer;
+}
+
+.gc-speak__miclabel {
+    font-size: 1.2rem;
+    font-weight: 800;
+}
+
+.gc-speak__mic--live {
+    border-color: var(--gc-warn);
+    animation: gc-mic-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes gc-mic-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.gc-speak__status {
+    margin: 0;
+    min-block-size: 1.5rem;
+    color: var(--gc-muted);
+}
+
+.gc-speak__notice {
+    max-inline-size: 26rem;
+    margin-inline: auto;
+    padding: 2rem;
+    border: 2px solid var(--gc-border-soft);
+    border-radius: var(--gc-radius);
+    background: var(--gc-surface);
+    text-align: center;
+    color: var(--gc-text);
+}
+
+.gc-speak__noticeface {
+    font-size: 3rem;
+    line-height: 1;
+    margin-block-end: 0.75rem;
+}
+
+/* ------------------------------------------- questions (shared by six) --- */
+
+/* Ten, twelve, thirteen, fifteen, sixteen and twenty-two all put a question on
+   screen with answers under it, so the question and the answer button are one
+   pair of rules rather than six. */
+.gc-quiz {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    text-align: center;
+}
+
+.gc-quiz__topic {
+    margin: 0;
+    padding: 0.25rem 1rem;
+    border: 2px solid var(--gc-border-soft);
+    border-radius: 999px;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--gc-muted);
+}
+
+.gc-quiz__question {
+    margin: 0;
+    font-size: clamp(1.4rem, 4.5vw, 2rem);
+    font-weight: 800;
+    line-height: 1.4;
+    color: var(--gc-text);
+}
+
+.gc-quiz__answers {
+    display: grid;
+    gap: 0.75rem;
+    inline-size: min(100%, 34rem);
+}
+
+.gc-quiz__answer {
+    padding: 1.1rem 1.25rem;
+    border: 3px solid var(--gc-border-soft);
+    border-radius: var(--gc-radius);
+    background: var(--gc-surface);
+    color: var(--gc-text);
+    font-size: 1.3rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform 0.12s ease, border-color 0.12s ease, background-color 0.12s ease;
+}
+
+.gc-quiz__answer:hover:not(:disabled),
+.gc-quiz__answer:focus-visible {
+    transform: translateY(-3px);
+    border-color: var(--gc-primary);
+    background: var(--gc-hoverbg);
+}
+
+.gc-quiz__answer--ok {
+    border-color: var(--gc-success);
+    background: var(--gc-success-fill);
+    color: var(--gc-onfill);
+}
+
+.gc-quiz__answer--no {
+    border-color: var(--gc-warn);
+    background: var(--gc-warn-fill);
+    color: var(--gc-onfill);
+}
+
+/* ------------------------------------------------------- true or false --- */
+
+.gc-tf {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+    text-align: center;
+}
+
+.gc-tf__statement {
+    margin: 0;
+    font-size: clamp(1.5rem, 5vw, 2.2rem);
+    font-weight: 800;
+    line-height: 1.4;
+    color: var(--gc-text);
+}
+
+.gc-tf__buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    inline-size: min(100%, 26rem);
+}
+
+.gc-tf__button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 1.4rem 1rem;
+    border: 3px solid var(--gc-border-soft);
+    border-radius: var(--gc-radius);
+    background: var(--gc-surface);
+    color: var(--gc-text);
+    cursor: pointer;
+    transition: transform 0.12s ease, border-color 0.12s ease;
+}
+
+.gc-tf__button:hover,
+.gc-tf__button:focus-visible {
+    transform: translateY(-4px);
+}
+
+.gc-tf__button--yes:hover {
+    border-color: var(--gc-success);
+}
+
+.gc-tf__button--no:hover {
+    border-color: var(--gc-warn);
+}
+
+.gc-tf__mark {
+    font-size: 2.6rem;
+    line-height: 1;
+}
+
+.gc-tf__label {
+    font-size: 1.2rem;
+    font-weight: 800;
+}
+
+.gc-tf__why {
+    margin: 0;
+    min-block-size: 2rem;
+    font-size: 1.15rem;
+    color: var(--gc-muted);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.gc-tf__why--shown {
+    opacity: 1;
+}
+
+/* --------------------------------------------------------------- xo --- */
+
+.gc-xo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.9rem;
+}
+
+.gc-xo__status {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--gc-text);
+}
+
+.gc-xo__board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    inline-size: min(100%, 20rem);
+}
+
+.gc-xo__cell {
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    border: 3px solid var(--gc-border-soft);
+    border-radius: 14px;
+    background: var(--gc-surface);
+    font-size: 2.6rem;
+    cursor: pointer;
+}
+
+.gc-xo__cell:hover:not(:disabled) {
+    border-color: var(--gc-primary);
+    background: var(--gc-hoverbg);
+}
+
+.gc-xo__cell--taken {
+    cursor: default;
+}
+
+.gc-xo__quiz {
+    display: none;
+    inline-size: 100%;
+}
+
+.gc-xo__quiz--open {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.gc-xo__question {
+    margin: 0;
+    text-align: center;
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--gc-text);
+}
+
+.gc-xo__answers {
+    display: grid;
+    gap: 0.6rem;
+    inline-size: min(100%, 30rem);
+}
+
+/* --------------------------------------------------- targets and field --- */
+
+.gc-target {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    block-size: 100%;
+}
+
+.gc-target__question {
+    margin: 0;
+    padding: 0.7rem 1rem;
+    border: 2px dashed var(--gc-primary);
+    border-radius: var(--gc-radius);
+    text-align: center;
+    font-size: clamp(1.2rem, 4vw, 1.6rem);
+    font-weight: 800;
+    color: var(--gc-text);
+}
+
+.gc-target__field {
+    position: relative;
+    flex: 1;
+    min-block-size: 300px;
+    border-radius: var(--gc-radius);
+    background: var(--gc-surface);
+    overflow: hidden;
+}
+
+.gc-target__mark {
+    position: absolute;
+    inset-block-start: 0;
+    /* rtl:ignore */
+    left: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    border: 3px solid var(--gc-border-soft);
+    border-radius: 999px;
+    background: var(--gc-background);
+    color: var(--gc-text);
+    font-size: 1.2rem;
+    font-weight: 800;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.gc-target__mark--hit {
+    border-color: var(--gc-success);
+    background: var(--gc-success-fill);
+    color: var(--gc-onfill);
+}
+
+.gc-target__mark--miss {
+    border-color: var(--gc-warn);
+    background: var(--gc-warn-fill);
+    color: var(--gc-onfill);
+}
+
+/* ------------------------------------------------------------ balloons --- */
+
+.gc-balloons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    block-size: 100%;
+}
+
+.gc-balloons__rule {
+    margin: 0;
+    padding: 0.7rem 1rem;
+    border: 2px dashed var(--gc-primary);
+    border-radius: var(--gc-radius);
+    text-align: center;
+    font-size: clamp(1.2rem, 4vw, 1.6rem);
+    font-weight: 800;
+    color: var(--gc-text);
+}
+
+.gc-balloons__sky {
+    position: relative;
+    flex: 1;
+    min-block-size: 320px;
+    border-radius: var(--gc-radius);
+    background: var(--gc-surface);
+    overflow: hidden;
+}
+
+.gc-balloon {
+    position: absolute;
+    inset-block-start: 0;
+    /* rtl:ignore */
+    left: 0;
+    inline-size: 3.6rem;
+    block-size: 4.4rem;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: none;
+    /* The classic balloon outline: round with a point at the bottom. */
+    border-radius: 50% 50% 50% 50% / 44% 44% 56% 56%;
+    background: var(--gc-balloon-colour, #4b7be0);
+    color: #fff;
+    font-size: 1.4rem;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.gc-balloon__string {
+    position: absolute;
+    inset-block-start: 100%;
+    inline-size: 2px;
+    block-size: 1.1rem;
+    background: var(--gc-border-soft);
+}
+
+.gc-balloon--shake {
+    animation: gc-balloon-shake 0.4s ease;
+}
+
+@keyframes gc-balloon-shake {
+    0%, 100% { margin-inline-start: 0; }
+    25% { margin-inline-start: -8px; }
+    75% { margin-inline-start: 8px; }
+}
+
+.gc-balloon--pop {
+    animation: gc-balloon-pop 0.42s cubic-bezier(0.3, 1.6, 0.5, 1) forwards;
+    pointer-events: none;
+}
+
+/* Squash, burst, gone - a balloon that simply faded read as a bug. */
+@keyframes gc-balloon-pop {
+    0% { filter: none; }
+    30% { transform: scale(1.35, 0.8); filter: brightness(1.7); }
+    100% { transform: scale(2.1); opacity: 0; filter: brightness(2.4); }
+}
+
+/* The burst mark left behind for a moment where the balloon was. */
+.gc-balloon__burst {
+    position: absolute;
+    z-index: 3;
+    font-size: 2rem;
+    line-height: 1;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    animation: gc-burst 0.5s ease forwards;
+}
+
+@keyframes gc-burst {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+    35% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
+}
+
+/* A new rule announces itself rather than silently swapping. */
+.gc-balloons__rule--new {
+    animation: gc-rule-change 0.7s ease;
+}
+
+@keyframes gc-rule-change {
+    0% { transform: scale(1); border-color: var(--gc-primary); }
+    30% { transform: scale(1.06); border-color: var(--gc-gold); }
+    100% { transform: scale(1); border-color: var(--gc-primary); }
+}
+
+/* --------------------------------------------------------------- wheel --- */
+
+.gc-wheel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.gc-wheel__stack {
+    position: relative;
+    display: grid;
+    place-items: center;
+}
+
+.gc-wheel__pointer {
+    position: absolute;
+    inset-block-start: -0.6rem;
+    z-index: 2;
+    font-size: 1.8rem;
+    color: var(--gc-text);
+}
+
+/* No transition on the transform: the wheel is turned frame by frame from JS
+   while the finger is on it and while it coasts afterwards, so easing here
+   would fight the physics rather than help it. */
+.gc-wheel__face {
+    position: relative;
+    inline-size: min(16rem, 62vw);
+    block-size: min(16rem, 62vw);
+    padding: 0;
+    border: 6px solid var(--gc-border-soft);
+    border-radius: 50%;
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+    cursor: grab;
+    touch-action: none;
+}
+
+.gc-wheel__face:active {
+    cursor: grabbing;
+}
+
+.gc-wheel__segment {
+    position: absolute;
+    inset-block-start: 50%;
+    /* rtl:ignore */
+    left: 50%;
+    font-size: 1.8rem;
+    line-height: 1;
+}
+
+.gc-wheel__landed {
+    margin: 0 0 0.5rem;
+    text-align: center;
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--gc-success);
+}
+
+.gc-wheel__slot {
+    inline-size: 100%;
+}
+
+.gc-wheel__topics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.gc-wheel__topic {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    padding: 0.3rem 0.9rem;
+    border: 2px solid var(--gc-border-soft);
+    border-radius: 999px;
+    font-weight: 700;
+    color: var(--gc-muted);
+    opacity: 0.55;
+}
+
+.gc-wheel__topic--done {
+    border-color: var(--gc-success);
+    color: var(--gc-text);
+    opacity: 1;
+}
+
+/* ----------------------------------------------------------- space trip --- */
+
+.gc-space {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.gc-space__stage {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--gc-text);
+}
+
+.gc-space__track {
+    position: relative;
+    inline-size: 100%;
+    block-size: 4.6rem;
+    border-radius: 999px;
+    background: var(--gc-surface);
+    overflow: hidden;
+}
+
+/* The whole journey is laid out in LOGICAL directions, so it runs the way the
+   child reads: left to right in English, right to left in Arabic. The rocket
+   starts at the reading edge and the planet waits at the far one. */
+.gc-space__trail {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    inline-size: 0;
+    background: linear-gradient(to var(--gc-space-to, right),
+        color-mix(in srgb, var(--gc-primary) 15%, transparent),
+        color-mix(in srgb, var(--gc-primary) 55%, transparent));
+    transition: inline-size 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* No rotation. The rocket emoji already points up and forward; turning it
+   ninety degrees pointed it at the floor, which is what it looked like. In
+   Arabic it is mirrored instead, so it faces the way it is travelling. */
+.gc-space__rocket {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 0;
+    z-index: 2;
+    font-size: 2.6rem;
+    line-height: 1;
+    transform: translate(-50%, -50%);
+    transition: inset-inline-start 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[dir="rtl"] .gc-space__rocket {
+    transform: translate(50%, -50%) scaleX(-1);
+}
+
+.gc-space__rocket--moving {
+    animation: gc-rocket-thrust 0.7s ease;
+}
+
+@keyframes gc-rocket-thrust {
+    0%, 100% { margin-block-start: 0; }
+    40% { margin-block-start: -0.5rem; }
+}
+
+.gc-space__planet {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-end: 0.5rem;
+    z-index: 2;
+    font-size: 2.8rem;
+    line-height: 1;
+    transform: translateY(-50%);
+}
+
+.gc-space__planet--near {
+    animation: gc-planet-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes gc-planet-pulse {
+    0%, 100% { transform: translateY(-50%) scale(1); }
+    50% { transform: translateY(-50%) scale(1.14); }
+}
+
+/* ------------------------------------------------------------ who am i --- */
+
+.gc-who {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.9rem;
+    text-align: center;
+}
+
+.gc-who__mark {
+    font-size: 3.4rem;
+    line-height: 1;
+}
+
+.gc-who__clues {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+    inline-size: min(100%, 32rem);
+}
+
+.gc-who__clue {
+    padding: 0.7rem 1rem;
+    border: 2px solid var(--gc-border-soft);
+    border-radius: var(--gc-radius);
+    background: var(--gc-surface);
+    font-size: 1.2rem;
+    color: var(--gc-text);
+}
+
+.gc-who__worth {
+    margin: 0;
+    font-weight: 800;
+    color: var(--gc-gold);
+}
+
+.gc-who__choices {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+    gap: 0.75rem;
+    inline-size: min(100%, 32rem);
+}
+
+.gc-who__choice {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.9rem 0.5rem;
+    border: 3px solid var(--gc-border-soft);
+    border-radius: var(--gc-radius);
+    background: var(--gc-surface);
+    color: var(--gc-text);
+    cursor: pointer;
+    transition: transform 0.12s ease, border-color 0.12s ease;
+}
+
+.gc-who__choice:hover {
+    transform: translateY(-4px);
+    border-color: var(--gc-primary);
+}
+
+.gc-who__face {
+    font-size: 2.6rem;
+    line-height: 1;
+}
+
+.gc-who__name {
+    font-size: 1.05rem;
+    font-weight: 800;
+}
+
+.gc-who__choice--ok {
+    border-color: var(--gc-success);
+    background: var(--gc-success-fill);
+    color: var(--gc-onfill);
+}
+
+.gc-who__choice--no {
+    border-color: var(--gc-warn);
+}
+
+/* ------------------------------------------------------- memory cards --- */
+
+.gc-memory {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.9rem;
+}
+
+.gc-memory__flips {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--gc-muted);
+}
+
+/* Three across rather than four: a bigger card is an easier target for a
+   small finger, and the doc puts this game with the youngest children. */
+.gc-memory__board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.8rem;
+    inline-size: min(100%, 30rem);
+}
+
+/* inline-size: 100% is doing real work here. A <button> in a grid cell does not
+   stretch on its own, so with only an aspect-ratio to go on the card sized
+   itself from its content - the back-face emoji - and collapsed to about thirty
+   pixels. The whole board rendered as a scatter of tiny pink specks. */
+.gc-memory__card {
+    position: relative;
+    inline-size: 100%;
+    aspect-ratio: 3 / 4;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+}
+
+/* ---------------------------------------------------- turning a card ----
+
+   The card turns to its edge, swaps what it shows there, and turns back.
+   It is NOT two faces of a rotating 3D card any more.
+
+   That earlier version - perspective on the card, preserve-3d on the inner,
+   and a permanently rotateY(180deg) front face with backface-visibility:
+   hidden - is why the pictures looked dull and half-there. A backface-hidden
+   face inside a 3D context gets its own composited layer, and Chrome
+   rasterises that layer's contents once and then scales the bitmap around: the
+   emoji stopped being a glyph drawn at screen resolution and became a
+   picture of a glyph, soft-edged and washed out, for as long as the card was
+   face up. Which is the whole time a child is looking at it.
+
+   With no perspective, no preserve-3d and no backface-visibility, a card at
+   rest carries no transform at all. The picture is plain text again, drawn
+   sharp and at full strength every frame. The turn itself still needs a
+   transform, but only for the fifth of a second it is running. */
+.gc-memory__inner {
+    display: block;
+    position: relative;
+    inline-size: 100%;
+    block-size: 100%;
+}
+
+.gc-memory__card--turning .gc-memory__inner {
+    animation: gc-memory-turn 0.42s ease;
+}
+
+@keyframes gc-memory-turn {
+    0%, 100% { transform: none; }
+    50% { transform: scaleX(0.06); }
+}
+
+.gc-memory__back,
+.gc-memory__front {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    border: 3px solid var(--gc-border-soft);
+    border-radius: 16px;
+}
+
+/* Which face is showing at rest. */
+.gc-memory__back {
+    background: linear-gradient(150deg,
+        color-mix(in srgb, var(--gc-primary) 45%, var(--gc-surface)),
+        var(--gc-surface));
+    font-size: 2.4rem;
+    opacity: 1;
+}
+
+/* Full strength, no tint over it: the picture is the whole game. It sits on
+   Surface rather than Background so a face-up card still reads as a card
+   against the page, and it is drawn as large as the card allows. */
+.gc-memory__front {
+    background: var(--gc-surface);
+    font-size: clamp(3.2rem, 13vw, 4.6rem);
+    line-height: 1;
+    opacity: 0;
+}
+
+.gc-memory__card--up .gc-memory__back {
+    opacity: 0;
+}
+
+.gc-memory__card--up .gc-memory__front {
+    opacity: 1;
+}
+
+/* The two faces trade places at the exact moment the card is edge-on and
+   neither can be seen. step-end holds each keyframe's value until the next
+   one, so this is a clean cut halfway through the turn rather than a
+   cross-fade - cross-fading the faces in place is what read as a glitch and
+   sent this game to a 3D flip in the first place.
+   Keyframes rather than a delayed transition: a transition of zero duration
+   is at the mercy of whether the tab is rendering at all, and a card that
+   never swapped its face would be a dead board. */
+.gc-memory__card--turning.gc-memory__card--up .gc-memory__back,
+.gc-memory__card--turning:not(.gc-memory__card--up) .gc-memory__front {
+    animation: gc-memory-leave 0.42s step-end;
+}
+
+.gc-memory__card--turning.gc-memory__card--up .gc-memory__front,
+.gc-memory__card--turning:not(.gc-memory__card--up) .gc-memory__back {
+    animation: gc-memory-arrive 0.42s step-end;
+}
+
+@keyframes gc-memory-leave {
+    0% { opacity: 1; }
+    50%, 100% { opacity: 0; }
+}
+
+@keyframes gc-memory-arrive {
+    0% { opacity: 0; }
+    50%, 100% { opacity: 1; }
+}
+
+/* A matched pair is marked on the border alone. A wash of colour over the
+   front would put a tint on top of the picture, and the picture is the one
+   thing on this board that must stay untouched. */
+.gc-memory__card--done .gc-memory__front {
+    border-color: var(--gc-success);
+}
+
+.gc-memory__card--done {
+    cursor: default;
+}
+
+/* ------------------------------------------------------------- jigsaw --- */
+
+.gc-puzzle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.9rem;
+    position: relative;
+}
+
+.gc-puzzle__board {
+    display: grid;
+    gap: 3px;
+    inline-size: min(100%, 22rem);
+}
+
+/* background-COLOR, and the repeat set after it. The shorthand was sitting
+   below background-repeat and quietly resetting it to `repeat`, so every piece
+   tiled its slice and showed the edges of its neighbours' pictures - the board
+   looked like the pieces were bleeding into each other. */
+.gc-puzzle__piece {
+    position: relative;
+    inline-size: 100%;
+    aspect-ratio: 1;
+    padding: 0;
+    border: 2px solid var(--gc-border-soft);
+    border-radius: 8px;
+    background-color: var(--gc-surface);
+    background-repeat: no-repeat;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.gc-puzzle__piece--picked {
+    border-color: var(--gc-primary);
+    box-shadow: 0 0 0 3px var(--gc-primary);
+}
+
+/* The finished picture, shown over the board for two seconds. background-color
+   rather than the shorthand: the image itself is set from JS, and a shorthand
+   here would wipe it. */
+.gc-puzzle__whole {
+    position: absolute;
+    inset: 0;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 78% 78%;
+    background-color: color-mix(in srgb, var(--gc-background) 94%, transparent);
+    border-radius: var(--gc-radius);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+
+.gc-puzzle__whole--shown {
+    opacity: 1;
+}
+
+/* -------------------------------------------------- spot the difference --- */
+
+.gc-diff {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.9rem;
+}
+
+.gc-diff__count {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--gc-muted);
+}
+
+.gc-diff__pair {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    inline-size: 100%;
+}
+
+.gc-diff__scene {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.gc-diff__label {
+    margin: 0;
+    font-weight: 800;
+    color: var(--gc-muted);
+}
+
+.gc-diff__grid {
+    display: grid;
+    gap: 4px;
+    inline-size: 100%;
+    padding: 0.5rem;
+    border: 2px solid var(--gc-border);
+    border-radius: var(--gc-radius);
+    background: var(--gc-surface);
+}
+
+.gc-diff__cell {
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    font-size: clamp(1.4rem, 5vw, 2rem);
+    line-height: 1;
+}
+
+button.gc-diff__cell {
+    cursor: pointer;
+}
+
+button.gc-diff__cell:hover {
+    border-color: var(--gc-primary);
+}
+
+.gc-diff__cell--found {
+    border-color: var(--gc-success);
+    background: color-mix(in srgb, var(--gc-success) 26%, transparent);
+    cursor: default;
+}
+
+.gc-diff__cell--no {
+    border-color: var(--gc-warn);
+}
+
+/* ----------------------------------------------------- colour challenge --- */
+
+.gc-colour {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    text-align: center;
+}
+
+.gc-colour__ask {
+    margin: 0;
+    font-size: clamp(1.6rem, 5vw, 2.4rem);
+    font-weight: 800;
+    color: var(--gc-text);
+}
+
+.gc-colour__circles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(6rem, 1fr));
+    gap: 1rem;
+    inline-size: min(100%, 28rem);
+}
+
+.gc-colour__circle {
+    aspect-ratio: 1;
+    border: 4px solid var(--gc-border-soft);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.gc-colour__circle:hover {
+    transform: scale(1.06);
+    border-color: var(--gc-text);
+}
+
+.gc-colour__circle--ok {
+    border-color: var(--gc-success);
+    transform: scale(1.12);
+}
+
+.gc-colour__circle--no {
+    border-color: var(--gc-warn);
+    opacity: 0.5;
+}
+
+/* ------------------------------------------------------- learning run --- */
+
+.gc-runner {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    block-size: 100%;
+}
+
+.gc-runner__question {
+    margin: 0;
+    padding: 0.7rem 1rem;
+    border: 2px dashed var(--gc-primary);
+    border-radius: var(--gc-radius);
+    text-align: center;
+    font-size: clamp(1.2rem, 4vw, 1.6rem);
+    font-weight: 800;
+    color: var(--gc-text);
+}
+
+/* A road, not an empty box: two dashed lane lines running down it so the three
+   lanes are something a child can see rather than infer from where the boxes
+   happen to fall. */
+.gc-runner__track {
+    position: relative;
+    flex: 1;
+    min-block-size: 340px;
+    border-radius: var(--gc-radius);
+    background:
+        repeating-linear-gradient(
+            to bottom,
+            var(--gc-border-soft) 0 22px,
+            transparent 22px 46px
+        ) calc(100% / 3) 0 / 3px 100% no-repeat,
+        repeating-linear-gradient(
+            to bottom,
+            var(--gc-border-soft) 0 22px,
+            transparent 22px 46px
+        ) calc(200% / 3) 0 / 3px 100% no-repeat,
+        var(--gc-surface);
+    overflow: hidden;
+    touch-action: none;
+}
+
+.gc-runner__hero {
+    position: absolute;
+    inset-block-end: 1rem;
+    /* rtl:ignore */
+    left: 50%;
+    z-index: 3;
+    font-size: 3rem;
+    line-height: 1;
+    /* Never mirrored: the runner faces the child, not the direction of the
+       page. Its lane is physical because the boxes lanes are. */
+    transform: translateX(-50%);
+    /* rtl:ignore */
+    transition: left 0.16s cubic-bezier(0.34, 1.4, 0.5, 1);
+    animation: gc-runner-bob 0.5s ease-in-out infinite;
+}
+
+/* A small bounce, so the runner reads as running rather than sliding. */
+@keyframes gc-runner-bob {
+    0%, 100% { margin-block-end: 0; }
+    50% { margin-block-end: 0.35rem; }
+}
+
+.gc-runner__box {
+    position: absolute;
+    inset-block-start: 0;
+    /* rtl:ignore */
+    left: 0;
+    z-index: 2;
+    padding: 0.7rem 1.1rem;
+    border: 3px solid var(--gc-primary);
+    border-radius: 14px;
+    background: var(--gc-surface);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    color: var(--gc-text);
+    font-size: 1.3rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+/* Wrong answers look no different. Marking them would remove the game. */
+.gc-runner__box--wrong {
+    border-color: var(--gc-primary);
+}
+
+/* The question is already answered; this box is on its way out and can no
+   longer be caught. Dimming it is the only signal the child gets that running
+   into it now costs nothing. */
+.gc-runner__box--spent {
+    opacity: 0.3;
+}
+
+.gc-runner__box--hit {
+    border-color: var(--gc-primary);
+    animation: gc-balloon-pop 0.26s ease forwards;
+}
+
+.gc-runner__controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    /* rtl:ignore */
+    direction: ltr;
+}
+
+/* --------------------------------------------------------------- small --- */
+
+@media (max-width: 576px) {
+    .gc-hero {
+        padding: 1.25rem;
+    }
+
+    .gc-stage {
+        min-block-size: 420px;
+        padding: 0.9rem;
+    }
+
+    .gc-race__answers {
+        gap: 0.6rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .gc-card__link,
+    .gc-answer,
+    .gc-race__runner {
+        transition: none;
+    }
+
+    .gc-flash {
+        animation: none;
+        opacity: 1;
+    }
+}
+
+/* -------------------------------------------------------------------------
+   Game control (admin).
+
+   These rules live outside the .local-games body class on purpose: the admin
+   screens run in Moodle's admin layout, not in the corner's, and they are the
+   only place in this file that is not a child's screen.
+   ------------------------------------------------------------------------- */
+
+.local-games-face {
+    font-size: 1.25em;
+    line-height: 1;
+}
+
+.local-games-catalogue td,
+.local-games-bank-table td {
+    vertical-align: middle;
+}
+
+/* The colour a hex value actually is, next to the value itself - the point of
+   the colour bank is the colour, and #e04b4b tells an admin nothing. */
+.local-games-swatch {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    border: 1px solid rgba(0, 0, 0, 0.25);
+    border-radius: 3px;
+    vertical-align: -0.15em;
+}
+
+/* The read-only look at the shipped rows. Direction is deliberately left to the
+   page: the rows are the language pack's own text, so an Arabic bank has to read
+   right to left here exactly as it does in the game. */
+.local-games-preview {
+    max-height: 18rem;
+    overflow: auto;
+    padding: 0.5rem 0.75rem;
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 4px;
+    font-size: 0.85rem;
+    white-space: pre-wrap;
+}
+
+.local-games-bankpreview > summary {
+    cursor: pointer;
+}
+
+.local-games-rowactions a {
+    margin-inline-end: 0.35rem;
+}
+
+/* The catalogue's section heading rows. They are inside the table so the
+   columns keep lining up, which is why they are styled rather than separated. */
+.local-games-catalogue .local-games-section > th {
+    padding-top: 1.1rem;
+    font-size: 1.05rem;
+    font-weight: 600;
+    background: rgba(0, 0, 0, 0.04);
+    border-top: 2px solid rgba(0, 0, 0, 0.12);
+}
+
+.local-games-catalogue .local-games-section:first-child > th {
+    padding-top: 0.6rem;
+    border-top: 0;
+}
