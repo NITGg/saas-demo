@@ -54,6 +54,21 @@ class provider implements
             'proposed_time' => 'privacy:metadata:nit_lesson_proposal:proposed_time',
             'timecreated'   => 'privacy:metadata:nit_lesson_proposal:timecreated',
         ], 'privacy:metadata:nit_lesson_proposal');
+        $collection->add_database_table('nit_instant_request', [
+            'studentid'   => 'privacy:metadata:nit_instant_request:studentid',
+            'subject'     => 'privacy:metadata:nit_instant_request:subject',
+            'note'        => 'privacy:metadata:nit_instant_request:note',
+            'timecreated' => 'privacy:metadata:nit_instant_request:timecreated',
+        ], 'privacy:metadata:nit_instant_request');
+        $collection->add_database_table('nit_instant_offer', [
+            'teacherid'    => 'privacy:metadata:nit_instant_offer:teacherid',
+            'status'       => 'privacy:metadata:nit_instant_offer:status',
+            'timeanswered' => 'privacy:metadata:nit_instant_offer:timeanswered',
+        ], 'privacy:metadata:nit_instant_offer');
+        $collection->add_database_table('nit_teacher_presence', [
+            'teacherid' => 'privacy:metadata:nit_teacher_presence:teacherid',
+            'lastseen'  => 'privacy:metadata:nit_teacher_presence:lastseen',
+        ], 'privacy:metadata:nit_teacher_presence');
         return $collection;
     }
 
@@ -131,6 +146,9 @@ class provider implements
         }
         $DB->delete_records('nit_lesson_proposal');
         $DB->delete_records('nit_lesson');
+        $DB->delete_records('nit_instant_offer');
+        $DB->delete_records('nit_instant_request');
+        $DB->delete_records('nit_teacher_presence');
     }
 
     /**
@@ -148,6 +166,8 @@ class provider implements
         $userid = $contextlist->get_user()->id;
         $DB->delete_records('nit_lesson_proposal', ['proposedby' => $userid]);
         $DB->set_field('nit_lesson', 'note', null, ['studentid' => $userid]);
+        $DB->set_field('nit_instant_request', 'note', null, ['studentid' => $userid]);
+        $DB->delete_records('nit_teacher_presence', ['teacherid' => $userid]);
     }
 
     /**
@@ -163,6 +183,8 @@ class provider implements
         }
         [$insql, $params] = $DB->get_in_or_equal($userlist->get_userids(), SQL_PARAMS_NAMED);
         $DB->delete_records_select('nit_lesson_proposal', "proposedby $insql", $params);
+        $DB->set_field_select('nit_instant_request', 'note', null, "studentid $insql", $params);
+        $DB->delete_records_select('nit_teacher_presence', "teacherid $insql", $params);
     }
 
     /**

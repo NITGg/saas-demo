@@ -42,6 +42,9 @@ class settings_service extends service {
         'complete_allowed_minutes' => 45,
         'absence_report_minutes'   => 15,
         'auto_complete_minutes'    => 4320,    // 72h (like Preply): a joined lesson completes itself this long after it ends; 0 = off.
+        'instant_enabled'          => 1,       // "Get a tutor now" on (1) / off (0).
+        'instant_wait_seconds'     => 90,      // How long a student waits for a teacher to accept.
+        'instant_minutes'          => 30,      // Length of an instant lesson.
         'lessons_courseid'         => 0,
     ];
 

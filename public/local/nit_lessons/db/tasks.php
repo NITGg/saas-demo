@@ -34,4 +34,14 @@ $tasks = [
         'dayofweek' => '*',
         'month'     => '*',
     ],
+    [
+        // Instant-lesson requests whose waiting time is up.
+        'classname' => 'local_nit_lessons\task\expire_instant_requests',
+        'blocking'  => 0,
+        'minute'    => '*',
+        'hour'      => '*',
+        'day'       => '*',
+        'dayofweek' => '*',
+        'month'     => '*',
+    ],
 ];

@@ -107,6 +107,42 @@ class lesson_service extends service {
         return $this->format_lesson($lesson, $studentid, true);
     }
 
+    /**
+     * An instant lesson ("Get a tutor now"): created, confirmed (Flex reserved at the teacher's
+     * price) and started in one step, starting now. The caller has already checked that the
+     * teacher is free and teaches the subject; the Flex and time checks happen here.
+     *
+     * @param int $studentid
+     * @param int $teacherid
+     * @param string $subject
+     * @param int $duration minutes
+     * @param string $note
+     * @return array the started lesson
+     */
+    public function start_instant(int $studentid, int $teacherid, string $subject, int $duration, string $note): array {
+        $cost = (new teacher_service())->lesson_flex($teacherid);
+        $active = \local_nit_flex\api\purchase::active($studentid);
+        if (!$active || (int) $active['remaining_flex'] < $cost) {
+            throw new lesson_exception('err_notenoughflex', $cost);
+        }
+        $now = time();
+        $this->check_time_conflict($teacherid, $now, $duration);
+        $lesson = new lesson(0, (object) [
+            'studentid'      => $studentid,
+            'teacherid'      => $teacherid,
+            'subject'        => $subject,
+            'status'         => lesson::STATUS_PENDING,
+            'requested_time' => $now,
+            'duration'       => $duration,
+            'note'           => $note !== '' ? $note : null,
+            'flex_count'     => $cost,
+            'type'           => lesson::TYPE_INSTANT,
+        ]);
+        $lesson->create();
+        $this->confirm_lesson($lesson, $now, $teacherid);
+        return $this->start_lesson($teacherid, (int) $lesson->get('id'));
+    }
+
     // ── US-LS-2-1 / 2-3: teacher responds ───────────────────────────────────
 
     /**

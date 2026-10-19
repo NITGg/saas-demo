@@ -71,5 +71,13 @@ $params = [
     'teacher' => optional_param('teacher', 0, PARAM_INT), // "Book a lesson" from a teacher page / the teacher search.
 ];
 echo $OUTPUT->header();
+// Instant lessons: "Get a tutor now" above the teacher list, the "Available now" switch for teachers.
+if ($tab === 'book' || $tab === 'teaching') {
+    $instant = \local_nit_lessons\local\instant_ui::script((int) $USER->id);
+    if ($instant !== '') {
+        echo html_writer::div('', '', ['id' => $tab === 'book' ? 'nit-instant-student' : 'nit-instant-teacher']);
+        echo $instant;
+    }
+}
 echo $OUTPUT->render_from_template('local_nit_lessons/student_hub', hub::context((int) $USER->id, $tab, $params));
 echo $OUTPUT->footer();

@@ -62,6 +62,12 @@ class lesson extends entity {
     /** Rejected by the teacher. */
     const STATUS_REJECTED = 'rejected';
 
+    /** Booked ahead through the request / accept flow. */
+    const TYPE_SCHEDULED = 'scheduled';
+
+    /** Started at once through "Get a tutor now". */
+    const TYPE_INSTANT = 'instant';
+
     /** Default lesson length in minutes. */
     const DEFAULT_DURATION = 60;
 
@@ -90,6 +96,7 @@ class lesson extends entity {
             'sessionid'      => ['type' => PARAM_INT, 'default' => 0],
             'cmid'           => ['type' => PARAM_INT, 'default' => 0],
             'student_joined' => ['type' => PARAM_INT, 'default' => 0],
+            'type'           => ['type' => PARAM_ALPHA, 'default' => self::TYPE_SCHEDULED],
         ];
     }
 }
