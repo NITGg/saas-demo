@@ -27,6 +27,10 @@ use local_nit_lessons\service\teacher_service;
  * A teacher is listed when they take bookings (profile "available", at least one subject), are a
  * teacher at all, and — while "Approval required" is on — their application is approved.
  *
+ * The catalogue's "Teachers" tab also lists course teachers ({@see course_teachers()}): users with an
+ * editing or non-editing teacher role in a visible course. They cannot be booked, so a filter only a
+ * bookable tutor can match (subject, price, day / time, filter fields) leaves them out.
+ *
  * @package    local_nit_tutors
  * @copyright  2026 NIT
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -76,9 +80,11 @@ final class search {
      * @param int $viewerid whose timezone the availability filter uses (0 = site timezone)
      * @param int $page
      * @param int $perpage
+     * @param bool $courseteachers also list the course teachers (editing / non-editing) who are not bookable tutors
      * @return array{total:int, teachers:array}
      */
-    public static function run(array $filters, int $viewerid = 0, int $page = 0, int $perpage = 24): array {
+    public static function run(array $filters, int $viewerid = 0, int $page = 0, int $perpage = 24,
+            bool $courseteachers = false): array {
         global $DB;
         $params = [];
         $where = ['tp.available = 1', 'EXISTS (SELECT 1 FROM {nit_teacher_subject} s0 WHERE s0.teacherid = u.id)'];
@@ -138,13 +144,40 @@ final class search {
           LEFT JOIN {nit_tutor} t ON t.userid = u.id
               WHERE " . implode(' AND ', $where), $params);
 
+        $tutorsonly = $filters['subject'] !== '' || $filters['pricemin'] !== null || $filters['pricemax'] !== null
+            || $filters['day'] !== null || $filters['time'] !== '' || $filters['f'];
+        $others = $courseteachers && !$tutorsonly ? self::course_teachers($filters['q'], array_keys($rows)) : [];
+        $ids = array_merge(array_keys($rows), array_keys($others));
+
         $service = new teacher_service();
-        $ratings = class_exists('\local_nit_reviews\api') && $rows
-            ? \local_nit_reviews\api::get_teacher_aggregates(array_keys($rows)) : [];
-        $lessons = self::lesson_counts(array_keys($rows));
-        $badges = self::badges_of(array_keys($rows));
+        $ratings = class_exists('\local_nit_reviews\api') && $ids
+            ? \local_nit_reviews\api::get_teacher_aggregates($ids) : [];
+        $lessons = self::lesson_counts($ids);
+        $badges = self::badges_of($ids);
         $viewertz = $viewerid ? teacher_service::timezone($viewerid) : \core_date::get_server_timezone_object();
         $out = [];
+        foreach ($others as $id => $u) {
+            $agg = $ratings[$id] ?? null;
+            $rating = $agg ? (float) $agg->avg : 0.0;
+            if (($filters['rating'] > 0 && $rating < $filters['rating'])
+                    || ($filters['badge'] && !in_array($filters['badge'], array_map('intval', array_column($badges[$id] ?? [], 'id')), true))) {
+                continue;
+            }
+            $out[] = [
+                'id' => $id,
+                'user' => $u,
+                'fullname' => fullname($u),
+                'headline' => $u->headline,
+                'lesson_flex' => 0,
+                'subjects' => [],
+                'rating' => $rating,
+                'reviews' => $agg ? (int) $agg->count : 0,
+                'lessons' => $lessons[$id] ?? 0,
+                'badges' => $badges[$id] ?? [],
+                'hasvideo' => false,
+                'bookable' => false,
+            ];
+        }
         foreach ($rows as $u) {
             $id = (int) $u->id;
             if (!$service->is_teacher($id)) {
@@ -171,6 +204,7 @@ final class search {
                 'lessons' => $lessons[$id] ?? 0,
                 'badges' => $badges[$id] ?? [],
                 'hasvideo' => $u->videostatus === 'approved',
+                'bookable' => true,
             ];
         }
         usort($out, self::comparator($filters['sort']));
@@ -188,10 +222,13 @@ final class search {
         switch ($sort) {
             case 'rating':
                 return fn($a, $b) => [$b['rating'], $b['reviews']] <=> [$a['rating'], $a['reviews']] ?: $byname($a, $b);
+            // A teacher without a lesson price (a course teacher) comes after every priced one.
             case 'price_asc':
-                return fn($a, $b) => $a['lesson_flex'] <=> $b['lesson_flex'] ?: $byname($a, $b);
+                return fn($a, $b) => [(int) !$a['bookable'], $a['lesson_flex']] <=> [(int) !$b['bookable'], $b['lesson_flex']]
+                    ?: $byname($a, $b);
             case 'price_desc':
-                return fn($a, $b) => $b['lesson_flex'] <=> $a['lesson_flex'] ?: $byname($a, $b);
+                return fn($a, $b) => [(int) !$a['bookable'], $b['lesson_flex']] <=> [(int) !$b['bookable'], $a['lesson_flex']]
+                    ?: $byname($a, $b);
             case 'lessons':
                 return fn($a, $b) => $b['lessons'] <=> $a['lessons'] ?: $byname($a, $b);
             default:
@@ -341,9 +378,63 @@ final class search {
             'hasbadges' => !empty($t['badges']),
             'badges' => badge::chips($t['badges']),
             'hasvideo' => $t['hasvideo'],
+            'bookable' => $t['bookable'],
             'url' => (new \moodle_url('/local/academy/teacher.php', ['id' => $t['id']]))->out(false),
-            'bookurl' => self::book_url($t['id'])->out(false),
+            'bookurl' => $t['bookable'] ? self::book_url($t['id'])->out(false) : '',
         ];
+    }
+
+    /**
+     * Course teachers who are not in $exclude: users (not site admins) with an editing or non-editing
+     * teacher role in a visible course, whose name matches $q. The headline is their "teachertitle"
+     * profile field (local_academy), as on the home page's teacher cards.
+     *
+     * @param string $q search words ('' = everyone)
+     * @param int[] $exclude user ids already listed (the bookable tutors)
+     * @return \stdClass[] id => user record (user picture fields + headline)
+     */
+    public static function course_teachers(string $q, array $exclude = []): array {
+        global $DB;
+        $roleids = array_keys(get_archetype_roles('editingteacher') + get_archetype_roles('teacher'));
+        if (!$roleids) {
+            return [];
+        }
+        [$rsql, $params] = $DB->get_in_or_equal($roleids, SQL_PARAMS_NAMED, 'ctr');
+        $params += ['ctxlevel' => CONTEXT_COURSE, 'siteid' => SITEID];
+        $where = '';
+        if ($exclude) {
+            [$xsql, $xparams] = $DB->get_in_or_equal($exclude, SQL_PARAMS_NAMED, 'ctx', false);
+            $where .= " AND u.id $xsql";
+            $params += $xparams;
+        }
+        if ($q !== '') {
+            $like = '%' . $DB->sql_like_escape(arabic::fold($q)) . '%';
+            $where .= ' AND (' . $DB->sql_like(arabic::sql_fold('u.firstname'), ':ctqf', false)
+                . ' OR ' . $DB->sql_like(arabic::sql_fold('u.lastname'), ':ctql', false)
+                . ' OR ' . $DB->sql_like(arabic::sql_fold($DB->sql_fullname('u.firstname', 'u.lastname')), ':ctqn', false) . ')';
+            $params += ['ctqf' => $like, 'ctql' => $like, 'ctqn' => $like];
+        }
+        $fields = \core_user\fields::for_userpic()->get_sql('u', false, '', '', false)->selects;
+        $users = $DB->get_records_sql(
+            "SELECT $fields
+               FROM {user} u
+              WHERE u.deleted = 0 AND u.suspended = 0 $where
+                AND EXISTS (SELECT 1
+                              FROM {role_assignments} ra
+                              JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = :ctxlevel
+                              JOIN {course} c ON c.id = ctx.instanceid AND c.visible = 1 AND c.id <> :siteid
+                             WHERE ra.userid = u.id AND ra.roleid $rsql)", $params);
+        $out = [];
+        foreach ($users as $u) {
+            // Site admins are enrolled as teacher in every course they create — they are not teachers.
+            if (is_siteadmin((int) $u->id)) {
+                continue;
+            }
+            $u->headline = class_exists('\local_academy\local\user_fields')
+                ? (\local_academy\local\user_fields::values((int) $u->id)['teachertitle'] ?? '') : '';
+            $out[(int) $u->id] = $u;
+        }
+        return $out;
     }
 
     /**

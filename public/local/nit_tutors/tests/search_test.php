@@ -168,6 +168,71 @@ final class search_test extends \advanced_testcase {
         $this->assertStringContainsString('/local/academy/teacher.php', $result['teachers'][0]['url']);
     }
 
+    /**
+     * Ids on the catalogue's Teachers tab (tutors + course teachers) for these filters.
+     *
+     * @param array $raw
+     * @return int[]
+     */
+    private function tabids(array $raw = []): array {
+        return array_column(search::run(search::normalise($raw), 0, 0, 24, true)['teachers'], 'id');
+    }
+
+    public function test_the_tab_lists_editing_and_non_editing_course_teachers(): void {
+        $gen = $this->getDataGenerator();
+        $course = $gen->create_course();
+        $hidden = $gen->create_course(['visible' => 0]);
+        $tutor = $this->tutor([], 'English', ['firstname' => 'Tutor', 'lastname' => 'One']);
+        $editing = (int) $gen->create_user(['firstname' => 'Edit', 'lastname' => 'Teacher'])->id;
+        $noneditor = (int) $gen->create_user(['firstname' => 'Plain', 'lastname' => 'Teacher'])->id;
+        $student = (int) $gen->create_user(['firstname' => 'Stu', 'lastname' => 'Dent'])->id;
+        $inhidden = (int) $gen->create_user(['firstname' => 'Hidden', 'lastname' => 'Teacher'])->id;
+        $gone = (int) $gen->create_user(['firstname' => 'Gone', 'lastname' => 'Teacher', 'suspended' => 1])->id;
+        $gen->enrol_user($editing, $course->id, 'editingteacher');
+        $gen->enrol_user($noneditor, $course->id, 'teacher');
+        $gen->enrol_user($student, $course->id, 'student');
+        $gen->enrol_user($inhidden, $hidden->id, 'editingteacher');
+        $gen->enrol_user($gone, $course->id, 'editingteacher');
+        $gen->enrol_user((int) get_admin()->id, $course->id, 'editingteacher');
+        // A tutor who also teaches a course is listed once, as a bookable tutor.
+        $gen->enrol_user($tutor, $course->id, 'editingteacher');
+
+        $ids = $this->tabids();
+        sort($ids);
+        $expected = [$tutor, $editing, $noneditor];
+        sort($expected);
+        $this->assertSame($expected, $ids);
+        // Without the flag (header suggestions, mobile app) only bookable tutors, as before.
+        $this->assertSame([$tutor], $this->ids());
+
+        // The search words match a course teacher's name.
+        $this->assertSame([$noneditor], $this->tabids(['q' => 'plain']));
+        // A filter only a bookable tutor can match leaves the course teachers out.
+        $this->assertSame([$tutor], $this->tabids(['subject' => 'English']));
+        $this->assertSame([$tutor], $this->tabids(['pricemin' => '0']));
+        // Price sorts put the teachers without a price last.
+        $this->assertSame($tutor, $this->tabids(['sort' => 'price_desc'])[0]);
+        $this->assertSame($tutor, $this->tabids(['sort' => 'price_asc'])[0]);
+    }
+
+    public function test_a_course_teacher_card_has_no_price_or_booking(): void {
+        $gen = $this->getDataGenerator();
+        $uid = (int) $gen->create_user()->id;
+        $gen->enrol_user($uid, $gen->create_course()->id, 'teacher');
+        $rows = search::run(search::normalise([]), 0, 0, 24, true)['teachers'];
+        $this->assertCount(1, $rows);
+        $card = search::card($rows[0]);
+        $this->assertFalse($card['bookable']);
+        $this->assertSame('', $card['bookurl']);
+        $this->assertStringContainsString('/local/academy/teacher.php?id=' . $uid, $card['url']);
+
+        $tutor = $this->tutor();
+        $tutorcard = search::card(search::run(search::normalise([]))['teachers'][0]);
+        $this->assertSame($tutor, $tutorcard['id']);
+        $this->assertTrue($tutorcard['bookable']);
+        $this->assertStringContainsString('teacher=' . $tutor, $tutorcard['bookurl']);
+    }
+
     public function test_an_approved_tutor_without_a_course_has_a_teacher_page(): void {
         $uid = $this->tutor(['lesson_flex' => 3]);
         $page = \local_academy\local\teacher_page::get($uid);

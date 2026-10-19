@@ -23,14 +23,15 @@
     Context variables required for this template:
     * applyurl
     * hasteachers, teachers - cards: id, name, photo, headline, subjects [{name}], price, hasrating, rating,
-      reviews, lessons, hasbadges, badges [{name, color, description}], hasvideo, url, bookurl
+      reviews, lessons, hasbadges, badges [{name, color, description}], hasvideo, bookable, url, bookurl
+      (bookable = false: a course teacher — no lesson price, no "Book" button)
 
     Example context (json):
     {"applyurl": "#", "hasteachers": true,
      "teachers": [{"id": 3, "name": "Sara Ali", "photo": "", "headline": "IELTS coach", "subjects": [{"name": "English"}],
        "price": 2, "hasrating": true, "rating": "4.9", "reviews": 12, "lessons": 40, "hasbadges": true,
        "badges": [{"name": "Super Tutor", "color": "warning", "description": ""}], "hasvideo": true,
-       "url": "#", "bookurl": "#"}]}
+       "bookable": true, "url": "#", "bookurl": "#"}]}
 }}
 <section class="nittu-results" aria-live="polite">
     {{#hasteachers}}
@@ -53,8 +54,10 @@
                 </div>
             </div>
             <div class="nittu-card__side">
+                {{#bookable}}
                 <div class="nittu-card__price">{{#str}}priceflex, local_nit_tutors, {{price}}{{/str}}<small>{{#str}}perlesson, local_nit_tutors{{/str}}</small></div>
                 <a class="btn btn-primary" href="{{bookurl}}">{{#str}}booklesson, local_nit_tutors{{/str}}</a>
+                {{/bookable}}
                 <a class="btn btn-outline-primary" href="{{url}}">{{#str}}viewprofile, local_nit_tutors{{/str}}</a>
             </div>
         </li>

@@ -88,7 +88,8 @@ final class search_view {
     public static function context(array $filters, int $page, \moodle_url $reseturl): array {
         global $USER;
         $viewer = isloggedin() && !isguestuser() ? (int) $USER->id : 0;
-        $result = search::run($filters, $viewer, $page, self::PERPAGE);
+        // The tab lists every teacher: bookable tutors and course teachers (editing / non-editing).
+        $result = search::run($filters, $viewer, $page, self::PERPAGE, true);
         $opt = fn($value, string $label, bool $selected) => ['value' => $value, 'label' => $label, 'selected' => $selected];
 
         $subjects = [];

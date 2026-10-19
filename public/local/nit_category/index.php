@@ -334,7 +334,7 @@ echo $OUTPUT->header();
             // tab lists for those words.
             $tutorsearch = '\local_nit_tutors\local\search';
             $teachercount = $tutorsearch::run($tutorsearch::normalise(['q' => $qtext]),
-                isloggedin() && !isguestuser() ? (int) $USER->id : 0, 0, 1)['total'];
+                isloggedin() && !isguestuser() ? (int) $USER->id : 0, 0, 1, true)['total'];
             $coursestab = $t('Courses', 'الدورات') . ' (' . (int) $totalcourses . ')';
             $teacherstab = $t('Teachers', 'المدرسين') . ' (' . (int) $teachercount . ')'; ?>
           <nav class="nittu-tabs" aria-label="<?= s($t('Search in', 'البحث في')) ?>">
