@@ -129,8 +129,8 @@ final class navmenu_test extends \advanced_testcase {
 
         // The editor opens each side in its own field.
         $html = $setting->output_html(get_config('theme_nit', 'navmenu_bar'));
-        $this->assertMatchesRegularExpression('~name="[^"]*\[name_en\]\[r0\]" value="Games"~', $html);
-        $this->assertMatchesRegularExpression('~name="[^"]*\[name_ar\]\[r0\]" value="الألعاب"~', $html);
+        $this->assertMatchesRegularExpression('~name="[^"]*\[name_en\]\[r0\]"[^>]* value="Games"~u', $html);
+        $this->assertMatchesRegularExpression('~name="[^"]*\[name_ar\]\[r0\]"[^>]* value="الألعاب"~u', $html);
         $this->assertStringNotContainsString('{mlang', $html);
 
         // A name filled in neither language is refused.

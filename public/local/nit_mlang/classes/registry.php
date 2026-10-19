@@ -111,6 +111,11 @@ class registry {
         'admin-oauth2-*|*',
         'admin-tool-customlang-*|*',
         'admin-tool-task-*|*',
+        // A question's answer inputs are what the response is graded against (a
+        // Calculated formula, a Numerical value, a Short-answer word): {mlang}
+        // around them breaks matching, and Calculated reads {mlang ar} as a
+        // wildcard. The question edit page sets its pagetype to question-type-<qtype>.
+        'question-type-*|answer[*]',
         // Already bilingual by design (its own en/ar pair of inputs).
         'local-jobform-*|*',
     ];
