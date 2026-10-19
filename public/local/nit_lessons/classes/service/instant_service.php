@@ -267,7 +267,7 @@ class instant_service {
         return [
             'id' => (int) $r->id,
             'status' => (string) $r->status,
-            'subject' => (string) $r->subject,
+            'subject' => format_string($r->subject), // {mlang} subjects show in the user's language.
             'secondsleft' => $r->status === self::SEARCHING ? max(0, (int) $r->expiresat - $now) : 0,
             'teachers' => $DB->count_records('nit_instant_offer', ['requestid' => $r->id, 'status' => self::RINGING]),
             'lessonid' => (int) $r->lessonid,

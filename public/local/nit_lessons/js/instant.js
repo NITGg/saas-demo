@@ -121,7 +121,7 @@
                 return;
             }
             root.innerHTML = '<div class="nit-instant card p-3 mb-3 border-primary"><h3 class="h5">' +
-                esc(S.searching) + '</h3><p class="mb-2">' + esc(st.subject) + ' · ' +
+                esc(S.searching) + '</h3><p class="mb-2"><bdi>' + esc(st.subject) + '</bdi> · ' +
                 esc(S.asking.replace('{$a}', st.teachers)) + ' · <span data-left>' + st.secondsleft + '</span>s</p>' +
                 '<div class="progress mb-2" style="height:6px"><div class="progress-bar progress-bar-striped ' +
                 'progress-bar-animated" style="width:100%"></div></div>' +
@@ -186,8 +186,8 @@
         var box = el('<div class="nit-instant-prompt card shadow p-3" role="alertdialog" style="position:fixed;' +
             'inset-inline-end:16px;bottom:16px;z-index:10050;max-width:360px;width:calc(100% - 32px)">' +
             '<h3 class="h5 mb-1">' + esc(S.prompttitle) + '</h3>' +
-            '<p class="mb-1"><strong>' + esc(o.subject) + '</strong> · ' + esc(o.studentname) + ' · ' +
-            esc(S.minutes.replace('{$a}', o.duration)) + '</p>' +
+            '<p class="mb-1"><strong><bdi>' + esc(o.subject) + '</bdi></strong> · <bdi>' + esc(o.studentname) +
+            '</bdi> · <bdi>' + esc(S.minutes.replace('{$a}', o.duration)) + '</bdi></p>' +
             (o.note ? '<p class="mb-1 text-muted">' + esc(o.note) + '</p>' : '') +
             '<p class="mb-2 small text-muted">' + esc(S.flex.replace('{$a}', o.flex)) + ' · <span data-left>' +
             o.secondsleft + '</span>s</p><div class="d-flex gap-2">' +
