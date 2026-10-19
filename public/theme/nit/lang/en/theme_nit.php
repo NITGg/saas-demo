@@ -522,6 +522,8 @@ $string['navmenu_show_teacher'] = 'Teachers';
 $string['navmenu_show_admin'] = 'Admins';
 $string['navmenu_show_manager'] = 'Managers';
 $string['navmenu_show_none'] = 'Tick at least one role under "Show to" for every link, or remove the row.';
+$string['bilingual_en'] = 'English';
+$string['bilingual_ar'] = 'Arabic';
 $string['navpagesmenu'] = 'Site pages';
 
 // Bassthalk navbar / footer texts.

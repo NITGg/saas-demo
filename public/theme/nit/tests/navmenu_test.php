@@ -114,6 +114,31 @@ final class navmenu_test extends \advanced_testcase {
         $this->assertSame([['admin', 'manager'], ['student'], ['teacher']], array_column($rows, 'show'));
     }
 
+    public function test_page_name_is_edited_in_english_and_arabic(): void {
+        $setting = new admin_setting_navlinks('bar', 'Bar', '');
+        $this->assertSame('', $setting->write_setting([
+            'name_en' => ['_' => '', 'r0' => 'Games', 'r1' => 'Only English', 'r2' => ''],
+            'name_ar' => ['_' => '', 'r0' => 'الألعاب', 'r1' => '', 'r2' => 'عربي فقط'],
+            'url' => ['_' => '', 'r0' => '/g', 'r1' => '/e', 'r2' => '/a'],
+            'show' => ['r0' => ['student'], 'r1' => ['student'], 'r2' => ['student']],
+        ]));
+        $rows = json_decode(get_config('theme_nit', 'navmenu_bar'), true);
+        // Both sides → one {mlang} text; one side → that side as plain text.
+        $this->assertSame(['{mlang en}Games{mlang}{mlang ar}الألعاب{mlang}', 'Only English', 'عربي فقط'],
+            array_column($rows, 'name'));
+
+        // The editor opens each side in its own field.
+        $html = $setting->output_html(get_config('theme_nit', 'navmenu_bar'));
+        $this->assertMatchesRegularExpression('~name="[^"]*\[name_en\]\[r0\]" value="Games"~', $html);
+        $this->assertMatchesRegularExpression('~name="[^"]*\[name_ar\]\[r0\]" value="الألعاب"~', $html);
+        $this->assertStringNotContainsString('{mlang', $html);
+
+        // A name filled in neither language is refused.
+        $this->assertSame(get_string('footerpages_incomplete', 'theme_nit'), $setting->write_setting([
+            'name_en' => ['r0' => ''], 'name_ar' => ['r0' => ''], 'url' => ['r0' => '/g'],
+            'show' => ['r0' => ['student']]]));
+    }
+
     public function test_setting_refuses_a_row_with_no_role_and_bad_links(): void {
         $setting = new admin_setting_navlinks('gear', 'Gear', '');
         $none = get_string('navmenu_show_none', 'theme_nit');

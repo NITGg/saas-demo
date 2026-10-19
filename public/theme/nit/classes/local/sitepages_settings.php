@@ -17,7 +17,6 @@
 namespace theme_nit\local;
 
 use admin_setting_configtext;
-use admin_setting_configtextarea;
 use admin_setting_heading;
 use admin_settingpage;
 
@@ -66,20 +65,19 @@ class sitepages_settings {
      */
     private static function footer_tab(): admin_settingpage {
         $tab = new admin_settingpage('theme_nit_sitepages_footer', get_string('sitepages_footer', 'theme_nit'));
-        $tab->add(new admin_setting_configtextarea(
+        $tab->add(new \theme_nit\admin_setting_bilingualtext(
             'theme_nit/footer_description',
             get_string('footerdescription', 'theme_nit'),
             get_string('footerdescription_desc', 'theme_nit'),
             theme_nit_ml('This platform was made to prepare students for every side of secondary school and beyond',
                 'تم صنع هذه المنصة بهدف تهيئة الطالب لـ كامل جوانب الثانوية العامة و ما بعدها'),
-            PARAM_TEXT, 60, 3
+            3
         ));
-        $tab->add(new admin_setting_configtext(
+        $tab->add(new \theme_nit\admin_setting_bilingualtext(
             'theme_nit/footer_copyright',
             get_string('footercopyright', 'theme_nit'),
             get_string('footercopyright_desc', 'theme_nit'),
-            theme_nit_ml('All rights reserved © {year}', 'جميع الحقوق محفوظة © {year}'),
-            PARAM_TEXT
+            theme_nit_ml('All rights reserved © {year}', 'جميع الحقوق محفوظة © {year}')
         ));
         $tab->add(new \theme_nit\admin_setting_footerpages(
             'theme_nit/footer_pages',

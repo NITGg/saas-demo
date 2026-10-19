@@ -141,6 +141,13 @@
   @media (max-width: 991px){
     .nit-navbar .nit-navbar-inline-links{ display: none !important; }
   }
+  /* "More": the links that do not fit in the pill (moved there by the script below). */
+  .nit-navbar .nit-navbar-inline-links{ min-width:0; }
+  .nit-navbar .nit-navbar-inline-links [hidden]{ display:none !important; }
+  .nit-navbar .nit-navbar-inline-links .nit-navbar-morebtn{ border:0; gap:6px; cursor:pointer; }
+  .nit-navbar .nit-navbar-inline-links .nit-navbar-morebtn::after{ content:"" !important; display:inline-block !important; position:static;
+    width:0; height:0; margin:0; border:0; border-top:5px solid currentColor; border-inline:4px solid transparent; }
+  .nit-navbar .nit-navbar-inline-links .nit-navbar-morebtn[aria-expanded="true"]{ background: var(--nb-pad-hover, rgba(255,255,255,0.22)) !important; }
 
   /* right cluster */
   /* The cluster sits at the far (left) end of the pill, like bassthalk: in RTL the
@@ -307,10 +314,19 @@
 
         {{! Inline navbar links: words next to logo, between logo and search button }}
         {{# output.nit_has_navbar_links }}
-            <div class="nit-navbar-inline-links d-none d-lg-flex align-items-center">
+            {{! Links that do not fit move into "More" (the script at the end measures). }}
+            <div class="nit-navbar-inline-links d-none d-lg-flex align-items-center" data-nit-navlinks>
                 {{# output.nit_navbar_links }}
-                    <a href="{{{ url }}}" class="nav-link nit-navbar-link{{#isactive}} active{{/isactive}}">{{{ name }}}</a>
+                    <a href="{{{ url }}}" class="nav-link nit-navbar-link{{#isactive}} active{{/isactive}}" data-nit-navlink>{{{ name }}}</a>
                 {{/ output.nit_navbar_links }}
+                <div class="nit-navbar-more dropdown" data-nit-navmore hidden>
+                    <button type="button" class="nav-link nit-navbar-link nit-navbar-morebtn dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">{{#str}}moremenu, core{{/str}}</button>
+                    <div class="dropdown-menu nit-navbar-gearmenu">
+                        {{# output.nit_navbar_links }}
+                            <a class="dropdown-item{{#isactive}} active{{/isactive}}" href="{{{ url }}}" {{#isactive}}aria-current="true"{{/isactive}} data-nit-navmoreitem hidden>{{{ name }}}</a>
+                        {{/ output.nit_navbar_links }}
+                    </div>
+                </div>
             </div>
         {{/ output.nit_has_navbar_links }}
 
@@ -417,6 +433,49 @@
   window.addEventListener('scroll', onScroll, {passive:true});
   window.addEventListener('resize', onScroll);
   onScroll();
+
+  // ---- inline links: the ones that do not fit in the pill go under "More" ----
+  var navlinks = document.querySelector('[data-nit-navlinks]');
+  if(navlinks){
+    var inner = navlinks.parentElement;
+    var links = Array.prototype.slice.call(navlinks.querySelectorAll('[data-nit-navlink]'));
+    var more = navlinks.querySelector('[data-nit-navmore]');
+    var moreitems = more.querySelectorAll('[data-nit-navmoreitem]');
+    var morebtn = more.querySelector('button');
+    var fitting = false;
+    // The room the links may take: the pill minus its padding, the gaps and every other item.
+    var room = function(){
+      var cs = getComputedStyle(inner), gap = parseFloat(cs.columnGap) || 0, shown = 0;
+      var w = inner.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
+      Array.prototype.forEach.call(inner.children, function(c){
+        var pos = getComputedStyle(c).position;
+        if(c === navlinks || pos === 'absolute' || pos === 'fixed' || !c.getClientRects().length){ return; }
+        w -= c.getBoundingClientRect().width; shown++;
+      });
+      var ls = getComputedStyle(navlinks);
+      return w - gap * shown - (parseFloat(ls.marginLeft) || 0) - (parseFloat(ls.marginRight) || 0) - 1;
+    };
+    var fit = function(){
+      if(fitting){ return; }
+      fitting = true;
+      links.forEach(function(a){ a.hidden = false; });
+      more.hidden = true;
+      if(navlinks.getClientRects().length){
+        var avail = room(), n = links.length;
+        if(navlinks.scrollWidth > avail){
+          more.hidden = false;
+          while(n > 0 && navlinks.scrollWidth > avail){ links[--n].hidden = true; }
+        }
+        links.forEach(function(a, i){ moreitems[i].hidden = i < n; });
+        morebtn.classList.toggle('active', links.some(function(a, i){ return i >= n && a.classList.contains('active'); }));
+        if(n === links.length){ more.hidden = true; }
+      }
+      fitting = false;
+    };
+    if(window.ResizeObserver){ new ResizeObserver(fit).observe(inner); } else { window.addEventListener('resize', fit); }
+    if(document.fonts && document.fonts.ready){ document.fonts.ready.then(fit); }
+    fit();
+  }
 
   // ---- search dialog ----
   var modal = document.getElementById('nit-search-modal');

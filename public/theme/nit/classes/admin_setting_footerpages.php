@@ -68,6 +68,23 @@ class admin_setting_footerpages extends \admin_setting {
     }
 
     /**
+     * The posted page names by row key: [name][k], or [name_en][k] + [name_ar][k]
+     * from the English / Arabic fields, joined into one {mlang} text.
+     *
+     * @param array $data the posted array
+     * @return array<string, string>
+     */
+    protected function posted_names(array $data): array {
+        $names = (array) ($data['name'] ?? []);
+        $ens = (array) ($data['name_en'] ?? []);
+        $ars = (array) ($data['name_ar'] ?? []);
+        foreach (array_keys($ens + $ars) as $i) {
+            $names[$i] = admin_setting_bilingualtext::join($ens[$i] ?? '', $ars[$i] ?? '');
+        }
+        return $names;
+    }
+
+    /**
      * Get the stored JSON.
      *
      * @return string|null
@@ -126,7 +143,7 @@ class admin_setting_footerpages extends \admin_setting {
         if (!is_array($data)) {
             $data = [];
         }
-        $names = (array) ($data['name'] ?? []);
+        $names = $this->posted_names($data);
         $urls = (array) ($data['url'] ?? []);
         $shows = (array) ($data['show'] ?? []);
 
@@ -167,7 +184,7 @@ class admin_setting_footerpages extends \admin_setting {
     public function output_html($data, $query = '') {
         if (is_array($data)) {
             $rows = [];
-            foreach ((array) ($data['name'] ?? []) as $i => $n) {
+            foreach ($this->posted_names($data) as $i => $n) {
                 if (trim((string) $n) === '' && trim((string) ($data['url'][$i] ?? '')) === '') {
                     continue; // The hidden marker / an empty row.
                 }
@@ -186,13 +203,14 @@ class admin_setting_footerpages extends \admin_setting {
         $rowhtml = function(array $row, string $key) use ($full): string {
             $up = s(get_string('moveup'));
             $down = s(get_string('movedown'));
+            $namecell = admin_setting_bilingualtext::fields($full . '[name_en][' . $key . ']',
+                $full . '[name_ar][' . $key . ']', \theme_nit\local\editor::mlang_parse((string) ($row['name'] ?? '')));
             return '<tr class="nit-fp-row">'
                 . '<td class="text-nowrap">'
                 . '<button type="button" class="btn btn-outline-secondary btn-sm" data-nit-fp-up title="' . $up . '" aria-label="' . $up . '">↑</button> '
                 . '<button type="button" class="btn btn-outline-secondary btn-sm" data-nit-fp-down title="' . $down . '" aria-label="' . $down . '">↓</button>'
                 . '</td>'
-                . '<td><input type="text" class="form-control" name="' . $full . '[name][' . $key . ']" value="' . s($row['name'] ?? '') . '"'
-                . ' placeholder="' . s(get_string('footerpages_name', 'theme_nit')) . '"></td>'
+                . '<td>' . $namecell . '</td>'
                 . '<td><input type="text" class="form-control" dir="ltr" name="' . $full . '[url][' . $key . ']" value="' . s($row['url'] ?? '') . '"'
                 . ' placeholder="/my/  ·  https://…"></td>'
                 . '<td>' . $this->show_cell($full . '[show][' . $key . ']', $row) . '</td>'

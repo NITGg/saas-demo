@@ -485,6 +485,8 @@ $string['navmenu_show_teacher'] = 'المدرسون';
 $string['navmenu_show_admin'] = 'المديرون (Admin)';
 $string['navmenu_show_manager'] = 'المشرفون (Manager)';
 $string['navmenu_show_none'] = 'اختر دورًا واحدًا على الأقل في «يظهر لـ» لكل رابط، أو احذف الصف.';
+$string['bilingual_en'] = 'بالإنجليزية';
+$string['bilingual_ar'] = 'بالعربية';
 $string['navpagesmenu'] = 'صفحات الموقع';
 
 // نصوص الناف بار والفوتر (بسطتهالك).
