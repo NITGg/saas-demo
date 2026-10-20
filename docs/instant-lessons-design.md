@@ -178,3 +178,61 @@ Until then the feature works on polling alone.
 7. **Parent alert** when an instant lesson starts.
 8. **Audit/report export** of requests and offers (live view only shows 24 h on screen).
 9. **Behat / browser tests** for the pop-up and searching screens (PHPUnit covers the service only).
+
+---
+
+# Instant lessons v2 — agreed redesign (2026-10-20)
+
+Replaces the "pick a subject, wait" screen with a tutor-first flow. Everything after the student confirms is unchanged
+(normal lesson: room, completion, earnings, reviews).
+
+## A. Student journey
+1. **Year → subject.** The school year is pre-selected from the student's profile (`academic_structure::USER_YEAR`,
+   set at registration) and can be changed; subjects are those of that year.
+2. **Tutor list** for that subject and year (**year-aware**: only tutors who teach that year), sorted: online now →
+   favourites → rating → reliability. Each card: photo, name, **rating (stars + count)**, reliability ("answers 90%"),
+   **the Flex price of this lesson** (full / quick / peak / trial), "Available now" or **"Usually online: Sun–Thu
+   6–10 PM"**, a **★ favourite** toggle, and **View profile**.
+3. **How to ask:**
+   - **Ask all available tutors (fastest)** — broadcast in ranked waves (as today).
+   - **Ask this tutor** (online cards only) — only that tutor rings, 60 s; if no answer: "Ask all available instead?".
+   - Offline cards: **Book a lesson** (normal scheduling, pre-filled with their next free slot) and **Notify me when
+     this tutor is online**. Offline tutors never receive instant requests by email (they would expire before being read).
+4. **Tutor accepts → the student confirms**: "Mr. Ahmed accepted · ★4.8 · 2 Flex · 30 min · View profile" with
+   **Start lesson / Decline** and a 30 s countdown. Flex is reserved and the room created only on **Start**.
+   Decline / timeout → the tutor is released (not counted against them) and a broadcast continues with the next tutor.
+   A **"Start right away with whoever accepts"** checkbox skips this step (default on for quick questions).
+5. **After the call**: a **rating prompt** (1–5 + comment, the existing review system), and **Book again with this
+   tutor** / **★ favourite**.
+
+## B. Tutor journey
+- **Available now** switch (in-app / web, heartbeat) as today.
+- **On call** (new, opt-in): receive instant-request **push** even when the app is closed; tapping it opens the
+  prompt and makes the tutor available. Not offered (or switched off for 7 days) after **2 no-shows in 30 days**.
+- Prompt as today; after Accept the tutor sees **"Waiting for the student to confirm… (30 s)"**, then the room.
+
+## C. Rules & numbers (admin settings, defaults)
+| Setting | Default |
+|---|---|
+| Ask-this-tutor ring time | 60 s |
+| Student confirm time | 30 s |
+| Auto-start default for quick questions | on |
+| No-shows before losing On call / suspension length | 2 in 30 days / 7 days |
+| "Usually online" needs | 3+ weeks of presence history |
+| Instant-lesson Complete window | the lesson's own length (fixes 45 min > 30 / 15 min lessons) |
+
+## D. New data
+- `nit_teacher_presence_log` — online sessions (start, end) per tutor → "usually online" (weekday × hour buckets).
+- `nit_favourite_tutor` — student ↔ tutor; going online notifies the student (once per day per tutor).
+- `nit_instant_request`: `teacherid_target` (ask this tutor), `autostart`, `confirmdeadline`, status adds
+  `accepted` (waiting for the student).
+- `nit_teacher_presence`: `oncall`, `oncall_blocked_until`.
+
+## E. Similar products to look at
+Cambly (pick an online tutor, call starts), Preply (profile cards, instant booking), Varsity Tutors / TutorMe
+(broadcast on-demand matching), Snapask (photo of the question, tutors claim it).
+
+## F. Status
+Designed, **not built**. Built so far: §8 above (phases 1–3b + phase 4: quick, trial, peak, AI summary, parent
+alert, reliability, export). Pending ops: notify-ws relay on the server (see §8). Pending code: everything in this v2
+section; the mobile guide gets the new calls when they are built.
