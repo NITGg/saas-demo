@@ -178,17 +178,35 @@ include them. For "always reachable" teachers, keep the poll alive while the app
 
 When the server has the notify-ws relay configured, `instant_subjects` and `instant_presence` also return
 `"ws": {"url": "https://…", "path": "/notify-ws/socket.io", "token": "<userid>.<exp>.<hmac>"}` (the token is valid
-6 h — call either again to refresh it); otherwise `"ws": null`. Connect with a Socket.IO 4 client:
-`io(ws.url, {path: ws.path, auth: {token: ws.token}})` and listen to `notification` events with `type == "instant"`:
+6 h — call either again to refresh it); otherwise `"ws": null`. Always use the `url` and `path` the server returns —
+never hard-code them (on the jitsi_life site they are `https://academy2026.nitg-eg.com` and
+`/jitsi_life/notify-ws/socket.io`).
+
+Connect with a **Socket.IO v4** client (a plain WebSocket client will not work — Socket.IO has its own protocol):
+- JS / React Native: `socket.io-client@4` → `io(ws.url, {path: ws.path, auth: {token: ws.token}, transports: ['websocket']})`
+- Flutter: `socket_io_client` (2.x+) → `IO.io(ws.url, IO.OptionBuilder().setPath(ws.path).setTransports(['websocket']).setAuth({'token': ws.token}).build())`
+- Android: `io.socket:socket.io-client:2.x`; iOS: `Socket.IO-Client-Swift` 16.x (both speak v4 / EIO 4).
+
+The client only **receives**; it never emits. A bad or expired token → the server disconnects at once: fetch a fresh
+`ws` (call `instant_presence` / `instant_subjects`) and reconnect. Listen to the `notification` event; payloads look
+like `{"type": "instant", "what": "offer", "requestid": 17}`. Ignore other `type`s. A signal carries no data — it only
+says "ask now":
 
 | `what` | to | do |
 |---|---|---|
 | `offer` | teacher | call `instant_poll` now (a new prompt, or an AI summary arrived) |
-| `closed` | teacher | close the prompt for `requestid` |
-| `status` | student | call `instant_status(requestid)` now |
+| `closed` | teacher | close the prompt for `requestid` (taken by another tutor, cancelled, expired, or the student rejected) |
+| `started` | teacher | the student confirmed your accept → call `instant_poll` (it returns `started` with the lesson) and open the room |
+| `status` | student | call `instant_status(requestid)` now (accepted / matched / expired / no-show refund) |
+
+Lifecycle: connect when the teacher goes online or the student sends a request; disconnect when offline / the
+request ends / the app goes to background (push notifications, §4, cover the background). Socket.IO reconnects by
+itself after network drops.
 
 Keep polling slowly as a safety net (teacher heartbeat ≤ every 20 s — presence needs one within 60 s; student 10 s).
 Polling alone is fully supported; the socket is an optimisation.
+
+Quick check from a terminal: `curl "<ws.url><ws.path>/?EIO=4&transport=polling"` → `0{"sid":…}` means the relay is up.
 
 ## 6. Lesson objects
 
