@@ -831,7 +831,9 @@ An answer that does not fit (unknown option or gap, an ordering missing an item,
 often than `limit`…) fails with `errorcode:"invalidquizanswer"` and a readable `error`.
 
 **Result** (`finish_quiz_attempt` / `submit_quiz_attempt`):
-`{"attemptid":9,"state":"finished","score":2.0,"max_score":3.0,"percent":66.7,"results":[{"slot":1,"questionid":12,"type":"multichoice","mark":1.0,"max_mark":1.0,"correct":true,"state":"gradedright","needs_grading":false}]}`
+`{"attemptid":9,"state":"finished","score":2.0,"max_score":3.0,"percent":66.7,"needs_grading":false,"results":[{"slot":1,"questionid":12,"type":"multichoice","mark":1.0,"max_mark":1.0,"correct":true,"state":"gradedright","needs_grading":false}]}`
+While an essay waits for the teacher there is no total yet (as on the website): `score`/`percent` are
+`null` and `needs_grading` is `true`.
 `state` per question: `gradedright`, `gradedpartial`, `gradedwrong`, `gaveup` (not answered),
 `needsgrading` (essay waiting for the teacher).
 

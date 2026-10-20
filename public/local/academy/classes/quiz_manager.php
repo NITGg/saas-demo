@@ -299,12 +299,13 @@ class quiz_manager {
         $attemptobj = quiz_attempt::create($attemptid);
         [$score, $maxscore, $results] = self::attempt_marks($attemptobj);
         return [
-            'attemptid' => (int) $attemptid,
-            'state'     => $attemptobj->get_attempt()->state,
-            'score'     => $score,
-            'max_score' => $maxscore,
-            'percent'   => $maxscore > 0 ? round(($score / $maxscore) * 100, 1) : 0,
-            'results'   => $results,
+            'attemptid'     => (int) $attemptid,
+            'state'         => $attemptobj->get_attempt()->state,
+            'score'         => $score,
+            'max_score'     => $maxscore,
+            'percent'       => $score !== null && $maxscore > 0 ? round(($score / $maxscore) * 100, 1) : null,
+            'needs_grading' => $score === null,
+            'results'       => $results,
         ];
     }
 
@@ -357,7 +358,8 @@ class quiz_manager {
             $questions[] = $data;
         }
 
-        $score = round((float) ($attempt->sumgrades ?? 0), 2);
+        $score = self::attempt_score($attempt);
+        $showscore = $showmarks && $score !== null;
         return [
             'attemptid'      => (int) $attempt->id,
             'quizid'         => (int) $quiz->id,
@@ -366,9 +368,10 @@ class quiz_manager {
             'state'          => $attempt->state,
             'timestart'      => (int) $attempt->timestart,
             'timefinish'     => (int) $attempt->timefinish,
-            'score'          => $showmarks ? $score : null,
+            'score'          => $showscore ? $score : null,
             'max_score'      => round($maxscore, 2),
-            'percent'        => $showmarks && $maxscore > 0 ? round(($score / $maxscore) * 100, 1) : null,
+            'percent'        => $showscore && $maxscore > 0 ? round(($score / $maxscore) * 100, 1) : null,
+            'needs_grading'  => $attempt->state === quiz_attempt::FINISHED && $score === null,
             'questions'      => $questions,
         ];
     }
@@ -543,8 +546,15 @@ class quiz_manager {
                 'needs_grading'  => $state === \question_state::$needsgrading,
             ];
         }
-        $score = round((float) ($attemptobj->get_attempt()->sumgrades ?? 0), 2);
-        return [$score, round($maxscore, 2), $results];
+        return [self::attempt_score($attemptobj->get_attempt()), round($maxscore, 2), $results];
+    }
+
+    /**
+     * The attempt's total, or null while a question (an essay) waits for the teacher:
+     * Moodle leaves sumgrades empty until then and shows "Not yet graded".
+     */
+    private static function attempt_score(\stdClass $attempt): ?float {
+        return $attempt->sumgrades === null ? null : round((float) $attempt->sumgrades, 2);
     }
 
     /**

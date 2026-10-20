@@ -433,21 +433,30 @@ Just show the text. There is nothing to answer — do not call `save_quiz_answer
 ### 5.1 Result (`finish_quiz_attempt` / `submit_quiz_attempt`)
 
 ```json
-{"attemptid":559,"state":"finished","score":14.0,"max_score":16.0,"percent":87.5,
+{"attemptid":559,"state":"finished","score":15.0,"max_score":16.0,"percent":93.8,"needs_grading":false,
  "results":[
    {"slot":1,"questionid":531,"type":"multichoice","mark":1.0,"max_mark":1.0,
-    "correct":true,"state":"gradedright","needs_grading":false},
+    "correct":true,"state":"gradedright","needs_grading":false}, …]}
+```
+`score` is the raw total of marks (out of `max_score`).
+
+**A quiz with an essay:** the essay waits for the teacher, and — exactly like the website's
+"Not yet graded" — there is **no total yet**: `score:null`, `percent:null`, `needs_grading:true`. The
+other questions already have their `mark`; show those and "waiting for the teacher". Once the teacher
+grades it, `get_quiz_attempt` / `get_my_quiz_attempts` return the final score.
+
+```json
+{"attemptid":560,"state":"finished","score":null,"max_score":16.0,"percent":null,"needs_grading":true,
+ "results":[ …,
    {"slot":7,"questionid":580,"type":"essay","mark":null,"max_mark":1.0,
     "correct":false,"state":"needsgrading","needs_grading":true}]}
 ```
-`score` is the raw total of marks (out of `max_score`). While an essay waits for the teacher,
-`score` does not include it yet.
 
 ### 5.2 Review (`get_quiz_attempt`)
 
 ```json
 {"attemptid":559,"quizid":4,"quiz_name":"…","attempt_number":1,"state":"finished",
- "timestart":1760865600,"timefinish":1760866200,"score":14.0,"max_score":16.0,"percent":87.5,
+ "timestart":1760865600,"timefinish":1760866200,"score":14.0,"max_score":16.0,"percent":87.5,"needs_grading":false,
  "questions":[
    {"slot":1,"questionid":531,"type":"multichoice","text":"…","single":true,"options":[…],
     "max_mark":1.0,"supported":true,
@@ -459,7 +468,8 @@ Just show the text. There is nothing to answer — do not call `save_quiz_answer
   - `state` — §7.2;
   - `mark`, `correct`, `right_answer` (text), `correct_response` (the right answer in the app format,
     to highlight it) — **only when the teacher's quiz "Review options" allow it**. A field the quiz
-    hides is simply missing; `score`/`percent` are `null` when the quiz hides marks.
+    hides is simply missing; `score`/`percent` are `null` when the quiz hides marks or an essay is
+    still waiting for the teacher (`needs_grading:true`).
 - Multiple-choice / true-false also keep the older `correct_answers[{id,text,images,correct}]` list.
 
 ---

@@ -81,8 +81,10 @@ final class quiz_native_test extends \advanced_testcase {
                 $this->assertEquals($r['max_mark'], $r['mark'], $r['type']);
             }
         }
-        // Everything but the hand-graded essay.
-        $this->assertEquals($result['max_score'] - 1, $result['score']);
+        // The essay waits for the teacher, so like Moodle there is no total yet.
+        $this->assertTrue($result['needs_grading']);
+        $this->assertNull($result['score']);
+        $this->assertNull($result['percent']);
     }
 
     public function test_answers_written_from_the_payload_text_are_graded_right(): void {
@@ -118,7 +120,9 @@ final class quiz_native_test extends \advanced_testcase {
         foreach ($result['results'] as $r) {
             $this->assertTrue($r['correct'], $r['type'] . ': ' . $r['state']);
         }
+        $this->assertFalse($result['needs_grading']);
         $this->assertEquals($result['max_score'], $result['score']);
+        $this->assertEquals(100, $result['percent']);
     }
 
     public function test_wrong_and_partial_answers_lose_marks(): void {
@@ -211,9 +215,12 @@ final class quiz_native_test extends \advanced_testcase {
         $q = $this->by_type(quiz_manager::get_attempt_questions($attempt, (int) $student->id));
 
         // Calculated questions carry this attempt's numbers, not the {a} placeholders.
+        // ("What is {a} + {b}?" — the core calculated/sum fixture saves an empty text, so check calculatedmulti.)
         $this->assertStringNotContainsString('{a}', $q['calculated']['text']);
-        $this->assertStringNotContainsString('{a}', $q['calculatedmulti']['text']);
-        $this->assertMatchesRegularExpression('/\d/', $q['calculated']['text']);
+        $this->assertMatchesRegularExpression('/^What is \d+ \+ \d+\?$/', $q['calculatedmulti']['text']);
+        foreach ($q['calculatedmulti']['options'] as $option) {
+            $this->assertStringNotContainsString('{', $option['text']);
+        }
 
         // The marker drop zones are the answer: only the markers go out.
         $this->assertArrayNotHasKey('drops', $q['ddmarker']);
