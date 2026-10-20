@@ -6,7 +6,7 @@ something changes". Optional: without it everything works on polling.
 ## How it fits together
 
 ```
- Browser (js/instant.js) ──Socket.IO (wss)──► nginx /jitsi_life/notify-ws/ ──► relay container (Node, :3100)
+ Browser (js/instant.js) ──Socket.IO (wss)──► Apache /jitsi_life/notify-ws/ ──► relay container (Node, :3100)
         ▲                                                                          ▲
         │ fetch instant.php (state)                                                │ POST /emit {userid, notification}
         │                                                                          │ header x-internal-key
@@ -53,21 +53,25 @@ cd /var/www/html/jitsi_life && docker compose up -d --build notify
 curl -s http://127.0.0.1:3101/health          # → {"status":"ok"}
 ```
 
-## 2. Reverse proxy (host nginx, the server block of academy2026.nitg-eg.com)
+## 2. Reverse proxy (host Apache2, the :443 VirtualHost of academy2026.nitg-eg.com)
 
-Put this **before / next to** the existing `location /jitsi_life/` (nginx picks the longest matching prefix):
-```nginx
-location /jitsi_life/notify-ws/ {
-    proxy_pass http://127.0.0.1:3101;
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection "upgrade";
-    proxy_set_header Host $host;
-    proxy_read_timeout 3600s;
-}
-```
 ```bash
-nginx -t && systemctl reload nginx
+a2enmod proxy proxy_http proxy_wstunnel rewrite
+grep -rl "academy2026" /etc/apache2/sites-enabled/     # the *-le-ssl.conf is the :443 one
+```
+In that VirtualHost, put this **above** the existing `ProxyPass /jitsi_life/ ...` (Apache uses the first ProxyPass
+that matches, so the longer path must come first):
+```apache
+    # Realtime relay: WebSocket upgrade + Socket.IO polling fallback
+    RewriteEngine On
+    RewriteCond %{QUERY_STRING} transport=websocket [NC]
+    RewriteRule ^/jitsi_life/notify-ws/(.*) ws://127.0.0.1:3101/jitsi_life/notify-ws/$1 [P,L]
+    ProxyPass        /jitsi_life/notify-ws/ http://127.0.0.1:3101/jitsi_life/notify-ws/
+    ProxyPassReverse /jitsi_life/notify-ws/ http://127.0.0.1:3101/jitsi_life/notify-ws/
+```
+The path is kept as is (`/jitsi_life/notify-ws/socket.io/...`) because the relay's `SOCKET_PATH` expects it.
+```bash
+apache2ctl configtest && systemctl reload apache2
 curl -s "https://academy2026.nitg-eg.com/jitsi_life/notify-ws/socket.io/?EIO=4&transport=polling"   # → 0{"sid":...
 ```
 
@@ -98,8 +102,9 @@ docker exec -u 33 jitsi_life_app php /var/www/html/admin/cli/purge_caches.php
 
 | Symptom | Cause |
 |---|---|
+| `curl .../health` prints nothing | relay crashed: `docker logs jitsi_life_notify` |
 | `NIT_INSTANT.ws` is null | config.php lines missing / caches not purged |
-| WS connection 404 | nginx location missing, or `SOCKET_PATH` ≠ `academy_notify_path` |
+| WS connection 404 | Apache ProxyPass missing or below `ProxyPass /jitsi_life/`, or `SOCKET_PATH` ≠ `academy_notify_path` |
 | WS connects then closes at once | secret differs between relay and config.php (token rejected), or clock skew |
 | Signals never arrive | `academy_notify_internalurl` not reachable from the app container (network `saas_net`) |
 | CORS error | `ALLOWED_ORIGIN` must be exactly `https://academy2026.nitg-eg.com` |
