@@ -1,0 +1,90 @@
+{{!
+    This file is part of The Flashcard Module
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_flashcard/play
+
+    One card of a Leitner deck: the card (tap to flip), the deck and the count left, and
+    the two answers. The look lives in theme_nit (scss/components/_flashcard.scss).
+
+    The card keeps the ids #questiondiv / #answerdiv and the global togglecard() of
+    js/module.js, which also drives the sound/video players of media cards.
+
+    Context variables required for this template:
+    * globals - JSON {qtype, atype, maxitems} read by js/module.js
+    * extracss - the teacher's own CSS from the activity settings
+    * instructions (the cards' aria-label), deck, remaining
+    * fronthtml, backhtml - the two faces, already formatted
+    * frontclass, backclass - the -video variants for video cards
+    * frontbg, backbg - optional custom card images
+    * actionurl, gotparams, failedparams - the two answer forms
+    * backurl - the deck table
+
+    Example context (json):
+    {
+        "globals": "{}", "instructions": "Click on the card", "deck": 1, "remaining": 3,
+        "fronthtml": "Apple", "backhtml": "Pomme", "actionurl": "#",
+        "gotparams": [], "failedparams": [], "backurl": "#"
+    }
+}}
+<div class="nit-fc nit-fc-play">
+    {{#extracss}}<style>{{{extracss}}}</style>{{/extracss}}
+    <script>
+    (function(g) {
+        window.qtype = g.qtype;
+        window.atype = g.atype;
+        window.maxitems = g.maxitems;
+    })({{{globals}}});
+    </script>
+
+    <div class="nit-fc-toolbar">
+        <a class="nit-fc-back" href="{{backurl}}">{{#str}}backtodeckslink, mod_flashcard{{/str}}</a>
+        <div class="nit-fc-chips">
+            <span class="nit-fc-chip">{{#str}}deck, mod_flashcard{{/str}} {{deck}}</span>
+            <span class="nit-fc-chip">{{#str}}cardsremaining, mod_flashcard{{/str}}: <b id="remain">{{remaining}}</b></span>
+        </div>
+    </div>
+
+    <div class="nit-fc-stage">
+        <div id="questiondiv" class="nit-fc-card nit-fc-card--front flashcard-question {{frontclass}}"
+             role="button" tabindex="0" aria-label="{{#str}}instructions, mod_flashcard{{/str}}"
+             {{#frontbg}}style="background-image:url('{{frontbg}}')"{{/frontbg}}
+             onclick="togglecard()" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); togglecard(); }">
+            <span class="nit-fc-side">{{#str}}sidequestion, mod_flashcard{{/str}}</span>
+            <div class="nit-fc-content">{{{fronthtml}}}</div>
+            <span class="nit-fc-flip">{{#str}}fliphint, mod_flashcard{{/str}}</span>
+        </div>
+        <div id="answerdiv" class="nit-fc-card nit-fc-card--back flashcard-answer {{backclass}}"
+             role="button" tabindex="0" aria-label="{{#str}}instructions, mod_flashcard{{/str}}"
+             style="display:none;{{#backbg}}background-image:url('{{backbg}}');{{/backbg}}"
+             onclick="togglecard()" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); togglecard(); }">
+            <span class="nit-fc-side">{{#str}}sideanswer, mod_flashcard{{/str}}</span>
+            <div class="nit-fc-content">{{{backhtml}}}</div>
+            <span class="nit-fc-flip">{{#str}}fliphint, mod_flashcard{{/str}}</span>
+        </div>
+    </div>
+
+    <div class="nit-fc-actions">
+        <form method="post" action="{{actionurl}}">
+            {{#failedparams}}<input type="hidden" name="{{name}}" value="{{value}}">{{/failedparams}}
+            <button type="submit" class="btn btn-outline-primary nit-fc-answer">{{#str}}ifailed, mod_flashcard{{/str}}</button>
+        </form>
+        <form method="post" action="{{actionurl}}">
+            {{#gotparams}}<input type="hidden" name="{{name}}" value="{{value}}">{{/gotparams}}
+            <button type="submit" class="btn btn-primary nit-fc-answer">{{#str}}igotit, mod_flashcard{{/str}}</button>
+        </form>
+    </div>
+</div>

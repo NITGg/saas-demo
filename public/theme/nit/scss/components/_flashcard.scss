@@ -1,0 +1,439 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+// =============================================================================
+// Flash Card Set (mod_flashcard) — the three student screens:
+//
+//   .nit-fc-decks  view=checkdecks  one tile per Leitner deck (templates/decks.mustache)
+//   .nit-fc-play   view=play        one card + "I got it" / "I missed" (templates/play.mustache)
+//   .nit-fc-free   view=freeplay    card stage + controls (freeplayview.php, freebuttons.mustache)
+//
+// The plugin's own styles.css draws the cards as 300x400 dashed table cells; every rule
+// here is scoped under .nit-fc so it outranks those without !important. Colours come
+// only from --nit-brand-* roles, so the screens re-skin with light/dark and with a
+// category's brand group. Layout uses logical properties (the RTL build flips nothing
+// it should not). js/module.js shows a card by clearing its inline display, so a
+// visible card takes the display set here.
+// =============================================================================
+
+.nit-fc {
+    // Alpha colours live in custom properties: the Arabic (RTL) build drops a whole
+    // declaration whose value scssphp rewrote to the modern rgb(... / a) form.
+    --nit-fc-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+    --nit-fc-shadow-hover: 0 18px 40px rgba(15, 23, 42, 0.18);
+    --nit-fc-radius: 20px;
+
+    max-width: 980px;
+    margin-inline: auto;
+    color: var(--nit-brand-textprimary);
+}
+
+// --- Shared bits -------------------------------------------------------------
+
+.nit-fc-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-block-end: 1.25rem;
+}
+
+.nit-fc-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.nit-fc-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0.35rem 0.9rem;
+    border: 1px solid var(--nit-brand-borderprimary);
+    border-radius: 999px;
+    background: var(--nit-brand-surface);
+    color: var(--nit-brand-textsecondary);
+    font-size: 0.875rem;
+
+    b {
+        color: var(--nit-brand-textprimary);
+    }
+}
+
+.nit-fc-back {
+    color: var(--nit-brand-primary);
+    font-weight: 600;
+    text-decoration: none;
+
+    &:hover,
+    &:focus {
+        color: var(--nit-brand-primary);
+        text-decoration: underline;
+    }
+}
+
+.nit-fc-hint {
+    margin-block: 1rem;
+    color: var(--nit-brand-textsecondary);
+    text-align: center;
+}
+
+// --- The card ----------------------------------------------------------------
+
+.nit-fc-stage {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 360px;
+    perspective: 1200px;
+}
+
+.nit-fc .nit-fc-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: min(100%, 440px);
+    height: auto;
+    min-height: 340px;
+    padding: 3rem 1.75rem;
+    border: 1px solid var(--nit-brand-borderprimary);
+    border-block-start: 6px solid var(--nit-brand-primary);
+    border-radius: var(--nit-fc-radius);
+    background-color: var(--nit-brand-surface);
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+    box-shadow: var(--nit-fc-shadow);
+    color: var(--nit-brand-textprimary);
+    text-align: center;
+    vertical-align: initial;
+    cursor: pointer;
+    animation: nit-fc-turn 0.35s ease-out;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+    &:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--nit-fc-shadow-hover);
+    }
+
+    &:focus-visible {
+        outline: 3px solid var(--nit-brand-primary);
+        outline-offset: 4px;
+    }
+
+    &.flashcard-question-video,
+    &.flashcard-answer-video {
+        width: min(100%, 680px);
+    }
+}
+
+// The answer face: same card, the accent on top switches to the success role so the
+// two faces never look alike at a glance.
+.nit-fc .nit-fc-card--back {
+    border-block-start-color: var(--nit-brand-success, var(--nit-brand-primary));
+}
+
+.nit-fc-side {
+    position: absolute;
+    inset-block-start: 1rem;
+    inset-inline-start: 1.25rem;
+    color: var(--nit-brand-textsecondary);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.nit-fc-flip {
+    position: absolute;
+    inset-block-end: 1rem;
+    inset-inline: 0;
+    color: var(--nit-brand-textsecondary);
+    font-size: 0.8rem;
+}
+
+.nit-fc-content {
+    max-width: 100%;
+    font-size: clamp(1.5rem, 4vw, 2.4rem);
+    font-weight: 700;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+
+    p:last-child {
+        margin-block-end: 0;
+    }
+
+    img {
+        max-width: 100%;
+        max-height: 240px;
+        border-radius: 12px;
+    }
+}
+
+@keyframes nit-fc-turn {
+    from {
+        opacity: 0;
+        transform: rotateY(80deg);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nit-fc .nit-fc-card {
+        animation: none;
+        transition: none;
+    }
+}
+
+// --- Leitner play: the two answers -------------------------------------------
+
+.nit-fc-actions {
+    display: flex;
+    margin-block-start: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem;
+
+    form {
+        margin: 0;
+    }
+
+    .nit-fc-answer {
+        min-width: 170px;
+        padding: 0.7rem 1.5rem;
+        border-radius: 999px;
+        font-weight: 700;
+    }
+
+    @media (max-width: 575.98px) {
+        form {
+            flex: 1 1 0;
+        }
+
+        .nit-fc-answer {
+            width: 100%;
+            min-width: 0;
+        }
+    }
+}
+
+// --- Deck table ----------------------------------------------------------------
+
+.nit-fc-deckgrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+}
+
+.nit-fc-deck {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 1.25rem;
+    border: 1px solid var(--nit-brand-borderprimary);
+    border-radius: var(--nit-fc-radius);
+    background: var(--nit-brand-surface);
+    box-shadow: var(--nit-fc-shadow);
+    text-align: center;
+
+    &.is-due {
+        border-color: var(--nit-brand-primary);
+    }
+}
+
+.nit-fc-deck__head {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    align-self: stretch;
+}
+
+.nit-fc-deck__num {
+    display: inline-grid;
+    place-items: center;
+    flex: 0 0 2rem;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background: var(--nit-brand-primary);
+    color: var(--nit-brand-on-primary);
+    font-weight: 700;
+}
+
+.nit-fc-deck__title {
+    margin: 0;
+    color: var(--nit-brand-textprimary);
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+// A small pile: up to three sheets fanned behind a top card that carries the count.
+.nit-fc-deck__pile {
+    position: relative;
+    width: 116px;
+    height: 148px;
+    margin-block: 0.75rem 0.25rem;
+}
+
+.nit-fc-deck__sheet {
+    position: absolute;
+    inset: 0;
+    border: 2px solid var(--nit-brand-borderprimary);
+    border-radius: 14px;
+    background: var(--nit-brand-surface);
+
+    &:nth-child(1) {
+        transform: rotate(-8deg);
+    }
+
+    &:nth-child(2) {
+        transform: rotate(5deg);
+    }
+
+    &:nth-child(3) {
+        transform: rotate(-2deg);
+    }
+}
+
+.nit-fc-deck__count {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    border: 2px solid var(--nit-brand-primary);
+    border-radius: 14px;
+    background: var(--nit-brand-surface);
+    color: var(--nit-brand-primary);
+    font-size: 2.6rem;
+    font-weight: 800;
+}
+
+.nit-fc-deck.is-empty .nit-fc-deck__count {
+    border-style: dashed;
+    border-color: var(--nit-brand-borderprimary);
+    color: var(--nit-brand-textsecondary);
+}
+
+.nit-fc-deck__meta {
+    margin: 0;
+    color: var(--nit-brand-textsecondary);
+}
+
+.nit-fc-deck__state {
+    margin: 0;
+    color: var(--nit-brand-textsecondary);
+    font-size: 0.875rem;
+    font-weight: 600;
+
+    .is-due & {
+        color: var(--nit-brand-primary);
+    }
+
+    .is-reviewed & {
+        color: var(--nit-brand-success, var(--nit-brand-textsecondary));
+    }
+}
+
+.nit-fc-deck__go {
+    align-self: stretch;
+    margin-block-start: auto;
+    border-radius: 999px;
+    font-weight: 700;
+}
+
+// --- Free play -----------------------------------------------------------------
+
+.nit-fc-freeboard {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 260px;
+    gap: 1.75rem;
+    align-items: start;
+
+    @media (max-width: 767.98px) {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.nit-fc-free .nit-fc-hint {
+    max-width: 720px;
+    margin-inline: auto;
+}
+
+.nit-fc-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1.25rem;
+    border: 1px solid var(--nit-brand-borderprimary);
+    border-radius: var(--nit-fc-radius);
+    background: var(--nit-brand-surface);
+    box-shadow: var(--nit-fc-shadow);
+
+    .nit-fc-remaining {
+        align-self: center;
+    }
+
+    .btn {
+        width: 100%;
+        border-radius: 999px;
+        font-weight: 600;
+    }
+
+    .nit-fc-back {
+        text-align: center;
+    }
+}
+
+.nit-fc-controls__nav {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+.nit-fc .nit-fc-finished {
+    border-block-start-color: var(--nit-brand-success, var(--nit-brand-primary));
+    cursor: default;
+    gap: 1rem;
+
+    &:hover {
+        transform: none;
+    }
+
+    .nit-fc-content {
+        font-size: 1.4rem;
+    }
+}
+
+.nit-fc-finished__icon {
+    display: grid;
+    place-items: center;
+    width: 4rem;
+    height: 4rem;
+    border-radius: 50%;
+    background: var(--nit-brand-success, var(--nit-brand-primary));
+    color: var(--nit-brand-on-primary);
+    font-size: 2rem;
+    font-weight: 800;
+}

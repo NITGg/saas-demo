@@ -259,3 +259,12 @@ in course <b><%%COURSE%%></b> : </p>
 
 <a href="<%%URL%%>"><%%URL%%></a>
 ';
+// NIT: strings for the restyled play screens.
+$string['backtodeckslink'] = 'Back to the decks';
+$string['deckdue'] = 'Ready to review';
+$string['deckempty'] = 'No cards here yet';
+$string['deckreviewed'] = 'Reviewed. It will be due again later';
+$string['fliphint'] = 'Tap the card to flip it';
+$string['freedone'] = 'Well done! You went through every card.';
+$string['sideanswer'] = 'Answer';
+$string['sidequestion'] = 'Question';

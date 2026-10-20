@@ -4,9 +4,15 @@
  */
 // jshint undef:false, unused:false
 
-var cards = new Array(maxitems);
-for (i = 0; i < maxitems; i++) {
-    cards[i] = true;
+// view.php loads this file on every flashcard page, but only the play screens print the
+// globals it reads (maxitems, qtype, atype) — guard so the other pages do not throw.
+// Cards are shown by clearing their inline display (""), so the theme decides how they lay
+// out; the original forced "table-cell".
+var cards = [];
+if (typeof maxitems !== 'undefined') {
+    for (var i = 0; i < maxitems; i++) {
+        cards[i] = true;
+    }
 }
 
 function clicked(type, item) {
@@ -18,7 +24,7 @@ function clicked(type, item) {
         oldtype = 'f';
     }
 
-    document.getElementById(oldtype + item).style.display = "table-cell";
+    document.getElementById(oldtype + item).style.display = "";
 
     if (type === 'f') {
         if (atype > 2) {
@@ -54,7 +60,7 @@ function next_card() {
         }
     } while (cards[currentitem] !== true);
 
-    document.getElementById('f' + currentitem).style.display = "table-cell";
+    document.getElementById('f' + currentitem).style.display = "";
     qtobj = document.getElementById('bell_f' + currentitem + '_player');
     if (qtobj) {
         qtobj.SetControllerVisible(true);
@@ -70,7 +76,7 @@ function previous_card() {
             currentitem = maxitems - 1;
         }
     } while (cards[currentitem] !== true);
-    document.getElementById('f' + currentitem).style.display = "table-cell";
+    document.getElementById('f' + currentitem).style.display = "";
     qtobj = document.getElementById('bell_f' + currentitem + '_player');
     if (qtobj) {
         qtobj.SetControllerVisible(true);
@@ -83,7 +89,7 @@ function remove_card() {
     if (remaining === 0) {
         document.getElementById('f' + currentitem).style.display = "none";
         document.getElementById('b' + currentitem).style.display = "none";
-        document.getElementById('finished').style.display = "table-cell";
+        document.getElementById('finished').style.display = "";
         document.getElementById('next').disabled = true;
         document.getElementById('previous').disabled = true;
         document.getElementById('remove').disabled = true;
@@ -100,7 +106,7 @@ function togglecard() {
     var answerobj = document.getElementById("answerdiv");
     var api;
     if (questionobj.style.display === "none") {
-        questionobj.style.display = "table-cell";
+        questionobj.style.display = "";
 
         // Controls the quicktime player switching.
         answerobj.style.display = "none";
@@ -127,7 +133,7 @@ function togglecard() {
         }
     } else {
         questionobj.style.display = "none";
-        answerobj.style.display = "table-cell";
+        answerobj.style.display = "";
 
         // Controls the quicktime player switching.
         if (atype === 2 || atype === 3) {

@@ -437,94 +437,77 @@ class mod_flashcard_renderer extends plugin_renderer_base {
             $flashcard->questionsmediatype = $tmp;
         }
 
-        $acardvideoclass = ($flashcard->answersmediatype == FLASHCARD_MEDIA_VIDEO) ? '-video' : '';
-        $qcardvideoclass = ($flashcard->answersmediatype == FLASHCARD_MEDIA_VIDEO) ? '-video' : '';
         $autoplay = ($flashcard->audiostart) ? 'true' : 'false';
 
-        $str = '<script type="text/javascript">
-            var qtype = "'.$flashcard->questionsmediatype.'";
-            var atype = "'.$flashcard->answersmediatype.'";
-            var maxitems = '.count($cards).';
-        </script>';
-
-        $str .= '<style>'.$flashcard->extracss.'</style>';
-
-        $str .= '<div id="flashcard-board">';
-        $str .= '<div id="flashcard-header">';
-        $str .= $this->output->heading($flashcard->name);
-        $str .= '<p> '.get_string('instructions', 'flashcard').'</p>';
-        $str .= '</div>';
-
-        $str .= '<center>';
-
-        $style = ';background-repeat:no-repeat;background-image:url('.$this->print_custom_url($flashcard, 'customback', 0).');';
-        $str .= '<div id="questiondiv"
-                      style="'.$style.'"
-                      class="flashcard-question'.$qcardvideoclass.'"
-                      onclick="javascript:togglecard()">';
+        // The two faces, in the same media order the original markup used.
         if ($flashcard->questionsmediatype == FLASHCARD_MEDIA_IMAGE) {
-            $str .= $this->print_image($flashcard, "{$back}imagefile/{$subquestion->id}");
+            $fronthtml = $this->print_image($flashcard, "{$back}imagefile/{$subquestion->id}");
         } else if ($flashcard->questionsmediatype == FLASHCARD_MEDIA_SOUND) {
-            $str .= $this->play_sound($flashcard, "{$back}soundfile/{$subquestion->id}", $autoplay, 'bell_q');
+            $fronthtml = $this->play_sound($flashcard, "{$back}soundfile/{$subquestion->id}", $autoplay, 'bell_q');
         } else if ($flashcard->questionsmediatype == FLASHCARD_MEDIA_VIDEO) {
-            $str .= $this->play_video($flashcard, "{$back}videofile/{$subquestion->id}", $autoplay, 'bell_q');
+            $fronthtml = $this->play_video($flashcard, "{$back}videofile/{$subquestion->id}", $autoplay, 'bell_q');
         } else if ($flashcard->questionsmediatype == FLASHCARD_MEDIA_IMAGE_AND_SOUND) {
-            $str .= $this->print_image($flashcard, "{$back}imagefile/{$subquestion->id}");
-            $str .= '<br/>';
-            $str .= $this->play_sound($flashcard, "{$back}soundfile/{$subquestion->id}", $autoplay, 'bell_q');
+            $fronthtml = $this->print_image($flashcard, "{$back}imagefile/{$subquestion->id}") . '<br/>'
+                . $this->play_sound($flashcard, "{$back}soundfile/{$subquestion->id}", $autoplay, 'bell_q');
         } else {
-            $str .= format_text($subquestion->questiontext, FORMAT_HTML);
+            $fronthtml = format_text($subquestion->questiontext, FORMAT_HTML);
         }
-        $str .= '</div>';
 
-        $customurl = $this->print_custom_url($flashcard, 'customfront', 0);
-        $str .= '<div id="answerdiv"
-                      style="display:none;background-repeat:no-repeat;background-image:url('.$customurl.')"
-                      class="flashcard-answer'.$acardvideoclass.'"
-                      onclick="javascript:togglecard()">';
         if ($flashcard->answersmediatype == FLASHCARD_MEDIA_IMAGE) {
-            $str .= $this->print_image($flashcard, "{$front}imagefile/{$subquestion->id}");
+            $backhtml = $this->print_image($flashcard, "{$front}imagefile/{$subquestion->id}");
         } else if ($flashcard->answersmediatype == FLASHCARD_MEDIA_SOUND) {
-            $str .= $this->play_sound($flashcard, "{$front}soundfile/{$subquestion->id}", $autoplay, 'bell_a');
+            $backhtml = $this->play_sound($flashcard, "{$front}soundfile/{$subquestion->id}", $autoplay, 'bell_a');
         } else if ($flashcard->answersmediatype == FLASHCARD_MEDIA_VIDEO) {
-            $str .= $this->play_video($flashcard, "{$front}videofile/{$subquestion->id}", $autoplay, 'bell_a');
+            $backhtml = $this->play_video($flashcard, "{$front}videofile/{$subquestion->id}", $autoplay, 'bell_a');
         } else if ($flashcard->answersmediatype == FLASHCARD_MEDIA_IMAGE_AND_SOUND) {
-            $str .= $this->print_image($flashcard, "{$front}imagefile/{$subquestion->id}");
-            $str .= '<br/>';
-            $str .= $this->play_sound($flashcard, "{$front}soundfile/{$subquestion->id}", $autoplay, 'bell_a');
+            $backhtml = $this->print_image($flashcard, "{$front}imagefile/{$subquestion->id}") . '<br/>'
+                . $this->play_sound($flashcard, "{$front}soundfile/{$subquestion->id}", $autoplay, 'bell_a');
         } else {
-            $str .= format_text($subquestion->answertext, FORMAT_HTML);
+            $backhtml = format_text($subquestion->answertext, FORMAT_HTML);
         }
-        $str .= '</div>';
 
-        $str .= '<div id="flashcard-controls">';
-        $str .= '<p>'.get_string('cardsremaining', 'flashcard').': <span id="remain">'.count($subquestions).'</span></p>';
+        // Both answers post back to view.php by its absolute path: the activity also runs
+        // inside local_academy's player iframe on a site under a sub-path (/jitsi_life),
+        // where a relative "view.php" resolved outside the site.
+        $answerurl = new moodle_url('/mod/flashcard/view.php');
+        $common = [
+            'id' => $cm->id,
+            'view' => 'play',
+            'deck' => $deck,
+            'cardid' => $subquestions[$random]->cardid,
+            'sesskey' => sesskey(),
+        ];
+        $hidden = function(array $params): array {
+            $out = [];
+            foreach ($params as $name => $value) {
+                $out[] = ['name' => $name, 'value' => $value];
+            }
+            return $out;
+        };
 
-        $params = array('id' => $cm->id,
-                        'what' => 'igotit',
-                        'view' => 'play',
-                        'deck' => $deck,
-                        'cardid' => $subquestions[$random]->cardid);
-        $label = get_string('igotit', 'flashcard');
-        $attrs = array('class' => 'flashcard_playbutton');
-        $str .= $this->output->single_button(new moodle_url('/mod/flashcard/view.php', $params), $label, 'post', $attrs);
+        $template = (object) [
+            'globals' => json_encode([
+                'qtype' => (string) $flashcard->questionsmediatype,
+                'atype' => (string) $flashcard->answersmediatype,
+                'maxitems' => count($cards),
+            ]),
+            'extracss' => $flashcard->extracss,
+            'instructions' => get_string('instructions', 'flashcard'),
+            'deck' => $deck,
+            'remaining' => count($subquestions),
+            'fronthtml' => $fronthtml,
+            'backhtml' => $backhtml,
+            'frontclass' => ($flashcard->questionsmediatype == FLASHCARD_MEDIA_VIDEO) ? 'flashcard-question-video' : '',
+            'backclass' => ($flashcard->answersmediatype == FLASHCARD_MEDIA_VIDEO) ? 'flashcard-answer-video' : '',
+            'frontbg' => $this->print_custom_url($flashcard, 'customback', 0),
+            'backbg' => $this->print_custom_url($flashcard, 'customfront', 0),
+            'actionurl' => $answerurl->out(false),
+            'gotparams' => $hidden($common + ['what' => 'igotit']),
+            'failedparams' => $hidden($common + ['what' => 'ifailed']),
+            'backurl' => (new moodle_url('/mod/flashcard/view.php', ['id' => $cm->id, 'view' => 'checkdecks']))->out(false),
+        ];
 
-        $params = array('id' => $cm->id,
-                        'what' => 'ifailed',
-                        'view' => 'play',
-                        'deck' => $deck,
-                        'cardid' => $subquestions[$random]->cardid);
-        $label = get_string('ifailed', 'flashcard');
-        $attrs = array('class' => 'flashcard-playbutton');
-        $str .= $this->output->single_button(new moodle_url('/mod/flashcard/view.php', $params), $label, 'post', $attrs);
-
-        $str .= '<div class="flashcard-screenlinks">';
-        $str .= '<a href="'.$thisurl.'?id='.$cm->id.'&amp;view=checkdecks">'.get_string('backtodecks', 'flashcard').'</a>';
-        $str .= '</div>';
-        $str .= '</center>';
-        $str .= '</div>';
-
-        return $str;
+        return $this->output->render_from_template('mod_flashcard/play', $template);
     }
 
     public function finishtable() {
@@ -538,102 +521,53 @@ class mod_flashcard_renderer extends plugin_renderer_base {
 
         $template = new StdClass;
         $template->courseurl = new moodle_url('/course/view.php', array('id' => $COURSE->id));
+        // The counter starts at the full set; js/module.js counts it down on "Remove".
+        $template->subquestionscount = count($subquestions);
 
         return $this->output->render_from_template('mod_flashcard/freebuttons', $template);
     }
 
     public function check_decks(&$flashcard, &$cm, &$decks) {
 
+        // Deck titles by position: the first deck is always the hard one and the last the
+        // easy one; a 3- or 4-deck set adds the middle and trivial ones in between.
+        $titles = ['difficultcards', 'easycards'];
+        if ($flashcard->decks == 3) {
+            $titles = ['difficultcards', 'mediumeffortcards', 'easycards'];
+        } else if ($flashcard->decks >= 4) {
+            $titles = ['difficultcards', 'mediumeffortcards', 'easycards', 'trivialcards'];
+        }
 
         $template = new StdClass;
-
         $template->boostrapdivider = 12 / $flashcard->decks;
+        $template->decks = [];
 
-        $decktpl = new StdClass;
-        $decktpl->header = $this->output->heading(get_string('difficultcards', 'flashcard'));
-
-        if (empty($decks->decks[0]->count)) {
-            $decks->decks[0]->count = 0;
-        }
-
-        $decktpl->strdeck = get_string('cardsindeck', 'flashcard', $decks->decks[0]->count);
-        if ($decks->decks[0]->count == 0) {
-             $decktpl->deck = $this->print_deck($flashcard, $cm, 0);
-        } else {
-            if ($decks->decks[0]->reactivate) {
-                $decktpl->deck = $this->print_deck($flashcard, $cm, 1);
-            } else {
-                $decktpl->deck = $this->print_deck($flashcard, $cm, -1);
+        for ($i = 0; $i < $flashcard->decks; $i++) {
+            if (empty($decks->decks[$i]->count)) {
+                $decks->decks[$i] = $decks->decks[$i] ?? new StdClass;
+                $decks->decks[$i]->count = 0;
             }
-        }
-        $template->decks[] = $decktpl;
+            $count = (int) $decks->decks[$i]->count;
+            $reactivate = !empty($decks->decks[$i]->reactivate);
 
-        $decktpl = new StdClass;
-        if ($flashcard->decks < 3) {
-            $decktpl->header = $this->output->heading(get_string('easycards', 'flashcard'));
-        } else {
-            $decktpl->header = $this->output->heading(get_string('mediumeffortcards', 'flashcard'));
-        }
-
-        if (empty($decks->decks[1]->count)) {
-            $decks->decks[1]->count = 0;
-        }
-
-        $decktpl->strdeck = get_string('cardsindeck', 'flashcard', $decks->decks[1]->count);
-
-        if ($decks->decks[1]->count == 0) {
-             $decktpl->deck = $this->print_deck($flashcard, $cm, 0);
-        } else {
-            if ($decks->decks[1]->reactivate) {
-                $decktpl->deck = $this->print_deck($flashcard, $cm, 2);
-            } else {
-                $decktpl->deck = $this->print_deck($flashcard, $cm, -2);
-            }
-        }
-        $template->decks[] = $decktpl;
-
-        if ($flashcard->decks >= 3) {
+            // The same three states print_deck() draws: empty, due for review, reviewed.
+            $state = $count == 0 ? 0 : ($reactivate ? $i + 1 : -($i + 1));
 
             $decktpl = new StdClass;
-            $decktpl->header = $this->output->heading(get_string('easycards', 'flashcard'));
-
-            if (empty($decks->decks[2]->count)) {
-                $decks->decks[2]->count = 0;
-            }
-
-            $decktpl->strdeck = get_string('cardsindeck', 'flashcard', 0 + $decks->decks[2]->count);
-
-            if ($decks->decks[2]->count == 0) {
-                 $decktpl->deck = $this->print_deck($flashcard, $cm, 0);
-            } else {
-                if ($decks->decks[2]->reactivate) {
-                    $decktpl->deck = $this->print_deck($flashcard, $cm, 3);
-                } else {
-                    $decktpl->deck = $this->print_deck($flashcard, $cm, -3);
-                }
-            }
-            $template->decks[] = $decktpl;
-        }
-
-        if ($flashcard->decks >= 4) {
-
-            $decktpl = new StdClass;
-            $decktpl->header = $this->output->heading(get_string('trivialcards', 'flashcard'));
-
-            if (empty($decks->decks[3]->count)) {
-                $decks->decks[3]->count = 0;
-            }
-
-            $decktpl->strdeck = get_string('cardsindeck', 'flashcard', 0 + $decks->decks[3]->count);
-
-            if ($decks->decks[3]->count == 0) {
-                 $decktpl->deck = $this->print_deck($flashcard, $cm, 0);
-            } else {
-                if ($decks->decks[3]->reactivate) {
-                    $decktpl->deck = $this->print_deck($flashcard, $cm, 4);
-                } else {
-                    $decktpl->deck = $this->print_deck($flashcard, $cm, -4);
-                }
+            $decktpl->number = $i + 1;
+            $decktpl->header = $this->output->heading(get_string($titles[$i], 'flashcard'));
+            $decktpl->title = get_string($titles[$i], 'flashcard');
+            $decktpl->strdeck = get_string('cardsindeck', 'flashcard', $count);
+            $decktpl->count = $count;
+            $decktpl->deck = $this->print_deck($flashcard, $cm, $state);
+            $decktpl->isempty = ($count == 0);
+            $decktpl->isdue = ($count > 0 && $reactivate);
+            $decktpl->isreviewed = ($count > 0 && !$reactivate);
+            $decktpl->stack = array_fill(0, min($count, 3), true);
+            if ($count > 0) {
+                $params = ['view' => 'play', 'id' => $cm->id, 'deck' => $i + 1, 'what' => 'initialize'];
+                $decktpl->playurl = (new moodle_url('/mod/flashcard/view.php', $params))->out(false);
+                $decktpl->playlabel = get_string($reactivate ? 'playwithme' : 'reinforce', 'flashcard');
             }
             $template->decks[] = $decktpl;
         }

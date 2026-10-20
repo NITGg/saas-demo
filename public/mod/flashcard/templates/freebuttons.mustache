@@ -15,45 +15,25 @@
     along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 }}
 {{!
-    @template mod_flashcard/finished
+    @template mod_flashcard/freebuttons
 
-    Classes required for JS:
-    * no classes
+    The free play controls beside the card: the count left and the four buttons that
+    js/module.js drives by id (#remain, #next, #previous, #remove).
+
+    Context variables required for this template:
+    * subquestionscount - cards in the set when the page opens
+    * courseurl - back to the course
+
+    Example context (json):
+    {"subquestionscount": 3, "courseurl": "#"}
 }}
-<!-- mod_flashcard/freebuttons -->
-    <tr>
-        <td width="200px">
-            <p>{{#str}}cardsremaining, mod_flashcard{{/str}}: <span id="remain">{{subquestionscpount}}</span></p>
-        </td>
-    </tr>
-
-    <tr>
-        <td width="200px">
-            <input id="next" type="button" value="{{#str}}next, mod_flashcard{{/str}}" onclick="javascript:next_card()" />
-        </td>
-    </tr>
-
-    <tr>
-        <td width="200px">
-            <input id="previous" type="button" value="{{#str}}previous, mod_flashcard{{/str}}" onclick="javascript:previous_card()" />
-        </td>
-    </tr>
-
-    <tr>
-        <td width="200px">
-            <input id="remove" type="button" value="{{#str}}removecard, mod_flashcard{{/str}}" onclick="javascript:remove_card()" />
-        </td>
-    </tr>
-
-    <tr>
-        <td width="200px">
-            <input type="button" value="{{#str}}reset, mod_flashcard{{/str}}" onclick="javascript:location.reload()" />
-        </td>
-    </tr>
-
-    <tr>
-        <td width="200px" align="center" colspan="2">
-            <br/><a href="{{{courseurl}}}">{{#str}}backtocourse, mod_flashcard{{/str}}</a>
-        </td>
-    </tr>
-<!-- /mod_flashcard/freebuttons -->
+<div class="nit-fc-controls">
+    <p class="nit-fc-chip nit-fc-remaining">{{#str}}cardsremaining, mod_flashcard{{/str}}: <b id="remain">{{subquestionscount}}</b></p>
+    <div class="nit-fc-controls__nav">
+        <button type="button" id="previous" class="btn btn-outline-primary" onclick="previous_card()">{{#str}}previous, mod_flashcard{{/str}}</button>
+        <button type="button" id="next" class="btn btn-primary" onclick="next_card()">{{#str}}next, mod_flashcard{{/str}}</button>
+    </div>
+    <button type="button" id="remove" class="btn btn-outline-primary" onclick="remove_card()">{{#str}}removecard, mod_flashcard{{/str}}</button>
+    <button type="button" class="btn btn-outline-primary" onclick="location.reload()">{{#str}}reset, mod_flashcard{{/str}}</button>
+    <a class="nit-fc-back" href="{{{courseurl}}}">{{#str}}backtocourse, mod_flashcard{{/str}}</a>
+</div>

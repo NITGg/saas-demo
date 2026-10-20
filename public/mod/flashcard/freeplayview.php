@@ -60,11 +60,14 @@ var atype = "<?php echo $flashcard->answersmediatype ?>";
 </script>
 <script src="<?php echo $CFG->wwwroot.'/mod/flashcard/js/module.js' ?>"></script>
 
-<p><?php print_string('freeplayinstructions', 'flashcard'); ?>.</p>
 <?php
-echo '<table class="flashcard_board" width="100%">';
-echo '<tr>';
-echo '<td rowspan="6">';
+// Free play board: the instructions, then the card stage beside the controls. Each card is
+// a front (#f<i>) and a back (#b<i>) div that js/module.js shows and hides by setting their
+// inline display; the look lives in theme_nit (scss/components/_flashcard.scss).
+echo '<div class="nit-fc nit-fc-free">';
+echo '<p class="nit-fc-hint">' . get_string('freeplayinstructions', 'flashcard') . '</p>';
+echo '<div class="nit-fc-freeboard">';
+echo '<div class="nit-fc-stage">';
 
 $i = 0;
 
@@ -75,15 +78,18 @@ if ($flashcard->flipdeck) {
     $flashcard->questionsmediatype = $tmp;
 }
 
+$fliphint = '<span class="nit-fc-flip">' . get_string('fliphint', 'flashcard') . '</span>';
+$keyflip = "if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); this.click(); }";
+
 foreach ($subquestions as $subquestion) {
-    echo '<center>';
-    $divid = "f$i";
-    $divstyle = ($i > 0) ? 'display:none' : '';
+    $divstyle = ($i > 0) ? 'display:none;' : '';
     $imageurl = $renderer->print_custom_url($flashcard, 'customback', 0);
-    echo '<div id="'.$divid.'"
-               class="flashcard-question"
-               style="'.$divstyle.';background-repeat:no-repeat;background-image:url('.$imageurl.')"
-               onclick="javascript:clicked(\'f\', \''.$i.'\')">';
+    $bgstyle = $imageurl ? 'background-image:url(\'' . $imageurl . '\');' : '';
+    echo '<div id="f' . $i . '" class="nit-fc-card nit-fc-card--front flashcard-question" role="button" tabindex="0"'
+        . ' style="' . $divstyle . $bgstyle . '"'
+        . ' onclick="clicked(\'f\', \'' . $i . '\')" onkeydown="' . $keyflip . '">';
+    echo '<span class="nit-fc-side">' . get_string('sidequestion', 'flashcard') . '</span>';
+    echo '<div class="nit-fc-content">';
 
     $back = 'question';
     $front = 'answer';
@@ -108,9 +114,6 @@ foreach ($subquestions as $subquestion) {
         $subquestion->questiontext = $tmp;
     }
 
-    echo '<table width="100%" height="100%">';
-    echo '<tr>';
-    echo '<td align="center" valign="center">';
     if ($flashcard->questionsmediatype == FLASHCARD_MEDIA_IMAGE) {
         echo $renderer->print_image($flashcard, "{$back}imagefile/{$subquestion->id}");
     } else if ($flashcard->questionsmediatype == FLASHCARD_MEDIA_SOUND) {
@@ -124,21 +127,17 @@ foreach ($subquestions as $subquestion) {
     } else {
         echo format_text($subquestion->questiontext, FORMAT_HTML);
     }
-    echo '</td>';
-    echo '</tr>';
-    echo '</table>';
     echo '</div>';
-    echo '</center>';
-    echo '<center>';
+    echo $fliphint;
+    echo '</div>';
 
     $imageurl = $renderer->print_custom_url($flashcard, 'customfront', 0);
-    echo '<div id="b'.$i.'"
-               class="flashcard-answer"
-               style="display:none;background-repeat:no-repeat;background-image:url('.$imageurl.')"
-               onclick="javascript:clicked(\'b\', \''.$i.'\')">';
-    echo '<table width="100%" height="100%">';
-    echo '<tr>';
-    echo '<td align="center" valign="center" style="">';
+    $bgstyle = $imageurl ? 'background-image:url(\'' . $imageurl . '\');' : '';
+    echo '<div id="b' . $i . '" class="nit-fc-card nit-fc-card--back flashcard-answer" role="button" tabindex="0"'
+        . ' style="display:none;' . $bgstyle . '"'
+        . ' onclick="clicked(\'b\', \'' . $i . '\')" onkeydown="' . $keyflip . '">';
+    echo '<span class="nit-fc-side">' . get_string('sideanswer', 'flashcard') . '</span>';
+    echo '<div class="nit-fc-content">';
 
     if ($flashcard->answersmediatype == FLASHCARD_MEDIA_IMAGE) {
         echo $renderer->print_image($flashcard, "{$front}imagefile/{$subquestion->id}");
@@ -154,21 +153,17 @@ foreach ($subquestions as $subquestion) {
         echo format_text($subquestion->answertext, FORMAT_HTML);
     }
 
-    echo '</td>';
-    echo '</tr>';
-    echo '</table>';
     echo '</div>';
-    echo '</center>';
+    echo $fliphint;
+    echo '</div>';
 
     $i++;
 }
 
-echo '<center>';
 echo $renderer->finishtable();
-echo '</center>';
-echo '</td>';
-echo '</tr>';
+echo '</div>'; // Stage.
 
 echo $renderer->freebuttons($subquestions);
 
-echo '</table>';
+echo '</div>'; // Board.
+echo '</div>';

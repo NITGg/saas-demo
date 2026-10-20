@@ -17,25 +17,49 @@
 {{!
     @template mod_flashcard/decks
 
-    Classes required for JS:
-    * no classes
+    The Leitner deck table: one tile per deck, hardest first. A tile shows how many
+    cards are left and whether the deck is due (primary button), already reviewed
+    (outline button) or empty. The look lives in theme_nit
+    (scss/components/_flashcard.scss).
+
+    Context variables required for this template:
+    * decks - [{number, title, count, strdeck, isempty, isdue, isreviewed, stack, playurl, playlabel}]
+
+    Example context (json):
+    {
+        "decks": [
+            {"number": 1, "title": "Hard set", "count": 3, "strdeck": "Remains : 3 card(s)",
+             "isdue": true, "stack": [true, true, true], "playurl": "#", "playlabel": "Learn with that deck"},
+            {"number": 2, "title": "Easy set", "count": 0, "strdeck": "Remains : 0 card(s)",
+             "isempty": true, "stack": []}
+        ]
+    }
 }}
-<!-- mod_flashcard/decks -->
-<div class="container-fluid m-b-1 flashcard-decks">
-    <div class="row-fluid">
-
+<div class="nit-fc nit-fc-decks">
+    <div class="nit-fc-deckgrid">
         {{#decks}}
-        <div class="col-md-{{boostrapdivider}} span{{boostrapdivider}}">
+        <section class="nit-fc-deck{{#isdue}} is-due{{/isdue}}{{#isreviewed}} is-reviewed{{/isreviewed}}{{#isempty}} is-empty{{/isempty}}">
+            <header class="nit-fc-deck__head">
+                <span class="nit-fc-deck__num">{{number}}</span>
+                <div class="nit-fc-deck__title" role="heading" aria-level="3">{{title}}</div>
+            </header>
 
-            {{{heading}}}
+            <div class="nit-fc-deck__pile" aria-hidden="true">
+                {{#stack}}<span class="nit-fc-deck__sheet"></span>{{/stack}}
+                <span class="nit-fc-deck__count">{{count}}</span>
+            </div>
 
-            {{{strdeck}}}
-            <br/>
-            {{{deck}}}
+            <p class="nit-fc-deck__meta">{{strdeck}}</p>
+            <p class="nit-fc-deck__state">
+                {{#isdue}}{{#str}}deckdue, mod_flashcard{{/str}}{{/isdue}}
+                {{#isreviewed}}{{#str}}deckreviewed, mod_flashcard{{/str}}{{/isreviewed}}
+                {{#isempty}}{{#str}}deckempty, mod_flashcard{{/str}}{{/isempty}}
+            </p>
 
-        </div>
+            {{#playurl}}
+            <a class="btn {{#isdue}}btn-primary{{/isdue}}{{^isdue}}btn-outline-primary{{/isdue}} nit-fc-deck__go" href="{{playurl}}">{{playlabel}}</a>
+            {{/playurl}}
+        </section>
         {{/decks}}
-
     </div>
 </div>
-<!-- /mod_flashcard/decks -->
