@@ -65,6 +65,15 @@ if ($hassiteconfig) {
                 get_string('set_' . $key, 'local_nit_lessons'), get_string('set_' . $key . '_desc', 'local_nit_lessons'),
                 $default, PARAM_INT, 6));
         }
+        // Instant lessons: peak hours and the guardians' WhatsApp alert (text settings).
+        $settings->add(new admin_setting_configtext('local_nit_lessons/instant_peak_hours',
+            get_string('set_instant_peak_hours', 'local_nit_lessons'), get_string('set_instant_peak_hours_desc', 'local_nit_lessons'),
+            '', '/^(\s*\d{1,2}\s*-\s*\d{1,2}\s*)?(,\s*\d{1,2}\s*-\s*\d{1,2}\s*)*$/', 20));
+        $settings->add(new admin_setting_configtext('local_nit_lessons/instant_parent_template',
+            get_string('set_instant_parent_template', 'local_nit_lessons'),
+            get_string('set_instant_parent_template_desc', 'local_nit_lessons'), '', PARAM_ALPHANUMEXT, 30));
+        $settings->add(new admin_setting_configtext('local_nit_lessons/instant_parent_template_lang',
+            get_string('set_instant_parent_template_lang', 'local_nit_lessons'), '', 'ar', PARAM_ALPHAEXT, 8));
     }
     $ADMIN->add($parent, $settings);
 }

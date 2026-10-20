@@ -24,6 +24,7 @@
         <FIELD NAME="student_joined" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="first time the student opened the room (0 = never)"/>
         <FIELD NAME="type" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="scheduled" SEQUENCE="false" COMMENT="scheduled | instant"/>
         <FIELD NAME="teacher_joined" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="first time the teacher opened the room (0 = never)"/>
+        <FIELD NAME="trial" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1 = trial lesson, 100% to the academy"/>
         <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
@@ -133,6 +134,9 @@
         <FIELD NAME="wavestarted" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="when the current wave was sent"/>
         <FIELD NAME="redispatched" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1 = reopened once after a teacher no-show"/>
         <FIELD NAME="timematched" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="mode" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="normal" SEQUENCE="false" COMMENT="normal | quick"/>
+        <FIELD NAME="trial" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="aisummary" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="AI one-line summary of the note"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
       </FIELDS>

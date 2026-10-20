@@ -6,7 +6,11 @@
  *  - Online teachers (any page): polls every few seconds and pops up each request with
  *    Accept / Decline; Accept opens the room.
  *
- * Config comes from window.NIT_INSTANT (set by PHP): url, sesskey, strings, teacher, online.
+ * Config comes from window.NIT_INSTANT (set by PHP): url, sesskey, strings, teacher, online, ws.
+ *
+ * Realtime: when ws is set (the academy notify-ws relay), the page joins its private Socket.IO room
+ * and the server's {type: instant} signals make it fetch the new state at once; polling continues
+ * slowly as a safety net. Without ws (or when the relay is down) it simply polls.
  *
  * @package    local_nit_lessons
  * @copyright  2026 NIT
@@ -67,6 +71,43 @@
         } catch (e) {
             // Sound is optional.
         }
+    }
+
+    // ── Realtime (notify-ws) ───────────────────────────────────────────────
+    var listeners = [];
+    var live = false;
+
+    function onSignal(fn) {
+        listeners.push(fn);
+    }
+
+    function connect() {
+        if (!C.ws) {
+            return;
+        }
+        var script = document.createElement('script');
+        script.src = C.ws.url + C.ws.path + '/socket.io.js';
+        script.onload = function() {
+            if (!window.io) {
+                return;
+            }
+            var socket = window.io(C.ws.url, {path: C.ws.path, auth: {token: C.ws.token},
+                transports: ['websocket', 'polling']});
+            socket.on('connect', function() {
+                live = true;
+            });
+            socket.on('disconnect', function() {
+                live = false;
+            });
+            socket.on('notification', function(p) {
+                if (p && p.type === 'instant') {
+                    listeners.forEach(function(fn) {
+                        fn(p);
+                    });
+                }
+            });
+        };
+        document.head.appendChild(script);
     }
 
     // ── Student ────────────────────────────────────────────────────────────
@@ -140,8 +181,14 @@
                     esc(S.online.replace('{$a}', s.teachers)) + ')</option>';
             }).join('');
             root.innerHTML = card('<h3 class="h5">' + esc(S.title) + '</h3><p class="text-muted">' + esc(S.intro) + '</p>' +
+                (st.trial ? '<p class="alert alert-info py-2 mb-2">' + esc(S.trialnotice.replace('{$a}', st.trialflex)) + '</p>' : '') +
+                (st.peak ? '<p class="small text-warning mb-2">' + esc(S.peaknotice) + '</p>' : '') +
                 '<div class="d-flex flex-wrap gap-2 align-items-end">' +
                 '<select class="form-select" style="max-width:320px" data-subject>' + options + '</select>' +
+                (st.quick && !st.trial ? '<select class="form-select" style="max-width:260px" data-mode>' +
+                    '<option value="normal">' + esc(S.modenormal.replace('{$a}', st.minutes)) + '</option>' +
+                    '<option value="quick">' + esc(S.modequick.replace('{$a}', st.quickminutes) + ' · ' +
+                        S.flex.replace('{$a}', st.quickflex)) + '</option></select>' : '') +
                 '<input class="form-control" style="max-width:360px" data-note placeholder="' + esc(S.noteph) + '">' +
                 '<label class="btn btn-outline-secondary mb-0">' + esc(S.photo) +
                 '<input type="file" accept="image/*" capture="environment" hidden data-photo></label>' +
@@ -157,6 +204,8 @@
                 var form = new FormData();
                 form.append('subject', select.value);
                 form.append('note', root.querySelector('[data-note]').value);
+                var mode = root.querySelector('[data-mode]');
+                form.append('mode', mode ? mode.value : 'normal');
                 if (photo.files.length) {
                     form.append('photo', photo.files[0]);
                 }
@@ -193,10 +242,19 @@
             root.querySelector('[data-cancel]').addEventListener('click', function() {
                 call('cancel', {requestid: st.id}).then(searching);
             });
+            current = st.id;
             timer = setTimeout(function() {
                 call('status', {requestid: st.id}).then(searching).catch(load);
-            }, 2000);
+            }, live ? 10000 : 2000);
         }
+
+        var current = 0;
+        onSignal(function(p) {
+            if (p.what === 'status' && current && p.requestid === current) {
+                clearTimeout(timer);
+                call('status', {requestid: current}).then(searching).catch(load);
+            }
+        });
 
         function load() {
             call('subjects').then(render).catch(function() {
@@ -236,10 +294,21 @@
 
     // ── Teacher prompts (any page) ─────────────────────────────────────────
     var shown = {};
+    var boxes = {};
     var polling = false;
+
+    function closePrompt(requestid) {
+        if (boxes[requestid]) {
+            boxes[requestid]();
+        }
+    }
 
     function prompt(o) {
         if (shown[o.requestid]) {
+            var box = document.querySelector('[data-instant-request="' + o.requestid + '"] [data-summary]');
+            if (box && o.aisummary && !box.textContent) {
+                box.textContent = o.aisummary;
+            }
             return;
         }
         shown[o.requestid] = true;
@@ -247,11 +316,16 @@
         if (document.hidden && window.Notification && Notification.permission === 'granted') {
             new Notification(S.prompttitle, {body: o.subject + ' · ' + o.studentname});
         }
-        var box = el('<div class="nit-instant-prompt card shadow p-3" role="alertdialog" style="position:fixed;' +
+        var box = el('<div class="nit-instant-prompt card shadow p-3" role="alertdialog" data-instant-request="' +
+            o.requestid + '" style="position:fixed;' +
             'inset-inline-end:16px;bottom:16px;z-index:10050;max-width:360px;width:calc(100% - 32px)">' +
             '<h3 class="h5 mb-1">' + esc(S.prompttitle) + '</h3>' +
             '<p class="mb-1"><strong><bdi>' + esc(o.subject) + '</bdi></strong> · <bdi>' + esc(o.studentname) +
             '</bdi> · <bdi>' + esc(S.minutes.replace('{$a}', o.duration)) + '</bdi></p>' +
+            (o.trial ? '<p class="mb-1"><span class="badge bg-info text-dark">' + esc(S.trialbadge) + '</span></p>' : '') +
+            (o.mode === 'quick' ? '<p class="mb-1"><span class="badge bg-warning text-dark">' + esc(S.quickbadge) +
+                '</span></p>' : '') +
+            '<p class="mb-1"><bdi data-summary>' + esc(o.aisummary || '') + '</bdi></p>' +
             (o.note ? '<p class="mb-1 text-muted">' + esc(o.note) + '</p>' : '') +
             (o.photourl ? '<a href="' + esc(o.photourl) + '" target="_blank" rel="noopener"><img src="' + esc(o.photourl) +
                 '" alt="" style="max-width:100%;max-height:160px;border-radius:6px" class="mb-2"></a>' : '') +
@@ -261,6 +335,11 @@
             '<button class="btn btn-outline-secondary" data-decline>' + esc(S.decline) + '</button></div>' +
             '<div class="text-danger mt-2" data-error></div></div>');
         document.body.appendChild(box);
+        boxes[o.requestid] = function() {
+            clearInterval(tick);
+            box.remove();
+            delete boxes[o.requestid];
+        };
         var left = o.secondsleft;
         var tick = setInterval(function() {
             left -= 1;
@@ -269,8 +348,7 @@
                 span.textContent = Math.max(0, left);
             }
             if (left <= 0) {
-                clearInterval(tick);
-                box.remove();
+                closePrompt(o.requestid);
             }
         }, 1000);
         box.querySelector('[data-accept]').addEventListener('click', function(e) {
@@ -303,16 +381,40 @@
                 return;
             }
             call('poll').then(function(d) {
-                (d.offers || []).forEach(prompt);
+                var open = {};
+                (d.offers || []).forEach(function(o) {
+                    open[o.requestid] = true;
+                    prompt(o);
+                });
+                Object.keys(boxes).forEach(function(id) {
+                    if (!open[id]) {
+                        closePrompt(id);
+                    }
+                });
             }).catch(function() {
                 // Try again on the next tick.
             }).then(function() {
-                setTimeout(loop, document.hidden ? 8000 : 4000);
+                // Live: the heartbeat only has to keep presence fresh (60 s); signals bring prompts.
+                setTimeout(loop, live ? 20000 : (document.hidden ? 8000 : 4000));
             });
         })();
     }
 
+    onSignal(function(p) {
+        if (p.what === 'closed') {
+            closePrompt(p.requestid);
+        } else if (p.what === 'offer' && C.online) {
+            // One extra fetch now; the regular heartbeat loop carries on unchanged.
+            call('poll').then(function(d) {
+                (d.offers || []).forEach(prompt);
+            }).catch(function() {
+                // The next heartbeat will bring it.
+            });
+        }
+    });
+
     document.addEventListener('DOMContentLoaded', function() {
+        connect();
         var s = document.getElementById('nit-instant-student');
         if (s) {
             student(s);

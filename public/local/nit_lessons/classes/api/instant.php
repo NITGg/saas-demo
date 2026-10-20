@@ -17,6 +17,7 @@
 namespace local_nit_lessons\api;
 
 use local_nit_lessons\local\notifier;
+use local_nit_lessons\local\realtime;
 use local_nit_lessons\service\instant_service;
 
 /**
@@ -31,7 +32,7 @@ use local_nit_lessons\service\instant_service;
 final class instant {
     /** @var string[] Actions callable through instant.php / api.php (prefix instant_). */
     const ACTIONS = ['subjects', 'request', 'status', 'cancel', 'presence', 'online', 'offline', 'poll', 'accept',
-        'decline', 'watch'];
+        'decline', 'watch', 'reliability'];
 
     /**
      * Run one action for a user.
@@ -45,14 +46,25 @@ final class instant {
         $s = new instant_service();
         switch ($action) {
             case 'subjects':
+                $settings = new \local_nit_lessons\service\settings_service();
                 $all = array_map(fn($x) => ['subject' => $x, 'label' => format_string($x)],
                     \local_nit_lessons\service\teacher_service::site_subjects());
                 return ['enabled' => $s->enabled(), 'subjects' => $s->enabled() ? $s->online_subjects($userid) : [],
                     'all' => $all, 'open' => $s->open_request($userid),
+                    'trial' => $s->trial_eligible($userid),
+                    'trialflex' => $settings->get('instant_trial_flex'),
+                    'quick' => $settings->get('instant_quick_minutes') > 0,
+                    'quickminutes' => $settings->get('instant_quick_minutes'),
+                    'quickflex' => $s->price(0, 'quick'),
+                    'minutes' => $settings->get('instant_minutes'),
+                    'peak' => $s->is_peak(time()),
+                    'ws' => realtime::client_config($userid), // Null when realtime is off.
                     'bookurl' => (new \moodle_url('/local/nit_lessons/student.php', ['tab' => 'book']))->out(false)];
             case 'request':
                 return $s->request($userid, (string) ($p['subject'] ?? ''), (string) ($p['note'] ?? ''), null,
-                    $p['photo'] ?? null);
+                    $p['photo'] ?? null, (string) ($p['mode'] ?? '') === 'quick' ? 'quick' : 'normal');
+            case 'reliability':
+                return $s->reliability((int) ($p['teacherid'] ?? 0) ?: $userid);
             case 'watch':
                 return $s->watch($userid, (string) ($p['subject'] ?? ''));
             case 'status':
@@ -60,7 +72,7 @@ final class instant {
             case 'cancel':
                 return $s->cancel($userid, (int) ($p['requestid'] ?? 0));
             case 'presence':
-                return $s->presence($userid);
+                return $s->presence($userid) + ['ws' => realtime::client_config($userid)];
             case 'online':
                 return $s->set_online($userid, true);
             case 'offline':

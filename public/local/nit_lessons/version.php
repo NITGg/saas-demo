@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_nit_lessons';
-$plugin->version   = 2026102200;        // Instant lessons phase 3: photo, notify me, instant price.
+$plugin->version   = 2026102300;        // Instant lessons phase 4: quick, trial, peak price, AI summary, parent alert.
 $plugin->requires  = 2024100700;
 $plugin->supported = [405, 502];
 $plugin->maturity  = MATURITY_ALPHA;

@@ -35,6 +35,19 @@ $PAGE->set_url(new moodle_url('/local/nit_lessons/instant_live.php'));
 
 $s = fn(string $key, $a = null) => get_string($key, 'local_nit_lessons', $a);
 $service = new instant_service();
+
+// CSV export of every request (and what happened to it) in the chosen period.
+$days = optional_param('days', 0, PARAM_INT);
+if (in_array($days, [7, 30, 90, 365], true)) {
+    $rows = $service->export_rows(time() - $days * DAYSECS);
+    $columns = [];
+    foreach (['id', 'created', 'student', 'subject', 'mode', 'trial', 'status', 'waves', 'asked', 'declined', 'missed',
+            'noshows', 'teacher', 'secondstomatch', 'lessonid'] as $key) {
+        $columns[$key] = $s('export_' . $key);
+    }
+    \core\dataformat::download_data('instant-lessons-' . $days . 'd', 'csv', $columns, $rows);
+    die;
+}
 $view = $service->live_view();
 
 echo $OUTPUT->header();
@@ -86,5 +99,13 @@ echo $OUTPUT->heading($s('live_bysubject'), 3);
 $table([$s('live_subject'), $s('live_requests'), $s('live_matched'), $s('live_unmatched')],
     array_map(fn($r) => [s($r['subject']), $r['requests'], $r['matched'], $r['unmatched']], $view['subjects']),
     $s('live_nodata'));
+
+$links = [];
+foreach ([7, 30, 90, 365] as $d) {
+    $links[] = html_writer::link(new moodle_url('/local/nit_lessons/instant_live.php', ['days' => $d]),
+        $s('export_days', $d), ['class' => 'btn btn-outline-secondary btn-sm']);
+}
+echo $OUTPUT->heading($s('export_heading'), 3);
+echo html_writer::div(implode(' ', $links), 'd-flex flex-wrap gap-2 mb-4');
 
 echo $OUTPUT->footer();

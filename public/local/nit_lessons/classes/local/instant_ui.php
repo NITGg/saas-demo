@@ -34,7 +34,8 @@ final class instant_ui {
     /** @var string[] Strings the script needs (instant_<key>). */
     const STRINGS = ['title', 'intro', 'noteph', 'go', 'online', 'nobodyonline', 'searching', 'asking', 'cancel',
         'matched', 'expired', 'cancelled', 'expiredhelp', 'again', 'available', 'availablehelp', 'prompttitle',
-        'minutes', 'flex', 'accept', 'decline', 'photo', 'notifyme', 'notifyset', 'booklater'];
+        'minutes', 'flex', 'accept', 'decline', 'photo', 'notifyme', 'notifyset', 'booklater', 'modenormal', 'modequick',
+        'trialnotice', 'trialbadge', 'quickbadge', 'peaknotice'];
 
     /**
      * The script and its settings, once per page (empty when instant lessons are off).
@@ -59,6 +60,7 @@ final class instant_ui {
             'sesskey' => sesskey(),
             'teacher' => (new teacher_service())->is_teacher($userid),
             'online' => $service->presence($userid)['online'] || self::marked_online($userid),
+            'ws' => realtime::client_config($userid), // Null when the notify-ws relay is not configured.
             'strings' => $strings,
         ];
         $src = (new \moodle_url('/local/nit_lessons/js/instant.js', ['v' => get_config('local_nit_lessons', 'version')]))

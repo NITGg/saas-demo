@@ -98,6 +98,7 @@ class lesson extends entity {
             'student_joined' => ['type' => PARAM_INT, 'default' => 0],
             'type'           => ['type' => PARAM_ALPHA, 'default' => self::TYPE_SCHEDULED],
             'teacher_joined' => ['type' => PARAM_INT, 'default' => 0],
+            'trial'          => ['type' => PARAM_INT, 'default' => 0],
         ];
     }
 }

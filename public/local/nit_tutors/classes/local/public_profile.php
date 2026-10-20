@@ -77,6 +77,9 @@ final class public_profile {
                     teacher_service::timezone($viewerid ?: $userid)->getName()),
                 'lessons' => search::lesson_counts([$userid])[$userid] ?? 0,
                 'bookurl' => $listed && $viewerid !== $userid ? search::book_url($userid)->out(false) : '',
+                // Instant lessons: how reliably the teacher answers "Get a tutor now" (5+ prompts, 90 days).
+                'instant' => class_exists('\local_nit_lessons\service\instant_service')
+                    ? (new \local_nit_lessons\service\instant_service())->reliability($userid) : ['show' => false],
             ],
         ];
     }

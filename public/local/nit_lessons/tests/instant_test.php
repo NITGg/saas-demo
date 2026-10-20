@@ -483,6 +483,164 @@ final class instant_test extends \advanced_testcase {
     }
 
     /**
+     * A quick question: short, flat price, whoever the teacher is.
+     *
+     * @return void
+     */
+    public function test_quick_question(): void {
+        global $DB;
+        $sid = (int) $this->student->id;
+        (new teacher_service())->save((int) $this->t1->id, true, '', ['Physics'], [], 4); // Teacher's price 4 Flex.
+        $this->service->set_online((int) $this->t1->id, true);
+        $r = $this->service->request($sid, 'Physics', 'one integral', null, null, 'quick');
+        $this->assertSame('quick', $r['mode']);
+        $this->assertSame(15, $r['duration']);
+        $this->assertSame(1, $this->service->heartbeat((int) $this->t1->id)['offers'][0]['flex'], 'flat quick price');
+        $lesson = $this->service->accept((int) $this->t1->id, $r['id']);
+        $this->assertSame(15, (int) $DB->get_field('nit_lesson', 'duration', ['id' => $lesson['id']]));
+        $this->assertSame(1, purchase::active($sid)['reserved_flex']);
+
+        set_config('instant_quick_minutes', 0, 'local_nit_lessons');
+        $this->assert_fails('err_badaction', fn() => $this->service->request($sid, 'Physics', '', null, null, 'quick'));
+    }
+
+    /**
+     * Peak hours add the peak extra to the price.
+     *
+     * @return void
+     */
+    public function test_peak_price(): void {
+        $hour = (int) (new \DateTimeImmutable('now', \core_date::get_server_timezone_object()))->format('G');
+        set_config('instant_peak_extra_flex', 2, 'local_nit_lessons');
+        set_config('instant_peak_hours', $hour . '-' . (($hour + 1) % 24), 'local_nit_lessons');
+        $this->assertTrue($this->service->is_peak(time()));
+        $this->assertSame(3, $this->service->price((int) $this->t1->id));
+        $this->assertSame(3, $this->service->price((int) $this->t1->id, 'quick'));
+
+        set_config('instant_peak_hours', (($hour + 2) % 24) . '-' . (($hour + 3) % 24), 'local_nit_lessons');
+        $this->assertFalse($this->service->is_peak(time()));
+        $this->assertSame(1, $this->service->price((int) $this->t1->id));
+        set_config('instant_peak_hours', '', 'local_nit_lessons');
+        $this->assertFalse($this->service->is_peak(time()), 'no peak hours set');
+    }
+
+    /**
+     * Trial lesson: the student's first lesson, at the trial price, and the whole value goes to the
+     * academy when it completes (teacher share 0%).
+     *
+     * @return void
+     */
+    public function test_trial_lesson_pays_the_academy_only(): void {
+        global $DB;
+        set_config('instant_trial_enabled', 1, 'local_nit_lessons');
+        set_config('instant_trial_flex', 2, 'local_nit_lessons');
+        set_config('complete_allowed_minutes', 0, 'local_nit_lessons');
+        set_config('teacher_percent', 80, 'local_nit_finance');
+        $sid = (int) $this->student->id;
+        $this->assertTrue($this->service->trial_eligible($sid));
+        $this->service->set_online((int) $this->t1->id, true);
+        $r = $this->service->request($sid, 'Physics');
+        $this->assertTrue($r['trial']);
+        $offer = $this->service->heartbeat((int) $this->t1->id)['offers'][0];
+        $this->assertTrue($offer['trial']);
+        $this->assertSame(2, $offer['flex']);
+
+        $lesson = $this->service->accept((int) $this->t1->id, $r['id']);
+        $this->assertSame(1, (int) $DB->get_field('nit_lesson', 'trial', ['id' => $lesson['id']]));
+        \local_nit_lessons\api\lessons::complete((int) $this->t1->id, $lesson['id']);
+        $this->assertSame(0, \local_nit_finance\api\wallet::teacher((int) $this->t1->id)['available_balance_minor'],
+            'the teacher gets nothing for a trial');
+        $this->assertSame(20000, \local_nit_finance\local\wallets::balance(\local_nit_finance\local\wallets::PLATFORM),
+            '2 Flex x 100 EGP all to the academy');
+        $this->assertFalse($this->service->trial_eligible($sid), 'only the first lesson');
+    }
+
+    /**
+     * Reliability: shown after 5 prompts; accepted-and-attended share; no-shows count against it.
+     *
+     * @return void
+     */
+    public function test_reliability(): void {
+        global $DB;
+        $tid = (int) $this->t1->id;
+        $this->assertFalse($this->service->reliability($tid)['show']);
+        foreach (['accepted', 'accepted', 'accepted', 'declined', 'noshow', 'taken'] as $i => $status) {
+            $DB->insert_record('nit_instant_offer', (object) ['requestid' => 100 + $i, 'teacherid' => $tid,
+                'status' => $status, 'timecreated' => time() - 60, 'timeanswered' => time() - 50]);
+        }
+        $rel = $this->service->reliability($tid);
+        $this->assertTrue($rel['show']);
+        $this->assertSame(5, $rel['prompts'], 'taken prompts are not the teacher\'s answer');
+        $this->assertSame(60, $rel['acceptance'], '3 of 5 accepted and attended');
+        $this->assertSame(1, $rel['noshows']);
+        $this->assertSame(10, $rel['avgresponse']);
+    }
+
+    /**
+     * The CSV export lists each request with what happened to it.
+     *
+     * @return void
+     */
+    public function test_export_rows(): void {
+        $this->service->set_online((int) $this->t1->id, true);
+        $this->service->set_online((int) $this->t2->id, true);
+        $r = $this->service->request((int) $this->student->id, 'Physics');
+        $this->service->decline((int) $this->t2->id, $r['id']);
+        $this->service->accept((int) $this->t1->id, $r['id']);
+        $rows = $this->service->export_rows(time() - DAYSECS);
+        $this->assertCount(1, $rows);
+        $this->assertSame('matched', $rows[0]['status']);
+        $this->assertSame(2, $rows[0]['asked']);
+        $this->assertSame(1, $rows[0]['declined']);
+        $this->assertSame(fullname($this->t1), $rows[0]['teacher']);
+    }
+
+    /**
+     * The AI summary is stored, cleaned, and shown in the ringing prompt.
+     *
+     * @return void
+     */
+    public function test_ai_summary_shown_to_teacher(): void {
+        $this->service->set_online((int) $this->t1->id, true);
+        $r = $this->service->request((int) $this->student->id, 'Physics', 'I do not get Newton 2nd law with friction');
+        $this->service->set_summary($r['id'], '<b>Newton\'s 2nd law with friction, grade 10</b>');
+        $offer = $this->service->heartbeat((int) $this->t1->id)['offers'][0];
+        $this->assertSame('Newton\'s 2nd law with friction, grade 10', $offer['aisummary']);
+    }
+
+    /**
+     * Guardians' phones come from the student's guardian fields; accepting queues the WhatsApp alert
+     * only when a template is set.
+     *
+     * @return void
+     */
+    public function test_parent_alert_queued_with_guardian_phones(): void {
+        global $DB;
+        if (!class_exists('\local_parent\dashboard')) {
+            $this->markTestSkipped('local_parent not installed');
+        }
+        $field = $DB->insert_record('user_info_field', (object) ['shortname' => 'parentphone', 'name' => 'Parent phone',
+            'datatype' => 'text', 'categoryid' => 1, 'sortorder' => 1]);
+        $DB->insert_record('user_info_data', (object) ['userid' => $this->student->id, 'fieldid' => $field,
+            'data' => '01012345678', 'dataformat' => 0]);
+        set_config('countrycode', '20', 'local_parent');
+        $this->assertSame(['201012345678'], instant_service::guardian_phones((int) $this->student->id));
+
+        $this->service->set_online((int) $this->t1->id, true);
+        $r = $this->service->request((int) $this->student->id, 'Physics');
+        $this->service->accept((int) $this->t1->id, $r['id']);
+        $this->assertSame(0, $DB->count_records('task_adhoc', ['classname' => '\local_nit_lessons\task\instant_parent_alert']),
+            'no template: no alert');
+
+        set_config('instant_parent_template', 'lesson_started', 'local_nit_lessons');
+        $this->service->set_online((int) $this->t2->id, true);
+        $DB->set_field('nit_lesson', 'status', 'completed', []);
+        $r2 = $this->service->request((int) $this->student->id, 'Physics');
+        $this->service->accept((int) $this->t2->id, $r2['id']);
+        $this->assertSame(1, $DB->count_records('task_adhoc', ['classname' => '\local_nit_lessons\task\instant_parent_alert']));
+    }
+
+    /**
      * The expiry task is registered for cron.
      *
      * @return void

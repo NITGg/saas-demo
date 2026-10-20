@@ -117,12 +117,13 @@ class lesson_service extends service {
      * @param string $subject
      * @param int $duration minutes
      * @param string $note
-     * @param int $extraflex Flex added to the teacher's price for an instant lesson
+     * @param int $cost Flex the lesson costs (0 = the teacher's price)
+     * @param bool $trial the student's trial lesson: 100% of its value goes to the academy
      * @return array the started lesson
      */
     public function start_instant(int $studentid, int $teacherid, string $subject, int $duration, string $note,
-            int $extraflex = 0): array {
-        $cost = (new teacher_service())->lesson_flex($teacherid) + max(0, $extraflex);
+            int $cost = 0, bool $trial = false): array {
+        $cost = $cost > 0 ? $cost : (new teacher_service())->lesson_flex($teacherid);
         $active = \local_nit_flex\api\purchase::active($studentid);
         if (!$active || (int) $active['remaining_flex'] < $cost) {
             throw new lesson_exception('err_notenoughflex', $cost);
@@ -139,6 +140,7 @@ class lesson_service extends service {
             'note'           => $note !== '' ? $note : null,
             'flex_count'     => $cost,
             'type'           => lesson::TYPE_INSTANT,
+            'trial'          => (int) $trial,
         ]);
         $lesson->create();
         $this->confirm_lesson($lesson, $now, $teacherid);
@@ -420,7 +422,8 @@ class lesson_service extends service {
             }
             $result = $this->transition($lesson, lesson::STATUS_COMPLETED, $teacherid, $extra);
             $value = flex::value_for_purchase($purchaseid) * $count;
-            wallet::distribute($lessonid, $teacherid, $studentid, $purchaseid, $value);
+            // A trial lesson's whole value goes to the academy (teacher share 0%).
+            wallet::distribute($lessonid, $teacherid, $studentid, $purchaseid, $value, !(int) $lesson->get('trial'));
             $transaction->allow_commit();
         } catch (\Throwable $e) {
             $transaction->rollback($e);
@@ -1058,6 +1061,8 @@ class lesson_service extends service {
             'actual_start'   => (int) $lesson->get('actual_start'),
             'actual_end'     => (int) $lesson->get('actual_end'),
             'cmid'           => (int) $lesson->get('cmid'),
+            'type'           => (string) $lesson->get('type'),
+            'trial'          => (bool) $lesson->get('trial'),
             'teacher_name'   => self::user_name((int) $lesson->get('teacherid')),
             'student_name'   => self::user_name((int) $lesson->get('studentid')),
             'timecreated'    => (int) $lesson->get('timecreated'),
