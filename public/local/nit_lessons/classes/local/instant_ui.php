@@ -35,7 +35,10 @@ final class instant_ui {
     const STRINGS = ['title', 'intro', 'noteph', 'go', 'online', 'nobodyonline', 'searching', 'asking', 'cancel',
         'matched', 'expired', 'cancelled', 'expiredhelp', 'again', 'available', 'availablehelp', 'prompttitle',
         'minutes', 'flex', 'accept', 'decline', 'photo', 'notifyme', 'notifyset', 'booklater', 'modenormal', 'modequick',
-        'trialnotice', 'trialbadge', 'quickbadge', 'peaknotice'];
+        'trialnotice', 'trialbadge', 'quickbadge', 'peaknotice', 'norating', 'anyyear', 'recenttitle', 'rate', 'bookagain',
+        'favourite', 'year', 'subject', 'picksubject', 'kind', 'maxprice', 'any', 'autostart', 'askall', 'notutors',
+        'availablenow', 'inlesson', 'offline', 'askthis', 'profile', 'reliability', 'acceptedtitle', 'confirmin',
+        'startlesson', 'targetexpired', 'askallinstead', 'askingone', 'oncall', 'oncallhelp', 'waitingstudent'];
 
     /**
      * The script and its settings, once per page (empty when instant lessons are off).
@@ -60,6 +63,7 @@ final class instant_ui {
             'sesskey' => sesskey(),
             'teacher' => (new teacher_service())->is_teacher($userid),
             'online' => $service->presence($userid)['online'] || self::marked_online($userid),
+            'oncall' => $service->presence($userid)['oncall'],
             'ws' => realtime::client_config($userid), // Null when the notify-ws relay is not configured.
             'strings' => $strings,
         ];

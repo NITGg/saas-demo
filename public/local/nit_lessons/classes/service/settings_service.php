@@ -56,6 +56,10 @@ class settings_service extends service {
         'instant_trial_flex'       => 1,       // Price of the trial lesson.
         'instant_ai_summary'       => 1,       // AI one-line summary of the student's note for the teacher.
         'instant_parent_alert'     => 1,       // WhatsApp the guardians when an instant lesson starts.
+        'instant_target_seconds'   => 60,      // "Ask this tutor": how long only that tutor rings.
+        'instant_confirm_seconds'  => 30,      // How long the student has to confirm the tutor who accepted.
+        'instant_noshow_block'     => 2,       // No-shows in 30 days that suspend "on call" (0 = never).
+        'instant_noshow_block_days' => 7,      // How long "on call" stays suspended.
         'lessons_courseid'         => 0,
     ];
 

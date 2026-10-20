@@ -906,7 +906,12 @@ class lesson_service extends service {
      * @return void
      */
     private function require_complete_window(lesson $lesson): void {
-        $wait = $this->setting('complete_allowed_minutes') * MINSECS;
+        $minutes = $this->setting('complete_allowed_minutes');
+        if ($lesson->get('type') === lesson::TYPE_INSTANT) {
+            // A 30-min instant lesson or a 15-min quick question can be completed once it has run its length.
+            $minutes = min($minutes, (int) $lesson->get('duration'));
+        }
+        $wait = $minutes * MINSECS;
         $start = (int) $lesson->get('actual_start') > 0
             ? (int) $lesson->get('actual_start') : (int) $lesson->get('confirmed_time');
         if (time() < $start + $wait) {

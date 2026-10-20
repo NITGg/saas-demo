@@ -208,13 +208,70 @@ needs comes in `instant_subjects`, `instant_status` and the offers.
 
 ---
 
-## 8. Coming next (v2 — designed, not built yet)
+## 8. v2 — tutor list, ask one or all, max price, student confirms (built)
 
-Do not build against these yet; they are listed so the app screens can be planned (design: `instant-lessons-design.md`, "v2").
-- `instant_tutors(year, subject)` — the tutor list: online first, rating, reliability, price per mode, "usually online",
-  favourite flag, profile URL.
-- `instant_request` gains `teacherid` (ask one tutor) and `autostart` (skip the confirmation).
-- New status `accepted` with `teacher` {name, rating, price, profileurl} and `confirmsecondsleft`;
-  new calls `instant_confirm` / `instant_reject` (student).
-- `instant_favourite` (toggle), `instant_oncall` (tutor push opt-in).
-- After the lesson: the existing rating call + "book again" (normal `request_lesson` with that teacher).
+The v1 calls above keep working. v2 adds a tutor-first screen. **New screens should use v2.**
+
+### `instant_subjects` — new fields
+- `years`: `{"years": [{"key": "…raw…", "name": "Grade 10"}], "current": "<the student's year key or ''>"}` — pre-select
+  `current`, send `key` back as `year`.
+- `recent`: after an instant lesson (last 24 h) — `{"lessonid", "teacherid", "teachername", "rated", "rateurl",
+  "bookagainurl", "favourite"}` → show "How was your lesson with X?" with **Rate** (if `!rated`; open `rateurl`),
+  **Book again** (normal booking with that teacher), **★**. `null` when none.
+- `flexbalance`: the student's remaining Flex (cap for the max-price box).
+
+### `instant_tutors` — GET `subject`, `year` (optional key), `mode` (`normal`|`quick`), `maxflex` (0 = any)
+```json
+{"tutors": [
+  {"id": 12, "name": "Ahmed Ali", "headline": "Physics teacher", "pictureurl": "…", "profileurl": "…/teacher.php?id=12",
+   "online": true, "busy": false, "usually": "", "rating": 4.8, "ratingcount": 23, "reliability": 92,
+   "flex": 2, "favourite": false, "bookurl": "…/student.php?tab=book&teacher=12"},
+  {"id": 15, "name": "Sara", "online": false, "usually": "Usually online: Sunday 18:00–22:00", "rating": 0,
+   "ratingcount": 0, "reliability": null, "flex": 1, …}
+]}
+```
+- Order: online → favourites → rating → reliability. Only tutors teaching that year (a tutor with no courses counts
+  for every year) and at or under `maxflex` for this `mode`.
+- `flex` is the price of **this** lesson for this student (trial / quick / peak already applied).
+- `reliability` null = not enough history (hide the chip). `rating` 0 with `ratingcount` 0 = "No ratings yet".
+- Online & not busy → **Ask this tutor now**. Offline / busy → **Book a lesson** (`bookurl` / native booking) and
+  **Notify me** (= `instant_favourite`, they are told when the tutor goes online).
+- Above the list: **Ask all N available tutors** (N = online count).
+
+### `instant_request` — new params
+| param | notes |
+|---|---|
+| `teacherid` | ask only this tutor (60 s, one ring). errorcode `tutornotavailable` if they can't take it now |
+| `maxflex` | only tutors at or under this price are asked |
+| `autostart` | `1` start as soon as a tutor accepts; `0` the student confirms first. **Send it explicitly** (omitted = `1`, for older app versions). Default the checkbox **on** when `maxflex` is set or `mode=quick` |
+
+`instant_status` adds `targeted` (bool), `autostart` (bool), and while `status = "accepted"`:
+`teacher` `{id, name, rating, ratingcount, flex, profileurl}` + `confirmsecondsleft`.
+
+### The confirmation step (`autostart = 0`)
+```
+… searching ──tutor accepts──► status "accepted" (teacher card, confirmsecondsleft = 30)
+        ├── instant_confirm(requestid)  → {lesson, joinurl} → get_lesson_join → room
+        ├── instant_reject(requestid)   → back to "searching" (next tutors) — or "expired" for a targeted request
+        └── no answer in time           → same as reject
+```
+- Nothing is charged until **confirm**. A released tutor is not penalised.
+- A targeted request that ends: offer **Ask all available tutors instead** (a new `instant_request` without `teacherid`).
+
+### Tutor side changes
+- `instant_accept` may return `{"waiting": true, "requestid", "confirmsecondsleft"}` instead of a lesson → show
+  "Accepted — waiting for the student to confirm…", keep polling.
+- `instant_poll` adds `waiting` `[{requestid, subject, secondsleft}]` and `started` `[{lessonid, joinurl}]` → when
+  `started` is non-empty the student confirmed: open the room (`get_lesson_join`) **within 3 minutes**.
+- `instant_oncall` / `instant_offcall` (POST): **On call** — get a push for broadcast requests even when offline
+  (opening the app and going online lets the next wave ask you). errorcode `oncallblocked` after repeated no-shows.
+  `instant_presence` adds `oncall`, `oncallblockeduntil`.
+- Realtime signal `started` (to the tutor) = the student confirmed → call `instant_poll`.
+
+### Favourites — `instant_favourite` (POST `teacherid`)
+Toggles; returns `{"favourite": bool}`. A favourite tutor going online sends the student a notification
+(`lessonupdate`, at most once a day per tutor).
+
+### Lessons
+Instant lessons can be completed after **their own length** (30 min, or 15 for a quick question), not the 45-minute
+rule of booked lessons.

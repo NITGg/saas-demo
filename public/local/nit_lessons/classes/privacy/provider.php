@@ -75,6 +75,15 @@ class provider implements
             'subject'     => 'privacy:metadata:nit_instant_watch:subject',
             'timecreated' => 'privacy:metadata:nit_instant_watch:timecreated',
         ], 'privacy:metadata:nit_instant_watch');
+        $collection->add_database_table('nit_favourite_tutor', [
+            'studentid' => 'privacy:metadata:nit_favourite_tutor:studentid',
+            'teacherid' => 'privacy:metadata:nit_favourite_tutor:teacherid',
+        ], 'privacy:metadata:nit_favourite_tutor');
+        $collection->add_database_table('nit_teacher_presence_log', [
+            'teacherid' => 'privacy:metadata:nit_teacher_presence_log:teacherid',
+            'timestart' => 'privacy:metadata:nit_teacher_presence_log:timestart',
+            'timeend' => 'privacy:metadata:nit_teacher_presence_log:timeend',
+        ], 'privacy:metadata:nit_teacher_presence_log');
         $collection->add_subsystem_link('core_files', [], 'privacy:metadata:core_files');
         return $collection;
     }
@@ -157,6 +166,8 @@ class provider implements
         $DB->delete_records('nit_instant_request');
         $DB->delete_records('nit_teacher_presence');
         $DB->delete_records('nit_instant_watch');
+        $DB->delete_records('nit_favourite_tutor');
+        $DB->delete_records('nit_teacher_presence_log');
         get_file_storage()->delete_area_files($context->id, 'local_nit_lessons', 'instantphoto');
     }
 
@@ -179,6 +190,8 @@ class provider implements
         $DB->set_field('nit_instant_request', 'aisummary', null, ['studentid' => $userid]);
         $DB->delete_records('nit_teacher_presence', ['teacherid' => $userid]);
         $DB->delete_records('nit_instant_watch', ['studentid' => $userid]);
+        $DB->delete_records('nit_favourite_tutor', ['studentid' => $userid]);
+        $DB->delete_records('nit_teacher_presence_log', ['teacherid' => $userid]);
         $fs = get_file_storage();
         foreach ($DB->get_fieldset_select('nit_instant_request', 'id', 'studentid = :u', ['u' => $userid]) as $rid) {
             $fs->delete_area_files(\context_system::instance()->id, 'local_nit_lessons', 'instantphoto', (int) $rid);
@@ -202,6 +215,8 @@ class provider implements
         $DB->set_field_select('nit_instant_request', 'aisummary', null, "studentid $insql", $params);
         $DB->delete_records_select('nit_teacher_presence', "teacherid $insql", $params);
         $DB->delete_records_select('nit_instant_watch', "studentid $insql", $params);
+        $DB->delete_records_select('nit_favourite_tutor', "studentid $insql", $params);
+        $DB->delete_records_select('nit_teacher_presence_log', "teacherid $insql", $params);
     }
 
     /**
