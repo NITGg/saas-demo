@@ -225,41 +225,282 @@ body.nit-player-embed.path-mod-quiz {
 
     .embedded-blocks {
         order: -1;
+    }
 
-        .block {
-            margin-bottom: 0;
+    // ---- Quiz navigation: a soft card — title and "Finish attempt" on one line,
+    // the question numbers as a row of rounded chips. --------------------------
+    #mod_quiz_navblock {
+        --qz-accent: var(--nit-brand-primary, #0E7C66);
+        --qz-on: var(--nit-brand-on-primary, #fff);
+        --qz-soft: color-mix(in srgb, var(--qz-accent) 10%, var(--t-bg, #fff));
+        margin-bottom: 0;
+        border: 1px solid var(--t-border, #EDEDE9);
+        border-radius: 16px;
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+
+        .card-body {
+            padding: 1rem 1.25rem !important;
+            border-radius: 16px;
         }
 
-        .block .card-body {
-            padding: 0.75rem 1rem;
+        .card-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin: 0;
         }
 
-        .block .card-title {
-            font-size: 1rem;
-            margin-bottom: 0.5rem;
+        .card-text.content {
+            margin-top: 0.75rem !important;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem 1.5rem;
+        }
+
+        .qn_buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .qnbutton {
+            float: none;
+            margin: 0;
+            width: 38px;
+            height: 38px;
+            padding: 0;
+            display: grid;
+            place-items: center;
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1;
+            color: var(--t-ink, #16191D);
+            background-color: var(--t-bg, #fff);
+            border: 1.5px solid var(--t-border2, #DCDCD7);
+            border-radius: 10px;
+            overflow: visible;
+            text-decoration: none;
+            transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+
+            &:hover,
+            &:focus {
+                text-decoration: none;
+                border-color: var(--qz-accent);
+                color: var(--qz-accent);
+            }
+
+            // Core draws the current-page frame and the state stripe as two
+            // overlays; the chip's own border and fill carry both now.
+            .thispageholder {
+                display: none;
+            }
+
+            .trafficlight {
+                inset: auto 0 3px 0;
+                height: 10px;
+                margin: 0;
+                border: 0;
+                border-radius: 0;
+                background-color: transparent;
+                background-size: 10px;
+            }
+        }
+
+        // Answered → brand tint.
+        .qnbutton.answersaved,
+        .qnbutton.complete,
+        .qnbutton.requiresgrading {
+            background-color: var(--qz-soft);
+            border-color: color-mix(in srgb, var(--qz-accent) 45%, transparent);
+            color: var(--qz-accent);
+        }
+
+        // Review states keep their meaning.
+        .qnbutton.correct {
+            background-color: color-mix(in srgb, var(--nit-brand-success) 14%, var(--t-bg, #fff));
+            border-color: var(--nit-brand-success);
+        }
+
+        .qnbutton.partiallycorrect {
+            background-color: color-mix(in srgb, var(--nit-brand-warning) 16%, var(--t-bg, #fff));
+            border-color: var(--nit-brand-warning);
+        }
+
+        .qnbutton.notanswered,
+        .qnbutton.incorrect {
+            background-color: color-mix(in srgb, var(--nit-brand-error) 12%, var(--t-bg, #fff));
+            border-color: var(--nit-brand-error);
+        }
+
+        // The question on screen → solid brand.
+        .multipages .qnbutton.thispage {
+            background-color: var(--qz-accent);
+            border-color: var(--qz-accent);
+            color: var(--qz-on);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--qz-accent) 20%, transparent);
+        }
+
+        // Flagged → a small corner dot instead of core's flag sprite.
+        .qnbutton.flagged .trafficlight {
+            background-image: none;
+        }
+
+        .qnbutton.flagged::after {
+            content: "";
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--nit-brand-error, #D92D20);
+            border: 2px solid var(--t-bg, #fff);
+        }
+
+        .othernav {
+            clear: none;
+            margin: 0;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.5rem;
+
+            a,
+            input,
+            .singlebutton {
+                margin: 0;
+            }
+        }
+
+        .endtestlink {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            border-radius: 999px;
+            border: 1.5px solid var(--qz-accent);
+            color: var(--qz-accent);
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-decoration: none;
+
+            &:hover,
+            &:focus {
+                background-color: var(--qz-accent);
+                color: var(--qz-on);
+                text-decoration: none;
+            }
         }
     }
 
     .que {
         flex-direction: column;
         align-items: stretch;
-        gap: 0.5rem;
+        gap: 0.625rem;
     }
 
+    // ---- Question info: one line of chips over the question — the number as a
+    // brand badge, state and marks as quiet chips, the flag pushed to the end. --
     .que .info {
+        --qz-accent: var(--nit-brand-primary, #0E7C66);
         width: 100%;
         display: flex;
         flex-wrap: wrap;
         align-items: center;
-        gap: 0.25rem 1.25rem;
-        padding: 0.5rem 0.875rem;
+        gap: 0.5rem;
+        padding: 0.5rem 0.625rem;
+        background: var(--t-bg, #fff);
+        border: 1px solid var(--t-border, #EDEDE9);
+        border-radius: 14px;
 
         > div {
             margin-top: 0;
+            font-size: 0.8125rem;
         }
 
         h3.no {
             margin: 0;
+            padding: 0.375rem 0.875rem;
+            border-radius: 10px;
+            background: var(--qz-accent);
+            color: var(--nit-brand-on-primary, #fff);
+            font-size: 0.875rem;
+            font-weight: 600;
+            line-height: 1.2;
+
+            .qno {
+                font-size: 1rem;
+                font-weight: 800;
+            }
+        }
+
+        .state,
+        .grade {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0.3rem 0.75rem;
+            border-radius: 999px;
+            background: var(--t-surface, #FAFAF8);
+            border: 1px solid var(--t-border, #EDEDE9);
+            color: var(--t-muted, #6E7781);
+        }
+
+        .state::before {
+            content: "";
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--t-muted2, #A0A7AE);
+        }
+
+        .questionflag {
+            margin-inline-start: auto;
+
+            a {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 0.3rem 0.75rem;
+                border-radius: 999px;
+                border: 1px solid var(--t-border2, #DCDCD7);
+                color: var(--t-muted, #6E7781);
+                text-decoration: none;
+
+                &:hover,
+                &:focus {
+                    border-color: var(--qz-accent);
+                    color: var(--qz-accent);
+                }
+
+                &[aria-pressed="true"] {
+                    border-color: var(--nit-brand-error, #D92D20);
+                    color: var(--nit-brand-error, #D92D20);
+                    background: color-mix(in srgb, var(--nit-brand-error, #D92D20) 8%, transparent);
+                }
+            }
+
+            img {
+                width: 14px;
+                height: 14px;
+                margin: 0;
+            }
+        }
+
+        .editquestion a {
+            color: var(--t-muted, #6E7781);
+        }
+    }
+
+    // Answered → the state chip turns brand.
+    .que.answersaved .info .state,
+    .que.complete .info .state {
+        color: var(--qz-accent);
+        border-color: color-mix(in srgb, var(--qz-accent) 35%, transparent);
+        background: color-mix(in srgb, var(--qz-accent) 8%, var(--t-bg, #fff));
+
+        &::before {
+            background: var(--qz-accent);
         }
     }
 
