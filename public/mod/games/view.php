@@ -148,9 +148,9 @@ echo $OUTPUT->render_from_template('local_games/play', [
         'arabicdigits' => content::arabic_digits(),
         'points'       => \local_games\progress::get_totals($USER->id)['points'],
         'strings'      => content::strings(),
-        // The chosen game's own content, in the slot its file reads from - the
-        // same content the corner would hand it, because it is the same game.
-    ] + content::payload($slug), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT),
+        // The content this activity plays: its own, the corner's default, or
+        // both, as the teacher chose (mod_games\content).
+    ] + \mod_games\content::payload($game), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT),
 ]);
 
 // What this child has done in this activity - the corner's own totals are on
@@ -173,6 +173,19 @@ if (!empty($game->showhublink)) {
         html_writer::link(new moodle_url('/local/games/index.php'),
             get_string('gotohub', 'mod_games'),
             ['class' => 'btn btn-outline-secondary']),
+        'mt-3'
+    );
+}
+
+if (has_capability('mod/games:managecontent', $context)) {
+    $modekeys = [\mod_games\content::MODE_DEFAULT => 'default', \mod_games\content::MODE_OWN => 'own',
+        \mod_games\content::MODE_BOTH => 'both'];
+    echo html_writer::div(
+        html_writer::link(new moodle_url('/mod/games/content.php', ['id' => $cm->id]),
+            get_string('editgamecontent', 'mod_games'), ['class' => 'btn btn-primary'])
+        . html_writer::span(
+            get_string('contentmode_' . ($modekeys[(int) $game->contentmode] ?? 'default'), 'mod_games'),
+            'badge bg-secondary ms-2'),
         'mt-3'
     );
 }

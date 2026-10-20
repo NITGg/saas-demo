@@ -26,6 +26,17 @@ defined('MOODLE_INTERNAL') || die();
 
 $functions = [
 
+    // What a round of this activity is played from: the teacher's own content,
+    // the corner's default, or both. Same shape as local_games_get_content.
+    'mod_games_get_content' => [
+        'classname'    => \mod_games\external\get_content::class,
+        'description'  => 'Return the game content of a Game activity, with the same structure as local_games_get_content.',
+        'type'         => 'read',
+        'ajax'         => true,
+        'capabilities' => 'mod/games:view',
+        'services'     => [MOODLE_OFFICIAL_MOBILE_SERVICE],
+    ],
+
     // Called by the browser at the end of a round played inside the activity.
     // `ajax => true` is what makes it reachable from /lib/ajax/service.php with
     // the session, rather than needing a web-service token.

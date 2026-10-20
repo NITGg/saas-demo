@@ -66,6 +66,7 @@ function games_add_instance($data, $mform = null) {
     $data->showhublink = !empty($data->showhublink) ? 1 : 0;
     $data->completionplays = max(0, (int) ($data->completionplays ?? 0));
     $data->completionscore = max(0, (int) ($data->completionscore ?? 0));
+    $data->contentmode = games_clean_contentmode($data->contentmode ?? null);
 
     return $DB->insert_record('games', $data);
 }
@@ -85,6 +86,14 @@ function games_update_instance($data, $mform = null) {
     $data->showhublink = !empty($data->showhublink) ? 1 : 0;
     $data->completionplays = max(0, (int) ($data->completionplays ?? 0));
     $data->completionscore = max(0, (int) ($data->completionscore ?? 0));
+    $data->contentmode = games_clean_contentmode($data->contentmode ?? null);
+
+    // A different game may read a different kind of row; the activity's own
+    // content then has to go rather than feed the new game rows it cannot use.
+    $oldgameid = (string) $DB->get_field('games', 'gameid', ['id' => $data->id]);
+    if (isset($data->gameid) && $oldgameid !== '') {
+        \mod_games\content::game_changed((int) $data->id, $oldgameid, (string) $data->gameid);
+    }
 
     return $DB->update_record('games', $data);
 }
@@ -106,6 +115,7 @@ function games_delete_instance($id) {
     // same rounds earned belong to the child's standing in the corner, not to
     // the course, and deleting an activity must not take those with it.
     $DB->delete_records('games_play', ['gamesid' => $id]);
+    $DB->delete_records('games_content', ['gamesid' => $id]);
     $DB->delete_records('games', ['id' => $id]);
 
     return true;
@@ -171,4 +181,37 @@ function mod_games_get_completion_active_rule_descriptions($cm) {
     }
 
     return $descriptions;
+}
+
+/**
+ * A content mode from a form or a restore, made safe to store.
+ *
+ * @param mixed $value submitted value
+ * @return int one of the \mod_games\content::MODE_* constants
+ */
+function games_clean_contentmode($value): int {
+    $value = (int) $value;
+    return array_key_exists($value, \mod_games\content::mode_options()) ? $value : \mod_games\content::MODE_DEFAULT;
+}
+
+/**
+ * Add "Game content" to the activity's own menu, next to its settings.
+ *
+ * @param settings_navigation $settingsnav
+ * @param navigation_node $gamesnode the activity's node
+ */
+function games_extend_settings_navigation(settings_navigation $settingsnav, navigation_node $gamesnode) {
+    $cm = $settingsnav->get_page()->cm;
+    if (!$cm || !has_capability('mod/games:managecontent', $settingsnav->get_page()->context)) {
+        return;
+    }
+
+    $gamesnode->add(
+        get_string('gamecontent', 'mod_games'),
+        new moodle_url('/mod/games/content.php', ['id' => $cm->id]),
+        navigation_node::TYPE_SETTING,
+        null,
+        'mod_games_content',
+        new pix_icon('i/edit', '')
+    );
 }

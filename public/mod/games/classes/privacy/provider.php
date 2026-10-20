@@ -58,6 +58,13 @@ class provider implements
             'timemodified' => 'privacy:metadata:play:timemodified',
         ], 'privacy:metadata:play');
 
+        // Content a teacher wrote for the activity. It is course material, not
+        // the teacher's personal data, so only who last edited it is recorded.
+        $collection->add_database_table('games_content', [
+            'usermodified' => 'privacy:metadata:content:usermodified',
+            'timemodified' => 'privacy:metadata:content:timemodified',
+        ], 'privacy:metadata:content');
+
         return $collection;
     }
 

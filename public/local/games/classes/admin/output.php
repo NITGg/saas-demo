@@ -266,7 +266,7 @@ class output {
      * @param string $value the stored value
      * @return string HTML
      */
-    protected static function cell(array $definition, string $value): string {
+    public static function cell(array $definition, string $value): string {
         if ($value === '') {
             return html_writer::span('—', 'text-muted');
         }

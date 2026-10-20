@@ -46,8 +46,19 @@ class backup_games_activity_structure_step extends backup_activity_structure_ste
         // restore than one that silently points at a different game.
         $games = new backup_nested_element('games', ['id'], [
             'name', 'intro', 'introformat', 'gameid', 'showhublink',
-            'completionplays', 'completionscore', 'timecreated', 'timemodified',
+            'completionplays', 'completionscore', 'contentmode', 'timecreated', 'timemodified',
         ]);
+
+        // The activity's own content is part of the activity, not user data:
+        // it travels in every backup, and so with every duplicate.
+        $contents = new backup_nested_element('contents');
+
+        $contentrow = new backup_nested_element('content', ['id'], [
+            'sortorder', 'data', 'usermodified', 'timecreated', 'timemodified',
+        ]);
+
+        $games->add_child($contents);
+        $contents->add_child($contentrow);
 
         $plays = new backup_nested_element('plays');
 
@@ -60,12 +71,14 @@ class backup_games_activity_structure_step extends backup_activity_structure_ste
         $plays->add_child($play);
 
         $games->set_source_table('games', ['id' => backup::VAR_ACTIVITYID]);
+        $contentrow->set_source_table('games_content', ['gamesid' => backup::VAR_PARENTID], 'sortorder ASC, id ASC');
 
         if ($userinfo) {
             $play->set_source_table('games_play', ['gamesid' => backup::VAR_PARENTID]);
         }
 
         $play->annotate_ids('user', 'userid');
+        $contentrow->annotate_ids('user', 'usermodified');
 
         $games->annotate_files('mod_games', 'intro', null);
 

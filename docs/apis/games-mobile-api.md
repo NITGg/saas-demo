@@ -92,7 +92,9 @@ the payload. **Match on `errorcode`**, not on `message` (translated) or `excepti
 ### 2.2 A Game activity inside a course
 
 1. The course page (`getalltopics.php`) returns the activity with `modname: "games"` and a `gameid`.
-2. Play it exactly like §2.1 steps 2–3, using that `gameid`.
+2. Load it like §2.1 step 2, but take the content from **`mod_games_get_content(cmid)`** (§7.2)
+   instead of `local_games_get_content`. A teacher can give each activity its own questions/words;
+   `local_games_get_game(gameid)` is still used for the start card and badges.
 3. Round ends → send **both**:
    - `local_games_submit_result` (points and badges of the corner — kept whether played from the hub or
      a course), and
@@ -356,7 +358,35 @@ activity:
   `customdata` is a JSON string containing `{"gameid":"math-race", …}`.
 - `restricted: true` → show it greyed out and don't open it, same as other activities.
 
-### 7.2 `mod_games_record_play` — record a round in the course
+### 7.2 `mod_games_get_content` — the activity's content
+
+| Parameter | Type | Required | Notes |
+|---|---|---|---|
+| `cmid` | int | yes | The activity's `id` from 7.1 |
+
+Returns **exactly the same structure as `local_games_get_content`** (§5): `shape`, `settings`,
+`rulesversion`, `speechlang`, `strings`, and the content lists. Use the same native player for both.
+
+What is in the content lists depends on the teacher's choice for that activity (`contentmode`, the
+server applies it — the app does not need to know it):
+
+| Teacher's choice | Content returned |
+|---|---|
+| Default content | the corner's content (same as `local_games_get_content`) |
+| My content only | the teacher's rows; if the teacher wrote none **in the requested language**, the corner's content |
+| My content + default | the teacher's rows first, then the corner's |
+
+```bash
+curl -s "$BASE/webservice/rest/server.php" \
+  -d "wstoken=$TOKEN" -d "moodlewsrestformat=json" -d "moodlewssettinglang=ar" \
+  -d "wsfunction=mod_games_get_content" -d "cmid=140"
+```
+
+- Needs `mod/games:view` on the activity (every enrolled student has it). Not enrolled →
+  `requireloginerror`; game switched off by the admin → `errorunknowngame`.
+- Fetch it each time the activity is opened (the teacher can edit the content at any time).
+
+### 7.3 `mod_games_record_play` — record a round in the course
 
 | Parameter | Type | Required | Notes |
 |---|---|---|---|
@@ -404,6 +434,7 @@ implementation for, hide that card (or open `/local/games/play.php?id=<slug>` in
 | `local_games_get_game` | read | `gameid` | Start card + badge rules |
 | `local_games_get_content` | read | `gameid` | Game material + in-game strings |
 | `local_games_submit_result` | write | `gameid, correct, wrong, streak, score, goal?` | Save a round, award badges |
+| `mod_games_get_content` | read | `cmid` | Content of a course activity (teacher's or default) |
 | `mod_games_record_play` | write | `cmid, correct, streak, score` | Save a round of a course activity |
 
 Required capabilities (given to every logged-in user / enrolled student by default):

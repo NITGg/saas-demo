@@ -60,6 +60,19 @@ $capabilities = [
         ],
     ],
 
+    // Write this activity's own game content and choose where its content
+    // comes from.
+    'mod/games:managecontent' => [
+        'riskbitmask'  => RISK_XSS,
+        'captype'      => 'write',
+        'contextlevel' => CONTEXT_MODULE,
+        'archetypes'   => [
+            'editingteacher' => CAP_ALLOW,
+            'manager'        => CAP_ALLOW,
+        ],
+        'clonepermissionsfrom' => 'moodle/course:manageactivities',
+    ],
+
     // See what the class has played.
     'mod/games:viewreports' => [
         'captype'      => 'read',

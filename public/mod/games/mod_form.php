@@ -63,6 +63,20 @@ class mod_games_mod_form extends moodleform_mod {
             $mform->addRule('gameid', null, 'required', null, 'client');
         }
 
+        // Where the game's questions, words, colours... come from. A new activity
+        // starts on its own content, which falls back to the corner's until the
+        // teacher has written some, so it is playable from the first save.
+        $mform->addElement('select', 'contentmode', get_string('contentmode', 'mod_games'),
+            \mod_games\content::mode_options());
+        $mform->addHelpButton('contentmode', 'contentmode', 'mod_games');
+        $mform->setDefault('contentmode', \mod_games\content::MODE_OWN);
+        $mform->setType('contentmode', PARAM_INT);
+
+        if (!empty($this->_instance)) {
+            $mform->addElement('static', 'contentnote', '',
+                html_writer::div(get_string('contentchangenote', 'mod_games'), 'text-muted small'));
+        }
+
         $mform->addElement('advcheckbox', 'showhublink', get_string('showhublink', 'mod_games'));
         $mform->addHelpButton('showhublink', 'showhublink', 'mod_games');
         $mform->setDefault('showhublink', 1);

@@ -69,6 +69,22 @@ class get_content extends external_api {
             throw new \moodle_exception('errorunknowngame', 'local_games');
         }
 
+        return self::response($gameid, content::payload($gameid));
+    }
+
+    /**
+     * The response for one game, built around a content payload.
+     *
+     * Shared with mod_games_get_content, which hands in a Game activity's own
+     * payload so the app receives the same structure either way.
+     *
+     * @param string $gameid game slug
+     * @param array $payload from content::payload()
+     * @return array
+     */
+    public static function response(string $gameid, array $payload): array {
+        global $CFG;
+
         // Every slot travels, and the ones this game does not use come back
         // empty rather than missing: an app can read every field without first
         // checking which game it asked about, and the response shape never
@@ -97,7 +113,6 @@ class get_content extends external_api {
 
         // Settings travel as key/value rows: a web-service structure cannot
         // carry an object whose keys differ from game to game.
-        $payload = content::payload($gameid);
         $out['rulesversion'] = registry::RULES_VERSION;
         $out['settings'] = [];
         foreach ((array) $payload['settings'] as $key => $value) {

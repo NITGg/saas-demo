@@ -39,6 +39,7 @@ $string['games:addinstance'] = 'Add a new Game activity';
 $string['games:view'] = 'View a Game activity';
 $string['games:play'] = 'Play the game and have the round recorded';
 $string['games:viewreports'] = 'See what the class has played';
+$string['games:managecontent'] = 'Write the game content of a Game activity';
 
 // The settings form.
 $string['gamesname'] = 'Activity name';
@@ -92,3 +93,34 @@ $string['privacy:metadata:play:points'] = 'How many correct answers they gave in
 $string['privacy:metadata:play:bestscore'] = 'Their best single round in this activity.';
 $string['privacy:metadata:play:beststreak'] = 'Their longest run of correct answers in this activity.';
 $string['privacy:metadata:play:timemodified'] = 'When their last round in this activity ended.';
+$string['privacy:metadata:content'] = 'Game content a teacher wrote for one Game activity.';
+$string['privacy:metadata:content:usermodified'] = 'Who last edited the content row.';
+$string['privacy:metadata:content:timemodified'] = 'When the content row was last edited.';
+
+// The activity's own content.
+$string['gamecontent'] = 'Game content';
+$string['editgamecontent'] = 'Edit game content';
+$string['gamecontentintro'] = 'Write the questions, words and other material {$a} is played with in this activity. Students in this course get this content; the Games Corner and other activities are not affected.';
+$string['yourcontent'] = 'This activity\'s content';
+$string['contentmode'] = 'Game content';
+$string['contentmode_help'] = 'Where the game\'s questions, words, colours... come from.
+
+* **Default content**: the content the site administrator set for this game in Game control.
+* **My content only**: the content you write for this activity. Until you have written some (in the language the student is using), the default content is used so the game always works.
+* **My content + default**: your content first, then the default content.
+
+Write the content from "Edit game content" on the activity page.';
+$string['contentmode_default'] = 'Default content';
+$string['contentmode_own'] = 'My content only';
+$string['contentmode_both'] = 'My content + default';
+$string['contentmode_desc'] = 'Default content: what the administrator set for this game. My content only: what you write below (the default is used until you have written some in the student\'s language). My content + default: yours first, then the default.';
+$string['contentchangenote'] = 'Changing the game to one that uses a different kind of content (for example from a question game to the colour game) deletes this activity\'s own content.';
+$string['copydefaults'] = 'Copy the default content ({$a} rows)';
+$string['contentcopied'] = '{$a} rows copied from the default content. You can now edit or delete them.';
+$string['clearcontent'] = 'Delete all my content';
+$string['confirmclearcontent'] = 'Delete all of this activity\'s own content? The game will use the default content until you add more.';
+$string['nocontentyet'] = 'This activity has no content of its own yet. Add rows one by one, or copy the default content and edit it.';
+$string['status_default'] = 'Students play the default content ({$a} rows in this language).';
+$string['status_fallback'] = 'You have no content in this language yet, so students play the default content ({$a} rows).';
+$string['status_own'] = 'Students play {$a->total} rows in this language, {$a->own} of them yours.';
+$string['toofewrows'] = 'This game needs at least {$a->minimum} rows to play a proper round; it has {$a->count} in this language. Add more rows or choose "My content + default".';

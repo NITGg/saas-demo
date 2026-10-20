@@ -40,6 +40,7 @@ class restore_games_activity_structure_step extends restore_activity_structure_s
         $userinfo = $this->get_setting_value('userinfo');
 
         $paths[] = new restore_path_element('games', '/activity/games');
+        $paths[] = new restore_path_element('games_content', '/activity/games/contents/content');
         if ($userinfo) {
             $paths[] = new restore_path_element('games_play', '/activity/games/plays/play');
         }
@@ -57,9 +58,30 @@ class restore_games_activity_structure_step extends restore_activity_structure_s
 
         $data = (object) $data;
         $data->course = $this->get_courseid();
+        // Backups made before content modes existed carry none: they played the
+        // corner's content, and keep doing so.
+        $data->contentmode = (int) ($data->contentmode ?? 0);
 
         $newitemid = $DB->insert_record('games', $data);
         $this->apply_activity_instance($newitemid);
+    }
+
+    /**
+     * Restore one row of the activity's own content.
+     *
+     * @param array $data
+     */
+    protected function process_games_content($data) {
+        global $DB, $USER;
+
+        $data = (object) $data;
+        $data->gamesid = $this->get_new_parentid('games');
+        // Who last edited the row is a person; without that person in the
+        // backup the row is credited to whoever is restoring it.
+        $data->usermodified = $this->get_mappingid('user', $data->usermodified) ?: $USER->id;
+
+        unset($data->id);
+        $DB->insert_record('games_content', $data);
     }
 
     /**

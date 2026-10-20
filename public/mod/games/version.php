@@ -25,11 +25,11 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'mod_games';
-$plugin->version   = 2026082901;
+$plugin->version   = 2026102000;
 $plugin->requires  = 2024100700;              // Moodle 4.5 LTS baseline.
 $plugin->supported = [405, 502];
 $plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.1.0';
+$plugin->release   = '0.2.0';
 $plugin->dependencies = [
     // The catalogue, the play shell and the content banks all live in the
     // corner. This activity is a way into one of its games from a course, not a

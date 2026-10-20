@@ -42,14 +42,16 @@ class content {
      *
      * @param string $gameid game slug
      * @param string|null $lang defaults to the current language
+     * @param \stdClass[]|null $rows stored rows to resolve instead of the game's own
+     *        (a Game activity hands in its rows; see mod_games\content)
      * @return array[] one associative array per row
      */
-    public static function for_game(string $gameid, ?string $lang = null): array {
+    public static function for_game(string $gameid, ?string $lang = null, ?array $rows = null): array {
         $lang = $lang ?? current_language();
         $fields = registry::fields_for($gameid);
 
         $out = [];
-        foreach (self::rows($gameid) as $row) {
+        foreach ($rows ?? self::rows($gameid) as $row) {
             $resolved = [];
             $usable = true;
 
@@ -135,9 +137,11 @@ class content {
      *
      * @param string $gameid game slug
      * @param string|null $lang defaults to the current language
+     * @param array[]|null $resolved rows already resolved by for_game(); defaults to
+     *        the game's own (a Game activity hands in its rows; see mod_games\content)
      * @return array<string, array> slot name => rows
      */
-    public static function payload(string $gameid, ?string $lang = null): array {
+    public static function payload(string $gameid, ?string $lang = null, ?array $resolved = null): array {
         $payload = [
             'words'       => [],
             'shopitems'   => [],
@@ -150,7 +154,7 @@ class content {
             'numberrules' => [],
         ];
 
-        $rows = self::for_game($gameid, $lang);
+        $rows = $resolved ?? self::for_game($gameid, $lang);
 
         switch (registry::shape_for($gameid)) {
             case 'words':
