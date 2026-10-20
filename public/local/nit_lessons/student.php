@@ -72,12 +72,11 @@ $params = [
 ];
 echo $OUTPUT->header();
 // Instant lessons: "Get a tutor now" above the teacher list, the "Available now" switch for teachers.
-if ($tab === 'book' || $tab === 'teaching') {
-    $instant = \local_nit_lessons\local\instant_ui::script((int) $USER->id);
-    if ($instant !== '') {
-        echo html_writer::div('', '', ['id' => $tab === 'book' ? 'nit-instant-student' : 'nit-instant-teacher']);
-        echo $instant;
-    }
+if (($tab === 'book' || $tab === 'teaching') && (new \local_nit_lessons\service\instant_service())->enabled()) {
+    // The widget's place, always; the script may already be on the page (the theme builds the footer,
+    // where an online teacher's prompts script goes, before this content).
+    echo html_writer::div('', '', ['id' => $tab === 'book' ? 'nit-instant-student' : 'nit-instant-teacher']);
+    echo \local_nit_lessons\local\instant_ui::script((int) $USER->id);
 }
 echo $OUTPUT->render_from_template('local_nit_lessons/student_hub', hub::context((int) $USER->id, $tab, $params));
 echo $OUTPUT->footer();
