@@ -114,38 +114,18 @@
     function student(root) {
         var timer = null;
         var state = null;
-        var last = {subject: '', label: ''};
+        var current = 0;
+        var form = {year: '', subject: '', mode: 'normal', maxflex: 0, note: '', autostart: false};
 
         function card(inner, cls) {
             return '<div class="nit-instant card p-3 mb-3 ' + (cls || '') + '">' + inner + '</div>';
         }
 
-        // "Notify me when a tutor is online" + "Book a lesson" for a subject (raw value + label).
-        function fallback(subject, label) {
-            var book = state.bookurl + '&search=' + encodeURIComponent(label || '');
-            var html = '<div class="d-flex flex-wrap gap-2 mt-2">';
-            if (subject) {
-                html += '<button class="btn btn-outline-primary btn-sm" data-watch="' + esc(subject) + '">' +
-                    esc(S.notifyme) + '</button>';
-            }
-            return html + '<a class="btn btn-outline-secondary btn-sm" href="' + esc(book) + '">' + esc(S.booklater) +
-                '</a></div>';
+        function stars(r, n) {
+            return n ? '★ ' + r.toFixed(1) + ' (' + n + ')' : esc(S.norating);
         }
 
-        function bindWatch() {
-            root.querySelectorAll('[data-watch]').forEach(function(b) {
-                b.addEventListener('click', function() {
-                    b.disabled = true;
-                    call('watch', {subject: b.getAttribute('data-watch')}).then(function() {
-                        b.textContent = S.notifyset;
-                    }).catch(function(err) {
-                        b.disabled = false;
-                        b.textContent = err.message;
-                    });
-                });
-            });
-        }
-
+        // ── 1. Choose year, subject, kind, max price; see the tutors ──
         function render(st) {
             clearTimeout(timer);
             state = st;
@@ -157,98 +137,243 @@
                 searching(st.open);
                 return;
             }
-            if (!st.subjects.length) {
-                var all = st.all.map(function(s) {
-                    return '<option value="' + esc(s.subject) + '">' + esc(s.label) + '</option>';
-                }).join('');
-                root.innerHTML = card('<h3 class="h5 mb-1">' + esc(S.title) + '</h3><p class="text-muted mb-2">' +
-                    esc(S.nobodyonline) + '</p><div class="d-flex flex-wrap gap-2"><select class="form-select" ' +
-                    'style="max-width:320px" data-allsubject>' + all + '</select><button class="btn btn-outline-primary" ' +
-                    'data-watchsel>' + esc(S.notifyme) + '</button></div><div class="small mt-2" data-msg></div>');
-                root.querySelector('[data-watchsel]').addEventListener('click', function(e) {
-                    e.target.disabled = true;
-                    call('watch', {subject: root.querySelector('[data-allsubject]').value}).then(function() {
-                        root.querySelector('[data-msg]').textContent = S.notifyset;
-                    }).catch(function(err) {
-                        e.target.disabled = false;
-                        root.querySelector('[data-msg]').textContent = err.message;
-                    });
-                });
-                return;
-            }
-            var options = st.subjects.map(function(s) {
-                return '<option value="' + esc(s.subject) + '">' + esc(s.label || s.subject) + ' (' +
-                    esc(S.online.replace('{$a}', s.teachers)) + ')</option>';
+            form.year = form.year || st.years.current || '';
+            var subjects = st.all.map(function(x) {
+                var online = (st.subjects.filter(function(o) {
+                    return o.subject === x.subject;
+                })[0] || {}).teachers || 0;
+                return '<option value="' + esc(x.subject) + '"' + (x.subject === form.subject ? ' selected' : '') + '>' +
+                    esc(x.label) + (online ? ' (' + esc(S.online.replace('{$a}', online)) + ')' : '') + '</option>';
             }).join('');
-            root.innerHTML = card('<h3 class="h5">' + esc(S.title) + '</h3><p class="text-muted">' + esc(S.intro) + '</p>' +
-                (st.trial ? '<p class="alert alert-info py-2 mb-2">' + esc(S.trialnotice.replace('{$a}', st.trialflex)) + '</p>' : '') +
+            var years = '<option value="">' + esc(S.anyyear) + '</option>' + st.years.years.map(function(y) {
+                return '<option value="' + esc(y.key) + '"' + (y.key === form.year ? ' selected' : '') + '>' +
+                    esc(y.name) + '</option>';
+            }).join('');
+            var recent = st.recent ? card('<strong>' + esc(S.recenttitle.replace('{$a}', st.recent.teachername)) +
+                '</strong><div class="d-flex flex-wrap gap-2 mt-2">' +
+                (st.recent.rateurl && !st.recent.rated ? '<a class="btn btn-primary btn-sm" href="' +
+                    esc(st.recent.rateurl) + '">' + esc(S.rate) + '</a>' : '') +
+                '<a class="btn btn-outline-primary btn-sm" href="' + esc(st.recent.bookagainurl) + '">' +
+                esc(S.bookagain) + '</a><button class="btn btn-outline-secondary btn-sm" data-fav="' +
+                st.recent.teacherid + '">' + (st.recent.favourite ? '★ ' : '☆ ') + esc(S.favourite) + '</button></div>',
+                'border-success') : '';
+            root.innerHTML = recent + card('<h3 class="h5">' + esc(S.title) + '</h3>' +
+                '<p class="text-muted mb-2">' + esc(S.intro) + '</p>' +
+                (st.trial ? '<p class="alert alert-info py-2 mb-2">' + esc(S.trialnotice.replace('{$a}', st.trialflex)) +
+                    '</p>' : '') +
                 (st.peak ? '<p class="small text-warning mb-2">' + esc(S.peaknotice) + '</p>' : '') +
-                '<div class="d-flex flex-wrap gap-2 align-items-end">' +
-                '<select class="form-select" style="max-width:320px" data-subject>' + options + '</select>' +
-                (st.quick && !st.trial ? '<select class="form-select" style="max-width:260px" data-mode>' +
-                    '<option value="normal">' + esc(S.modenormal.replace('{$a}', st.minutes)) + '</option>' +
-                    '<option value="quick">' + esc(S.modequick.replace('{$a}', st.quickminutes) + ' · ' +
-                        S.flex.replace('{$a}', st.quickflex)) + '</option></select>' : '') +
-                '<input class="form-control" style="max-width:360px" data-note placeholder="' + esc(S.noteph) + '">' +
-                '<label class="btn btn-outline-secondary mb-0">' + esc(S.photo) +
-                '<input type="file" accept="image/*" capture="environment" hidden data-photo></label>' +
-                '<button class="btn btn-primary" data-go>' + esc(S.go) + '</button></div>' +
-                '<div class="small text-muted mt-1" data-photoname></div><div class="text-danger mt-2" data-error></div>');
-            var photo = root.querySelector('[data-photo]');
-            photo.addEventListener('change', function() {
-                root.querySelector('[data-photoname]').textContent = photo.files.length ? photo.files[0].name : '';
-            });
-            root.querySelector('[data-go]').addEventListener('click', function(e) {
-                var select = root.querySelector('[data-subject]');
-                last = {subject: select.value, label: select.options[select.selectedIndex].text.replace(/ \(.*\)$/, '')};
-                var form = new FormData();
-                form.append('subject', select.value);
-                form.append('note', root.querySelector('[data-note]').value);
-                var mode = root.querySelector('[data-mode]');
-                form.append('mode', mode ? mode.value : 'normal');
-                if (photo.files.length) {
-                    form.append('photo', photo.files[0]);
+                '<div class="row g-2 align-items-end">' +
+                '<div class="col-sm-3"><label class="form-label small mb-0">' + esc(S.year) + '</label>' +
+                '<select class="form-select" data-year>' + years + '</select></div>' +
+                '<div class="col-sm-3"><label class="form-label small mb-0">' + esc(S.subject) + '</label>' +
+                '<select class="form-select" data-subject><option value="">' + esc(S.picksubject) + '</option>' +
+                subjects + '</select></div>' +
+                (st.quick && !st.trial ? '<div class="col-sm-3"><label class="form-label small mb-0">' + esc(S.kind) +
+                    '</label><select class="form-select" data-mode><option value="normal">' +
+                    esc(S.modenormal.replace('{$a}', st.minutes)) + '</option><option value="quick"' +
+                    (form.mode === 'quick' ? ' selected' : '') + '>' + esc(S.modequick.replace('{$a}', st.quickminutes)) +
+                    '</option></select></div>' : '') +
+                '<div class="col-sm-3"><label class="form-label small mb-0">' + esc(S.maxprice) + '</label>' +
+                '<input type="number" min="0" max="' + st.flexbalance + '" class="form-control" data-max placeholder="' +
+                esc(S.any) + '" value="' + (form.maxflex || '') + '"></div></div>' +
+                '<div class="row g-2 mt-1"><div class="col-sm-8"><input class="form-control" data-note placeholder="' +
+                esc(S.noteph) + '" value="' + esc(form.note) + '"></div><div class="col-sm-4">' +
+                '<label class="btn btn-outline-secondary w-100 mb-0">' + esc(S.photo) +
+                '<input type="file" accept="image/*" capture="environment" hidden data-photo></label></div></div>' +
+                '<div class="form-check mt-2"><input class="form-check-input" type="checkbox" id="nit-instant-auto" data-auto' +
+                (form.autostart ? ' checked' : '') + '><label class="form-check-label small" for="nit-instant-auto">' +
+                esc(S.autostart) + '</label></div>' +
+                '<div class="text-danger mt-2" data-error></div><div data-list class="mt-3"></div>');
+            bindForm();
+            if (form.subject) {
+                loadTutors();
+            }
+        }
+
+        function readForm() {
+            var mode = root.querySelector('[data-mode]');
+            form.year = root.querySelector('[data-year]').value;
+            form.subject = root.querySelector('[data-subject]').value;
+            form.mode = mode ? mode.value : 'normal';
+            form.maxflex = parseInt(root.querySelector('[data-max]').value, 10) || 0;
+            form.note = root.querySelector('[data-note]').value;
+            form.autostart = root.querySelector('[data-auto]').checked;
+        }
+
+        function bindForm() {
+            ['[data-year]', '[data-subject]', '[data-mode]', '[data-max]'].forEach(function(sel) {
+                var el2 = root.querySelector(sel);
+                if (el2) {
+                    el2.addEventListener('change', function() {
+                        readForm();
+                        if (sel === '[data-max]' && form.maxflex > 0) {
+                            form.autostart = true; // A capped price was agreed in advance: start right away.
+                            root.querySelector('[data-auto]').checked = true;
+                        }
+                        if (sel === '[data-mode]' && form.mode === 'quick') {
+                            form.autostart = true;
+                            root.querySelector('[data-auto]').checked = true;
+                        }
+                        loadTutors();
+                    });
                 }
-                e.target.disabled = true;
-                call('request', form).then(searching).catch(function(err) {
-                    e.target.disabled = false;
-                    root.querySelector('[data-error]').textContent = err.message;
+            });
+            root.querySelectorAll('[data-fav]').forEach(bindFav);
+        }
+
+        function bindFav(b) {
+            b.addEventListener('click', function() {
+                call('favourite', {teacherid: b.getAttribute('data-fav')}).then(function(r) {
+                    b.textContent = (r.favourite ? '★ ' : '☆ ') + S.favourite;
                 });
             });
         }
 
+        function loadTutors() {
+            var list = root.querySelector('[data-list]');
+            if (!form.subject) {
+                list.innerHTML = '';
+                return;
+            }
+            list.innerHTML = '<p class="text-muted">…</p>';
+            call('tutors', {subject: form.subject, year: form.year, mode: form.mode, maxflex: form.maxflex})
+                .then(function(d) {
+                    var online = d.tutors.filter(function(t) {
+                        return t.online;
+                    }).length;
+                    var html = online ? '<button class="btn btn-primary mb-3" data-askall>' +
+                        esc(S.askall.replace('{$a}', online)) + '</button>' :
+                        '<p class="text-muted">' + esc(S.nobodyonline) + '</p>';
+                    html += d.tutors.length ? d.tutors.map(tutorCard).join('') : '<p class="text-muted">' +
+                        esc(S.notutors) + '</p>';
+                    list.innerHTML = html;
+                    var all = list.querySelector('[data-askall]');
+                    if (all) {
+                        all.addEventListener('click', function() {
+                            ask(0, all);
+                        });
+                    }
+                    list.querySelectorAll('[data-ask]').forEach(function(b) {
+                        b.addEventListener('click', function() {
+                            ask(parseInt(b.getAttribute('data-ask'), 10), b);
+                        });
+                    });
+                    list.querySelectorAll('[data-watchtutor]').forEach(function(b) {
+                        b.addEventListener('click', function() {
+                            call('favourite', {teacherid: b.getAttribute('data-watchtutor')}).then(function(r) {
+                                b.textContent = r.favourite ? S.notifyset : S.notifyme;
+                            });
+                        });
+                    });
+                    list.querySelectorAll('[data-fav]').forEach(bindFav);
+                })
+                .catch(function(err) {
+                    list.innerHTML = '<p class="text-danger">' + esc(err.message) + '</p>';
+                });
+        }
+
+        function tutorCard(t) {
+            var status = t.online ? '<span class="badge bg-success">' + esc(S.availablenow) + '</span>' :
+                (t.busy ? '<span class="badge bg-secondary">' + esc(S.inlesson) + '</span>' :
+                    '<span class="badge bg-light text-dark">' + esc(S.offline) + '</span>');
+            var actions = t.online && !t.busy ?
+                '<button class="btn btn-success btn-sm" data-ask="' + t.id + '">' + esc(S.askthis) + '</button>' :
+                '<a class="btn btn-outline-primary btn-sm" href="' + esc(t.bookurl) + '">' + esc(S.booklater) + '</a>' +
+                '<button class="btn btn-outline-secondary btn-sm" data-watchtutor="' + t.id + '">' +
+                esc(t.favourite ? S.notifyset : S.notifyme) + '</button>';
+            return '<div class="card p-2 mb-2"><div class="d-flex gap-3 align-items-center">' +
+                '<img src="' + esc(t.pictureurl) + '" alt="" width="56" height="56" style="border-radius:50%">' +
+                '<div class="flex-grow-1"><div><strong>' + esc(t.name) + '</strong> ' + status + '</div>' +
+                '<div class="small text-muted"><bdi>' + esc(t.headline) + '</bdi></div>' +
+                '<div class="small">' + stars(t.rating, t.ratingcount) +
+                (t.reliability !== null ? ' · ⚡ ' + esc(S.reliability.replace('{$a}', t.reliability)) : '') +
+                ' · <strong>' + esc(S.flex.replace('{$a}', t.flex)) + '</strong></div>' +
+                (t.usually ? '<div class="small text-muted">' + esc(t.usually) + '</div>' : '') +
+                '</div><div class="d-flex flex-column gap-1 align-items-end">' + actions +
+                '<div class="d-flex gap-1"><a class="btn btn-link btn-sm p-0" href="' + esc(t.profileurl) +
+                '" target="_blank">' + esc(S.profile) + '</a><button class="btn btn-link btn-sm p-0" data-fav="' + t.id + '">' +
+                (t.favourite ? '★' : '☆') + '</button></div></div></div></div>';
+        }
+
+        function ask(teacherid, button) {
+            readForm();
+            var data = new FormData();
+            data.append('subject', form.subject);
+            data.append('note', form.note);
+            data.append('mode', form.mode);
+            data.append('maxflex', form.maxflex);
+            data.append('autostart', form.autostart ? 1 : 0);
+            data.append('teacherid', teacherid || 0);
+            var photo = root.querySelector('[data-photo]');
+            if (photo && photo.files.length) {
+                data.append('photo', photo.files[0]);
+            }
+            button.disabled = true;
+            call('request', data).then(searching).catch(function(err) {
+                button.disabled = false;
+                root.querySelector('[data-error]').textContent = err.message;
+            });
+        }
+
+        // ── 2. Waiting, the tutor who accepted, the result ──
         function searching(st) {
             clearTimeout(timer);
+            current = st.id;
             if (st.status === 'matched' && st.lessonid) {
                 root.innerHTML = card('<strong>' + esc(S.matched) + '</strong>', 'border-success');
                 window.location.href = C.joinurl + st.lessonid;
                 return;
             }
-            if (st.status !== 'searching') {
-                root.innerHTML = card('<h3 class="h5">' + esc(st.status === 'cancelled' ? S.cancelled : S.expired) +
-                    '</h3><p class="text-muted mb-1">' + esc(S.expiredhelp) + '</p>' +
-                    '<button class="btn btn-primary btn-sm" data-again>' + esc(S.again) + '</button>' +
-                    fallback(last.subject, last.label || st.subject));
-                root.querySelector('[data-again]').addEventListener('click', load);
-                bindWatch();
+            if (st.status === 'accepted' && st.teacher) {
+                var t = st.teacher;
+                root.innerHTML = card('<h3 class="h5">' + esc(S.acceptedtitle.replace('{$a}', t.name)) + '</h3>' +
+                    '<p class="mb-2">' + stars(t.rating, t.ratingcount) + ' · <strong>' + esc(S.flex.replace('{$a}', t.flex)) +
+                    '</strong> · ' + esc(S.minutes.replace('{$a}', st.duration)) + ' · <a href="' + esc(t.profileurl) +
+                    '" target="_blank">' + esc(S.profile) + '</a></p><p class="small text-muted">' +
+                    esc(S.confirmin.replace('{$a}', st.confirmsecondsleft)) + '</p>' +
+                    '<button class="btn btn-success me-2" data-confirm>' + esc(S.startlesson) + '</button>' +
+                    '<button class="btn btn-outline-secondary" data-reject>' + esc(S.decline) + '</button>',
+                    'border-success');
+                root.querySelector('[data-confirm]').addEventListener('click', function(e) {
+                    e.target.disabled = true;
+                    call('confirm', {requestid: st.id}).then(function(d) {
+                        window.location.href = d.joinurl;
+                    }).catch(function(err) {
+                        e.target.disabled = false;
+                        load();
+                        root.querySelector('[data-error]') && (root.querySelector('[data-error]').textContent = err.message);
+                    });
+                });
+                root.querySelector('[data-reject]').addEventListener('click', function() {
+                    call('reject', {requestid: st.id}).then(searching);
+                });
+                timer = setTimeout(function() {
+                    call('status', {requestid: st.id}).then(searching).catch(load);
+                }, 2000);
                 return;
             }
-            root.innerHTML = card('<h3 class="h5">' + esc(S.searching) + '</h3><p class="mb-2"><bdi>' + esc(st.subject) +
-                '</bdi> · ' + esc(S.asking.replace('{$a}', st.teachers)) + ' · <span data-left>' + st.secondsleft +
-                '</span>s</p><div class="progress mb-2" style="height:6px"><div class="progress-bar progress-bar-striped ' +
-                'progress-bar-animated" style="width:100%"></div></div>' +
+            if (st.status !== 'searching') {
+                root.innerHTML = card('<h3 class="h5">' + esc(st.status === 'cancelled' ? S.cancelled : S.expired) +
+                    '</h3><p class="text-muted mb-2">' + esc(st.targeted ? S.targetexpired : S.expiredhelp) + '</p>' +
+                    '<button class="btn btn-primary btn-sm" data-again>' + esc(st.targeted ? S.askallinstead : S.again) +
+                    '</button>');
+                root.querySelector('[data-again]').addEventListener('click', load);
+                return;
+            }
+            root.innerHTML = card('<h3 class="h5">' + esc(st.targeted ? S.askingone : S.searching) + '</h3><p class="mb-2"><bdi>' +
+                esc(st.subject) + '</bdi> · ' + esc(S.asking.replace('{$a}', st.teachers)) + ' · <span data-left>' +
+                st.secondsleft + '</span>s</p><div class="progress mb-2" style="height:6px"><div class="progress-bar ' +
+                'progress-bar-striped progress-bar-animated" style="width:100%"></div></div>' +
                 '<button class="btn btn-outline-secondary btn-sm" data-cancel>' + esc(S.cancel) + '</button>',
                 'border-primary');
             root.querySelector('[data-cancel]').addEventListener('click', function() {
                 call('cancel', {requestid: st.id}).then(searching);
             });
-            current = st.id;
             timer = setTimeout(function() {
                 call('status', {requestid: st.id}).then(searching).catch(load);
             }, live ? 10000 : 2000);
         }
 
-        var current = 0;
         onSignal(function(p) {
             if (p.what === 'status' && current && p.requestid === current) {
                 clearTimeout(timer);
@@ -257,6 +382,7 @@
         });
 
         function load() {
+            current = 0;
             call('subjects').then(render).catch(function() {
                 root.innerHTML = '';
             });
@@ -271,8 +397,17 @@
                 '<input class="form-check-input" type="checkbox" id="nit-instant-online"' + (online ? ' checked' : '') + '>' +
                 '<label class="form-check-label fw-bold" for="nit-instant-online">' + esc(S.available) + '</label></div>' +
                 '<p class="text-muted mb-0 mt-1">' + esc(S.availablehelp) + '</p>' +
+                '<div class="form-check mt-2"><input class="form-check-input" type="checkbox" id="nit-instant-oncall"' +
+                (C.oncall ? ' checked' : '') + '><label class="form-check-label" for="nit-instant-oncall">' +
+                esc(S.oncall) + '</label><div class="small text-muted">' + esc(S.oncallhelp) + '</div></div>' +
                 '<div class="text-danger mt-2" data-error></div></div>';
-            root.querySelector('input').addEventListener('change', function(e) {
+            root.querySelector('#nit-instant-oncall').addEventListener('change', function(e) {
+                call(e.target.checked ? 'oncall' : 'offcall').catch(function(err) {
+                    e.target.checked = false;
+                    root.querySelector('[data-error]').textContent = err.message;
+                });
+            });
+            root.querySelector('#nit-instant-online').addEventListener('change', function(e) {
                 var on = e.target.checked;
                 call(on ? 'online' : 'offline').then(function() {
                     C.online = on;
@@ -354,6 +489,14 @@
         box.querySelector('[data-accept]').addEventListener('click', function(e) {
             e.target.disabled = true;
             call('accept', {requestid: o.requestid}).then(function(d) {
+                if (d.waiting) {
+                    clearInterval(tick);
+                    box.querySelector('[data-accept]').remove();
+                    box.querySelector('[data-decline]').remove();
+                    box.querySelector('[data-error]').className = 'text-success mt-2';
+                    box.querySelector('[data-error]').textContent = S.waitingstudent;
+                    return;
+                }
                 window.location.href = d.joinurl;
             }).catch(function(err) {
                 box.querySelector('[data-error]').textContent = err.message;
@@ -381,7 +524,14 @@
                 return;
             }
             call('poll').then(function(d) {
+                if (d.started && d.started.length) {
+                    window.location.href = d.started[0].joinurl; // The student confirmed.
+                    return;
+                }
                 var open = {};
+                (d.waiting || []).forEach(function(w) {
+                    open[w.requestid] = true;
+                });
                 (d.offers || []).forEach(function(o) {
                     open[o.requestid] = true;
                     prompt(o);
@@ -403,6 +553,12 @@
     onSignal(function(p) {
         if (p.what === 'closed') {
             closePrompt(p.requestid);
+        } else if (p.what === 'started') {
+            call('poll').then(function(d) {
+                if (d.started && d.started.length) {
+                    window.location.href = d.started[0].joinurl;
+                }
+            });
         } else if (p.what === 'offer' && C.online) {
             // One extra fetch now; the regular heartbeat loop carries on unchanged.
             call('poll').then(function(d) {

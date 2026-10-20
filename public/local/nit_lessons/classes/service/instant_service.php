@@ -41,6 +41,8 @@ class instant_service {
     const BUFFER_MINUTES = 10;
 
     const SEARCHING = 'searching';
+    /** A tutor accepted; the student has instant_confirm_seconds to confirm (autostart off). */
+    const ACCEPTED_WAIT = 'accepted';
     const MATCHED = 'matched';
     const CANCELLED = 'cancelled';
     const EXPIRED = 'expired';
@@ -51,6 +53,10 @@ class instant_service {
     const MISSED = 'missed';
     const TAKEN = 'taken';
     const NOSHOW = 'noshow';
+    /** The student declined (or did not confirm) the tutor who accepted: not held against the tutor. */
+    const RELEASED = 'released';
+    /** An on-call tutor got a push for the request (not a prompt; they may come online and be asked). */
+    const ONCALL = 'oncall';
 
     /** @var teacher_service */
     private $teachers;
@@ -160,10 +166,101 @@ class instant_service {
             $DB->insert_record('nit_teacher_presence', (object) ['teacherid' => $teacherid, 'online' => (int) $online,
                 'lastseen' => $now]);
         }
+        $this->log_presence($teacherid, $online, $now);
         if ($online) {
             $this->alert_watchers($teacherid);
+            $this->alert_favourites($teacherid, $now);
         }
         return $this->presence($teacherid, $now);
+    }
+
+    /**
+     * Keep the presence history behind "usually online": one row per online session, extended by
+     * every heartbeat, closed when the tutor goes offline (a gap over 2 minutes starts a new one).
+     *
+     * @param int $teacherid
+     * @param bool $online
+     * @param int $now
+     * @return void
+     */
+    private function log_presence(int $teacherid, bool $online, int $now): void {
+        global $DB;
+        $last = $DB->get_records('nit_teacher_presence_log', ['teacherid' => $teacherid], 'timeend DESC', '*', 0, 1);
+        $last = reset($last);
+        if ($last && (int) $last->timeend >= $now - 2 * MINSECS) {
+            $DB->set_field('nit_teacher_presence_log', 'timeend', $now, ['id' => $last->id]);
+        } else if ($online) {
+            $DB->insert_record('nit_teacher_presence_log', (object) ['teacherid' => $teacherid, 'timestart' => $now,
+                'timeend' => $now]);
+        }
+    }
+
+    /**
+     * Students who starred this tutor are told they are online (at most once a day per student).
+     *
+     * @param int $teacherid
+     * @param int $now
+     * @return int how many were told
+     */
+    private function alert_favourites(int $teacherid, int $now): int {
+        global $DB;
+        $n = 0;
+        foreach ($DB->get_records_select('nit_favourite_tutor', 'teacherid = :t AND lastnotified < :cut',
+                ['t' => $teacherid, 'cut' => $now - DAYSECS]) as $f) {
+            $DB->set_field('nit_favourite_tutor', 'lastnotified', $now, ['id' => $f->id]);
+            $teacher = \core_user::get_user($teacherid);
+            $this->notify_student((int) $f->studentid, 'instant_favouriteonline', $teacher ? fullname($teacher) : '');
+            $n++;
+        }
+        return $n;
+    }
+
+    /**
+     * Star / unstar a tutor.
+     *
+     * @param int $studentid
+     * @param int $teacherid
+     * @return array {favourite}
+     */
+    public function toggle_favourite(int $studentid, int $teacherid): array {
+        global $DB;
+        if ($teacherid <= 0 || $teacherid === $studentid || !$this->teachers->is_teacher($teacherid)) {
+            throw new lesson_exception('err_forbidden');
+        }
+        $row = $DB->get_record('nit_favourite_tutor', ['studentid' => $studentid, 'teacherid' => $teacherid]);
+        if ($row) {
+            $DB->delete_records('nit_favourite_tutor', ['id' => $row->id]);
+            return ['favourite' => false];
+        }
+        $DB->insert_record('nit_favourite_tutor', (object) ['studentid' => $studentid, 'teacherid' => $teacherid,
+            'lastnotified' => 0, 'timecreated' => time()]);
+        return ['favourite' => true];
+    }
+
+    /**
+     * "On call": push instant requests to this tutor even when they are offline. Refused while
+     * suspended after repeated no-shows.
+     *
+     * @param int $teacherid
+     * @param bool $on
+     * @return array presence
+     */
+    public function set_oncall(int $teacherid, bool $on): array {
+        global $DB;
+        $row = $DB->get_record('nit_teacher_presence', ['teacherid' => $teacherid]);
+        if ($on && (!$this->enabled() || !$this->teachers->bookable($teacherid))) {
+            throw new lesson_exception('err_instantnotbookable');
+        }
+        if ($on && $row && (int) $row->oncall_blocked_until > time()) {
+            throw new lesson_exception('err_oncallblocked', userdate((int) $row->oncall_blocked_until));
+        }
+        if ($row) {
+            $DB->set_field('nit_teacher_presence', 'oncall', (int) $on, ['id' => $row->id]);
+        } else {
+            $DB->insert_record('nit_teacher_presence', (object) ['teacherid' => $teacherid, 'online' => 0,
+                'lastseen' => 0, 'oncall' => (int) $on]);
+        }
+        return $this->presence($teacherid);
     }
 
     /**
@@ -177,8 +274,45 @@ class instant_service {
         global $DB;
         $now = $now ?? time();
         $DB->set_field('nit_teacher_presence', 'lastseen', $now, ['teacherid' => $teacherid, 'online' => 1]);
+        if ($DB->record_exists('nit_teacher_presence', ['teacherid' => $teacherid, 'online' => 1])) {
+            $this->log_presence($teacherid, true, $now);
+        }
         $this->expire_due($now);
-        return $this->presence($teacherid, $now) + ['offers' => $this->offers_for($teacherid, $now)];
+        return $this->presence($teacherid, $now) + [
+            'offers' => $this->offers_for($teacherid, $now),
+            'waiting' => $this->waiting_for($teacherid, $now),
+            'started' => $this->started_for($teacherid, $now),
+        ];
+    }
+
+    /**
+     * Requests this tutor accepted that wait for the student to confirm.
+     *
+     * @param int $teacherid
+     * @param int $now
+     * @return array[] each {requestid, subject, secondsleft}
+     */
+    private function waiting_for(int $teacherid, int $now): array {
+        global $DB;
+        return array_values(array_map(fn($r) => ['requestid' => (int) $r->id, 'subject' => format_string($r->subject),
+            'secondsleft' => max(0, (int) $r->confirmdeadline - $now)],
+            $DB->get_records('nit_instant_request', ['acceptedby' => $teacherid, 'status' => self::ACCEPTED_WAIT])));
+    }
+
+    /**
+     * Instant lessons the student just confirmed that this tutor has not opened yet (go to the room).
+     *
+     * @param int $teacherid
+     * @param int $now
+     * @return array[] each {lessonid, joinurl}
+     */
+    private function started_for(int $teacherid, int $now): array {
+        global $DB;
+        $rows = $DB->get_records_select('nit_lesson', 'teacherid = :t AND type = :type AND status = :s
+                AND teacher_joined = 0 AND actual_start >= :since', ['t' => $teacherid, 'type' => lesson::TYPE_INSTANT,
+                's' => lesson::STATUS_IN_PROGRESS, 'since' => $now - 5 * MINSECS], '', 'id');
+        return array_values(array_map(fn($l) => ['lessonid' => (int) $l->id,
+            'joinurl' => (new \moodle_url('/local/nit_lessons/join.php', ['id' => $l->id]))->out(false)], $rows));
     }
 
     /**
@@ -195,6 +329,8 @@ class instant_service {
         return [
             'online' => $row && (int) $row->online === 1 && (int) $row->lastseen >= $now - self::PRESENCE_TTL,
             'busy' => $this->busy($teacherid, $now),
+            'oncall' => $row && (int) $row->oncall === 1,
+            'oncallblockeduntil' => $row ? (int) $row->oncall_blocked_until : 0,
         ];
     }
 
@@ -277,7 +413,7 @@ class instant_service {
      * @return array request status
      */
     public function request(int $studentid, string $subject, string $note = '', ?int $now = null,
-            ?array $photo = null, string $mode = self::MODE_NORMAL): array {
+            ?array $photo = null, string $mode = self::MODE_NORMAL, array $opts = []): array {
         global $DB;
         $now = $now ?? time();
         $subject = trim($subject);
@@ -295,9 +431,16 @@ class instant_service {
             throw new lesson_exception('err_badaction');
         }
         $this->expire_due($now);
-        if ($DB->record_exists('nit_instant_request', ['studentid' => $studentid, 'status' => self::SEARCHING])) {
+        if ($DB->record_exists_select('nit_instant_request', 'studentid = :s AND status IN (:a, :b)',
+                ['s' => $studentid, 'a' => self::SEARCHING, 'b' => self::ACCEPTED_WAIT])) {
             throw new lesson_exception('err_instantopen');
         }
+        $target = (int) ($opts['teacherid'] ?? 0);
+        $maxflex = max(0, (int) ($opts['maxflex'] ?? 0));
+        // Start as soon as a tutor accepts, unless the student asked to see who accepted first (autostart = false).
+        // Callers that do not say (older app versions) keep starting at once; the pages default the checkbox on
+        // when the price is capped or for a quick question.
+        $autostart = isset($opts['autostart']) ? (bool) $opts['autostart'] : true;
         $active = \local_nit_flex\api\purchase::active($studentid);
         if (!$active || (int) $active['remaining_flex'] < 1) {
             throw new lesson_exception('err_noflex');
@@ -310,12 +453,15 @@ class instant_service {
             'mode' => $mode,
             'trial' => (int) $this->trial_eligible($studentid),
             'status' => self::SEARCHING,
-            'expiresat' => $now + $this->settings->get('instant_wait_seconds'),
+            'expiresat' => $now + $this->settings->get($target ? 'instant_target_seconds' : 'instant_wait_seconds'),
+            'target_teacherid' => $target,
+            'maxflex' => $maxflex,
+            'autostart' => (int) $autostart,
             'timecreated' => $now,
             'timemodified' => $now,
         ];
         if (!$this->candidates($request, $now)) {
-            throw new lesson_exception('err_noinstanttutor');
+            throw new lesson_exception($target ? 'err_tutornotavailable' : 'err_noinstanttutor');
         }
         $request->id = $DB->insert_record('nit_instant_request', $request);
         if ($photo !== null) {
@@ -468,11 +614,14 @@ class instant_service {
         global $DB;
         $active = \local_nit_flex\api\purchase::active((int) $r->studentid);
         $flex = $active ? (int) $active['remaining_flex'] : 0;
+        $cap = !empty($r->maxflex) ? min($flex, (int) $r->maxflex) : $flex;
         $asked = empty($r->id) ? [] : $DB->get_fieldset_select('nit_instant_offer', 'teacherid',
-            'requestid = :r AND status <> :taken', ['r' => $r->id, 'taken' => self::TAKEN]);
+            'requestid = :r AND status NOT IN (:taken, :oncall)', ['r' => $r->id, 'taken' => self::TAKEN,
+                'oncall' => self::ONCALL]);
         $ids = array_filter($this->available_teachers((string) $r->subject, (int) $r->studentid, $now),
             fn($t) => !in_array($t, array_map('intval', $asked), true)
-                && $this->price($t, (string) ($r->mode ?? self::MODE_NORMAL), !empty($r->trial), $now) <= $flex);
+                && (empty($r->target_teacherid) || $t === (int) $r->target_teacherid)
+                && $this->price($t, (string) ($r->mode ?? self::MODE_NORMAL), !empty($r->trial), $now) <= $cap);
         return $this->rank(array_values($ids), (int) $r->studentid);
     }
 
@@ -536,7 +685,13 @@ class instant_service {
      */
     private function send_wave(\stdClass $r, int $now): int {
         global $DB;
+        if (!empty($r->target_teacherid) && (int) ($r->wave ?? 0) > 0) {
+            return 0; // "Ask this tutor": one ring only.
+        }
         $wave = array_slice($this->candidates($r, $now), 0, max(1, $this->settings->get('instant_wave_size')));
+        if ((int) ($r->wave ?? 0) === 0 && empty($r->target_teacherid)) {
+            $this->push_oncall($r, $now);
+        }
         foreach ($wave as $teacherid) {
             $DB->insert_record('nit_instant_offer', (object) ['requestid' => $r->id, 'teacherid' => $teacherid,
                 'status' => self::RINGING, 'timecreated' => $now]);
@@ -601,6 +756,32 @@ class instant_service {
             'mode' => (string) $r->mode,
             'trial' => (bool) $r->trial,
             'duration' => (int) $r->duration,
+            'targeted' => (int) $r->target_teacherid > 0,
+            'autostart' => (bool) $r->autostart,
+            'teacher' => $r->status === self::ACCEPTED_WAIT ? $this->tutor_card((int) $r->acceptedby, $r, $now) : null,
+            'confirmsecondsleft' => $r->status === self::ACCEPTED_WAIT ? max(0, (int) $r->confirmdeadline - $now) : 0,
+        ];
+    }
+
+    /**
+     * The tutor who accepted, as the student sees them before confirming.
+     *
+     * @param int $teacherid
+     * @param \stdClass $r
+     * @param int $now
+     * @return array {id, name, rating, ratingcount, flex, profileurl}
+     */
+    private function tutor_card(int $teacherid, \stdClass $r, int $now): array {
+        $u = \core_user::get_user($teacherid);
+        $rating = class_exists('\\local_nit_reviews\\api') ? \local_nit_reviews\api::get_teacher_aggregate($teacherid)
+            : (object) ['avg' => 0, 'count' => 0];
+        return [
+            'id' => $teacherid,
+            'name' => $u ? fullname($u) : '',
+            'rating' => round((float) $rating->avg, 1),
+            'ratingcount' => (int) $rating->count,
+            'flex' => $this->price($teacherid, (string) $r->mode, (bool) $r->trial, $now),
+            'profileurl' => (new \moodle_url('/local/academy/teacher.php', ['id' => $teacherid]))->out(false),
         ];
     }
 
@@ -613,8 +794,9 @@ class instant_service {
     public function open_request(int $studentid): ?array {
         global $DB;
         $this->expire_due(time());
-        $id = $DB->get_field('nit_instant_request', 'id', ['studentid' => $studentid, 'status' => self::SEARCHING]);
-        return $id ? $this->status($studentid, (int) $id) : null;
+        $ids = $DB->get_fieldset_select('nit_instant_request', 'id', 'studentid = :s AND status IN (:a, :b)',
+            ['s' => $studentid, 'a' => self::SEARCHING, 'b' => self::ACCEPTED_WAIT]);
+        return $ids ? $this->status($studentid, (int) reset($ids)) : null;
     }
 
     /**
@@ -630,6 +812,10 @@ class instant_service {
             $r = $DB->get_record('nit_instant_request', ['id' => $requestid, 'studentid' => $studentid]);
             if (!$r) {
                 throw new lesson_exception('err_forbidden');
+            }
+            if ($r->status === self::ACCEPTED_WAIT) {
+                $this->release($r, time());
+                $r = $DB->get_record('nit_instant_request', ['id' => $requestid]);
             }
             if ($r->status === self::SEARCHING) {
                 $this->close($r, self::CANCELLED, self::MISSED, time());
@@ -704,19 +890,120 @@ class instant_service {
             if ($this->busy($teacherid, $now)) {
                 throw new lesson_exception('err_timeconflict');
             }
-            $transaction = $DB->start_delegated_transaction();
-            try {
-                $lesson = (new lesson_service())->start_instant((int) $r->studentid, $teacherid, (string) $r->subject,
-                    (int) $r->duration, (string) $r->note, $this->price($teacherid, (string) $r->mode, (bool) $r->trial,
-                    $now), (bool) $r->trial);
-                $this->mark_matched($r, $offer, $teacherid, (int) $lesson['id'], $now);
-                $transaction->allow_commit();
-            } catch (\Throwable $e) {
-                $transaction->rollback($e);
+            if (empty($r->autostart)) {
+                // The student sees who accepted (profile, rating, price) and confirms within instant_confirm_seconds.
+                $DB->update_record('nit_instant_request', (object) ['id' => $r->id, 'status' => self::ACCEPTED_WAIT,
+                    'acceptedby' => $teacherid, 'confirmdeadline' => $now + $this->settings->get('instant_confirm_seconds'),
+                    'timemodified' => $now]);
+                $DB->update_record('nit_instant_offer', (object) ['id' => $offer->id, 'status' => self::ACCEPTED,
+                    'timeanswered' => $now]);
+                $this->signal_closed($r);
+                $DB->set_field_select('nit_instant_offer', 'status', self::TAKEN, 'requestid = :r AND status = :s',
+                    ['r' => $r->id, 's' => self::RINGING]);
+                return ['waiting' => true, 'requestid' => (int) $r->id,
+                    'confirmsecondsleft' => $this->settings->get('instant_confirm_seconds')];
             }
-            $this->queue_parent_alert((int) $lesson['id']);
+            $lesson = $this->start_matched($r, $offer, $teacherid, $now);
             return $lesson;
         });
+    }
+
+    /**
+     * The student confirms the tutor who accepted: the lesson starts (Flex reserved, room created).
+     *
+     * @param int $studentid
+     * @param int $requestid
+     * @return array the started lesson
+     */
+    public function confirm(int $studentid, int $requestid): array {
+        global $DB;
+        return $this->locked($requestid, function () use ($DB, $studentid, $requestid) {
+            $now = time();
+            $r = $DB->get_record('nit_instant_request', ['id' => $requestid, 'studentid' => $studentid]);
+            if (!$r) {
+                throw new lesson_exception('err_forbidden');
+            }
+            if ($r->status !== self::ACCEPTED_WAIT || (int) $r->confirmdeadline < $now) {
+                throw new lesson_exception('err_instanttaken');
+            }
+            $teacherid = (int) $r->acceptedby;
+            $offer = $DB->get_record('nit_instant_offer', ['requestid' => $r->id, 'teacherid' => $teacherid,
+                'status' => self::ACCEPTED]);
+            $lesson = $this->start_matched($r, $offer, $teacherid, $now);
+            realtime::signal([$teacherid], 'started', (int) $r->id);
+            return $lesson;
+        });
+    }
+
+    /**
+     * The student declines the tutor who accepted (or did not confirm in time): the tutor is released
+     * without counting against them, and a broadcast goes on to the next tutors.
+     *
+     * @param int $studentid
+     * @param int $requestid
+     * @return array status
+     */
+    public function reject(int $studentid, int $requestid): array {
+        global $DB;
+        $this->locked($requestid, function () use ($DB, $studentid, $requestid) {
+            $r = $DB->get_record('nit_instant_request', ['id' => $requestid, 'studentid' => $studentid]);
+            if (!$r) {
+                throw new lesson_exception('err_forbidden');
+            }
+            if ($r->status === self::ACCEPTED_WAIT) {
+                $this->release($r, time());
+            }
+        });
+        return $this->status($studentid, $requestid);
+    }
+
+    /**
+     * Release the tutor who accepted; reopen the request for the next tutors, or end it.
+     *
+     * @param \stdClass $r
+     * @param int $now
+     * @return void
+     */
+    private function release(\stdClass $r, int $now): void {
+        global $DB;
+        $DB->set_field('nit_instant_offer', 'status', self::RELEASED,
+            ['requestid' => $r->id, 'teacherid' => $r->acceptedby, 'status' => self::ACCEPTED]);
+        realtime::signal([(int) $r->acceptedby], 'closed', (int) $r->id);
+        $r->status = self::SEARCHING;
+        $r->acceptedby = 0;
+        $r->confirmdeadline = 0;
+        $r->timemodified = $now;
+        $DB->update_record('nit_instant_request', $r);
+        if ((int) $r->expiresat <= $now || !empty($r->target_teacherid)) {
+            $this->close($r, self::EXPIRED, self::MISSED, $now);
+        } else {
+            $this->advance($r, $now);
+        }
+    }
+
+    /**
+     * Create and start the lesson for a request, and record the match.
+     *
+     * @param \stdClass $r
+     * @param \stdClass $offer
+     * @param int $teacherid
+     * @param int $now
+     * @return array the started lesson
+     */
+    private function start_matched(\stdClass $r, \stdClass $offer, int $teacherid, int $now): array {
+        global $DB;
+        $transaction = $DB->start_delegated_transaction();
+        try {
+            $lesson = (new lesson_service())->start_instant((int) $r->studentid, $teacherid, (string) $r->subject,
+                (int) $r->duration, (string) $r->note, $this->price($teacherid, (string) $r->mode, (bool) $r->trial, $now),
+                (bool) $r->trial);
+            $this->mark_matched($r, $offer, $teacherid, (int) $lesson['id'], $now);
+            $transaction->allow_commit();
+        } catch (\Throwable $e) {
+            $transaction->rollback($e);
+        }
+        $this->queue_parent_alert((int) $lesson['id']);
+        return $lesson;
     }
 
     // ── Reliability, AI summary, parent alert ────────────────────────────────
@@ -731,8 +1018,10 @@ class instant_service {
     public function reliability(int $teacherid): array {
         global $DB;
         $since = time() - 90 * DAYSECS;
-        $rows = $DB->get_records_select('nit_instant_offer', 'teacherid = :t AND timecreated >= :since AND status <> :taken',
-            ['t' => $teacherid, 'since' => $since, 'taken' => self::TAKEN], '', 'id, status, timecreated, timeanswered');
+        $rows = $DB->get_records_select('nit_instant_offer',
+            'teacherid = :t AND timecreated >= :since AND status NOT IN (:taken, :released, :oncall)',
+            ['t' => $teacherid, 'since' => $since, 'taken' => self::TAKEN, 'released' => self::RELEASED,
+                'oncall' => self::ONCALL], '', 'id, status, timecreated, timeanswered');
         $prompts = count($rows);
         $accepted = count(array_filter($rows, fn($o) => in_array($o->status, [self::ACCEPTED, self::NOSHOW], true)));
         $noshows = count(array_filter($rows, fn($o) => $o->status === self::NOSHOW));
@@ -840,7 +1129,8 @@ class instant_service {
     private function mark_matched(\stdClass $r, \stdClass $offer, int $teacherid, int $lessonid, int $now): void {
         global $DB;
         $DB->update_record('nit_instant_request', (object) ['id' => $r->id, 'status' => self::MATCHED,
-            'lessonid' => $lessonid, 'teacherid' => $teacherid, 'timematched' => $now, 'timemodified' => $now]);
+            'lessonid' => $lessonid, 'teacherid' => $teacherid, 'timematched' => $now, 'timemodified' => $now,
+            'acceptedby' => 0, 'confirmdeadline' => 0]);
         $DB->update_record('nit_instant_offer', (object) ['id' => $offer->id, 'status' => self::ACCEPTED,
             'timeanswered' => $now]);
         $this->signal_closed($r);
@@ -915,6 +1205,15 @@ class instant_service {
     public function expire_due(int $now): int {
         global $DB;
         $this->noshow_due($now);
+        foreach ($DB->get_records_select('nit_instant_request', 'status = :s AND confirmdeadline < :now',
+                ['s' => self::ACCEPTED_WAIT, 'now' => $now]) as $w) {
+            $this->locked((int) $w->id, function () use ($DB, $w, $now) {
+                $fresh = $DB->get_record('nit_instant_request', ['id' => $w->id]);
+                if ($fresh && $fresh->status === self::ACCEPTED_WAIT && (int) $fresh->confirmdeadline < $now) {
+                    $this->release($fresh, $now); // The student did not confirm in time.
+                }
+            });
+        }
         $n = 0;
         foreach ($DB->get_records('nit_instant_request', ['status' => self::SEARCHING]) as $r) {
             $this->locked((int) $r->id, function () use ($DB, $r, $now, &$n) {
@@ -963,6 +1262,7 @@ class instant_service {
                 if ($r) {
                     $DB->set_field('nit_instant_offer', 'status', self::NOSHOW,
                         ['requestid' => $r->id, 'teacherid' => $l->teacherid, 'status' => self::ACCEPTED]);
+                    $this->penalise_noshows((int) $l->teacherid, $now);
                     if ((int) $r->redispatched === 0) {
                         $r->status = self::SEARCHING;
                         $r->lessonid = 0;
@@ -1163,6 +1463,53 @@ class instant_service {
         realtime::signal($DB->get_fieldset_select('nit_instant_offer', 'teacherid', 'requestid = :r AND status = :s',
             ['r' => $r->id, 's' => self::RINGING]), 'closed', (int) $r->id);
         realtime::signal([(int) $r->studentid], 'status', (int) $r->id);
+    }
+
+    /**
+     * On-call tutors of the subject who are offline get a push (once per request); if they come
+     * online while it is still searching, the next wave can ask them.
+     *
+     * @param \stdClass $r
+     * @param int $now
+     * @return void
+     */
+    private function push_oncall(\stdClass $r, int $now): void {
+        global $DB;
+        $rows = $DB->get_records_select('nit_teacher_presence', 'oncall = 1 AND oncall_blocked_until < :now',
+            ['now' => $now]);
+        foreach ($rows as $p) {
+            $tid = (int) $p->teacherid;
+            $online = (int) $p->online === 1 && (int) $p->lastseen >= $now - self::PRESENCE_TTL;
+            if ($online || $tid === (int) $r->studentid || !$this->teachers->bookable($tid)
+                    || !$this->teachers->teaches($tid, (string) $r->subject)) {
+                continue;
+            }
+            $DB->insert_record('nit_instant_offer', (object) ['requestid' => $r->id, 'teacherid' => $tid,
+                'status' => self::ONCALL, 'timecreated' => $now]);
+            $this->notify_offer($tid, (string) $r->subject);
+        }
+    }
+
+    /**
+     * Repeated no-shows (instant_noshow_block in 30 days) suspend "on call" for instant_noshow_block_days.
+     *
+     * @param int $teacherid
+     * @param int $now
+     * @return void
+     */
+    private function penalise_noshows(int $teacherid, int $now): void {
+        global $DB;
+        $limit = $this->settings->get('instant_noshow_block');
+        if ($limit <= 0) {
+            return;
+        }
+        $count = $DB->count_records_select('nit_instant_offer', 'teacherid = :t AND status = :s AND timecreated >= :since',
+            ['t' => $teacherid, 's' => self::NOSHOW, 'since' => $now - 30 * DAYSECS]);
+        if ($count >= $limit) {
+            $DB->set_field('nit_teacher_presence', 'oncall', 0, ['teacherid' => $teacherid]);
+            $DB->set_field('nit_teacher_presence', 'oncall_blocked_until',
+                $now + $this->settings->get('instant_noshow_block_days') * DAYSECS, ['teacherid' => $teacherid]);
+        }
     }
 
     /**

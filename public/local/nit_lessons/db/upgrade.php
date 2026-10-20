@@ -164,5 +164,36 @@ function xmldb_local_nit_lessons_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026102300, 'local', 'nit_lessons');
     }
 
+    if ($oldversion < 2026102400) {
+        // Instant lessons v2: ask one tutor or all, max price, student confirms, on call, presence history, favourites.
+        $fields = [
+            'nit_teacher_presence' => [
+                new xmldb_field('oncall', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'lastseen'),
+                new xmldb_field('oncall_blocked_until', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'oncall'),
+            ],
+            'nit_instant_request' => [
+                new xmldb_field('target_teacherid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'aisummary'),
+                new xmldb_field('maxflex', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'target_teacherid'),
+                new xmldb_field('autostart', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '1', 'maxflex'),
+                new xmldb_field('acceptedby', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'autostart'),
+                new xmldb_field('confirmdeadline', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'acceptedby'),
+            ],
+        ];
+        foreach ($fields as $tablename => $list) {
+            $table = new xmldb_table($tablename);
+            foreach ($list as $field) {
+                if (!$dbman->field_exists($table, $field)) {
+                    $dbman->add_field($table, $field);
+                }
+            }
+        }
+        foreach (['nit_teacher_presence_log', 'nit_favourite_tutor'] as $name) {
+            if (!$dbman->table_exists($name)) {
+                $dbman->install_one_table_from_xmldb_file(__DIR__ . '/install.xml', $name);
+            }
+        }
+        upgrade_plugin_savepoint(true, 2026102400, 'local', 'nit_lessons');
+    }
+
     return true;
 }

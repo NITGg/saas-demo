@@ -189,20 +189,23 @@ Replaces the "pick a subject, wait" screen with a tutor-first flow. Everything a
 ## A. Student journey
 1. **Year → subject.** The school year is pre-selected from the student's profile (`academic_structure::USER_YEAR`,
    set at registration) and can be changed; subjects are those of that year.
-2. **Tutor list** for that subject and year (**year-aware**: only tutors who teach that year), sorted: online now →
+2. **Max price (Flex)** filter next to year and subject (default "Any", capped at the student's Flex balance). It
+   filters the list **and** limits who a broadcast asks, so the price is agreed before anyone is asked.
+3. **Tutor list** for that subject and year (**year-aware**: only tutors who teach that year), sorted: online now →
    favourites → rating → reliability. Each card: photo, name, **rating (stars + count)**, reliability ("answers 90%"),
    **the Flex price of this lesson** (full / quick / peak / trial), "Available now" or **"Usually online: Sun–Thu
    6–10 PM"**, a **★ favourite** toggle, and **View profile**.
-3. **How to ask:**
+4. **How to ask:**
    - **Ask all available tutors (fastest)** — broadcast in ranked waves (as today).
    - **Ask this tutor** (online cards only) — only that tutor rings, 60 s; if no answer: "Ask all available instead?".
    - Offline cards: **Book a lesson** (normal scheduling, pre-filled with their next free slot) and **Notify me when
      this tutor is online**. Offline tutors never receive instant requests by email (they would expire before being read).
-4. **Tutor accepts → the student confirms**: "Mr. Ahmed accepted · ★4.8 · 2 Flex · 30 min · View profile" with
+5. **Tutor accepts → the student confirms**: "Mr. Ahmed accepted · ★4.8 · 2 Flex · 30 min · View profile" with
    **Start lesson / Decline** and a 30 s countdown. Flex is reserved and the room created only on **Start**.
    Decline / timeout → the tutor is released (not counted against them) and a broadcast continues with the next tutor.
-   A **"Start right away with whoever accepts"** checkbox skips this step (default on for quick questions).
-5. **After the call**: a **rating prompt** (1–5 + comment, the existing review system), and **Book again with this
+   A **"Start right away with whoever accepts"** checkbox skips this step — **on by default when a max price is set
+   and for quick questions**, so in most cases the lesson starts the moment the tutor accepts and no tutor waits.
+6. **After the call**: a **rating prompt** (1–5 + comment, the existing review system), and **Book again with this
    tutor** / **★ favourite**.
 
 ## B. Tutor journey

@@ -32,7 +32,7 @@ use local_nit_lessons\service\instant_service;
 final class instant {
     /** @var string[] Actions callable through instant.php / api.php (prefix instant_). */
     const ACTIONS = ['subjects', 'request', 'status', 'cancel', 'presence', 'online', 'offline', 'poll', 'accept',
-        'decline', 'watch', 'reliability'];
+        'decline', 'watch', 'reliability', 'tutors', 'confirm', 'reject', 'favourite', 'oncall', 'offcall'];
 
     /**
      * Run one action for a user.
@@ -59,10 +59,34 @@ final class instant {
                     'minutes' => $settings->get('instant_minutes'),
                     'peak' => $s->is_peak(time()),
                     'ws' => realtime::client_config($userid), // Null when realtime is off.
+                    'years' => \local_nit_lessons\service\instant_tutors::years($userid),
+                    'recent' => \local_nit_lessons\service\instant_tutors::recent($userid),
+                    'flexbalance' => (int) ((\local_nit_flex\api\purchase::active($userid) ?: [])['remaining_flex'] ?? 0),
                     'bookurl' => (new \moodle_url('/local/nit_lessons/student.php', ['tab' => 'book']))->out(false)];
             case 'request':
+                $opts = ['teacherid' => (int) ($p['teacherid'] ?? 0), 'maxflex' => (int) ($p['maxflex'] ?? 0)];
+                if (isset($p['autostart']) && $p['autostart'] !== '') {
+                    $opts['autostart'] = (bool) (int) $p['autostart'];
+                }
                 return $s->request($userid, (string) ($p['subject'] ?? ''), (string) ($p['note'] ?? ''), null,
-                    $p['photo'] ?? null, (string) ($p['mode'] ?? '') === 'quick' ? 'quick' : 'normal');
+                    $p['photo'] ?? null, (string) ($p['mode'] ?? '') === 'quick' ? 'quick' : 'normal', $opts);
+            case 'tutors':
+                return ['tutors' => (new \local_nit_lessons\service\instant_tutors())->list($userid,
+                    (string) ($p['subject'] ?? ''), (string) ($p['year'] ?? ''),
+                    (string) ($p['mode'] ?? '') === 'quick' ? 'quick' : 'normal', (int) ($p['maxflex'] ?? 0))];
+            case 'confirm':
+                $lesson = $s->confirm($userid, (int) ($p['requestid'] ?? 0));
+                notifier::send('started', $lesson, (int) $lesson['teacherid']);
+                return ['lesson' => $lesson,
+                    'joinurl' => (new \moodle_url('/local/nit_lessons/join.php', ['id' => $lesson['id']]))->out(false)];
+            case 'reject':
+                return $s->reject($userid, (int) ($p['requestid'] ?? 0));
+            case 'favourite':
+                return $s->toggle_favourite($userid, (int) ($p['teacherid'] ?? 0));
+            case 'oncall':
+                return $s->set_oncall($userid, true);
+            case 'offcall':
+                return $s->set_oncall($userid, false);
             case 'reliability':
                 return $s->reliability((int) ($p['teacherid'] ?? 0) ?: $userid);
             case 'watch':
@@ -81,6 +105,9 @@ final class instant {
                 return $s->heartbeat($userid);
             case 'accept':
                 $lesson = $s->accept($userid, (int) ($p['requestid'] ?? 0));
+                if (!empty($lesson['waiting'])) {
+                    return $lesson; // The student confirms first.
+                }
                 notifier::send('started', $lesson, $userid);
                 return ['lesson' => $lesson,
                     'joinurl' => (new \moodle_url('/local/nit_lessons/join.php', ['id' => $lesson['id']]))->out(false)];

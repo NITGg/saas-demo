@@ -211,9 +211,10 @@ needs comes in `instant_subjects`, `instant_status` and the offers.
 ## 8. Coming next (v2 — designed, not built yet)
 
 Do not build against these yet; they are listed so the app screens can be planned (design: `instant-lessons-design.md`, "v2").
-- `instant_tutors(year, subject)` — the tutor list: online first, rating, reliability, price per mode, "usually online",
+- `instant_tutors(year, subject, mode, maxflex)` — the tutor list: online first, rating, reliability, price per mode, "usually online",
   favourite flag, profile URL.
-- `instant_request` gains `teacherid` (ask one tutor) and `autostart` (skip the confirmation).
+- `instant_request` gains `teacherid` (ask one tutor), `maxflex` (only tutors at or under this price are asked) and
+  `autostart` (skip the confirmation; default on when `maxflex` is set or for quick questions).
 - New status `accepted` with `teacher` {name, rating, price, profileurl} and `confirmsecondsleft`;
   new calls `instant_confirm` / `instant_reject` (student).
 - `instant_favourite` (toggle), `instant_oncall` (tutor push opt-in).

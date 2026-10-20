@@ -69,7 +69,7 @@ api::run(function (string $function) use ($userid) {
     // instant_online, instant_offline, instant_poll, instant_accept, instant_decline.
     if (strpos($function, 'instant_') === 0
             && in_array($action = substr($function, 8), \local_nit_lessons\api\instant::ACTIONS, true)) {
-        if (!in_array($action, ['subjects', 'status', 'presence', 'poll', 'reliability'], true)) {
+        if (!in_array($action, ['subjects', 'status', 'presence', 'poll', 'reliability', 'tutors'], true)) {
             api::require_post();
         }
         if ($action === 'request') {
@@ -80,6 +80,9 @@ api::run(function (string $function) use ($userid) {
             'note' => optional_param('note', '', PARAM_TEXT),
             'mode' => optional_param('mode', '', PARAM_ALPHA),
             'teacherid' => optional_param('teacherid', 0, PARAM_INT),
+            'year' => optional_param('year', '', PARAM_RAW_TRIMMED),
+            'maxflex' => optional_param('maxflex', 0, PARAM_INT),
+            'autostart' => optional_param('autostart', '', PARAM_ALPHANUM),
             'requestid' => optional_param('requestid', 0, PARAM_INT),
             'photo' => !empty($_FILES['photo']['tmp_name']) && is_uploaded_file($_FILES['photo']['tmp_name'])
                 ? $_FILES['photo'] : null, // Optional photo of the problem (request).
