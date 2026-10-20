@@ -315,3 +315,5 @@ $string['badgemastered_help'] = 'Every word is in the last deck and no review is
 $string['badgeontrack'] = 'On track: next review in {$a}';
 $string['badgeontrack_help'] = 'The student has done every review that was due. Nothing to do until the next review time.';
 $string['badgeontrack_legend'] = 'On track';
+$string['errorfreeplayoff'] = 'Free play is turned off for this activity.';
+$string['errorleitneroff'] = 'Leitner play is turned off for this activity.';

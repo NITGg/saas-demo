@@ -486,3 +486,80 @@ function flashcard_get_file_url($filerecid, $asobject = false) {
 
     return $url;
 }
+
+/**
+ * The form field names of one card side, by media type: [$field => $filearea or 'text'].
+ *
+ * @param int $mediatype FLASHCARD_MEDIA_*
+ * @param string $prefix 'q' or 'a'
+ * @param int $n card number in the form (0..2)
+ * @param string $side 'question' or 'answer'
+ * @return array
+ */
+function flashcard_card_side_fields(int $mediatype, string $prefix, int $n, string $side): array {
+    switch ($mediatype) {
+        case FLASHCARD_MEDIA_IMAGE:
+            return [$prefix . $n => $side . 'imagefile'];
+        case FLASHCARD_MEDIA_SOUND:
+            return [$prefix . $n => $side . 'soundfile'];
+        case FLASHCARD_MEDIA_VIDEO:
+            return [$prefix . $n => $side . 'videofile'];
+        case FLASHCARD_MEDIA_IMAGE_AND_SOUND:
+            return [$prefix . 'i' . $n => $side . 'imagefile', $prefix . 's' . $n => $side . 'soundfile'];
+        default:
+            return [$prefix . $n => 'text'];
+    }
+}
+
+/**
+ * Whether a card side of the editor form was filled in (some text, or a file in a picker).
+ *
+ * @param int $mediatype FLASHCARD_MEDIA_*
+ * @param string $prefix 'q' or 'a'
+ * @param int $n card number in the form
+ * @param context_user $usercontext the editing teacher's draft area context
+ * @return bool
+ */
+function flashcard_card_side_filled(int $mediatype, string $prefix, int $n, $usercontext): bool {
+    $fs = get_file_storage();
+    foreach (flashcard_card_side_fields($mediatype, $prefix, $n, '') as $field => $area) {
+        if ($area === 'text') {
+            if (trim(strip_tags(optional_param($field, '', PARAM_CLEANHTML))) !== '') {
+                return true;
+            }
+        } else {
+            $draft = optional_param($field, 0, PARAM_INT);
+            if ($draft && !$fs->is_area_empty($usercontext->id, 'user', 'draft', $draft, true)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+/**
+ * Save one side of a card from the editor form: its text, or its file(s).
+ *
+ * @param stdClass $card flashcard_deckdata row (questiontext / answertext set here)
+ * @param string $side 'question' or 'answer'
+ * @param int $mediatype FLASHCARD_MEDIA_*
+ * @param int $n card number in the form
+ * @param context_module $context
+ * @param context_user $usercontext
+ */
+function flashcard_save_card_side(stdClass $card, string $side, int $mediatype, int $n, $context, $usercontext): void {
+    $fs = get_file_storage();
+    $textfield = $side . 'text';
+    foreach (flashcard_card_side_fields($mediatype, substr($side, 0, 1), $n, $side) as $field => $area) {
+        if ($area === 'text') {
+            $card->$textfield = optional_param($field, '', PARAM_CLEANHTML);
+            continue;
+        }
+        $card->$textfield = '';
+        $draft = optional_param($field, 0, PARAM_INT);
+        if ($draft && !$fs->is_area_empty($usercontext->id, 'user', 'draft', $draft, true)) {
+            file_save_draft_area_files($draft, $context->id, 'mod_flashcard', $area, $card->id,
+                ['subdirs' => 0, 'maxfiles' => 1]);
+        }
+    }
+}

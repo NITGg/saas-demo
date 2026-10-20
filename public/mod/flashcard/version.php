@@ -28,10 +28,10 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version  = 2019121106;  // The current module version (Date: YYYYMMDDXX).
+$plugin->version  = 2019121107;  // The current module version (Date: YYYYMMDDXX).
 $plugin->requires = 2022112801;  // Requires this Moodle version (3.6 and above).
 $plugin->component = 'mod_flashcard'; // Full name of the plugin (used for diagnostics).
-$plugin->release = '4.1.3 (Build 2019121106, NIT: rounds, deck lock, teacher follow-up)';
+$plugin->release = '4.1.4 (Build 2019121107, NIT: mobile web services)';
 $plugin->maturity = MATURITY_STABLE;
 $plugin->supported = [401, 402];
 

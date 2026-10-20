@@ -305,3 +305,5 @@ $string['badgemastered_help'] = 'كل الكلمات في آخر مجموعة و
 $string['badgeontrack'] = 'ملتزم: المراجعة القادمة بعد {$a}';
 $string['badgeontrack_help'] = 'أنهى الطالب كل المراجعات المستحقة، ولا يوجد ما يفعله حتى موعد المراجعة القادمة.';
 $string['badgeontrack_legend'] = 'ملتزم';
+$string['errorfreeplayoff'] = 'المراجعة الحرة غير مفعّلة في هذا النشاط.';
+$string['errorleitneroff'] = 'مراجعة لايتنر غير مفعّلة في هذا النشاط.';

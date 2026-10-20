@@ -144,7 +144,8 @@ final class report_test extends \advanced_testcase {
         $PAGE->set_context(\context_module::instance($this->cm->id));
         $renderer = $PAGE->get_renderer('mod_flashcard');
 
-        $html = $renderer->check_decks($this->flashcard, $this->cm, flashcard_get_deck_status($this->flashcard));
+        $decks = flashcard_get_deck_status($this->flashcard);
+        $html = $renderer->check_decks($this->flashcard, $this->cm, $decks);
 
         $this->assertStringContainsString('nit-fc-deck is-reviewed', $html);
         $this->assertStringContainsString('nit-fc-deck__wait', $html);
