@@ -3,6 +3,8 @@
  *
  *  - #nit-instant-student : subject picker → searching countdown → straight into the room.
  *  - #nit-instant-teacher : "Available now" switch.
+ *  - A student with an open request, on any other page: a floating box (searching / the tutor who
+ *    accepted — Start lesson / Decline), so they can look at the tutor's profile and still confirm.
  *  - Online teachers (any page): polls every few seconds and pops up each request with
  *    Accept / Decline; Accept opens the room.
  *
@@ -73,6 +75,39 @@
         }
     }
 
+    function stars(r, n) {
+        return n ? '★ ' + r.toFixed(1) + ' (' + n + ')' : esc(S.norating);
+    }
+
+    // The corner where prompts and the student's request box stack (newest at the bottom).
+    function floatHost() {
+        var host = document.getElementById('nit-ix-stack');
+        if (!host) {
+            host = el('<div id="nit-ix-stack" class="nit-ix-stack"></div>');
+            document.body.appendChild(host);
+        }
+        return host;
+    }
+
+    // A countdown bar: shrinks from full to empty over `seconds`.
+    function bar(seconds) {
+        return '<div class="nit-ix-bar"><span style="animation-duration:' + Math.max(1, seconds) + 's"></span></div>';
+    }
+
+    // The tutor who accepted, with Start lesson / Decline (used in the page and in the floating box).
+    function acceptedHtml(st) {
+        var t = st.teacher;
+        return '<div class="nit-ix-head nit-ix-head--ok"><span class="nit-ix-icon">✓</span><strong>' +
+            esc(S.acceptedtitle.replace('{$a}', t.name)) + '</strong></div><div class="nit-ix-body">' +
+            '<div class="nit-ix-meta"><span>' + stars(t.rating, t.ratingcount) + '</span><span class="nit-ix-chip">' +
+            esc(S.flex.replace('{$a}', t.flex)) + '</span><span>' + esc(S.minutes.replace('{$a}', st.duration)) +
+            '</span><a href="' + esc(t.profileurl) + '">' + esc(S.profile) + '</a></div>' +
+            '<p class="nit-ix-muted">' + esc(S.confirmin.replace('{$a}', st.confirmsecondsleft)) + '</p>' +
+            '<div class="nit-ix-actions"><button class="btn btn-success" data-confirm>' + esc(S.startlesson) +
+            '</button><button class="btn btn-outline-secondary" data-reject>' + esc(S.decline) + '</button></div>' +
+            '<div class="nit-ix-error" data-error></div></div>' + bar(st.confirmsecondsleft);
+    }
+
     // ── Realtime (notify-ws) ───────────────────────────────────────────────
     var listeners = [];
     var live = false;
@@ -110,6 +145,24 @@
         document.head.appendChild(script);
     }
 
+    // Start lesson / Decline on an accepted box. `after` reloads the state when confirming fails.
+    function bindAccepted(root, st, after) {
+        root.querySelector('[data-confirm]').addEventListener('click', function(e) {
+            e.target.disabled = true;
+            call('confirm', {requestid: st.id}).then(function(d) {
+                window.location.href = d.joinurl;
+            }).catch(function(err) {
+                e.target.disabled = false;
+                root.querySelector('[data-error]').textContent = err.message;
+                setTimeout(after, 2500);
+            });
+        });
+        root.querySelector('[data-reject]').addEventListener('click', function(e) {
+            e.target.disabled = true;
+            call('reject', {requestid: st.id}).then(after, after);
+        });
+    }
+
     // ── Student ────────────────────────────────────────────────────────────
     function student(root) {
         var timer = null;
@@ -119,10 +172,6 @@
 
         function card(inner, cls) {
             return '<div class="nit-instant card p-3 mb-3 ' + (cls || '') + '">' + inner + '</div>';
-        }
-
-        function stars(r, n) {
-            return n ? '★ ' + r.toFixed(1) + ' (' + n + ')' : esc(S.norating);
         }
 
         // ── 1. Choose year, subject, kind, max price; see the tutors ──
@@ -325,33 +374,18 @@
                 return;
             }
             if (st.status === 'accepted' && st.teacher) {
-                var t = st.teacher;
-                root.innerHTML = card('<h3 class="h5">' + esc(S.acceptedtitle.replace('{$a}', t.name)) + '</h3>' +
-                    '<p class="mb-2">' + stars(t.rating, t.ratingcount) + ' · <strong>' + esc(S.flex.replace('{$a}', t.flex)) +
-                    '</strong> · ' + esc(S.minutes.replace('{$a}', st.duration)) + ' · <a href="' + esc(t.profileurl) +
-                    '" target="_blank">' + esc(S.profile) + '</a></p><p class="small text-muted">' +
-                    esc(S.confirmin.replace('{$a}', st.confirmsecondsleft)) + '</p>' +
-                    '<button class="btn btn-success me-2" data-confirm>' + esc(S.startlesson) + '</button>' +
-                    '<button class="btn btn-outline-secondary" data-reject>' + esc(S.decline) + '</button>',
-                    'border-success');
-                root.querySelector('[data-confirm]').addEventListener('click', function(e) {
-                    e.target.disabled = true;
-                    call('confirm', {requestid: st.id}).then(function(d) {
-                        window.location.href = d.joinurl;
-                    }).catch(function(err) {
-                        e.target.disabled = false;
-                        load();
-                        root.querySelector('[data-error]') && (root.querySelector('[data-error]').textContent = err.message);
-                    });
-                });
-                root.querySelector('[data-reject]').addEventListener('click', function() {
-                    call('reject', {requestid: st.id}).then(searching);
-                });
+                var key = st.id + ':' + st.teacher.id;
+                if (root.getAttribute('data-shown') !== key) { // Keep the countdown bar running between polls.
+                    root.setAttribute('data-shown', key);
+                    root.innerHTML = '<div class="nit-ix-box">' + acceptedHtml(st) + '</div>';
+                    bindAccepted(root, st, load);
+                }
                 timer = setTimeout(function() {
                     call('status', {requestid: st.id}).then(searching).catch(load);
-                }, 2000);
+                }, live ? 10000 : 2000);
                 return;
             }
+            root.removeAttribute('data-shown');
             if (st.status !== 'searching') {
                 root.innerHTML = card('<h3 class="h5">' + esc(st.status === 'cancelled' ? S.cancelled : S.expired) +
                     '</h3><p class="text-muted mb-2">' + esc(st.targeted ? S.targetexpired : S.expiredhelp) + '</p>' +
@@ -360,12 +394,12 @@
                 root.querySelector('[data-again]').addEventListener('click', load);
                 return;
             }
-            root.innerHTML = card('<h3 class="h5">' + esc(st.targeted ? S.askingone : S.searching) + '</h3><p class="mb-2"><bdi>' +
-                esc(st.subject) + '</bdi> · ' + esc(S.asking.replace('{$a}', st.teachers)) + ' · <span data-left>' +
-                st.secondsleft + '</span>s</p><div class="progress mb-2" style="height:6px"><div class="progress-bar ' +
-                'progress-bar-striped progress-bar-animated" style="width:100%"></div></div>' +
-                '<button class="btn btn-outline-secondary btn-sm" data-cancel>' + esc(S.cancel) + '</button>',
-                'border-primary');
+            root.innerHTML = '<div class="nit-ix-box"><div class="nit-ix-head"><span class="nit-ix-icon nit-ix-spin">◌</span>' +
+                '<strong>' + esc(st.targeted ? S.askingone : S.searching) + '</strong><span class="nit-ix-timer">' +
+                st.secondsleft + 's</span></div><div class="nit-ix-body"><div class="nit-ix-meta"><span><bdi>' +
+                esc(st.subject) + '</bdi></span><span>' + esc(S.asking.replace('{$a}', st.teachers)) + '</span></div>' +
+                '<div class="nit-ix-actions"><button class="btn btn-outline-secondary btn-sm" data-cancel>' + esc(S.cancel) +
+                '</button></div></div><div class="nit-ix-bar nit-ix-bar--busy"><span></span></div></div>';
             root.querySelector('[data-cancel]').addEventListener('click', function() {
                 call('cancel', {requestid: st.id}).then(searching);
             });
@@ -390,17 +424,115 @@
         load();
     }
 
+    // ── Student, any other page: the open request in a floating box ─────────
+    function studentFloat(requestid) {
+        var box = null;
+        var timer = null;
+        var shownkey = '';
+
+        function close() {
+            clearTimeout(timer);
+            if (box) {
+                box.remove();
+                box = null;
+            }
+        }
+
+        // Draw a state; the same state again keeps the box (and its countdown bar) as it is.
+        function show(html, key) {
+            if (key === shownkey && box) {
+                return false;
+            }
+            shownkey = key;
+            if (!box) {
+                box = el('<div class="nit-ix-box nit-ix-float" role="alertdialog"></div>');
+                floatHost().appendChild(box);
+            }
+            box.innerHTML = html;
+            var x = box.querySelector('[data-close]');
+            if (x) {
+                x.addEventListener('click', close);
+            }
+            return true;
+        }
+
+        function next() {
+            timer = setTimeout(refresh, live ? 10000 : 3000);
+        }
+
+        function refresh() {
+            clearTimeout(timer);
+            call('status', {requestid: requestid}).then(render).catch(close);
+        }
+
+        function closeBtn() {
+            return '<button type="button" class="nit-ix-x" data-close aria-label="' + esc(S.close) + '">×</button>';
+        }
+
+        function render(st) {
+            if (st.status === 'accepted' && st.teacher) {
+                if (show(acceptedHtml(st), 'a' + st.teacher.id)) {
+                    beep();
+                    bindAccepted(box, st, refresh);
+                }
+                next();
+            } else if (st.status === 'searching') {
+                if (show('<div class="nit-ix-head"><span class="nit-ix-icon nit-ix-spin">◌</span><strong>' +
+                        esc(st.targeted ? S.askingone : S.searching) + '</strong></div><div class="nit-ix-body">' +
+                        '<div class="nit-ix-meta"><span><bdi>' + esc(st.subject) + '</bdi></span><span>' +
+                        esc(S.asking.replace('{$a}', st.teachers)) + '</span></div><div class="nit-ix-actions">' +
+                        '<a class="btn btn-outline-primary btn-sm" href="' + esc(C.bookurl) + '">' + esc(S.backtorequest) +
+                        '</a><button class="btn btn-outline-secondary btn-sm" data-cancel>' + esc(S.cancel) +
+                        '</button></div></div>', 's' + st.teachers)) {
+                    box.querySelector('[data-cancel]').addEventListener('click', function(e) {
+                        e.target.disabled = true;
+                        call('cancel', {requestid: requestid}).then(render, close);
+                    });
+                }
+                next();
+            } else if (st.status === 'matched' && st.lessonid) {
+                // This tab is in front: go in. A tab in the background only offers the link (no double join).
+                if (!document.hidden) {
+                    window.location.href = C.joinurl + st.lessonid;
+                    return;
+                }
+                show('<div class="nit-ix-head nit-ix-head--ok"><span class="nit-ix-icon">✓</span><strong>' +
+                    esc(S.matchedhere) + '</strong>' + closeBtn() + '</div><div class="nit-ix-body"><div class="nit-ix-actions">' +
+                    '<a class="btn btn-success" href="' + esc(C.joinurl + st.lessonid) + '">' + esc(S.joinnow) +
+                    '</a></div></div>', 'm');
+            } else {
+                show('<div class="nit-ix-head nit-ix-head--off"><strong>' +
+                    esc(st.status === 'cancelled' ? S.cancelled : S.expired) + '</strong>' + closeBtn() + '</div>' +
+                    '<div class="nit-ix-body"><p class="nit-ix-muted">' + esc(st.targeted ? S.targetexpired : S.expiredhelp) +
+                    '</p><div class="nit-ix-actions"><a class="btn btn-primary btn-sm" href="' + esc(C.bookurl) + '">' +
+                    esc(st.targeted ? S.askallinstead : S.again) + '</a></div></div>', 'x');
+            }
+        }
+
+        onSignal(function(p) {
+            if (p.what === 'status' && p.requestid === requestid) {
+                refresh();
+            }
+        });
+        refresh();
+    }
+
     // ── Teacher switch ─────────────────────────────────────────────────────
     function teacherSwitch(root) {
         function draw(online) {
-            root.innerHTML = '<div class="nit-instant card p-3 mb-3"><div class="form-check form-switch">' +
-                '<input class="form-check-input" type="checkbox" id="nit-instant-online"' + (online ? ' checked' : '') + '>' +
-                '<label class="form-check-label fw-bold" for="nit-instant-online">' + esc(S.available) + '</label></div>' +
-                '<p class="text-muted mb-0 mt-1">' + esc(S.availablehelp) + '</p>' +
-                '<div class="form-check mt-2"><input class="form-check-input" type="checkbox" id="nit-instant-oncall"' +
-                (C.oncall ? ' checked' : '') + '><label class="form-check-label" for="nit-instant-oncall">' +
-                esc(S.oncall) + '</label><div class="small text-muted">' + esc(S.oncallhelp) + '</div></div>' +
-                '<div class="text-danger mt-2" data-error></div></div>';
+            root.innerHTML = '<div class="nit-ix-avail' + (online ? ' is-on' : '') + '">' +
+                '<div class="nit-ix-avail__main"><span class="nit-ix-avail__icon" aria-hidden="true">⚡</span>' +
+                '<div class="nit-ix-avail__text"><label class="nit-ix-avail__title" for="nit-instant-online">' +
+                esc(S.available) + '</label><span class="nit-ix-avail__status"><i></i><span data-statustext>' +
+                esc(online ? S.onlinestatus : S.offlinestatus) + '</span></span></div>' +
+                '<div class="form-check form-switch nit-ix-switch"><input class="form-check-input" type="checkbox" ' +
+                'role="switch" id="nit-instant-online"' + (online ? ' checked' : '') + '></div></div>' +
+                '<p class="nit-ix-muted">' + esc(S.availablehelp) + '</p>' +
+                '<div class="nit-ix-avail__oncall"><div class="form-check form-switch"><input class="form-check-input" ' +
+                'type="checkbox" role="switch" id="nit-instant-oncall"' + (C.oncall ? ' checked' : '') + '>' +
+                '<label class="form-check-label" for="nit-instant-oncall">' + esc(S.oncall) + '</label></div>' +
+                '<div class="nit-ix-muted small">' + esc(S.oncallhelp) + '</div></div>' +
+                '<div class="nit-ix-error" data-error></div></div>';
             root.querySelector('#nit-instant-oncall').addEventListener('change', function(e) {
                 call(e.target.checked ? 'oncall' : 'offcall').catch(function(err) {
                     e.target.checked = false;
@@ -411,6 +543,8 @@
                 var on = e.target.checked;
                 call(on ? 'online' : 'offline').then(function() {
                     C.online = on;
+                    root.querySelector('.nit-ix-avail').classList.toggle('is-on', on);
+                    root.querySelector('[data-statustext]').textContent = on ? S.onlinestatus : S.offlinestatus;
                     if (on) {
                         beep(); // Unlocks sound for the prompts that follow.
                         if (window.Notification && Notification.permission === 'default') {
@@ -451,25 +585,23 @@
         if (document.hidden && window.Notification && Notification.permission === 'granted') {
             new Notification(S.prompttitle, {body: o.subject + ' · ' + o.studentname});
         }
-        var box = el('<div class="nit-instant-prompt card shadow p-3" role="alertdialog" data-instant-request="' +
-            o.requestid + '" style="position:fixed;' +
-            'inset-inline-end:16px;bottom:16px;z-index:10050;max-width:360px;width:calc(100% - 32px)">' +
-            '<h3 class="h5 mb-1">' + esc(S.prompttitle) + '</h3>' +
-            '<p class="mb-1"><strong><bdi>' + esc(o.subject) + '</bdi></strong> · <bdi>' + esc(o.studentname) +
-            '</bdi> · <bdi>' + esc(S.minutes.replace('{$a}', o.duration)) + '</bdi></p>' +
-            (o.trial ? '<p class="mb-1"><span class="badge bg-info text-dark">' + esc(S.trialbadge) + '</span></p>' : '') +
-            (o.mode === 'quick' ? '<p class="mb-1"><span class="badge bg-warning text-dark">' + esc(S.quickbadge) +
-                '</span></p>' : '') +
-            '<p class="mb-1"><bdi data-summary>' + esc(o.aisummary || '') + '</bdi></p>' +
-            (o.note ? '<p class="mb-1 text-muted">' + esc(o.note) + '</p>' : '') +
-            (o.photourl ? '<a href="' + esc(o.photourl) + '" target="_blank" rel="noopener"><img src="' + esc(o.photourl) +
-                '" alt="" style="max-width:100%;max-height:160px;border-radius:6px" class="mb-2"></a>' : '') +
-            '<p class="mb-2 small text-muted">' + esc(S.flex.replace('{$a}', o.flex)) + ' · <span data-left>' +
-            o.secondsleft + '</span>s</p><div class="d-flex gap-2">' +
-            '<button class="btn btn-success" data-accept>' + esc(S.accept) + '</button>' +
+        var box = el('<div class="nit-ix-box nit-ix-float nit-instant-prompt" role="alertdialog" data-instant-request="' +
+            o.requestid + '"><div class="nit-ix-head"><span class="nit-ix-icon">⚡</span><strong>' + esc(S.prompttitle) +
+            '</strong><span class="nit-ix-timer"><span data-left>' + o.secondsleft + '</span>s</span></div>' +
+            '<div class="nit-ix-body"><div class="nit-ix-subject"><bdi>' + esc(o.subject) + '</bdi></div>' +
+            '<div class="nit-ix-meta"><span><bdi>' + esc(o.studentname) + '</bdi></span><span>' +
+            esc(S.minutes.replace('{$a}', o.duration)) + '</span><span class="nit-ix-chip">' +
+            esc(S.flex.replace('{$a}', o.flex)) + '</span>' +
+            (o.trial ? '<span class="nit-ix-chip nit-ix-chip--info">' + esc(S.trialbadge) + '</span>' : '') +
+            (o.mode === 'quick' ? '<span class="nit-ix-chip nit-ix-chip--warn">' + esc(S.quickbadge) + '</span>' : '') +
+            '</div><p class="nit-ix-summary"><bdi data-summary>' + esc(o.aisummary || '') + '</bdi></p>' +
+            (o.note ? '<blockquote class="nit-ix-note"><bdi>' + esc(o.note) + '</bdi></blockquote>' : '') +
+            (o.photourl ? '<a href="' + esc(o.photourl) + '" target="_blank" rel="noopener"><img class="nit-ix-photo" src="' +
+                esc(o.photourl) + '" alt=""></a>' : '') +
+            '<div class="nit-ix-actions"><button class="btn btn-success" data-accept>' + esc(S.accept) + '</button>' +
             '<button class="btn btn-outline-secondary" data-decline>' + esc(S.decline) + '</button></div>' +
-            '<div class="text-danger mt-2" data-error></div></div>');
-        document.body.appendChild(box);
+            '<div class="nit-ix-error" data-error></div></div>' + bar(o.secondsleft) + '</div>');
+        floatHost().appendChild(box);
         boxes[o.requestid] = function() {
             clearInterval(tick);
             box.remove();
@@ -491,9 +623,10 @@
             call('accept', {requestid: o.requestid}).then(function(d) {
                 if (d.waiting) {
                     clearInterval(tick);
-                    box.querySelector('[data-accept]').remove();
-                    box.querySelector('[data-decline]').remove();
-                    box.querySelector('[data-error]').className = 'text-success mt-2';
+                    box.querySelector('.nit-ix-actions').remove();
+                    box.querySelector('.nit-ix-timer').remove();
+                    box.querySelector('.nit-ix-bar').remove();
+                    box.querySelector('[data-error]').className = 'nit-ix-waiting';
                     box.querySelector('[data-error]').textContent = S.waitingstudent;
                     return;
                 }
@@ -574,6 +707,9 @@
         var s = document.getElementById('nit-instant-student');
         if (s) {
             student(s);
+        }
+        if (!s && C.request) {
+            studentFloat(C.request);
         }
         var t = document.getElementById('nit-instant-teacher');
         if (t && C.teacher) {

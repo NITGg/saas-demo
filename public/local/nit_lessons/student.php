@@ -71,12 +71,15 @@ $params = [
     'teacher' => optional_param('teacher', 0, PARAM_INT), // "Book a lesson" from a teacher page / the teacher search.
 ];
 echo $OUTPUT->header();
-// Instant lessons: "Get a tutor now" above the teacher list, the "Available now" switch for teachers.
+$context = hub::context((int) $USER->id, $tab, $params);
+// Instant lessons: "Get a tutor now" at the top of the Book tab, the "Available now" switch at the top of
+// the Requests tab. The widget's place is always printed; the script may already be on the page (the theme
+// builds the footer, where an online teacher's prompts script goes, before this content).
+$context['instanthtml'] = '';
 if (($tab === 'book' || $tab === 'teaching') && (new \local_nit_lessons\service\instant_service())->enabled()) {
-    // The widget's place, always; the script may already be on the page (the theme builds the footer,
-    // where an online teacher's prompts script goes, before this content).
-    echo html_writer::div('', '', ['id' => $tab === 'book' ? 'nit-instant-student' : 'nit-instant-teacher']);
-    echo \local_nit_lessons\local\instant_ui::script((int) $USER->id);
+    $slot = $tab === 'book' ? 'nit-instant-student' : 'nit-instant-teacher';
+    $context['instanthtml'] = html_writer::div('', 'nit-ix-slot', ['id' => $slot])
+        . \local_nit_lessons\local\instant_ui::script((int) $USER->id);
 }
-echo $OUTPUT->render_from_template('local_nit_lessons/student_hub', hub::context((int) $USER->id, $tab, $params));
+echo $OUTPUT->render_from_template('local_nit_lessons/student_hub', $context);
 echo $OUTPUT->footer();

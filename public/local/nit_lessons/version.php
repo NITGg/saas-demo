@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_nit_lessons';
-$plugin->version   = 2026102400;        // Instant lessons v2: tutor list, ask one or all, student confirms, on call.
+$plugin->version   = 2026102500;        // Instant lessons: restyled boxes, student confirm box on every page.
 $plugin->requires  = 2024100700;
 $plugin->supported = [405, 502];
 $plugin->maturity  = MATURITY_ALPHA;

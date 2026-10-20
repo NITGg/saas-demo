@@ -63,6 +63,7 @@
 
         {{#isteaching}}
         <section class="nitlx-panel">
+            {{{instanthtml}}}
             {{#notbookable}}
             <p class="nitfin-note nitlx-note">{{#str}}notbookable, local_nit_lessons{{/str}}
                 <a href="{{profileurl}}">{{#str}}teacherprofile, local_nit_lessons{{/str}}</a></p>
@@ -81,6 +82,7 @@
 
         {{#isbook}}
         <section class="nitlx-panel">
+            {{{instanthtml}}}
             <form class="nitlx-toolbar" method="get" action="">
                 <input type="hidden" name="tab" value="book">
                 <input class="nitfin-redeem__input" type="search" name="search" value="{{search}}"
