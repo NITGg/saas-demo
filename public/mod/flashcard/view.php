@@ -28,10 +28,7 @@ require('../../config.php');
 require_once($CFG->dirroot.'/mod/flashcard/lib.php');
 require_once($CFG->dirroot.'/mod/flashcard/locallib.php');
 
-$PAGE->requires->js('/mod/flashcard/js/ufo/ufo.js', true);
 $PAGE->requires->js('/mod/flashcard/js/module.js', false);
-$PAGE->requires->css('/mod/flashcard/players/flowplayer/skin/minimalist.css');
-$PAGE->requires->js('/mod/flashcard/players/flowplayer/flowplayer.js');
 
 $id = optional_param('id', '', PARAM_INT);    // Course Module ID, or.
 $f = optional_param('f', '', PARAM_INT);     // Flashcard ID.

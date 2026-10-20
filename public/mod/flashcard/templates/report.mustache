@@ -27,7 +27,8 @@
     * studentsurl, wordsurl, isstudents, iswords
     * summary, hasstudents, students - [{picture, fullname, started, percent, mastered, total,
       masteredtext, decks [{deck, count, ishard}], hard [{question, answer, tries}], hardcount, unseen,
-      lastseen, isdue, isoverdue, isuptodate, reseturl}]
+      lastseen, badge {class, text, hint}, reseturl}]
+    * legend - [{class, text, hint}] every badge, explained
     * haswords, hasmiddle, words - [{question, answer, hard, learning, mastered, unseen, tries,
       hardpercent, learningpercent, masteredpercent, ishard}]
 
@@ -38,7 +39,7 @@
         "students": [{"fullname": "Student 1", "started": true, "percent": 40, "mastered": 2, "total": 5,
             "decks": [{"deck": 1, "count": 2, "ishard": true}, {"deck": 2, "count": 3}],
             "hard": [{"question": "journey", "answer": "trip", "tries": 3}], "hardcount": 1,
-            "isdue": true, "reseturl": "#"}]
+            "badge": {"class": "is-due", "text": "Review due: deck 1", "hint": "A deck is waiting"}, "reseturl": "#"}]
     }
 }}
 <div class="nit-fc nit-fc-report">
@@ -49,6 +50,17 @@
 
     {{#isstudents}}
     <p class="nit-fc-hint">{{summary}}</p>
+    <details class="nit-fc-legend">
+        <summary>{{#str}}badgelegend, mod_flashcard{{/str}}</summary>
+        <dl>
+            {{#legend}}
+            <div class="nit-fc-legend__row">
+                <dt><span class="nit-fc-badge {{class}}">{{text}}</span></dt>
+                <dd>{{hint}}</dd>
+            </div>
+            {{/legend}}
+        </dl>
+    </details>
     {{^hasstudents}}<p class="nit-fc-hint">{{#str}}nousers, mod_flashcard{{/str}}</p>{{/hasstudents}}
 
     <div class="nit-fc-students">
@@ -60,10 +72,7 @@
                     <div class="nit-fc-student__name" role="heading" aria-level="3">{{fullname}}</div>
                     {{#lastseen}}<span class="nit-fc-student__seen">{{#str}}reportlastseen, mod_flashcard, {{lastseen}}{{/str}}</span>{{/lastseen}}
                 </div>
-                {{#isoverdue}}<span class="nit-fc-badge is-late">{{#str}}reportoverdue, mod_flashcard{{/str}}</span>{{/isoverdue}}
-                {{#isdue}}<span class="nit-fc-badge is-due">{{#str}}reportdue, mod_flashcard{{/str}}</span>{{/isdue}}
-                {{#isuptodate}}<span class="nit-fc-badge is-ok">{{#str}}reportuptodate, mod_flashcard{{/str}}</span>{{/isuptodate}}
-                {{^started}}<span class="nit-fc-badge">{{#str}}notinitialized, mod_flashcard{{/str}}</span>{{/started}}
+                {{#badge}}<span class="nit-fc-badge {{class}}" title="{{hint}}">{{text}}</span>{{/badge}}
             </header>
 
             {{#started}}
@@ -88,13 +97,33 @@
             </div>
 
             <form method="post" action="{{reseturl}}" class="nit-fc-student__reset"
-                  data-confirm="{{#str}}reportresetconfirm, mod_flashcard{{/str}}" onsubmit="return confirm(this.dataset.confirm);">
+                  data-title="{{#str}}reportreset, mod_flashcard{{/str}}"
+                  data-confirm="{{#str}}reportresetconfirmname, mod_flashcard, {{fullname}}{{/str}}"
+                  data-action="{{#str}}reportresetaction, mod_flashcard{{/str}}">
                 <button type="submit" class="btn btn-link">{{#str}}reportreset, mod_flashcard{{/str}}</button>
             </form>
             {{/started}}
         </section>
         {{/students}}
     </div>
+    {{#js}}
+    require(['core/notification'], function(Notification) {
+        document.querySelectorAll('.nit-fc-student__reset').forEach(function(form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                Notification.deleteCancelPromise(form.dataset.title, form.dataset.confirm, form.dataset.action,
+                    {triggerElement: form.querySelector('button')})
+                    .then(function() {
+                        form.submit();
+                        return null;
+                    })
+                    .catch(function() {
+                        return null;
+                    });
+            });
+        });
+    });
+    {{/js}}
     {{/isstudents}}
 
     {{#iswords}}

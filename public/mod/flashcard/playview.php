@@ -31,7 +31,6 @@ defined('MOODLE_INTERNAL') || die();
 
 use mod_flashcard\local\round;
 
-$PAGE->requires->js('/mod/flashcard/players/flowplayer/flowplayer.js');
 
 $deck = required_param('deck', PARAM_INT);
 $deckstable = new moodle_url('/mod/flashcard/view.php', ['id' => $cm->id, 'view' => 'checkdecks']);

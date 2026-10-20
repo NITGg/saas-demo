@@ -152,10 +152,10 @@ final class content_test extends \advanced_testcase {
 
     public function test_deleting_the_activity_deletes_its_content(): void {
         $this->resetAfterTest();
-        [, $cm, $game] = $this->make_activity();
+        [$course, $cm, $game] = $this->make_activity();
         content::save_row(0, $game, $this->quiz_row('Q'));
 
-        course_delete_module($cm->cmid);
+        (new \core_courseformat\local\cmactions($course))->delete($cm->cmid);
 
         $this->assertSame(0, content::count_rows((int) $game->id));
     }

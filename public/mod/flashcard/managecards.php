@@ -53,13 +53,13 @@ if ($cards) {
         if ($flashcard->questionsmediatype == FLASHCARD_MEDIA_IMAGE) {
             $back = $renderer->print_image($flashcard, "questionimagefile/{$card->id}", true);
         } else if ($flashcard->questionsmediatype == FLASHCARD_MEDIA_SOUND) {
-            $back = $renderer->play_sound($flashcard, "questionsoundfile/{$card->id}", 'false', true, "bell_b$i");
+            $back = $renderer->play_sound($flashcard, "questionsoundfile/{$card->id}", 'false', "bell_b$i");
         } else if ($flashcard->questionsmediatype == FLASHCARD_MEDIA_VIDEO) {
-            $back = $renderer->play_video($flashcard, "questionvideofile/{$card->id}", 'false', true, "bell_b$i", true);
+            $back = $renderer->play_video($flashcard, "questionvideofile/{$card->id}", 'false', "bell_b$i", true);
         } else if ($flashcard->questionsmediatype == FLASHCARD_MEDIA_IMAGE_AND_SOUND) {
             $back = $renderer->print_image($flashcard, "questionimagefile/{$card->id}", true);
             $back .= "<br/>";
-            $back = $renderer->play_sound($flashcard, "questionsoundfile/{$card->id}", 'false', true, "bell_b$i");
+            $back = $renderer->play_sound($flashcard, "questionsoundfile/{$card->id}", 'false', "bell_b$i");
         } else {
             $back = format_text($card->questiontext, FORMAT_MOODLE);
         }
@@ -67,13 +67,13 @@ if ($cards) {
         if ($flashcard->answersmediatype == FLASHCARD_MEDIA_IMAGE) {
             $front = $renderer->print_image($flashcard, "answerimagefile/{$card->id}", true);
         } else if ($flashcard->answersmediatype == FLASHCARD_MEDIA_SOUND) {
-            $front = $renderer->play_sound($flashcard, "answersoundfile/{$card->id}", 'false', true, "bell_f$i");
+            $front = $renderer->play_sound($flashcard, "answersoundfile/{$card->id}", 'false', "bell_f$i");
         } else if ($flashcard->answersmediatype == FLASHCARD_MEDIA_VIDEO) {
-            $front = $renderer->play_video($flashcard, "answervideofile/{$card->id}", 'false', true, "bell_f$i", true);
+            $front = $renderer->play_video($flashcard, "answervideofile/{$card->id}", 'false', "bell_f$i", true);
         } else if ($flashcard->answersmediatype == FLASHCARD_MEDIA_IMAGE_AND_SOUND) {
             $front = $renderer->print_image($flashcard, "answerimagefile/{$card->id}", true);
             $front .= "<br/>";
-            $front = $renderer->play_sound($flashcard, "answersoundfile/{$card->id}", 'false', true, "bell_f$i");
+            $front = $renderer->play_sound($flashcard, "answersoundfile/{$card->id}", 'false', "bell_f$i");
         } else {
             $front = format_text($card->answertext, FORMAT_MOODLE);
         }

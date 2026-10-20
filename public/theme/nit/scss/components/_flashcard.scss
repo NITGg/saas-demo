@@ -783,3 +783,81 @@
         background: var(--nit-brand-success, var(--nit-brand-primary));
     }
 }
+
+// --- Sound and video sides (HTML5 players, renderer::play_sound / play_video) --
+
+.nit-fc-media {
+    display: block;
+    max-width: 100%;
+    margin-inline: auto;
+}
+
+.nit-fc-audio {
+    width: min(100%, 320px);
+}
+
+.nit-fc-video {
+    width: 100%;
+    max-height: 360px;
+    border-radius: 12px;
+    background: var(--nit-brand-textprimary);
+
+    &.is-thumb {
+        max-width: 240px;
+        max-height: 140px;
+    }
+}
+
+// A media side has a player, not a word: no giant type, and room for the controls.
+.nit-fc-content:has(.nit-fc-media) {
+    width: 100%;
+    font-size: 1rem;
+}
+
+// --- Badge legend above the students tab ----------------------------------------
+
+.nit-fc-legend {
+    margin-block-end: 1rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--nit-brand-borderprimary);
+    border-radius: 14px;
+    background: var(--nit-brand-surface);
+
+    summary {
+        color: var(--nit-brand-primary);
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    dl {
+        display: grid;
+        gap: 0.6rem;
+        margin: 0.75rem 0 0;
+    }
+
+    dd {
+        margin: 0;
+        color: var(--nit-brand-textsecondary);
+        font-size: 0.875rem;
+    }
+}
+
+.nit-fc-legend__row {
+    display: grid;
+    grid-template-columns: 9rem minmax(0, 1fr);
+    align-items: center;
+    gap: 0.75rem;
+
+    dt {
+        margin: 0;
+    }
+
+    @media (max-width: 575.98px) {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0.25rem;
+    }
+}
+
+.nit-fc-badge {
+    cursor: help;
+}

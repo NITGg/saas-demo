@@ -1,13 +1,18 @@
 /**
+ * Flash Card Set — card flipping for the Leitner (play) and free play screens.
  *
+ * view.php loads this file on every flashcard page, but only the play screens print the
+ * globals it reads (maxitems, and the free play counters currentitem / remaining) — so
+ * everything below is guarded and the other pages do not throw.
  *
+ * A card side is shown by clearing its inline display (""), so the theme decides how it
+ * lays out (theme_nit scss/components/_flashcard.scss). Sound and video sides use the
+ * browser's own <audio>/<video>; the upstream Flash (dewplayer, QuickTime) and flowplayer
+ * calls are gone. Hiding a side pauses its media; showing one starts it only when the
+ * activity's "Start sounds automatically" is on (data-autoplay="1").
  */
 // jshint undef:false, unused:false
 
-// view.php loads this file on every flashcard page, but only the play screens print the
-// globals it reads (maxitems, qtype, atype) — guard so the other pages do not throw.
-// Cards are shown by clearing their inline display (""), so the theme decides how they lay
-// out; the original forced "table-cell".
 var cards = [];
 if (typeof maxitems !== 'undefined') {
     for (var i = 0; i < maxitems; i++) {
@@ -15,81 +20,91 @@ if (typeof maxitems !== 'undefined') {
     }
 }
 
-function clicked(type, item) {
-    obj = document.getElementById(type + item);
-    obj.style.display = "none";
-    if (type === 'f') {
-        oldtype = 'b';
-    } else {
-        oldtype = 'f';
+/**
+ * Pause every player inside a side.
+ *
+ * @param {HTMLElement} side
+ */
+function nitFcPause(side) {
+    if (!side) {
+        return;
     }
+    side.querySelectorAll('audio, video').forEach(function(media) {
+        media.pause();
+    });
+}
 
-    document.getElementById(oldtype + item).style.display = "";
+/**
+ * Show a side, starting its media when the activity asks for it.
+ *
+ * @param {HTMLElement} side
+ */
+function nitFcShow(side) {
+    if (!side) {
+        return;
+    }
+    side.style.display = "";
+    side.querySelectorAll('audio[data-autoplay="1"], video[data-autoplay="1"]').forEach(function(media) {
+        var played = media.play();
+        if (played && played.catch) {
+            // The browser may refuse autoplay before any user gesture; the controls remain.
+            played.catch(function() {});
+        }
+    });
+}
 
-    if (type === 'f') {
-        if (atype > 2) {
-            qtobj = document.getElementById('bell_b' + item + '_player');
-            qtobj.SetControllerVisible(true);
-        }
-        if (atype === 4) {
-            api = flowplayer(1);
-            api.play();
-        }
+/**
+ * Hide a side and stop what it plays.
+ *
+ * @param {HTMLElement} side
+ */
+function nitFcHide(side) {
+    if (!side) {
+        return;
     }
-    if (type === 'b') {
-        if (qtype === 2 || atype === 3) {
-            qtobj = document.getElementById('bell_f' + item + '_player');
-            qtobj.SetControllerVisible(true);
-        }
-        if (qtype === 4) {
-            api = flowplayer();
-            api.play();
-        }
-    }
+    nitFcPause(side);
+    side.style.display = "none";
 }
 
 // Free play only.
 
+function clicked(type, item) {
+    var other = (type === 'f') ? 'b' : 'f';
+    nitFcHide(document.getElementById(type + item));
+    nitFcShow(document.getElementById(other + item));
+}
+
 function next_card() {
-    document.getElementById('f' + currentitem).style.display = "none";
-    document.getElementById('b' + currentitem).style.display = "none";
+    nitFcHide(document.getElementById('f' + currentitem));
+    nitFcHide(document.getElementById('b' + currentitem));
     do {
         currentitem++;
         if (currentitem >= maxitems) {
             currentitem = 0;
         }
     } while (cards[currentitem] !== true);
-
-    document.getElementById('f' + currentitem).style.display = "";
-    qtobj = document.getElementById('bell_f' + currentitem + '_player');
-    if (qtobj) {
-        qtobj.SetControllerVisible(true);
-    }
+    nitFcShow(document.getElementById('f' + currentitem));
 }
 
 function previous_card() {
-    document.getElementById('f' + currentitem).style.display = "none";
-    document.getElementById('b' + currentitem).style.display = "none";
+    nitFcHide(document.getElementById('f' + currentitem));
+    nitFcHide(document.getElementById('b' + currentitem));
     do {
         currentitem--;
         if (currentitem < 0) {
             currentitem = maxitems - 1;
         }
     } while (cards[currentitem] !== true);
-    document.getElementById('f' + currentitem).style.display = "";
-    qtobj = document.getElementById('bell_f' + currentitem + '_player');
-    if (qtobj) {
-        qtobj.SetControllerVisible(true);
-    }
+    nitFcShow(document.getElementById('f' + currentitem));
 }
 
 function remove_card() {
     remaining--;
     document.getElementById('remain').innerHTML = remaining;
     if (remaining === 0) {
-        document.getElementById('f' + currentitem).style.display = "none";
-        document.getElementById('b' + currentitem).style.display = "none";
-        document.getElementById('finished').style.display = "";
+        nitFcHide(document.getElementById('f' + currentitem));
+        nitFcHide(document.getElementById('b' + currentitem));
+        nitFcShow(document.getElementById('finished'));
         document.getElementById('next').disabled = true;
         document.getElementById('previous').disabled = true;
         document.getElementById('remove').disabled = true;
@@ -102,60 +117,13 @@ function remove_card() {
 // Leitner play only.
 
 function togglecard() {
-    var questionobj = document.getElementById("questiondiv");
-    var answerobj = document.getElementById("answerdiv");
-    var api;
-    if (questionobj.style.display === "none") {
-        questionobj.style.display = "";
-
-        // Controls the quicktime player switching.
-        answerobj.style.display = "none";
-        if (atype === 2 || atype === 3) {
-            bellobj = document.getElementById('bell_a_player');
-            bellobj.Stop();
-            bellobj.SetControllerVisible(false);
-        }
-        if (atype === 4) {
-            api = $('#bell_a_player').data('flowplayer');
-            api.stop();
-            api.unload();
-        }
-        if (qtype === 2 || atype === 3) {
-            bellobj = document.getElementById('bell_q_player');
-            bellobj.SetControllerVisible(true);
-        }
-        if (qtype === 4) {
-            api = $('#bell_q_player').data('flowplayer');
-            api.bind("error", function(e, api) {
-                 alert(e.code + ' ' + e.message);
-            });
-            api.play();
-        }
+    var question = document.getElementById("questiondiv");
+    var answer = document.getElementById("answerdiv");
+    if (question.style.display === "none") {
+        nitFcHide(answer);
+        nitFcShow(question);
     } else {
-        questionobj.style.display = "none";
-        answerobj.style.display = "";
-
-        // Controls the quicktime player switching.
-        if (atype === 2 || atype === 3) {
-            bellobj = document.getElementById('bell_a_player');
-            bellobj.SetControllerVisible(true);
-        }
-        if (atype === 4) {
-            api = $('#bell_a_player').data('flowplayer');
-            api.bind("error", function(e, api) {
-                 alert(e.code + ' ' + e.message);
-            });
-            api.play();
-        }
-        if (qtype === 2 || atype === 3) {
-            bellobj = document.getElementById('bell_q_player');
-            bellobj.Stop();
-            bellobj.SetControllerVisible(false);
-        }
-        if (qtype === 4) {
-            api = $('#bell_q_player').data('flowplayer');
-            api.stop();
-            api.unload();
-        }
+        nitFcHide(question);
+        nitFcShow(answer);
     }
 }

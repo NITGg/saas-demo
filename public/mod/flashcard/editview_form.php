@@ -84,18 +84,18 @@ class CardEdit_Form extends moodleform {
         $mediatype = $this->_customdata['flashcard']->$key;
 
         if ($mediatype == FLASHCARD_MEDIA_IMAGE) {
-            $options = array('maxfiles' => 1, 'maxbytes' => $COURSE->maxbytes, 'accepted_types' => array('.jpg', '.png', '.gif'));
+            $options = array('maxfiles' => 1, 'maxbytes' => $COURSE->maxbytes, 'accepted_types' => array('web_image'));
             $mform->addElement('filepicker', $sideprefix.$podid, '', null, $options);
         } else if ($mediatype == FLASHCARD_MEDIA_SOUND) {
-            $options = array('maxfiles' => 1, 'maxbytes' => $COURSE->maxbytes, 'accepted_types' => array('.mp3', '.swf'));
+            $options = array('maxfiles' => 1, 'maxbytes' => $COURSE->maxbytes, 'accepted_types' => array('web_audio'));
             $mform->addElement('filepicker', $sideprefix.$podid, '', null, $options);
         } else if ($mediatype == FLASHCARD_MEDIA_VIDEO) {
-            $options = array('maxfiles' => 1, 'maxbytes' => $COURSE->maxbytes, 'accepted_types' => array('.mp4', '.flv'));
+            $options = array('maxfiles' => 1, 'maxbytes' => $COURSE->maxbytes, 'accepted_types' => array('web_video'));
             $mform->addElement('filepicker', $sideprefix.$podid, '', null, $options);
         } else if ($mediatype == FLASHCARD_MEDIA_IMAGE_AND_SOUND) {
-            $options = array('maxbytes' => $COURSE->maxbytes, 'accepted_types' => array('.jpg', '.png', '.gif'));
+            $options = array('maxbytes' => $COURSE->maxbytes, 'accepted_types' => array('web_image'));
             $mform->addElement('filepicker', $sideprefix.'i'.$podid, get_string('image', 'flashcard'), null, $options);
-            $options = array('maxbytes' => $COURSE->maxbytes, 'accepted_types' => array('.mp3', '.swf'));
+            $options = array('maxbytes' => $COURSE->maxbytes, 'accepted_types' => array('web_audio'));
             $mform->addElement('filepicker', $sideprefix.'s'.$podid, get_string('sound', 'flashcard'), null, $options);
         } else {
             $mform->addElement('textarea', $sideprefix.$podid, '', array('cols' => 60, 'rows' => 4));

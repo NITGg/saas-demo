@@ -191,19 +191,19 @@ function flashcard_get_deck_status(&$flashcard, $userid = 0) {
 
     if ($dk1 > 0) {
         $status->decks[0]->lastaccess = flashcard_get_lastaccessed($flashcard, 1, $userid);
-        $status->decks[0]->reactivate = (time() > ($status->decks[0]->lastaccess + $flashcard->deck1_delay * HOURSECS));
+        $status->decks[0]->reactivate = (time() >= ($status->decks[0]->lastaccess + $flashcard->deck1_delay * HOURSECS));
     }
     if ($dk2 > 0) {
         $status->decks[1]->lastaccess = flashcard_get_lastaccessed($flashcard, 2, $userid);
-        $status->decks[1]->reactivate = (time() > ($status->decks[1]->lastaccess + $flashcard->deck2_delay * HOURSECS));
+        $status->decks[1]->reactivate = (time() >= ($status->decks[1]->lastaccess + $flashcard->deck2_delay * HOURSECS));
     }
     if ($flashcard->decks >= 3 && $dk3 > 0) {
         $status->decks[2]->lastaccess = flashcard_get_lastaccessed($flashcard, 3, $userid);
-        $status->decks[2]->reactivate = (time() > ($status->decks[2]->lastaccess + $flashcard->deck3_delay * HOURSECS));
+        $status->decks[2]->reactivate = (time() >= ($status->decks[2]->lastaccess + $flashcard->deck3_delay * HOURSECS));
     }
     if ($flashcard->decks >= 4 && $dk4 > 0) {
         $status->decks[3]->lastaccess = flashcard_get_lastaccessed($flashcard, 4, $userid);
-        $status->decks[3]->reactivate = (time() > ($status->decks[3]->lastaccess + $flashcard->deck4_delay * HOURSECS));
+        $status->decks[3]->reactivate = (time() >= ($status->decks[3]->lastaccess + $flashcard->deck4_delay * HOURSECS));
     }
 
     return $status;

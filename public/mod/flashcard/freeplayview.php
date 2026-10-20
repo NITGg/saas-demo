@@ -78,6 +78,7 @@ if ($flashcard->flipdeck) {
     $flashcard->questionsmediatype = $tmp;
 }
 
+$autoplay = $flashcard->audiostart ? 'true' : 'false';
 $fliphint = '<span class="nit-fc-flip">' . get_string('fliphint', 'flashcard') . '</span>';
 $keyflip = "if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); this.click(); }";
 
@@ -117,13 +118,13 @@ foreach ($subquestions as $subquestion) {
     if ($flashcard->questionsmediatype == FLASHCARD_MEDIA_IMAGE) {
         echo $renderer->print_image($flashcard, "{$back}imagefile/{$subquestion->id}");
     } else if ($flashcard->questionsmediatype == FLASHCARD_MEDIA_SOUND) {
-        echo $renderer->play_sound($flashcard, "{$back}soundfile/{$subquestion->id}", 'false', false, "bell_b$i");
+        echo $renderer->play_sound($flashcard, "{$back}soundfile/{$subquestion->id}", $autoplay, "bell_b$i");
     } else if ($flashcard->questionsmediatype == FLASHCARD_MEDIA_VIDEO) {
-        echo $renderer->play_video($flashcard, "{$back}videofile/{$subquestion->id}", $autoplay, false, "bell_b$i");
+        echo $renderer->play_video($flashcard, "{$back}videofile/{$subquestion->id}", $autoplay, "bell_b$i");
     } else if ($flashcard->questionsmediatype == FLASHCARD_MEDIA_IMAGE_AND_SOUND) {
         echo $renderer->print_image($flashcard, "{$back}imagefile/{$subquestion->id}");
         echo "<br/>";
-        echo $renderer->play_sound($flashcard, "{$back}soundfile/{$subquestion->id}", $autoplay, false, "bell_b$i");
+        echo $renderer->play_sound($flashcard, "{$back}soundfile/{$subquestion->id}", $autoplay, "bell_b$i");
     } else {
         echo format_text($subquestion->questiontext, FORMAT_HTML);
     }
@@ -142,13 +143,13 @@ foreach ($subquestions as $subquestion) {
     if ($flashcard->answersmediatype == FLASHCARD_MEDIA_IMAGE) {
         echo $renderer->print_image($flashcard, "{$front}imagefile/{$subquestion->id}");
     } else if ($flashcard->answersmediatype == FLASHCARD_MEDIA_SOUND) {
-        echo $renderer->play_sound($flashcard, "{$front}soundfile/{$subquestion->id}", 'false', false, "bell_f$i");
+        echo $renderer->play_sound($flashcard, "{$front}soundfile/{$subquestion->id}", $autoplay, "bell_f$i");
     } else if ($flashcard->answersmediatype == FLASHCARD_MEDIA_VIDEO) {
-        echo $renderer->play_video($flashcard, "{$front}videofile/{$subquestion->id}", $autoplay, false, "bell_f$i");
+        echo $renderer->play_video($flashcard, "{$front}videofile/{$subquestion->id}", $autoplay, "bell_f$i");
     } else if ($flashcard->answersmediatype == FLASHCARD_MEDIA_IMAGE_AND_SOUND) {
         echo $renderer->print_image($flashcard, "{$front}imagefile/{$subquestion->id}");
         echo "<br/>";
-        echo $renderer->play_sound($flashcard, "{$front}soundfile/{$subquestion->id}", $autoplay, false, "bell_f$i");
+        echo $renderer->play_sound($flashcard, "{$front}soundfile/{$subquestion->id}", $autoplay, "bell_f$i");
     } else {
         echo format_text($subquestion->answertext, FORMAT_HTML);
     }

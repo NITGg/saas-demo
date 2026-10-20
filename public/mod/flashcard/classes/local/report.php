@@ -66,7 +66,8 @@ class report {
      * One row per learner.
      *
      * @param int $groupid
-     * @return array [{user, started, total, decks[], mastered, percent, hard[], unseen, lastseen, isdue, isoverdue}]
+     * @return array [{user, started, total, decks[], mastered, percent, hard[], unseen, lastseen, isdue, isoverdue,
+     *                  duedecks[] (due deck numbers), latedays (worst lateness), nextwait (seconds to the next review)}]
      */
     public function students(int $groupid = 0): array {
         global $DB;
@@ -125,6 +126,9 @@ class report {
                     }
                 }
             }
+            $row->duedecks = [];
+            $row->latedays = 0;
+            $row->nextwait = null;
             if ($row->started) {
                 $row->mastered = $row->decks[$decks] ?? 0;
                 $row->percent = $total ? (int) round(100 * $row->mastered / $total) : 0;
@@ -135,13 +139,17 @@ class report {
                     $wait = flashcard_deck_wait($this->flashcard, $deck, (int) $user->id);
                     if ($wait === 0) {
                         $row->isdue = true;
+                        $row->duedecks[] = $deck;
                         // Overdue: the deck has been waiting for the student longer than a day.
                         $delaykey = "deck{$deck}_delay";
                         $since = time() - (int) flashcard_get_lastaccessed($this->flashcard, $deck, (int) $user->id)
                             - (int) $this->flashcard->$delaykey * HOURSECS;
                         if ($since > DAYSECS) {
                             $row->isoverdue = true;
+                            $row->latedays = max($row->latedays, (int) floor($since / DAYSECS));
                         }
+                    } else if ($wait !== null) {
+                        $row->nextwait = ($row->nextwait === null) ? $wait : min($row->nextwait, $wait);
                     }
                 }
             }

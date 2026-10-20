@@ -282,91 +282,87 @@ class mod_flashcard_renderer extends plugin_renderer_base {
     }
 
     /**
-     * plays a soundcard
-     * @param reference $flashcard
-     * @param string $soundname the local name of the sound file. Should be wav or any playable sound format.
-     * @param string $autostart if 'true' the sound starts playing immediately
+     * The stored file of a card side, with its URL.
+     *
+     * @param stdClass $flashcard
+     * @param string $fileid "<filearea>/<itemid>"
+     * @return array [stored_file|null, string url]
      */
-    public function play_sound(&$flashcard, $soundfileid, $autostart = 'false', $htmlname = '') {
-        global $CFG;
-
-        $fs = get_file_storage();
-
-        // New way : probably no effective fieldids storage needed anymore.
+    protected function card_file($flashcard, string $fileid): array {
         $cm = get_coursemodule_from_instance('flashcard', $flashcard->id);
         $context = context_module::instance($cm->id);
-        $contextid = $context->id;
-        list($filearea, $itemid) = explode('/', $soundfileid);
-        $soundfiles = $fs->get_area_files($context->id, 'mod_flashcard', $filearea, $itemid);
-
-        if (empty($soundfiles)) {
-            $soundhtml = $this->output->pix_icon('notfound', '', 'flashcard');
-            return $soundhtml;
+        [$filearea, $itemid] = explode('/', $fileid);
+        $files = get_file_storage()->get_area_files($context->id, 'mod_flashcard', $filearea, $itemid, 'id', false);
+        if (!$files) {
+            return [null, ''];
         }
-
-        $soundfile = array_pop($soundfiles);
-        $filename = $soundfile->get_filename();
-
-        $magic = rand(0, 100000);
-        if ($htmlname == '') {
-            $htmlname = "bell_{$magic}";
-        }
-
-        $soundfileurl = $CFG->wwwroot."/pluginfile.php/{$contextid}/mod_flashcard/{$filearea}/{$itemid}/{$filename}";
-
-        if (!preg_match('/\.mp3$/i', $filename)) {
-            $soundhtml = "<embed src=\"{$soundfileurl}\"
-                                 autostart=\"{$autostart}\"
-                                 hidden=\"false\"
-                                 id=\"{$htmlname}_player\"
-                                 height=\"20\"
-                                 width=\"200\" />";
-            $soundhtml .= "<a href=\"{$soundfileurl}\"
-                              autostart=\"{$autostart}\"
-                              hidden=\"false\"
-                              id=\"{$htmlname}\"
-                              height=\"20\"
-                              width=\"200\" />";
-        } else {
-            $soundhtml = flashcard_mp3_dewplayer($flashcard, $soundfileurl, $htmlname);
-        }
-
-        return $soundhtml;
+        $file = array_pop($files);
+        $url = moodle_url::make_pluginfile_url($context->id, 'mod_flashcard', $filearea, $itemid,
+            '/', $file->get_filename());
+        return [$file, $url->out(false)];
     }
 
+    /**
+     * plays a soundcard
+     *
+     * The browser's own <audio> player. The upstream one was a Flash applet (dewplayer) for
+     * mp3 and an <embed> for anything else; no current browser runs either.
+     *
+     * @param reference $flashcard
+     * @param string $soundfileid "<filearea>/<itemid>"
+     * @param string $autostart 'true' to start playing as soon as the side is shown
+     * @param string $htmlname id prefix, kept for the "_player" id the old scripts used
+     */
+    public function play_sound(&$flashcard, $soundfileid, $autostart = 'false', $htmlname = '') {
+        [$file, $url] = $this->card_file($flashcard, $soundfileid);
+        if (!$file) {
+            return $this->output->pix_icon('notfound', '', 'flashcard');
+        }
+        $attrs = [
+            'class' => 'nit-fc-media nit-fc-audio',
+            'controls' => 'controls',
+            'preload' => 'metadata',
+            'src' => $url,
+            'data-autoplay' => ($autostart === 'true' || $autostart === true) ? 1 : 0,
+        ];
+        if ($htmlname) {
+            $attrs['id'] = $htmlname . '_player';
+        }
+        // Clicks on the player must not flip the card.
+        $attrs['onclick'] = 'event.stopPropagation();';
+        return html_writer::tag('audio', html_writer::link($url, s($file->get_filename())), $attrs);
+    }
+
+    /**
+     * plays a video card
+     *
+     * The browser's own <video> player. The upstream flowplayer needed a global jQuery
+     * (gone in Moodle 5) and Flash as a fallback, so it never started.
+     *
+     * @param reference $flashcard
+     * @param string $videofileid "<filearea>/<itemid>"
+     * @param string $autostart 'true' to start playing as soon as the side is shown
+     * @param string $htmlname id prefix
+     * @param bool $thumb a small preview (card editor)
+     */
     public function play_video(&$flashcard, $videofileid, $autostart = 'false', $htmlname = '', $thumb = false) {
-        global $CFG;
-
-        $fs = get_file_storage();
-
-        // New way : probably no effective fieldids storage needed anymore.
-        $cm = get_coursemodule_from_instance('flashcard', $flashcard->id);
-        $context = context_module::instance($cm->id);
-        $contextid = $context->id;
-        list($filearea, $itemid) = explode('/', $videofileid);
-        $videofiles = $fs->get_area_files($context->id, 'mod_flashcard', $filearea, $itemid);
-
-        if (empty($videofiles)) {
-            $videohtml = $this->output->pix_icon('notfound', '', 'flashcard');
-            return $videohtml;
+        [$file, $url] = $this->card_file($flashcard, $videofileid);
+        if (!$file) {
+            return $this->output->pix_icon('notfound', '', 'flashcard');
         }
-
-        $videofile = array_pop($videofiles);
-        $filename = $videofile->get_filename();
-        $parts = pathinfo($filename);
-        $videotype = $parts['extension'];
-
-        $magic = rand(0, 100000);
-
-        if ($htmlname == '') {
-            $htmlname = "bell_{$magic}";
+        $attrs = [
+            'class' => 'nit-fc-media nit-fc-video' . ($thumb ? ' is-thumb' : ''),
+            'controls' => 'controls',
+            'preload' => 'metadata',
+            'playsinline' => 'playsinline',
+            'data-autoplay' => ($autostart === 'true' || $autostart === true) ? 1 : 0,
+            'onclick' => 'event.stopPropagation();',
+        ];
+        if ($htmlname) {
+            $attrs['id'] = $htmlname . '_player';
         }
-
-        $videofileurl = $CFG->wwwroot."/pluginfile.php/{$contextid}/mod_flashcard/{$filearea}/{$itemid}/{$filename}";
-
-        $videohtml = flashcard_flowplayer($flashcard, $videofileurl, $videotype, $htmlname, $thumb);
-
-        return $videohtml;
+        $source = html_writer::empty_tag('source', ['src' => $url, 'type' => $file->get_mimetype()]);
+        return html_writer::tag('video', $source . html_writer::link($url, s($file->get_filename())), $attrs);
     }
 
     public function print_custom_url(&$flashcard, $filearea, $itemid) {
@@ -718,16 +714,61 @@ class mod_flashcard_renderer extends plugin_renderer_base {
                     'hardcount' => count($hard),
                     'unseen' => $row->unseen,
                     'lastseen' => $row->lastseen ? userdate($row->lastseen, get_string('strftimedatetimeshort', 'langconfig')) : '',
-                    'isdue' => $row->started && $row->isdue && !$row->isoverdue,
-                    'isoverdue' => $row->isoverdue,
-                    'isuptodate' => $row->started && !$row->isdue,
+                    'badge' => $this->student_badge($row),
                     'reseturl' => (new moodle_url('/mod/flashcard/view.php', $resetparams))->out(false),
                 ];
             }
             $template->hasstudents = !empty($template->students);
+            $template->legend = $this->badge_legend();
             $template->summary = get_string('reportsummary', 'flashcard', (object) $counts);
         }
 
         return $this->output->render_from_template('mod_flashcard/report', $template);
+    }
+
+    /**
+     * The one status badge on a student's card in the report, worded so a teacher needs no
+     * legend: what the student should do, which deck, and since or until when.
+     *
+     * @param stdClass $row a row of \mod_flashcard\local\report::students()
+     * @return array {class, text, hint}
+     */
+    protected function student_badge(stdClass $row): array {
+        $decks = implode(get_string('listsep', 'langconfig') . ' ', $row->duedecks ?? []);
+        if (!$row->started) {
+            return ['class' => 'is-idle', 'text' => get_string('badgeidle', 'flashcard'),
+                'hint' => get_string('badgeidle_help', 'flashcard')];
+        }
+        if ($row->isoverdue) {
+            return ['class' => 'is-late',
+                'text' => get_string('badgelate', 'flashcard', (object) ['days' => $row->latedays, 'decks' => $decks]),
+                'hint' => get_string('badgelate_help', 'flashcard')];
+        }
+        if ($row->isdue) {
+            return ['class' => 'is-due', 'text' => get_string('badgedue', 'flashcard', $decks),
+                'hint' => get_string('badgedue_help', 'flashcard')];
+        }
+        if ($row->total && $row->mastered >= $row->total) {
+            return ['class' => 'is-ok', 'text' => get_string('badgemastered', 'flashcard'),
+                'hint' => get_string('badgemastered_help', 'flashcard')];
+        }
+        $next = $row->nextwait !== null ? format_time(max($row->nextwait, MINSECS)) : '';
+        return ['class' => 'is-ok', 'text' => get_string('badgeontrack', 'flashcard', $next),
+            'hint' => get_string('badgeontrack_help', 'flashcard')];
+    }
+
+    /**
+     * The legend above the students tab: every badge a student card can carry.
+     *
+     * @return array [{class, text, hint}]
+     */
+    protected function badge_legend(): array {
+        $legend = [];
+        foreach (['is-late' => 'badgelate', 'is-due' => 'badgedue', 'is-ok' => 'badgeontrack',
+                'is-idle' => 'badgeidle'] as $class => $key) {
+            $legend[] = ['class' => $class, 'text' => get_string($key . '_legend', 'flashcard'),
+                'hint' => get_string($key . '_help', 'flashcard')];
+        }
+        return $legend;
     }
 }
