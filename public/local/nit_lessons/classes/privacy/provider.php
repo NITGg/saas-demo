@@ -69,6 +69,12 @@ class provider implements
             'teacherid' => 'privacy:metadata:nit_teacher_presence:teacherid',
             'lastseen'  => 'privacy:metadata:nit_teacher_presence:lastseen',
         ], 'privacy:metadata:nit_teacher_presence');
+        $collection->add_database_table('nit_instant_watch', [
+            'studentid'   => 'privacy:metadata:nit_instant_watch:studentid',
+            'subject'     => 'privacy:metadata:nit_instant_watch:subject',
+            'timecreated' => 'privacy:metadata:nit_instant_watch:timecreated',
+        ], 'privacy:metadata:nit_instant_watch');
+        $collection->add_subsystem_link('core_files', [], 'privacy:metadata:core_files');
         return $collection;
     }
 
@@ -149,6 +155,8 @@ class provider implements
         $DB->delete_records('nit_instant_offer');
         $DB->delete_records('nit_instant_request');
         $DB->delete_records('nit_teacher_presence');
+        $DB->delete_records('nit_instant_watch');
+        get_file_storage()->delete_area_files($context->id, 'local_nit_lessons', 'instantphoto');
     }
 
     /**
@@ -168,6 +176,11 @@ class provider implements
         $DB->set_field('nit_lesson', 'note', null, ['studentid' => $userid]);
         $DB->set_field('nit_instant_request', 'note', null, ['studentid' => $userid]);
         $DB->delete_records('nit_teacher_presence', ['teacherid' => $userid]);
+        $DB->delete_records('nit_instant_watch', ['studentid' => $userid]);
+        $fs = get_file_storage();
+        foreach ($DB->get_fieldset_select('nit_instant_request', 'id', 'studentid = :u', ['u' => $userid]) as $rid) {
+            $fs->delete_area_files(\context_system::instance()->id, 'local_nit_lessons', 'instantphoto', (int) $rid);
+        }
     }
 
     /**
@@ -185,6 +198,7 @@ class provider implements
         $DB->delete_records_select('nit_lesson_proposal', "proposedby $insql", $params);
         $DB->set_field_select('nit_instant_request', 'note', null, "studentid $insql", $params);
         $DB->delete_records_select('nit_teacher_presence', "teacherid $insql", $params);
+        $DB->delete_records_select('nit_instant_watch', "studentid $insql", $params);
     }
 
     /**

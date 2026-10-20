@@ -117,10 +117,12 @@ class lesson_service extends service {
      * @param string $subject
      * @param int $duration minutes
      * @param string $note
+     * @param int $extraflex Flex added to the teacher's price for an instant lesson
      * @return array the started lesson
      */
-    public function start_instant(int $studentid, int $teacherid, string $subject, int $duration, string $note): array {
-        $cost = (new teacher_service())->lesson_flex($teacherid);
+    public function start_instant(int $studentid, int $teacherid, string $subject, int $duration, string $note,
+            int $extraflex = 0): array {
+        $cost = (new teacher_service())->lesson_flex($teacherid) + max(0, $extraflex);
         $active = \local_nit_flex\api\purchase::active($studentid);
         if (!$active || (int) $active['remaining_flex'] < $cost) {
             throw new lesson_exception('err_notenoughflex', $cost);

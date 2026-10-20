@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_nit_lessons';
-$plugin->version   = 2026102100;        // Instant lessons phase 2: waves, teacher no-show, live view.
+$plugin->version   = 2026102200;        // Instant lessons phase 3: photo, notify me, instant price.
 $plugin->requires  = 2024100700;
 $plugin->supported = [405, 502];
 $plugin->maturity  = MATURITY_ALPHA;

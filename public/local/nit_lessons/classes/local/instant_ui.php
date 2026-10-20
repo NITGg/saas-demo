@@ -34,7 +34,7 @@ final class instant_ui {
     /** @var string[] Strings the script needs (instant_<key>). */
     const STRINGS = ['title', 'intro', 'noteph', 'go', 'online', 'nobodyonline', 'searching', 'asking', 'cancel',
         'matched', 'expired', 'cancelled', 'expiredhelp', 'again', 'available', 'availablehelp', 'prompttitle',
-        'minutes', 'flex', 'accept', 'decline'];
+        'minutes', 'flex', 'accept', 'decline', 'photo', 'notifyme', 'notifyset', 'booklater'];
 
     /**
      * The script and its settings, once per page (empty when instant lessons are off).

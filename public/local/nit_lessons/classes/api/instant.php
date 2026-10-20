@@ -31,24 +31,30 @@ use local_nit_lessons\service\instant_service;
 final class instant {
     /** @var string[] Actions callable through instant.php / api.php (prefix instant_). */
     const ACTIONS = ['subjects', 'request', 'status', 'cancel', 'presence', 'online', 'offline', 'poll', 'accept',
-        'decline'];
+        'decline', 'watch'];
 
     /**
      * Run one action for a user.
      *
      * @param int $userid
      * @param string $action one of ACTIONS
-     * @param array $p subject, note, requestid
+     * @param array $p subject, note, requestid, photo (an uploaded file from $_FILES, or null)
      * @return array
      */
     public static function act(int $userid, string $action, array $p): array {
         $s = new instant_service();
         switch ($action) {
             case 'subjects':
+                $all = array_map(fn($x) => ['subject' => $x, 'label' => format_string($x)],
+                    \local_nit_lessons\service\teacher_service::site_subjects());
                 return ['enabled' => $s->enabled(), 'subjects' => $s->enabled() ? $s->online_subjects($userid) : [],
-                    'open' => $s->open_request($userid)];
+                    'all' => $all, 'open' => $s->open_request($userid),
+                    'bookurl' => (new \moodle_url('/local/nit_lessons/student.php', ['tab' => 'book']))->out(false)];
             case 'request':
-                return $s->request($userid, (string) ($p['subject'] ?? ''), (string) ($p['note'] ?? ''));
+                return $s->request($userid, (string) ($p['subject'] ?? ''), (string) ($p['note'] ?? ''), null,
+                    $p['photo'] ?? null);
+            case 'watch':
+                return $s->watch($userid, (string) ($p['subject'] ?? ''));
             case 'status':
                 return $s->status($userid, (int) ($p['requestid'] ?? 0));
             case 'cancel':

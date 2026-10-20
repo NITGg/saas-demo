@@ -79,6 +79,8 @@ api::run(function (string $function) use ($userid) {
             'subject' => optional_param('subject', '', PARAM_TEXT),
             'note' => optional_param('note', '', PARAM_TEXT),
             'requestid' => optional_param('requestid', 0, PARAM_INT),
+            'photo' => !empty($_FILES['photo']['tmp_name']) && is_uploaded_file($_FILES['photo']['tmp_name'])
+                ? $_FILES['photo'] : null, // Optional photo of the problem (request).
         ]);
     }
 

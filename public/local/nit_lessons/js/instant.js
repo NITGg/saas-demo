@@ -21,7 +21,14 @@
     var S = C.strings;
 
     function call(action, params) {
-        var body = new URLSearchParams(Object.assign({action: action, sesskey: C.sesskey}, params || {}));
+        var body;
+        if (params instanceof FormData) {
+            body = params;
+            body.append('action', action);
+            body.append('sesskey', C.sesskey);
+        } else {
+            body = new URLSearchParams(Object.assign({action: action, sesskey: C.sesskey}, params || {}));
+        }
         return fetch(C.url, {method: 'POST', body: body, credentials: 'same-origin'})
             .then(function(r) {
                 return r.json();
@@ -65,67 +72,124 @@
     // ── Student ────────────────────────────────────────────────────────────
     function student(root) {
         var timer = null;
+        var state = null;
+        var last = {subject: '', label: ''};
 
-        function render(state) {
+        function card(inner, cls) {
+            return '<div class="nit-instant card p-3 mb-3 ' + (cls || '') + '">' + inner + '</div>';
+        }
+
+        // "Notify me when a tutor is online" + "Book a lesson" for a subject (raw value + label).
+        function fallback(subject, label) {
+            var book = state.bookurl + '&search=' + encodeURIComponent(label || '');
+            var html = '<div class="d-flex flex-wrap gap-2 mt-2">';
+            if (subject) {
+                html += '<button class="btn btn-outline-primary btn-sm" data-watch="' + esc(subject) + '">' +
+                    esc(S.notifyme) + '</button>';
+            }
+            return html + '<a class="btn btn-outline-secondary btn-sm" href="' + esc(book) + '">' + esc(S.booklater) +
+                '</a></div>';
+        }
+
+        function bindWatch() {
+            root.querySelectorAll('[data-watch]').forEach(function(b) {
+                b.addEventListener('click', function() {
+                    b.disabled = true;
+                    call('watch', {subject: b.getAttribute('data-watch')}).then(function() {
+                        b.textContent = S.notifyset;
+                    }).catch(function(err) {
+                        b.disabled = false;
+                        b.textContent = err.message;
+                    });
+                });
+            });
+        }
+
+        function render(st) {
             clearTimeout(timer);
-            if (!state.enabled) {
+            state = st;
+            if (!st.enabled) {
                 root.innerHTML = '';
                 return;
             }
-            if (state.open) {
-                searching(state.open);
+            if (st.open) {
+                searching(st.open);
                 return;
             }
-            if (!state.subjects.length) {
-                root.innerHTML = '<div class="nit-instant card p-3 mb-3"><h3 class="h5 mb-1">' + esc(S.title) +
-                    '</h3><p class="mb-0 text-muted">' + esc(S.nobodyonline) + '</p></div>';
+            if (!st.subjects.length) {
+                var all = st.all.map(function(s) {
+                    return '<option value="' + esc(s.subject) + '">' + esc(s.label) + '</option>';
+                }).join('');
+                root.innerHTML = card('<h3 class="h5 mb-1">' + esc(S.title) + '</h3><p class="text-muted mb-2">' +
+                    esc(S.nobodyonline) + '</p><div class="d-flex flex-wrap gap-2"><select class="form-select" ' +
+                    'style="max-width:320px" data-allsubject>' + all + '</select><button class="btn btn-outline-primary" ' +
+                    'data-watchsel>' + esc(S.notifyme) + '</button></div><div class="small mt-2" data-msg></div>');
+                root.querySelector('[data-watchsel]').addEventListener('click', function(e) {
+                    e.target.disabled = true;
+                    call('watch', {subject: root.querySelector('[data-allsubject]').value}).then(function() {
+                        root.querySelector('[data-msg]').textContent = S.notifyset;
+                    }).catch(function(err) {
+                        e.target.disabled = false;
+                        root.querySelector('[data-msg]').textContent = err.message;
+                    });
+                });
                 return;
             }
-            var options = state.subjects.map(function(s) {
+            var options = st.subjects.map(function(s) {
                 return '<option value="' + esc(s.subject) + '">' + esc(s.label || s.subject) + ' (' +
                     esc(S.online.replace('{$a}', s.teachers)) + ')</option>';
             }).join('');
-            root.innerHTML = '<div class="nit-instant card p-3 mb-3"><h3 class="h5">' + esc(S.title) + '</h3>' +
-                '<p class="text-muted">' + esc(S.intro) + '</p>' +
+            root.innerHTML = card('<h3 class="h5">' + esc(S.title) + '</h3><p class="text-muted">' + esc(S.intro) + '</p>' +
                 '<div class="d-flex flex-wrap gap-2 align-items-end">' +
                 '<select class="form-select" style="max-width:320px" data-subject>' + options + '</select>' +
                 '<input class="form-control" style="max-width:360px" data-note placeholder="' + esc(S.noteph) + '">' +
+                '<label class="btn btn-outline-secondary mb-0">' + esc(S.photo) +
+                '<input type="file" accept="image/*" capture="environment" hidden data-photo></label>' +
                 '<button class="btn btn-primary" data-go>' + esc(S.go) + '</button></div>' +
-                '<div class="text-danger mt-2" data-error></div></div>';
+                '<div class="small text-muted mt-1" data-photoname></div><div class="text-danger mt-2" data-error></div>');
+            var photo = root.querySelector('[data-photo]');
+            photo.addEventListener('change', function() {
+                root.querySelector('[data-photoname]').textContent = photo.files.length ? photo.files[0].name : '';
+            });
             root.querySelector('[data-go]').addEventListener('click', function(e) {
+                var select = root.querySelector('[data-subject]');
+                last = {subject: select.value, label: select.options[select.selectedIndex].text.replace(/ \(.*\)$/, '')};
+                var form = new FormData();
+                form.append('subject', select.value);
+                form.append('note', root.querySelector('[data-note]').value);
+                if (photo.files.length) {
+                    form.append('photo', photo.files[0]);
+                }
                 e.target.disabled = true;
-                call('request', {subject: root.querySelector('[data-subject]').value,
-                    note: root.querySelector('[data-note]').value})
-                    .then(searching)
-                    .catch(function(err) {
-                        e.target.disabled = false;
-                        root.querySelector('[data-error]').textContent = err.message;
-                    });
+                call('request', form).then(searching).catch(function(err) {
+                    e.target.disabled = false;
+                    root.querySelector('[data-error]').textContent = err.message;
+                });
             });
         }
 
         function searching(st) {
             clearTimeout(timer);
             if (st.status === 'matched' && st.lessonid) {
-                root.innerHTML = '<div class="nit-instant card p-3 mb-3 border-success"><strong>' + esc(S.matched) +
-                    '</strong></div>';
+                root.innerHTML = card('<strong>' + esc(S.matched) + '</strong>', 'border-success');
                 window.location.href = C.joinurl + st.lessonid;
                 return;
             }
             if (st.status !== 'searching') {
-                root.innerHTML = '<div class="nit-instant card p-3 mb-3"><h3 class="h5">' +
-                    esc(st.status === 'cancelled' ? S.cancelled : S.expired) + '</h3>' +
-                    '<p class="text-muted">' + esc(S.expiredhelp) + '</p>' +
-                    '<button class="btn btn-primary" data-again>' + esc(S.again) + '</button></div>';
+                root.innerHTML = card('<h3 class="h5">' + esc(st.status === 'cancelled' ? S.cancelled : S.expired) +
+                    '</h3><p class="text-muted mb-1">' + esc(S.expiredhelp) + '</p>' +
+                    '<button class="btn btn-primary btn-sm" data-again>' + esc(S.again) + '</button>' +
+                    fallback(last.subject, last.label || st.subject));
                 root.querySelector('[data-again]').addEventListener('click', load);
+                bindWatch();
                 return;
             }
-            root.innerHTML = '<div class="nit-instant card p-3 mb-3 border-primary"><h3 class="h5">' +
-                esc(S.searching) + '</h3><p class="mb-2"><bdi>' + esc(st.subject) + '</bdi> · ' +
-                esc(S.asking.replace('{$a}', st.teachers)) + ' · <span data-left>' + st.secondsleft + '</span>s</p>' +
-                '<div class="progress mb-2" style="height:6px"><div class="progress-bar progress-bar-striped ' +
+            root.innerHTML = card('<h3 class="h5">' + esc(S.searching) + '</h3><p class="mb-2"><bdi>' + esc(st.subject) +
+                '</bdi> · ' + esc(S.asking.replace('{$a}', st.teachers)) + ' · <span data-left>' + st.secondsleft +
+                '</span>s</p><div class="progress mb-2" style="height:6px"><div class="progress-bar progress-bar-striped ' +
                 'progress-bar-animated" style="width:100%"></div></div>' +
-                '<button class="btn btn-outline-secondary btn-sm" data-cancel>' + esc(S.cancel) + '</button></div>';
+                '<button class="btn btn-outline-secondary btn-sm" data-cancel>' + esc(S.cancel) + '</button>',
+                'border-primary');
             root.querySelector('[data-cancel]').addEventListener('click', function() {
                 call('cancel', {requestid: st.id}).then(searching);
             });
@@ -189,6 +253,8 @@
             '<p class="mb-1"><strong><bdi>' + esc(o.subject) + '</bdi></strong> · <bdi>' + esc(o.studentname) +
             '</bdi> · <bdi>' + esc(S.minutes.replace('{$a}', o.duration)) + '</bdi></p>' +
             (o.note ? '<p class="mb-1 text-muted">' + esc(o.note) + '</p>' : '') +
+            (o.photourl ? '<a href="' + esc(o.photourl) + '" target="_blank" rel="noopener"><img src="' + esc(o.photourl) +
+                '" alt="" style="max-width:100%;max-height:160px;border-radius:6px" class="mb-2"></a>' : '') +
             '<p class="mb-2 small text-muted">' + esc(S.flex.replace('{$a}', o.flex)) + ' · <span data-left>' +
             o.secondsleft + '</span>s</p><div class="d-flex gap-2">' +
             '<button class="btn btn-success" data-accept>' + esc(S.accept) + '</button>' +

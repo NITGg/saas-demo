@@ -71,6 +71,16 @@ class instant_service {
         return $this->settings->get('instant_enabled') > 0;
     }
 
+    /**
+     * What an instant lesson with this teacher costs: their price plus instant_extra_flex.
+     *
+     * @param int $teacherid
+     * @return int Flex
+     */
+    public function price(int $teacherid): int {
+        return $this->teachers->lesson_flex($teacherid) + max(0, $this->settings->get('instant_extra_flex'));
+    }
+
     // ── Teacher presence ─────────────────────────────────────────────────────
 
     /**
@@ -94,6 +104,9 @@ class instant_service {
         } else {
             $DB->insert_record('nit_teacher_presence', (object) ['teacherid' => $teacherid, 'online' => (int) $online,
                 'lastseen' => $now]);
+        }
+        if ($online) {
+            $this->alert_watchers($teacherid);
         }
         return $this->presence($teacherid, $now);
     }
@@ -208,10 +221,14 @@ class instant_service {
      * @param int|null $now
      * @return array request status
      */
-    public function request(int $studentid, string $subject, string $note = '', ?int $now = null): array {
+    public function request(int $studentid, string $subject, string $note = '', ?int $now = null,
+            ?array $photo = null): array {
         global $DB;
         $now = $now ?? time();
         $subject = trim($subject);
+        if ($photo !== null) {
+            self::check_photo($photo);
+        }
         if (!$this->enabled()) {
             throw new lesson_exception('err_instantoff');
         }
@@ -240,8 +257,140 @@ class instant_service {
             throw new lesson_exception('err_noinstanttutor');
         }
         $request->id = $DB->insert_record('nit_instant_request', $request);
+        if ($photo !== null) {
+            $this->save_photo((int) $request->id, $studentid, $photo);
+        }
+        $DB->delete_records('nit_instant_watch', ['studentid' => $studentid]);
         $this->send_wave($request, $now);
         return $this->status($studentid, (int) $request->id, $now);
+    }
+
+    /** @var int Largest photo a student may attach, bytes. */
+    const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
+
+    /** @var string File area of request photos (system context). */
+    const PHOTO_AREA = 'instantphoto';
+
+    /**
+     * A photo of the problem must be a real image (jpg / png / webp / gif) of at most 5 MB.
+     *
+     * @param array $photo {name, tmp_name, size} as in $_FILES
+     * @return void
+     */
+    public static function check_photo(array $photo): void {
+        $path = (string) ($photo['tmp_name'] ?? '');
+        $info = $path !== '' && is_readable($path) ? @getimagesize($path) : false;
+        $types = [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_WEBP, IMAGETYPE_GIF];
+        if (!$info || !in_array($info[2], $types, true) || (int) ($photo['size'] ?? filesize($path)) > self::PHOTO_MAX_BYTES) {
+            throw new lesson_exception('err_instantphoto');
+        }
+    }
+
+    /**
+     * Store the request's photo.
+     *
+     * @param int $requestid
+     * @param int $studentid
+     * @param array $photo
+     * @return void
+     */
+    private function save_photo(int $requestid, int $studentid, array $photo): void {
+        $ext = image_type_to_extension(getimagesize($photo['tmp_name'])[2], false);
+        get_file_storage()->create_file_from_pathname([
+            'contextid' => \context_system::instance()->id,
+            'component' => 'local_nit_lessons',
+            'filearea' => self::PHOTO_AREA,
+            'itemid' => $requestid,
+            'filepath' => '/',
+            'filename' => 'problem.' . $ext,
+            'userid' => $studentid,
+        ], $photo['tmp_name']);
+    }
+
+    /**
+     * URL of a request's photo ('' when none).
+     *
+     * @param int $requestid
+     * @return string
+     */
+    public function photo_url(int $requestid): string {
+        $files = get_file_storage()->get_area_files(\context_system::instance()->id, 'local_nit_lessons',
+            self::PHOTO_AREA, $requestid, 'id', false);
+        $file = reset($files);
+        return $file ? \moodle_url::make_pluginfile_url($file->get_contextid(), 'local_nit_lessons', self::PHOTO_AREA,
+            $requestid, '/', $file->get_filename())->out(false) : '';
+    }
+
+    /**
+     * May this user see the photo of a request? Its student, a teacher it was sent to, or a manager.
+     *
+     * @param int $userid
+     * @param int $requestid
+     * @return bool
+     */
+    public static function can_see_photo(int $userid, int $requestid): bool {
+        global $DB;
+        return $DB->record_exists('nit_instant_request', ['id' => $requestid, 'studentid' => $userid])
+            || $DB->record_exists('nit_instant_offer', ['requestid' => $requestid, 'teacherid' => $userid])
+            || has_capability('local/nit_lessons:managesettings', \context_system::instance(), $userid);
+    }
+
+    // ── "Notify me when a tutor is online" ───────────────────────────────────
+
+    /**
+     * The student wants to hear when a tutor of this subject goes online (one alert, then forgotten;
+     * forgotten anyway after a day).
+     *
+     * @param int $studentid
+     * @param string $subject
+     * @return array {watching}
+     */
+    public function watch(int $studentid, string $subject): array {
+        global $DB;
+        $subject = trim($subject);
+        if ($subject === '' || !in_array($subject, teacher_service::site_subjects(), true)) {
+            throw new lesson_exception('err_subjectrequired');
+        }
+        if (!$DB->record_exists('nit_instant_watch', ['studentid' => $studentid, 'subject' => $subject])) {
+            $DB->insert_record('nit_instant_watch', (object) ['studentid' => $studentid, 'subject' => $subject,
+                'timecreated' => time()]);
+        }
+        return ['watching' => true];
+    }
+
+    /**
+     * A teacher came online: tell the students waiting for one of their subjects, once.
+     *
+     * @param int $teacherid
+     * @return int how many students were told
+     */
+    private function alert_watchers(int $teacherid): int {
+        global $DB;
+        $n = 0;
+        foreach ($DB->get_records('nit_instant_watch') as $w) {
+            if ((int) $w->studentid !== $teacherid && $this->teachers->teaches($teacherid, (string) $w->subject)) {
+                $DB->delete_records('nit_instant_watch', ['id' => $w->id]);
+                $this->notify_student((int) $w->studentid, 'instant_tutoronline', (string) $w->subject);
+                $n++;
+            }
+        }
+        return $n;
+    }
+
+    /**
+     * Daily tidy-up: forget day-old watches and delete photos of requests older than 30 days.
+     *
+     * @param int $now
+     * @return void
+     */
+    public function cleanup(int $now): void {
+        global $DB;
+        $DB->delete_records_select('nit_instant_watch', 'timecreated < :cut', ['cut' => $now - DAYSECS]);
+        $fs = get_file_storage();
+        $old = $DB->get_fieldset_select('nit_instant_request', 'id', 'timecreated < :cut', ['cut' => $now - 30 * DAYSECS]);
+        foreach ($old as $id) {
+            $fs->delete_area_files(\context_system::instance()->id, 'local_nit_lessons', self::PHOTO_AREA, (int) $id);
+        }
     }
 
     /**
@@ -259,7 +408,7 @@ class instant_service {
         $asked = empty($r->id) ? [] : $DB->get_fieldset_select('nit_instant_offer', 'teacherid',
             'requestid = :r AND status <> :taken', ['r' => $r->id, 'taken' => self::TAKEN]);
         $ids = array_filter($this->available_teachers((string) $r->subject, (int) $r->studentid, $now),
-            fn($t) => !in_array($t, array_map('intval', $asked), true) && $this->teachers->lesson_flex($t) <= $flex);
+            fn($t) => !in_array($t, array_map('intval', $asked), true) && $this->price($t) <= $flex);
         return $this->rank(array_values($ids), (int) $r->studentid);
     }
 
@@ -450,7 +599,8 @@ class instant_service {
                 'duration' => (int) $r->duration,
                 'studentname' => $student ? format_string($student->firstname) : '',
                 'secondsleft' => max(0, (int) $r->expiresat - $now),
-                'flex' => $this->teachers->lesson_flex($teacherid),
+                'flex' => $this->price($teacherid),
+                'photourl' => $this->photo_url((int) $r->id),
             ];
         }
         return $out;
@@ -484,7 +634,7 @@ class instant_service {
             $transaction = $DB->start_delegated_transaction();
             try {
                 $lesson = (new lesson_service())->start_instant((int) $r->studentid, $teacherid, (string) $r->subject,
-                    (int) $r->duration, (string) $r->note);
+                    (int) $r->duration, (string) $r->note, $this->settings->get('instant_extra_flex'));
                 $this->mark_matched($r, $offer, $teacherid, (int) $lesson['id'], $now);
                 $transaction->allow_commit();
             } catch (\Throwable $e) {

@@ -48,6 +48,7 @@ class settings_service extends service {
         'instant_wave_size'        => 3,       // Teachers asked at once.
         'instant_ring_seconds'     => 30,      // How long one wave rings before the next teachers are asked.
         'instant_noshow_minutes'   => 3,       // A teacher who accepted but did not open the room is replaced.
+        'instant_extra_flex'       => 0,       // Extra Flex an instant lesson costs on top of the teacher's price.
         'lessons_courseid'         => 0,
     ];
 

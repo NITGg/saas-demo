@@ -397,6 +397,92 @@ final class instant_test extends \advanced_testcase {
     }
 
     /**
+     * A 1x1 PNG in a temp file, shaped like an upload.
+     *
+     * @return array
+     */
+    private function png_upload(): array {
+        $path = make_request_directory() . '/p.png';
+        file_put_contents($path, base64_decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='));
+        return ['name' => 'p.png', 'tmp_name' => $path, 'size' => filesize($path)];
+    }
+
+    /**
+     * The instant price adds instant_extra_flex to the teacher's price, shown in the prompt and charged.
+     *
+     * @return void
+     */
+    public function test_extra_flex_price(): void {
+        set_config('instant_extra_flex', 2, 'local_nit_lessons');
+        $sid = (int) $this->student->id;
+        $this->service->set_online((int) $this->t1->id, true);
+        $r = $this->service->request($sid, 'Physics');
+        $this->assertSame(3, $this->service->heartbeat((int) $this->t1->id)['offers'][0]['flex']);
+        $lesson = $this->service->accept((int) $this->t1->id, $r['id']);
+        $this->assertSame(3, purchase::active($sid)['reserved_flex']);
+        global $DB;
+        $this->assertSame(3, (int) $DB->get_field('nit_lesson', 'flex_count', ['id' => $lesson['id']]));
+    }
+
+    /**
+     * A photo of the problem is stored with the request, shown to the prompted teacher and the
+     * student only; anything that is not an image is refused.
+     *
+     * @return void
+     */
+    public function test_photo(): void {
+        $sid = (int) $this->student->id;
+        $this->service->set_online((int) $this->t1->id, true);
+        $r = $this->service->request($sid, 'Physics', '', null, $this->png_upload());
+
+        $offer = $this->service->heartbeat((int) $this->t1->id)['offers'][0];
+        $this->assertStringContainsString('/local_nit_lessons/instantphoto/' . $r['id'] . '/problem.png', $offer['photourl']);
+        $this->assertTrue(instant_service::can_see_photo($sid, $r['id']));
+        $this->assertTrue(instant_service::can_see_photo((int) $this->t1->id, $r['id']));
+        $this->assertFalse(instant_service::can_see_photo((int) $this->t2->id, $r['id']), 'not prompted');
+
+        $text = make_request_directory() . '/x.png';
+        file_put_contents($text, '<?php echo 1;');
+        $this->assert_fails('err_instantphoto', fn() => instant_service::check_photo(['tmp_name' => $text, 'size' => 13]));
+
+        // Old photos are deleted by the hourly cleanup.
+        global $DB;
+        $DB->set_field('nit_instant_request', 'timecreated', time() - 31 * DAYSECS, ['id' => $r['id']]);
+        $this->service->cleanup(time());
+        $this->assertSame('', $this->service->photo_url($r['id']));
+    }
+
+    /**
+     * "Notify me": when a tutor of the subject goes online, the student is told once.
+     *
+     * @return void
+     */
+    public function test_notify_me_when_online(): void {
+        global $DB;
+        $sid = (int) $this->student->id;
+        $this->service->watch($sid, 'Physics');
+        $this->service->watch($sid, 'Physics');
+        $this->assertSame(1, $DB->count_records('nit_instant_watch'), 'once per subject');
+        $this->assert_fails('err_subjectrequired', fn() => $this->service->watch($sid, 'Astrology'));
+
+        $sink = $this->redirectMessages();
+        $this->service->set_online((int) $this->t1->id, true);
+        $tostudent = array_filter($sink->get_messages(), fn($m) => (int) $m->useridto === $sid);
+        $this->assertCount(1, $tostudent);
+        $this->assertSame(0, $DB->count_records('nit_instant_watch'), 'forgotten after the alert');
+
+        $sink->clear();
+        $this->service->set_online((int) $this->t2->id, true);
+        $this->assertCount(0, $sink->get_messages(), 'only once');
+
+        $this->service->watch($sid, 'Chemistry');
+        $DB->set_field('nit_instant_watch', 'timecreated', time() - 2 * DAYSECS, []);
+        $this->service->cleanup(time());
+        $this->assertSame(0, $DB->count_records('nit_instant_watch'), 'a day later it is forgotten');
+    }
+
+    /**
      * The expiry task is registered for cron.
      *
      * @return void

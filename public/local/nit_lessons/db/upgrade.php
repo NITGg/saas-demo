@@ -135,5 +135,13 @@ function xmldb_local_nit_lessons_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026102100, 'local', 'nit_lessons');
     }
 
+    if ($oldversion < 2026102200) {
+        // Instant lessons phase 3: "notify me when a tutor is online".
+        if (!$dbman->table_exists('nit_instant_watch')) {
+            $dbman->install_one_table_from_xmldb_file(__DIR__ . '/install.xml', 'nit_instant_watch');
+        }
+        upgrade_plugin_savepoint(true, 2026102200, 'local', 'nit_lessons');
+    }
+
     return true;
 }

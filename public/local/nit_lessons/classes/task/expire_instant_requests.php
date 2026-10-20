@@ -40,7 +40,11 @@ class expire_instant_requests extends \core\task\scheduled_task {
      * Expire what is due.
      */
     public function execute() {
-        $count = (new instant_service())->expire_due(time());
+        $service = new instant_service();
+        $count = $service->expire_due(time());
+        if ((int) date('i') === 0) {
+            $service->cleanup(time()); // Hourly: old watches and 30-day-old request photos.
+        }
         mtrace("local_nit_lessons: $count instant request(s) expired");
     }
 }
