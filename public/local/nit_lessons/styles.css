@@ -1,0 +1,329 @@
+/* Instant lessons (js/instant.js): the teacher's "Available now" card, the request prompts and the
+   student's request box. Colours follow the academy brand variables, with fallbacks for pages
+   outside the branded areas (the prompts show on every page). */
+
+.nit-ix-slot:empty {
+    display: none;
+}
+.nit-ix-slot {
+    margin-bottom: 20px;
+}
+
+/* ── Boxes (prompt, accepted tutor, searching) ─────────────────────────── */
+.nit-ix-box {
+    position: relative;
+    overflow: hidden;
+    background: var(--nit-brand-surface, #fff);
+    color: var(--nit-brand-textprimary, #1d2125);
+    border: 1px solid var(--nit-brand-borderprimary, #e3e7ee);
+    border-radius: 16px;
+    box-shadow: 0 6px 24px rgba(16, 24, 40, .08);
+}
+.nit-ix-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, var(--nit-brand-primary, #0f6cbf),
+        color-mix(in srgb, var(--nit-brand-primary, #0f6cbf) 70%, #000));
+    color: var(--nit-brand-onprimary, #fff);
+    font-size: 1.02rem;
+}
+.nit-ix-head--ok {
+    background: linear-gradient(135deg, var(--nit-brand-success, #1f9d55),
+        color-mix(in srgb, var(--nit-brand-success, #1f9d55) 70%, #000));
+}
+.nit-ix-head--off {
+    background: #5f6b7a;
+}
+.nit-ix-head strong {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.nit-ix-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .2);
+    font-weight: 700;
+}
+.nit-ix-spin {
+    animation: nit-ix-spin 1.2s linear infinite;
+}
+.nit-ix-timer {
+    flex: 0 0 auto;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .2);
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+.nit-ix-x {
+    flex: 0 0 auto;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+}
+.nit-ix-body {
+    padding: 14px 16px 16px;
+}
+.nit-ix-subject {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+.nit-ix-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 12px;
+    margin-bottom: 8px;
+    color: var(--nit-brand-textsecondary, #5f6b7a);
+}
+.nit-ix-chip {
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--nit-brand-primary, #0f6cbf) 12%, transparent);
+    color: var(--nit-brand-primary, #0f6cbf);
+    font-weight: 600;
+    font-size: .85rem;
+}
+.nit-ix-chip--info {
+    background: #e0f2fe;
+    color: #075985;
+}
+.nit-ix-chip--warn {
+    background: #fef3c7;
+    color: #92400e;
+}
+.nit-ix-summary:empty,
+.nit-ix-summary:has(bdi:empty) {
+    display: none;
+}
+.nit-ix-summary {
+    margin: 0 0 8px;
+}
+.nit-ix-note {
+    margin: 0 0 10px;
+    padding: 8px 12px;
+    border-inline-start: 3px solid var(--nit-brand-primary, #0f6cbf);
+    border-radius: 6px;
+    background: var(--nit-brand-background, #f5f7fa);
+    color: var(--nit-brand-textprimary, #1d2125);
+}
+.nit-ix-photo {
+    display: block;
+    max-width: 100%;
+    max-height: 160px;
+    margin-bottom: 10px;
+    border-radius: 10px;
+}
+.nit-ix-muted {
+    margin: 0 0 10px;
+    color: var(--nit-brand-textsecondary, #5f6b7a);
+}
+.nit-ix-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.nit-ix-actions .btn:not(.btn-sm) {
+    flex: 1 1 0;
+    padding-block: 10px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+.nit-ix-error:empty {
+    display: none;
+}
+.nit-ix-error {
+    margin-top: 8px;
+    color: var(--nit-brand-error, #c0392b);
+}
+.nit-ix-waiting {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--nit-brand-success, #1f9d55) 12%, transparent);
+    color: var(--nit-brand-success, #1f9d55);
+    font-weight: 600;
+}
+
+/* Countdown bar along the bottom of a box. */
+.nit-ix-bar {
+    height: 4px;
+    background: color-mix(in srgb, var(--nit-brand-primary, #0f6cbf) 12%, transparent);
+}
+.nit-ix-bar span {
+    display: block;
+    height: 100%;
+    background: var(--nit-brand-primary, #0f6cbf);
+    transform-origin: left;
+    animation: nit-ix-count linear forwards;
+}
+[dir="rtl"] .nit-ix-bar span {
+    transform-origin: right;
+}
+.nit-ix-bar--busy span {
+    width: 35%;
+    animation: nit-ix-busy 1.4s ease-in-out infinite;
+}
+
+/* ── Floating corner (prompts on any page, the student's request on other pages) ── */
+.nit-ix-stack {
+    position: fixed;
+    inset-inline-end: 16px;
+    bottom: 16px;
+    z-index: 10050;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: min(380px, calc(100vw - 32px));
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+}
+.nit-ix-float {
+    box-shadow: 0 16px 40px rgba(16, 24, 40, .22);
+    animation: nit-ix-in .25s ease-out;
+}
+
+/* ── Teacher: "Available now" ──────────────────────────────────────────── */
+.nit-ix-avail {
+    padding: 16px 18px;
+    border: 1px solid var(--nit-brand-borderprimary, #e3e7ee);
+    border-radius: 16px;
+    background: var(--nit-brand-surface, #fff);
+    transition: border-color .2s, box-shadow .2s;
+}
+.nit-ix-avail.is-on {
+    border-color: var(--nit-brand-success, #1f9d55);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--nit-brand-success, #1f9d55) 15%, transparent);
+}
+.nit-ix-avail__main {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 8px;
+}
+.nit-ix-avail__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--nit-brand-primary, #0f6cbf) 12%, transparent);
+    font-size: 1.3rem;
+}
+.nit-ix-avail.is-on .nit-ix-avail__icon {
+    background: color-mix(in srgb, var(--nit-brand-success, #1f9d55) 15%, transparent);
+}
+.nit-ix-avail__text {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.nit-ix-avail__title {
+    margin: 0;
+    font-weight: 700;
+    font-size: 1.08rem;
+    cursor: pointer;
+}
+.nit-ix-avail__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: .9rem;
+    color: var(--nit-brand-textsecondary, #5f6b7a);
+}
+.nit-ix-avail__status i {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #9aa4b2;
+}
+.nit-ix-avail.is-on .nit-ix-avail__status {
+    color: var(--nit-brand-success, #1f9d55);
+    font-weight: 600;
+}
+.nit-ix-avail.is-on .nit-ix-avail__status i {
+    background: var(--nit-brand-success, #1f9d55);
+    animation: nit-ix-pulse 1.6s ease-out infinite;
+}
+.nit-ix-switch {
+    margin: 0;
+    padding: 0;
+}
+.nit-ix-switch .form-check-input {
+    float: none;
+    margin: 0;
+    width: 3.2em;
+    height: 1.7em;
+    cursor: pointer;
+}
+.nit-ix-avail__oncall {
+    padding-top: 10px;
+    border-top: 1px dashed var(--nit-brand-borderprimary, #e3e7ee);
+}
+.nit-ix-avail__oncall .nit-ix-muted {
+    margin: 2px 0 0;
+}
+
+@keyframes nit-ix-count {
+    from {
+        transform: scaleX(1);
+    }
+    to {
+        transform: scaleX(0);
+    }
+}
+@keyframes nit-ix-busy {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(300%);
+    }
+}
+@keyframes nit-ix-in {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+@keyframes nit-ix-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+@keyframes nit-ix-pulse {
+    0% {
+        box-shadow: 0 0 0 0 color-mix(in srgb, var(--nit-brand-success, #1f9d55) 60%, transparent);
+    }
+    100% {
+        box-shadow: 0 0 0 8px transparent;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .nit-ix-float,
+    .nit-ix-spin,
+    .nit-ix-bar--busy span,
+    .nit-ix-avail.is-on .nit-ix-avail__status i {
+        animation: none;
+    }
+}

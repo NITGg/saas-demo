@@ -38,7 +38,8 @@ final class instant_ui {
         'trialnotice', 'trialbadge', 'quickbadge', 'peaknotice', 'norating', 'anyyear', 'recenttitle', 'rate', 'bookagain',
         'favourite', 'year', 'subject', 'picksubject', 'kind', 'maxprice', 'any', 'autostart', 'askall', 'notutors',
         'availablenow', 'inlesson', 'offline', 'askthis', 'profile', 'reliability', 'acceptedtitle', 'confirmin',
-        'startlesson', 'targetexpired', 'askallinstead', 'askingone', 'oncall', 'oncallhelp', 'waitingstudent'];
+        'startlesson', 'targetexpired', 'askallinstead', 'askingone', 'oncall', 'oncallhelp', 'waitingstudent',
+        'onlinestatus', 'offlinestatus', 'joinnow', 'backtorequest', 'close', 'matchedhere'];
 
     /**
      * The script and its settings, once per page (empty when instant lessons are off).
@@ -64,6 +65,8 @@ final class instant_ui {
             'teacher' => (new teacher_service())->is_teacher($userid),
             'online' => $service->presence($userid)['online'] || self::marked_online($userid),
             'oncall' => $service->presence($userid)['oncall'],
+            'request' => self::open_request_id($userid), // The student's request still searching / to confirm.
+            'bookurl' => (new \moodle_url('/local/nit_lessons/student.php', ['tab' => 'book']))->out(false),
             'ws' => realtime::client_config($userid), // Null when the notify-ws relay is not configured.
             'strings' => $strings,
         ];
@@ -85,7 +88,22 @@ final class instant_ui {
     }
 
     /**
-     * Footer hook: an online teacher gets the prompts on every page.
+     * The student's request that is still searching or waiting for their confirmation (0 = none).
+     * A plain indexed read: expiry is applied when the page asks for the status.
+     *
+     * @param int $userid
+     * @return int
+     */
+    public static function open_request_id(int $userid): int {
+        global $DB;
+        $ids = $DB->get_fieldset_select('nit_instant_request', 'id', 'studentid = :s AND status IN (:a, :b)',
+            ['s' => $userid, 'a' => instant_service::SEARCHING, 'b' => instant_service::ACCEPTED_WAIT]);
+        return $ids ? (int) max($ids) : 0;
+    }
+
+    /**
+     * Footer hook: an online teacher gets the prompts on every page, and a student with an open request
+     * gets its status box (searching, or the tutor who accepted — confirm from any page).
      *
      * @param \core\hook\output\before_standard_footer_html_generation $hook
      * @return void
@@ -97,7 +115,7 @@ final class instant_ui {
             return;
         }
         try {
-            if (self::marked_online((int) $USER->id)) {
+            if (self::marked_online((int) $USER->id) || self::open_request_id((int) $USER->id)) {
                 $hook->add_html(self::script((int) $USER->id));
             }
         } catch (\Throwable $e) {
