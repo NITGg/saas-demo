@@ -25,6 +25,13 @@
 defined('MOODLE_INTERNAL') || die();
 
 $messageproviders = [
+    // "A student wants a tutor now" prompt to online teachers (bell + app push; no email: it expires in a minute).
+    'instantoffer' => [
+        'defaults' => [
+            'popup' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
+            'email' => MESSAGE_PERMITTED,
+        ],
+    ],
     // Live lesson requests, answers, start, cancellations and reschedules.
     'lessonupdate' => [
         'defaults' => [

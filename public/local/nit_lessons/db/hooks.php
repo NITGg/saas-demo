@@ -30,4 +30,9 @@ $callbacks = [
         'hook' => \core\hook\navigation\primary_extend::class,
         'callback' => [\local_nit_lessons\local\hook_callbacks::class, 'primary_extend'],
     ],
+    [
+        // A teacher online for instant lessons gets the request prompts on every page.
+        'hook' => \core\hook\output\before_standard_footer_html_generation::class,
+        'callback' => [\local_nit_lessons\local\instant_ui::class, 'footer'],
+    ],
 ];

@@ -107,6 +107,71 @@ class lesson_service extends service {
         return $this->format_lesson($lesson, $studentid, true);
     }
 
+    /**
+     * An instant lesson ("Get a tutor now"): created, confirmed (Flex reserved at the teacher's
+     * price) and started in one step, starting now. The caller has already checked that the
+     * teacher is free and teaches the subject; the Flex and time checks happen here.
+     *
+     * @param int $studentid
+     * @param int $teacherid
+     * @param string $subject
+     * @param int $duration minutes
+     * @param string $note
+     * @param int $extraflex Flex added to the teacher's price for an instant lesson
+     * @return array the started lesson
+     */
+    public function start_instant(int $studentid, int $teacherid, string $subject, int $duration, string $note,
+            int $extraflex = 0): array {
+        $cost = (new teacher_service())->lesson_flex($teacherid) + max(0, $extraflex);
+        $active = \local_nit_flex\api\purchase::active($studentid);
+        if (!$active || (int) $active['remaining_flex'] < $cost) {
+            throw new lesson_exception('err_notenoughflex', $cost);
+        }
+        $now = time();
+        $this->check_time_conflict($teacherid, $now, $duration);
+        $lesson = new lesson(0, (object) [
+            'studentid'      => $studentid,
+            'teacherid'      => $teacherid,
+            'subject'        => $subject,
+            'status'         => lesson::STATUS_PENDING,
+            'requested_time' => $now,
+            'duration'       => $duration,
+            'note'           => $note !== '' ? $note : null,
+            'flex_count'     => $cost,
+            'type'           => lesson::TYPE_INSTANT,
+        ]);
+        $lesson->create();
+        $this->confirm_lesson($lesson, $now, $teacherid);
+        return $this->start_lesson($teacherid, (int) $lesson->get('id'));
+    }
+
+    /**
+     * An instant lesson whose teacher accepted but never opened the room: the room is closed, the
+     * Flex goes back to the student and the lesson ends as cancelled by the teacher.
+     *
+     * @param int $lessonid
+     * @return array the cancelled lesson
+     */
+    public function cancel_instant_noshow(int $lessonid): array {
+        global $DB;
+        $lesson = $this->owned_lesson($lessonid);
+        if ($lesson->get('type') !== lesson::TYPE_INSTANT || $lesson->get('status') !== lesson::STATUS_IN_PROGRESS
+                || (int) $lesson->get('teacher_joined') > 0) {
+            throw new lesson_exception('err_badstate');
+        }
+        $teacherid = (int) $lesson->get('teacherid');
+        $transaction = $DB->start_delegated_transaction();
+        room_factory::instance()->end_for_lesson($lesson);
+        flex::return_flex((int) $lesson->get('studentid'), (int) $lesson->get('purchaseid'), $lessonid, $teacherid,
+            'Instant lesson: teacher did not join', self::flex_count($lesson));
+        $result = $this->transition($lesson, lesson::STATUS_CANCELLED_TEACHER, $teacherid, [
+            'flex_state' => 'returned',
+            'cancel_reason' => 'Teacher did not join the instant lesson',
+        ]);
+        $transaction->allow_commit();
+        return $result;
+    }
+
     // ── US-LS-2-1 / 2-3: teacher responds ───────────────────────────────────
 
     /**
@@ -257,9 +322,11 @@ class lesson_service extends service {
             $lesson->update();
             $payload = ['join_url' => $created->join_url];
         }
-        if (!$isteacher && (int) $lesson->get('student_joined') === 0) {
-            // Proof the student came: auto-complete only ever closes lessons they joined.
-            $lesson->set('student_joined', time());
+        // First time each side opens the room: proof the student came (auto-complete) and that the
+        // teacher came (instant-lesson no-show).
+        $joined = $isteacher ? 'teacher_joined' : 'student_joined';
+        if ((int) $lesson->get($joined) === 0) {
+            $lesson->set($joined, time());
             $lesson->update();
         }
         return [

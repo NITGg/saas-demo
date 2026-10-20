@@ -97,5 +97,51 @@ function xmldb_local_nit_lessons_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026101900, 'local', 'nit_lessons');
     }
 
+    if ($oldversion < 2026102000) {
+        // Instant lessons ("Get a tutor now"): teacher presence, requests, offers, and the lesson type.
+        $field = new xmldb_field('type', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, 'scheduled', 'student_joined');
+        $table = new xmldb_table('nit_lesson');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        foreach (['nit_teacher_presence', 'nit_instant_request', 'nit_instant_offer'] as $name) {
+            if (!$dbman->table_exists($name)) {
+                $dbman->install_one_table_from_xmldb_file(__DIR__ . '/install.xml', $name);
+            }
+        }
+        upgrade_plugin_savepoint(true, 2026102000, 'local', 'nit_lessons');
+    }
+
+    if ($oldversion < 2026102100) {
+        // Instant lessons phase 2: teachers asked in waves, teacher no-show, time to match.
+        $fields = [
+            'nit_lesson' => [new xmldb_field('teacher_joined', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0',
+                'type')],
+            'nit_instant_request' => [
+                new xmldb_field('wave', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '0', 'expiresat'),
+                new xmldb_field('wavestarted', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'wave'),
+                new xmldb_field('redispatched', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'wavestarted'),
+                new xmldb_field('timematched', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'redispatched'),
+            ],
+        ];
+        foreach ($fields as $tablename => $list) {
+            $table = new xmldb_table($tablename);
+            foreach ($list as $field) {
+                if (!$dbman->field_exists($table, $field)) {
+                    $dbman->add_field($table, $field);
+                }
+            }
+        }
+        upgrade_plugin_savepoint(true, 2026102100, 'local', 'nit_lessons');
+    }
+
+    if ($oldversion < 2026102200) {
+        // Instant lessons phase 3: "notify me when a tutor is online".
+        if (!$dbman->table_exists('nit_instant_watch')) {
+            $dbman->install_one_table_from_xmldb_file(__DIR__ . '/install.xml', 'nit_instant_watch');
+        }
+        upgrade_plugin_savepoint(true, 2026102200, 'local', 'nit_lessons');
+    }
+
     return true;
 }

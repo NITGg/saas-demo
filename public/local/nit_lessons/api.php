@@ -65,6 +65,25 @@ api::run(function (string $function) use ($userid) {
         ]);
     }
 
+    // Instant lessons: instant_subjects, instant_request, instant_status, instant_cancel, instant_presence,
+    // instant_online, instant_offline, instant_poll, instant_accept, instant_decline.
+    if (strpos($function, 'instant_') === 0
+            && in_array($action = substr($function, 8), \local_nit_lessons\api\instant::ACTIONS, true)) {
+        if (!in_array($action, ['subjects', 'status', 'presence', 'poll'], true)) {
+            api::require_post();
+        }
+        if ($action === 'request') {
+            api::require_capability('local/nit_lessons:request');
+        }
+        return \local_nit_lessons\api\instant::act($userid, $action, [
+            'subject' => optional_param('subject', '', PARAM_TEXT),
+            'note' => optional_param('note', '', PARAM_TEXT),
+            'requestid' => optional_param('requestid', 0, PARAM_INT),
+            'photo' => !empty($_FILES['photo']['tmp_name']) && is_uploaded_file($_FILES['photo']['tmp_name'])
+                ? $_FILES['photo'] : null, // Optional photo of the problem (request).
+        ]);
+    }
+
     switch ($function) {
         // ── Booking (student) ───────────────────────────────────────────────
 
