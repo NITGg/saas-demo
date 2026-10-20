@@ -243,6 +243,34 @@ class manager {
     }
 
     /**
+     * Delete several content rows of one game.
+     *
+     * Rows of any other game are left alone, so a hand-edited request cannot
+     * reach past the game the admin is looking at.
+     *
+     * @param int[] $ids row ids
+     * @param string $gameid game slug
+     * @return int how many rows were deleted
+     */
+    public static function delete_rows(array $ids, string $gameid): int {
+        global $DB;
+
+        $ids = array_values(array_filter(array_map('intval', $ids)));
+        if (!$ids) {
+            return 0;
+        }
+
+        [$insql, $params] = $DB->get_in_or_equal($ids, SQL_PARAMS_NAMED);
+        $params['gameid'] = $gameid;
+        $where = "id $insql AND gameid = :gameid";
+
+        $count = $DB->count_records_select('local_games_content', $where, $params);
+        $DB->delete_records_select('local_games_content', $where, $params);
+
+        return $count;
+    }
+
+    /**
      * Move one content row up or down among its neighbours.
      *
      * Sort orders are renumbered from scratch rather than swapped in place: rows

@@ -178,13 +178,11 @@ if (!empty($game->showhublink)) {
 }
 
 if (has_capability('mod/games:managecontent', $context)) {
-    $modekeys = [\mod_games\content::MODE_DEFAULT => 'default', \mod_games\content::MODE_OWN => 'own',
-        \mod_games\content::MODE_BOTH => 'both'];
     echo html_writer::div(
         html_writer::link(new moodle_url('/mod/games/content.php', ['id' => $cm->id]),
             get_string('editgamecontent', 'mod_games'), ['class' => 'btn btn-primary'])
         . html_writer::span(
-            get_string('contentmode_' . ($modekeys[(int) $game->contentmode] ?? 'default'), 'mod_games'),
+            get_string(\mod_games\content::uses_own($game) ? 'playsown' : 'playsdefault', 'mod_games'),
             'badge bg-secondary ms-2'),
         'mt-3'
     );

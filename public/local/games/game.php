@@ -48,6 +48,7 @@ if ($game === null) {
 $action  = optional_param('action', '', PARAM_ALPHA);
 $rowid   = optional_param('rowid', 0, PARAM_INT);
 $confirm = optional_param('confirm', 0, PARAM_BOOL);
+$selected = array_values(array_filter(optional_param_array('rowids', [], PARAM_INT)));
 
 $manageurl = new moodle_url('/local/games/manage.php');
 $pageurl   = new moodle_url('/local/games/game.php', ['id' => $gameid]);
@@ -93,6 +94,11 @@ if ($action === 'moveup' && $rowid > 0 && confirm_sesskey()) {
     $requirerow($rowid, $gameid, $pageurl);
     manager::delete_row($rowid);
     redirect($pageurl, get_string('changessaved'), null, \core\output\notification::NOTIFY_SUCCESS);
+
+} else if ($action === 'deleteselected' && $selected && confirm_sesskey() && $confirm) {
+    $deleted = manager::delete_rows($selected, $gameid);
+    redirect($pageurl, get_string('rowsdeleted', 'local_games', $deleted), null,
+        \core\output\notification::NOTIFY_SUCCESS);
 
 } else if ($action === 'restore' && confirm_sesskey() && $confirm) {
     $written = manager::seed($gameid, true);
@@ -169,6 +175,17 @@ if ($action === 'delete' && $rowid > 0 && confirm_sesskey() && !$confirm) {
         get_string('confirmdeleterow', 'local_games')
             . html_writer::tag('p', s(implode(' — ', $summary)), ['class' => 'mt-2 fw-bold']),
         new moodle_url($pageurl, ['action' => 'delete', 'rowid' => $rowid,
+            'sesskey' => sesskey(), 'confirm' => 1]),
+        $pageurl
+    );
+    echo $OUTPUT->footer();
+    exit;
+}
+
+if ($action === 'deleteselected' && $selected && confirm_sesskey() && !$confirm) {
+    echo $OUTPUT->confirm(
+        get_string('confirmdeleterows', 'local_games', count($selected)),
+        new moodle_url($pageurl, ['action' => 'deleteselected', 'rowids' => $selected,
             'sesskey' => sesskey(), 'confirm' => 1]),
         $pageurl
     );

@@ -200,3 +200,70 @@ table.quizreviewsummary {
         color: var(--nit-brand-textprimary);
     }
 }
+
+// =============================================================================
+// Quiz inside the course player (/local/academy/player.php → the lesson frame,
+// body.nit-player-embed). Core's embedded layout sets the quiz navigation
+// ("Quiz navigation" fake block) beside the question, and each question sets its
+// number / state / marks box beside its text: three columns competing for the
+// learner's eye. Stack them instead — navigation as a strip above, the question
+// info as one slim line over its text — so the question owns the full width.
+// =============================================================================
+
+body.nit-player-embed.path-mod-quiz {
+
+    .has-fake-blocks {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .has-fake-blocks .embedded-main,
+    .embedded-blocks {
+        width: 100%;
+        margin: 0;
+    }
+
+    .embedded-blocks {
+        order: -1;
+
+        .block {
+            margin-bottom: 0;
+        }
+
+        .block .card-body {
+            padding: 0.75rem 1rem;
+        }
+
+        .block .card-title {
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+    }
+
+    .que {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+
+    .que .info {
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.25rem 1.25rem;
+        padding: 0.5rem 0.875rem;
+
+        > div {
+            margin-top: 0;
+        }
+
+        h3.no {
+            margin: 0;
+        }
+    }
+
+    .que .content {
+        width: 100%;
+    }
+}

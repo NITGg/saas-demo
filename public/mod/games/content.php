@@ -23,7 +23,6 @@
  */
 
 require(__DIR__ . '/../../config.php');
-require_once(__DIR__ . '/lib.php');
 
 use local_games\admin\output;
 use local_games\mlang;
@@ -34,6 +33,7 @@ $id      = required_param('id', PARAM_INT);           // Course module id.
 $action  = optional_param('action', '', PARAM_ALPHA);
 $rowid   = optional_param('rowid', 0, PARAM_INT);
 $confirm = optional_param('confirm', 0, PARAM_BOOL);
+$selected = array_values(array_filter(optional_param_array('rowids', [], PARAM_INT)));
 
 [$course, $cm] = get_course_and_cm_from_cmid($id, 'games');
 require_login($course, false, $cm);
@@ -80,12 +80,7 @@ $done = static function (moodle_url $url, ?string $message = null) {
     redirect($url, $message ?? get_string('changessaved'), null, \core\output\notification::NOTIFY_SUCCESS);
 };
 
-if ($action === 'setmode' && confirm_sesskey()) {
-    $mode = games_clean_contentmode(required_param('mode', PARAM_INT));
-    $DB->set_field('games', 'contentmode', $mode, ['id' => $game->id]);
-    $done($pageurl);
-
-} else if ($action === 'moveup' && $rowid > 0 && confirm_sesskey()) {
+if ($action === 'moveup' && $rowid > 0 && confirm_sesskey()) {
     $requirerow($rowid, $game, $pageurl);
     content::move_row($rowid, (int) $game->id, -1);
     redirect($pageurl);
@@ -100,13 +95,15 @@ if ($action === 'setmode' && confirm_sesskey()) {
     content::delete_row($rowid, (int) $game->id);
     $done($pageurl);
 
-} else if ($action === 'copy' && confirm_sesskey()) {
-    // Copying only makes sense alongside "own content", so the mode follows: a
-    // teacher who copies the defaults in to edit them expects to see the edits.
-    $written = content::copy_defaults($game, false);
-    if ((int) $game->contentmode === content::MODE_DEFAULT) {
-        $DB->set_field('games', 'contentmode', content::MODE_OWN, ['id' => $game->id]);
+} else if ($action === 'deleteselected' && $selected && confirm_sesskey() && $confirm) {
+    // Scoped to this activity inside delete_row, so ids from elsewhere do nothing.
+    foreach ($selected as $selectedid) {
+        content::delete_row($selectedid, (int) $game->id);
     }
+    $done($pageurl, get_string('rowsdeleted', 'local_games', count($selected)));
+
+} else if ($action === 'copy' && confirm_sesskey()) {
+    $written = content::copy_defaults($game, false);
     $done($pageurl, get_string('contentcopied', 'mod_games', $written));
 
 } else if ($action === 'clear' && confirm_sesskey() && $confirm) {
@@ -150,17 +147,21 @@ echo $OUTPUT->header();
 
 if ($action === 'delete' && $rowid > 0 && confirm_sesskey() && !$confirm) {
     $row = $requirerow($rowid, $game, $pageurl);
-    $summary = [];
-    foreach (registry::fields_for($gameid) as $field => $definition) {
-        $value = (string) ($row->data[$field] ?? '');
-        if ($value !== '' && !empty($definition['translatable'])) {
-            $summary[] = mlang::display($value);
-        }
-    }
     echo $OUTPUT->confirm(
         get_string('confirmdeleterow', 'local_games')
-            . html_writer::tag('p', s(implode(' — ', $summary)), ['class' => 'mt-2 fw-bold']),
+            . html_writer::tag('p', s(output::summary($row->data, $gameid)), ['class' => 'mt-2 fw-bold']),
         new moodle_url($pageurl, ['action' => 'delete', 'rowid' => $rowid, 'sesskey' => sesskey(), 'confirm' => 1]),
+        $pageurl
+    );
+    echo $OUTPUT->footer();
+    exit;
+}
+
+if ($action === 'deleteselected' && $selected && confirm_sesskey() && !$confirm) {
+    echo $OUTPUT->confirm(
+        get_string('confirmdeleterows', 'local_games', count($selected)),
+        new moodle_url($pageurl, ['action' => 'deleteselected', 'rowids' => $selected,
+            'sesskey' => sesskey(), 'confirm' => 1]),
         $pageurl
     );
     echo $OUTPUT->footer();
@@ -195,47 +196,25 @@ echo html_writer::div(
 echo html_writer::div(get_string('gamecontentintro', 'mod_games', s(mlang::display(registry::name($gameid)))),
     'mb-3');
 
-// Where the content comes from: one button per mode, the current one marked.
-$modes = '';
-foreach (content::mode_options() as $mode => $label) {
-    $current = (int) $game->contentmode === $mode;
-    $modes .= html_writer::link(
-        new moodle_url($pageurl, ['action' => 'setmode', 'mode' => $mode, 'sesskey' => sesskey()]),
-        ($current ? '✓ ' : '') . $label,
-        ['class' => 'btn ' . ($current ? 'btn-primary' : 'btn-outline-secondary') . ' me-2 mb-2',
-            'aria-pressed' => $current ? 'true' : 'false']
-    );
-}
-echo $OUTPUT->heading(get_string('contentmode', 'mod_games'), 4);
-echo html_writer::div($modes, 'mb-1');
-echo html_writer::div(get_string('contentmode_desc', 'mod_games'), 'text-muted small mb-3');
-
 // What the class gets right now, in this language, and whether it is enough.
-$mode = (int) $game->contentmode;
 $own = content::own_resolved($game);
-$playing = content::resolved($game);
 $minimum = content::minimum($gameid);
 
-if ($mode === content::MODE_DEFAULT) {
-    $status = get_string('status_default', 'mod_games', count($playing));
-    $level = 'info';
-} else if ($mode === content::MODE_OWN && !$own) {
-    $status = get_string('status_fallback', 'mod_games', count($playing));
-    $level = 'warning';
+if ($own) {
+    echo $OUTPUT->notification(get_string('status_own', 'mod_games', count($own)), 'success', false);
+    if (count($own) < $minimum) {
+        echo $OUTPUT->notification(get_string('toofewrows', 'mod_games',
+            (object) ['minimum' => $minimum, 'count' => count($own)]), 'warning', false);
+    }
 } else {
-    $status = get_string('status_own', 'mod_games', (object) ['own' => count($own), 'total' => count($playing)]);
-    $level = 'success';
-}
-echo $OUTPUT->notification($status, $level, false);
-
-if ($mode !== content::MODE_DEFAULT && $own && count($playing) < $minimum) {
-    echo $OUTPUT->notification(get_string('toofewrows', 'mod_games',
-        (object) ['minimum' => $minimum, 'count' => count($playing)]), 'warning', false);
+    echo $OUTPUT->notification(get_string('status_default', 'mod_games',
+        count(\local_games\content::for_game($gameid))), 'info', false);
 }
 
 // The rows.
-echo $OUTPUT->heading(get_string('yourcontent', 'mod_games'), 4);
 echo html_writer::div(get_string('shapedesc_' . registry::shape_for($gameid), 'local_games'), 'text-muted mb-3');
+
+$rows = content::rows((int) $game->id);
 
 $buttons = html_writer::link($rowurl, get_string('addrow', 'local_games'), [
     'class' => 'btn btn-primary me-2 mb-2',
@@ -246,8 +225,6 @@ $buttons = html_writer::link($rowurl, get_string('addrow', 'local_games'), [
 $buttons .= html_writer::link(new moodle_url($pageurl, ['action' => 'copy', 'sesskey' => sesskey()]),
     get_string('copydefaults', 'mod_games', \local_games\content::count_rows($gameid)),
     ['class' => 'btn btn-outline-secondary me-2 mb-2']);
-
-$rows = content::rows((int) $game->id);
 if ($rows) {
     $buttons .= html_writer::link(new moodle_url($pageurl, ['action' => 'clear', 'sesskey' => sesskey()]),
         get_string('clearcontent', 'mod_games'), ['class' => 'btn btn-outline-danger mb-2']);
@@ -263,7 +240,7 @@ if (!$rows) {
 $fields = registry::fields_for($gameid);
 $table = new html_table();
 $table->attributes['class'] = 'generaltable local-games-content';
-$table->head = ['#'];
+$table->head = [output::selectall_checkbox(), '#'];
 foreach (array_keys($fields) as $field) {
     $table->head[] = get_string('field_' . $field, 'local_games');
 }
@@ -271,7 +248,7 @@ $table->head[] = get_string('actions');
 
 $last = count($rows) - 1;
 foreach ($rows as $index => $row) {
-    $cells = [$index + 1];
+    $cells = [output::row_checkbox((int) $row->id), $index + 1];
     foreach ($fields as $field => $fielddef) {
         $cells[] = output::cell($fielddef, (string) ($row->data[$field] ?? ''));
     }
@@ -299,6 +276,6 @@ foreach ($rows as $index => $row) {
     $table->data[] = $cells;
 }
 
-echo html_writer::table($table);
+echo output::bulk_form($pageurl, html_writer::table($table));
 
 echo $OUTPUT->footer();

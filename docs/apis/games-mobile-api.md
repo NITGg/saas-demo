@@ -367,14 +367,9 @@ activity:
 Returns **exactly the same structure as `local_games_get_content`** (§5): `shape`, `settings`,
 `rulesversion`, `speechlang`, `strings`, and the content lists. Use the same native player for both.
 
-What is in the content lists depends on the teacher's choice for that activity (`contentmode`, the
-server applies it — the app does not need to know it):
-
-| Teacher's choice | Content returned |
-|---|---|
-| Default content | the corner's content (same as `local_games_get_content`) |
-| My content only | the teacher's rows; if the teacher wrote none **in the requested language**, the corner's content |
-| My content + default | the teacher's rows first, then the corner's |
+The content lists hold **the teacher's own rows for this activity**. If the teacher wrote none (or none
+in the requested language), they hold the corner's default content instead, the same as
+`local_games_get_content`. The server decides this; the app just plays what it gets.
 
 ```bash
 curl -s "$BASE/webservice/rest/server.php" \

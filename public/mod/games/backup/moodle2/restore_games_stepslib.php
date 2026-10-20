@@ -58,9 +58,6 @@ class restore_games_activity_structure_step extends restore_activity_structure_s
 
         $data = (object) $data;
         $data->course = $this->get_courseid();
-        // Backups made before content modes existed carry none: they played the
-        // corner's content, and keep doing so.
-        $data->contentmode = (int) ($data->contentmode ?? 0);
 
         $newitemid = $DB->insert_record('games', $data);
         $this->apply_activity_instance($newitemid);

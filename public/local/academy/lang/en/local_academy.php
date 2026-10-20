@@ -76,6 +76,8 @@ $string['player_completed'] = 'Completed';
 $string['player_locked'] = 'Complete the previous lessons first';
 $string['player_lesson'] = 'Lesson';
 $string['player_of'] = 'of';
+$string['player_hidecurriculum'] = 'Hide the curriculum';
+$string['player_showcurriculum'] = 'Show the curriculum';
 
 // Study systems & divisions (Plugins → Local plugins).
 $string['academic_page'] = 'Study systems & divisions';

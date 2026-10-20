@@ -380,7 +380,17 @@ class player {
   .nit-lesson__name{ flex:1; font-size:13px; line-height:1.35; }
   .nit-lesson--current .nit-lesson__name{ font-weight:600; color:var(--t-ink); }
   .nit-lesson__type{ font-size:10px; color:var(--t-muted2,#8A8A82); text-transform:uppercase; letter-spacing:.06em; flex:none; }
-  @media (max-width: 960px){ .nit-player{ grid-template-columns:1fr; min-height:0; } .nit-player__aside{ border-inline-start:0; border-top:1px solid var(--t-border,#EDEDE9); } }
+  .nit-player__aside{ position:relative; }
+  .nit-player__toggle{ position:absolute; top:14px; inset-inline-end:14px; z-index:2; width:34px; height:34px; display:grid; place-items:center; padding:0; border-radius:9px; border:1px solid var(--t-border2,#DCDCD7); background:var(--t-bg,#fff); color:var(--t-muted,#6E7781); cursor:pointer; transition:color .15s ease,border-color .15s ease; }
+  .nit-player__toggle:hover, .nit-player__toggle:focus-visible{ color:var(--t-accent); border-color:var(--t-accent); }
+  .nit-player__toggle svg{ width:18px; height:18px; }
+  .nit-player__asidehd{ padding-inline-end:60px; }
+  /* Closed: the curriculum folds into a slim rail that keeps only the toggle, so the lesson takes the width. */
+  .nit-player.is-aside-closed{ grid-template-columns:minmax(0,1fr) 56px; }
+  .nit-player.is-aside-closed .nit-player__asidehd, .nit-player.is-aside-closed .nit-player__list{ display:none; }
+  .nit-player.is-aside-closed .nit-player__toggle{ position:sticky; top:14px; margin:14px auto 0; }
+  @media (max-width: 960px){ .nit-player, .nit-player.is-aside-closed{ grid-template-columns:1fr; min-height:0; } .nit-player__aside{ border-inline-start:0; border-top:1px solid var(--t-border,#EDEDE9); }
+    .nit-player.is-aside-closed .nit-player__toggle{ position:static; margin:12px; } }
 </style>
 <div class="nit-player" data-cmid="<?php echo (int) $cm->id; ?>">
   <div class="nit-player__main">
@@ -424,7 +434,12 @@ class player {
     </div>
   </div>
 
-  <aside class="nit-player__aside">
+  <aside class="nit-player__aside" id="nit-player-aside">
+    <button type="button" class="nit-player__toggle" aria-controls="nit-player-aside" aria-expanded="true"
+        data-hide="<?php echo $e($s('player_hidecurriculum')); ?>" data-show="<?php echo $e($s('player_showcurriculum')); ?>"
+        title="<?php echo $e($s('player_hidecurriculum')); ?>" aria-label="<?php echo $e($s('player_hidecurriculum')); ?>">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/></svg>
+    </button>
     <div class="nit-player__asidehd">
       <a class="nit-player__back" href="<?php echo $e((new moodle_url('/my/'))->out(false)); ?>">&larr; <?php echo $e(get_string('myhome')); ?></a>
       <a class="nit-player__coursename" href="<?php echo $e($courseurl); ?>"><?php echo $e(format_string($course->fullname)); ?></a>
@@ -463,6 +478,36 @@ class player {
   // Never render the player inside another player (a course link opened in the
   // lesson frame): break out to the top window.
   if (window.top !== window.self) { try { window.top.location.href = window.location.href; } catch (e) { /* ignore */ } return; }
+
+  // The curriculum can be folded away. The learner's choice is remembered (per
+  // browser); the lesson frame can also fold it for a while without remembering
+  // (a quiz attempt does, so nothing competes with the question).
+  var player = document.querySelector('.nit-player');
+  var t = player && player.querySelector('.nit-player__toggle');
+  var KEY = 'nitPlayerAside';
+  function stored() {
+    try { return window.localStorage.getItem(KEY) !== 'closed'; } catch (e) { return true; }
+  }
+  function setAside(open, remember) {
+    if (!t) { return; }
+    if (open === null) { open = stored(); }
+    player.classList.toggle('is-aside-closed', !open);
+    var label = t.getAttribute(open ? 'data-hide' : 'data-show');
+    t.setAttribute('aria-expanded', open ? 'true' : 'false');
+    t.setAttribute('title', label);
+    t.setAttribute('aria-label', label);
+    if (remember) {
+      try { window.localStorage.setItem(KEY, open ? 'open' : 'closed'); } catch (e) { /* ignore */ }
+    }
+  }
+  if (t) {
+    setAside(null, false);
+    t.addEventListener('click', function () {
+      setAside(player.classList.contains('is-aside-closed'), true);
+    });
+  }
+  window.nitPlayerAside = setAside;
+
   var b = document.getElementById('nit-mark-complete');
   if (!b) { return; }
   b.addEventListener('click', function () {

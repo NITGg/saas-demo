@@ -66,7 +66,6 @@ function games_add_instance($data, $mform = null) {
     $data->showhublink = !empty($data->showhublink) ? 1 : 0;
     $data->completionplays = max(0, (int) ($data->completionplays ?? 0));
     $data->completionscore = max(0, (int) ($data->completionscore ?? 0));
-    $data->contentmode = games_clean_contentmode($data->contentmode ?? null);
 
     return $DB->insert_record('games', $data);
 }
@@ -86,7 +85,6 @@ function games_update_instance($data, $mform = null) {
     $data->showhublink = !empty($data->showhublink) ? 1 : 0;
     $data->completionplays = max(0, (int) ($data->completionplays ?? 0));
     $data->completionscore = max(0, (int) ($data->completionscore ?? 0));
-    $data->contentmode = games_clean_contentmode($data->contentmode ?? null);
 
     // A different game may read a different kind of row; the activity's own
     // content then has to go rather than feed the new game rows it cannot use.
@@ -181,17 +179,6 @@ function mod_games_get_completion_active_rule_descriptions($cm) {
     }
 
     return $descriptions;
-}
-
-/**
- * A content mode from a form or a restore, made safe to store.
- *
- * @param mixed $value submitted value
- * @return int one of the \mod_games\content::MODE_* constants
- */
-function games_clean_contentmode($value): int {
-    $value = (int) $value;
-    return array_key_exists($value, \mod_games\content::mode_options()) ? $value : \mod_games\content::MODE_DEFAULT;
 }
 
 /**

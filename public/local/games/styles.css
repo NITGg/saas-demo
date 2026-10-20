@@ -303,12 +303,12 @@ a.gc-card__link:focus-visible .gc-card__name {
     margin-block-start: auto;
     padding: 0.65rem 1.25rem;
     border-radius: 999px;
-    background: linear-gradient(180deg, var(--gc-primary), var(--gc-fill));
+    background: linear-gradient(180deg, var(--gc-primary), var(--gc-fill)) var(--gc-fill);
     box-shadow: var(--gc-btn-shadow);
     color: var(--gc-onfill);
     font-size: 1.1rem;
     font-weight: 800;
-    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .gc-card__cta:not(.gc-card__cta--soon)::before {
@@ -588,7 +588,7 @@ a.gc-card__link:active .gc-card__cta {
     padding: 0.75rem 1.75rem;
     border: 0;
     border-radius: 999px;
-    background: linear-gradient(180deg, var(--gc-primary), var(--gc-fill));
+    background: linear-gradient(180deg, var(--gc-primary), var(--gc-fill)) var(--gc-fill);
     box-shadow: var(--gc-btn-shadow);
     color: var(--gc-onfill);
     font-weight: 800;
@@ -596,7 +596,7 @@ a.gc-card__link:active .gc-card__cta {
     line-height: 1.2;
     cursor: pointer;
     text-decoration: none;
-    transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease, filter 0.12s ease;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
 }
 
 .gc-btn--big {
@@ -786,10 +786,10 @@ a.gc-btn--ghost {
 .gc-who__choice,
 button.gc-tile:not(.gc-tile--static) {
     border: 3px solid transparent;
-    background: linear-gradient(180deg, var(--gc-primary), var(--gc-fill));
+    background: linear-gradient(180deg, var(--gc-primary), var(--gc-fill)) var(--gc-fill);
     box-shadow: var(--gc-btn-shadow);
     color: var(--gc-onfill);
-    transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease, border-color 0.12s ease;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
 }
 
 .gc-answer:hover:not(:disabled),

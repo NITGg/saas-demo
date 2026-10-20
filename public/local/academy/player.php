@@ -74,7 +74,7 @@ $stage = '<div class="nit-player__frame">'
     if (!f) {
         return;
     }
-    var open = false, saved = 0;
+    var open = false, saved = 0, attempt = false;
 
     function doc() {
         try {
@@ -147,6 +147,13 @@ $stage = '<div class="nit-player__frame">'
             d.location.replace(u.toString());
             return;
         }
+        // Focus mode: entering a quiz attempt folds the curriculum away (not remembered,
+        // so the learner can still open it); leaving the attempt brings back their choice.
+        var inattempt = d.body.id === 'page-mod-quiz-attempt';
+        if (inattempt !== attempt && window.nitPlayerAside) {
+            window.nitPlayerAside(inattempt ? false : null, false);
+        }
+        attempt = inattempt;
         open = false;
         f.classList.remove('is-dialog');
         document.documentElement.style.overflow = '';
@@ -155,6 +162,16 @@ $stage = '<div class="nit-player__frame">'
             attributeFilter: ['class', 'style']});
     });
     window.addEventListener('resize', fit);
+    // Folding the curriculum widens the frame, so the lesson inside gets shorter.
+    if (window.ResizeObserver) {
+        var w = 0;
+        new ResizeObserver(function () {
+            if (f.clientWidth !== w) {
+                w = f.clientWidth;
+                fit();
+            }
+        }).observe(f);
+    }
 })();
 JS
     . '</script>';

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="mod/games/db" VERSION="2026102000"
+<XMLDB PATH="mod/games/db" VERSION="2026102001"
        COMMENT="Game activity: which game a course module plays, and what each student did in it.">
   <TABLES>
     <TABLE NAME="games" COMMENT="Each Game activity instance.">
@@ -13,7 +13,6 @@
         <FIELD NAME="showhublink" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Whether the page offers a way through to the whole Games Corner"/>
         <FIELD NAME="completionplays" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Rounds the student must finish for the activity to count as complete; 0 = rule not used"/>
         <FIELD NAME="completionscore" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Score the student must reach in one round; 0 = rule not used"/>
-        <FIELD NAME="contentmode" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Where the game content comes from: 0 = the corner default, 1 = this activity (default when it has none), 2 = both"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
       </FIELDS>

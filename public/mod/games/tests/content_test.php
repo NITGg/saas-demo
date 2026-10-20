@@ -33,15 +33,14 @@ final class content_test extends \advanced_testcase {
     /**
      * A Game activity playing Quiz, and its record.
      *
-     * @param int $mode content mode
      * @return array [course, cm, games record]
      */
-    private function make_activity(int $mode): array {
+    private function make_activity(): array {
         global $DB;
 
         $course = $this->getDataGenerator()->create_course();
         $cm = $this->getDataGenerator()->create_module('games',
-            ['course' => $course->id, 'gameid' => 'quiz', 'contentmode' => $mode]);
+            ['course' => $course->id, 'gameid' => 'quiz']);
         $game = $DB->get_record('games', ['id' => $cm->id]);
 
         return [$course, $cm, $game];
@@ -77,20 +76,9 @@ final class content_test extends \advanced_testcase {
         return array_column($resolved, 'question');
     }
 
-    public function test_default_mode_plays_corner_content(): void {
+    public function test_plays_default_until_activity_has_content(): void {
         $this->resetAfterTest();
-        [, , $game] = $this->make_activity(content::MODE_DEFAULT);
-        content::save_row(0, $game, $this->quiz_row('Mine?'));
-
-        $playing = $this->questions(content::resolved($game, 'en'));
-
-        $this->assertNotContains('Mine?', $playing);
-        $this->assertCount(count(\local_games\content::for_game('quiz', 'en')), $playing);
-    }
-
-    public function test_own_mode_falls_back_until_content_exists(): void {
-        $this->resetAfterTest();
-        [, , $game] = $this->make_activity(content::MODE_OWN);
+        [, , $game] = $this->make_activity();
         $default = count(\local_games\content::for_game('quiz', 'en'));
 
         $this->assertCount($default, content::resolved($game, 'en'));
@@ -103,9 +91,9 @@ final class content_test extends \advanced_testcase {
         $this->assertTrue(content::uses_own($game, 'en'));
     }
 
-    public function test_own_mode_falls_back_per_language(): void {
+    public function test_falls_back_per_language(): void {
         $this->resetAfterTest();
-        [, , $game] = $this->make_activity(content::MODE_OWN);
+        [, , $game] = $this->make_activity();
         content::save_row(0, $game, $this->quiz_row('عربي فقط', 'ar'));
 
         $this->assertSame(['عربي فقط'], $this->questions(content::resolved($game, 'ar')));
@@ -114,21 +102,10 @@ final class content_test extends \advanced_testcase {
         $this->assertNotEmpty(content::resolved($game, 'en'));
     }
 
-    public function test_both_mode_puts_own_first_then_default(): void {
-        $this->resetAfterTest();
-        [, , $game] = $this->make_activity(content::MODE_BOTH);
-        content::save_row(0, $game, $this->quiz_row('Mine'));
-
-        $playing = $this->questions(content::resolved($game, 'en'));
-
-        $this->assertSame('Mine', $playing[0]);
-        $this->assertCount(1 + count(\local_games\content::for_game('quiz', 'en')), $playing);
-    }
-
     public function test_save_keeps_only_shape_fields_and_rows_stay_in_their_activity(): void {
         $this->resetAfterTest();
-        [, , $game] = $this->make_activity(content::MODE_OWN);
-        [, , $other] = $this->make_activity(content::MODE_OWN);
+        [, , $game] = $this->make_activity();
+        [, , $other] = $this->make_activity();
 
         $id = content::save_row(0, $game, $this->quiz_row('Q') + ['bogus' => 'x']);
 
@@ -144,7 +121,7 @@ final class content_test extends \advanced_testcase {
     public function test_copy_defaults_and_move(): void {
         $this->resetAfterTest();
         $this->setAdminUser();
-        [, , $game] = $this->make_activity(content::MODE_OWN);
+        [, , $game] = $this->make_activity();
 
         $copied = content::copy_defaults($game);
 
@@ -158,7 +135,7 @@ final class content_test extends \advanced_testcase {
 
     public function test_changing_game_keeps_rows_of_the_same_shape_only(): void {
         $this->resetAfterTest();
-        [, , $game] = $this->make_activity(content::MODE_OWN);
+        [, , $game] = $this->make_activity();
         content::save_row(0, $game, $this->quiz_row('Q'));
 
         // quiz -> xo-quiz: both ask questions.
@@ -172,7 +149,7 @@ final class content_test extends \advanced_testcase {
 
     public function test_deleting_the_activity_deletes_its_content(): void {
         $this->resetAfterTest();
-        [, $cm, $game] = $this->make_activity(content::MODE_OWN);
+        [, $cm, $game] = $this->make_activity();
         content::save_row(0, $game, $this->quiz_row('Q'));
 
         course_delete_module($cm->cmid);
@@ -180,18 +157,17 @@ final class content_test extends \advanced_testcase {
         $this->assertSame(0, content::count_rows((int) $game->id));
     }
 
-    public function test_duplicate_copies_content_and_mode(): void {
+    public function test_duplicate_copies_content(): void {
         global $DB;
         $this->resetAfterTest();
         $this->setAdminUser();
-        [$course, $cm, $game] = $this->make_activity(content::MODE_BOTH);
+        [$course, $cm, $game] = $this->make_activity();
         content::save_row(0, $game, $this->quiz_row('Q1'));
         content::save_row(0, $game, $this->quiz_row('Q2'));
 
         $newcm = duplicate_module($course, get_fast_modinfo($course)->get_cm($cm->cmid));
         $copy = $DB->get_record('games', ['id' => $newcm->instance]);
 
-        $this->assertSame(content::MODE_BOTH, (int) $copy->contentmode);
         $this->assertSame(['Q1', 'Q2'], array_map(static function ($row) {
             return $row->data['question'];
         }, content::rows((int) $copy->id)));
@@ -199,7 +175,7 @@ final class content_test extends \advanced_testcase {
 
     public function test_external_get_content_returns_activity_content(): void {
         $this->resetAfterTest();
-        [$course, $cm, $game] = $this->make_activity(content::MODE_OWN);
+        [$course, $cm, $game] = $this->make_activity();
         content::save_row(0, $game, $this->quiz_row('Only this'));
 
         $student = $this->getDataGenerator()->create_and_enrol($course, 'student');
@@ -215,7 +191,7 @@ final class content_test extends \advanced_testcase {
 
     public function test_external_get_content_requires_access(): void {
         $this->resetAfterTest();
-        [, $cm] = $this->make_activity(content::MODE_OWN);
+        [, $cm] = $this->make_activity();
         $this->setUser($this->getDataGenerator()->create_user());
 
         $this->expectException(\require_login_exception::class);

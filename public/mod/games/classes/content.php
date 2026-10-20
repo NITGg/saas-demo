@@ -27,27 +27,15 @@ use local_games\registry;
  * That is what lets the corner's form, validation and payload builder serve the
  * activity unchanged.
  *
- * Where a round's content comes from is the activity's `contentmode`:
- *  - MODE_DEFAULT: the corner's content, as edited in Game control;
- *  - MODE_OWN: this activity's rows - or the corner's when it has none usable
- *    in the current language, so a half-finished activity never shows an empty
- *    game;
- *  - MODE_BOTH: this activity's rows followed by the corner's.
+ * Which content a round plays is simple: the activity's own rows when it has
+ * some usable in the current language, otherwise the corner's default content,
+ * so an activity a teacher has not filled in (yet) still plays.
  *
  * @package    mod_games
  * @copyright  2026 NIT
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class content {
-
-    /** @var int Play the corner's default content. */
-    const MODE_DEFAULT = 0;
-
-    /** @var int Play this activity's content; the default when it has none. */
-    const MODE_OWN = 1;
-
-    /** @var int Play this activity's content and the default together. */
-    const MODE_BOTH = 2;
 
     /**
      * Fewest usable rows each game needs to play a proper round. Below this the
@@ -68,19 +56,6 @@ class content {
         'who-am-i'        => 4,
         'color-challenge' => 4,
     ];
-
-    /**
-     * Every content mode, for a menu.
-     *
-     * @return array<int, string> mode => label
-     */
-    public static function mode_options(): array {
-        return [
-            self::MODE_DEFAULT => get_string('contentmode_default', 'mod_games'),
-            self::MODE_OWN     => get_string('contentmode_own', 'mod_games'),
-            self::MODE_BOTH    => get_string('contentmode_both', 'mod_games'),
-        ];
-    }
 
     /**
      * Fewest usable rows one game needs.
@@ -333,7 +308,7 @@ class content {
      * @return bool
      */
     public static function uses_own(\stdClass $game, ?string $lang = null): bool {
-        return (int) $game->contentmode !== self::MODE_DEFAULT && self::own_resolved($game, $lang) !== [];
+        return self::own_resolved($game, $lang) !== [];
     }
 
     /**
@@ -344,19 +319,9 @@ class content {
      * @return array[]
      */
     public static function resolved(\stdClass $game, ?string $lang = null): array {
-        $mode = (int) ($game->contentmode ?? self::MODE_DEFAULT);
-        if ($mode === self::MODE_DEFAULT) {
-            return corner::for_game($game->gameid, $lang);
-        }
-
-        $own = self::own_resolved($game, $lang);
-        if ($mode === self::MODE_BOTH) {
-            return array_merge($own, corner::for_game($game->gameid, $lang));
-        }
-
-        // MODE_OWN: nothing of the teacher's in this language yet, so the class
-        // still gets a playable game rather than an empty one.
-        return $own ?: corner::for_game($game->gameid, $lang);
+        // Nothing of the teacher's in this language (yet): the class still gets
+        // a playable game - the default content - rather than an empty one.
+        return self::own_resolved($game, $lang) ?: corner::for_game($game->gameid, $lang);
     }
 
     /**

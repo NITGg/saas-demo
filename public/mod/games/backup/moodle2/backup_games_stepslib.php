@@ -46,7 +46,7 @@ class backup_games_activity_structure_step extends backup_activity_structure_ste
         // restore than one that silently points at a different game.
         $games = new backup_nested_element('games', ['id'], [
             'name', 'intro', 'introformat', 'gameid', 'showhublink',
-            'completionplays', 'completionscore', 'contentmode', 'timecreated', 'timemodified',
+            'completionplays', 'completionscore', 'timecreated', 'timemodified',
         ]);
 
         // The activity's own content is part of the activity, not user data:

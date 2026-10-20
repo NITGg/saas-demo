@@ -34,16 +34,8 @@ function xmldb_games_upgrade($oldversion) {
     $dbman = $DB->get_manager();
 
     if ($oldversion < 2026102000) {
-        // Where an activity's content comes from. Existing activities get 0 -
-        // the corner's default content - so nothing they play changes.
-        $table = new xmldb_table('games');
-        $field = new xmldb_field('contentmode', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '0',
-            'completionscore');
-        if (!$dbman->field_exists($table, $field)) {
-            $dbman->add_field($table, $field);
-        }
-
-        // An activity's own content rows.
+        // An activity's own content rows. (This step also used to add a
+        // games.contentmode field; the next step drops it where it exists.)
         $table = new xmldb_table('games_content');
         $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
         $table->add_field('gamesid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
@@ -60,6 +52,18 @@ function xmldb_games_upgrade($oldversion) {
         }
 
         upgrade_mod_savepoint(true, 2026102000, 'games');
+    }
+
+    if ($oldversion < 2026102001) {
+        // The content modes were dropped: an activity plays its own content when
+        // it has some and the default content otherwise, so nothing needs storing.
+        $table = new xmldb_table('games');
+        $field = new xmldb_field('contentmode');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->drop_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2026102001, 'games');
     }
 
     return true;

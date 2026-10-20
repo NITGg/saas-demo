@@ -196,7 +196,7 @@ class output {
 
         $table = new html_table();
         $table->attributes['class'] = 'generaltable local-games-content';
-        $table->head = [];
+        $table->head = [self::selectall_checkbox()];
         foreach (array_keys($fields) as $field) {
             $table->head[] = get_string('field_' . $field, 'local_games');
         }
@@ -205,7 +205,7 @@ class output {
 
         $last = count($rows) - 1;
         foreach ($rows as $index => $row) {
-            $cells = [];
+            $cells = [new html_table_cell(self::row_checkbox((int) $row->id))];
             foreach ($fields as $field => $definition) {
                 $cells[] = new html_table_cell(
                     self::cell($definition, (string) ($row->data[$field] ?? '')));
@@ -215,7 +215,7 @@ class output {
             $table->data[] = new html_table_row($cells);
         }
 
-        $out .= html_writer::table($table);
+        $out .= self::bulk_form($actionurl, html_writer::table($table));
 
         return $out;
     }
@@ -312,5 +312,128 @@ class output {
         }
 
         return s($shown);
+    }
+
+    // ------------------------------------------------------------------
+    // Selecting several rows to delete at once.
+    // ------------------------------------------------------------------
+
+    /**
+     * One row's display strings joined into a line, for a confirmation.
+     *
+     * @param array $data the row's stored fields
+     * @param string $gameid game slug
+     * @return string plain text
+     */
+    public static function summary(array $data, string $gameid): string {
+        $summary = [];
+        foreach (registry::fields_for($gameid) as $field => $definition) {
+            $value = (string) ($data[$field] ?? '');
+            if ($value !== '' && !empty($definition['translatable'])) {
+                $summary[] = mlang::display($value);
+            }
+        }
+        return implode(' — ', $summary);
+    }
+
+    /**
+     * The "select all" box for a content table's header.
+     *
+     * @return string HTML
+     */
+    public static function selectall_checkbox(): string {
+        return html_writer::empty_tag('input', [
+            'type' => 'checkbox',
+            'class' => 'form-check-input',
+            'data-local-games-selectall' => '1',
+            'title' => get_string('selectall'),
+            'aria-label' => get_string('selectall'),
+        ]);
+    }
+
+    /**
+     * The box that selects one row.
+     *
+     * @param int $id row id
+     * @return string HTML
+     */
+    public static function row_checkbox(int $id): string {
+        return html_writer::empty_tag('input', [
+            'type' => 'checkbox',
+            'class' => 'form-check-input',
+            'name' => 'rowids[]',
+            'value' => $id,
+            'data-local-games-select' => '1',
+            'aria-label' => get_string('select'),
+        ]);
+    }
+
+    /**
+     * A content table inside the form that deletes the selected rows.
+     *
+     * The form posts action=deleteselected and rowids[] back to the page, which
+     * asks for confirmation before deleting. The button stays disabled until a
+     * row is ticked, and shows how many are.
+     *
+     * @param moodle_url $pageurl the page that handles action=deleteselected
+     * @param string $tablehtml the table, with row_checkbox() in each row
+     * @return string HTML
+     */
+    public static function bulk_form(moodle_url $pageurl, string $tablehtml): string {
+        global $PAGE;
+
+        $PAGE->requires->js_amd_inline(<<<'JS'
+require([], function() {
+    var sync = function(form) {
+        var boxes = form.querySelectorAll('[data-local-games-select]');
+        var ticked = form.querySelectorAll('[data-local-games-select]:checked').length;
+        var all = form.querySelector('[data-local-games-selectall]');
+        var button = form.querySelector('[data-local-games-deleteselected]');
+        if (all) {
+            all.checked = boxes.length > 0 && ticked === boxes.length;
+            all.indeterminate = ticked > 0 && ticked < boxes.length;
+        }
+        if (button) {
+            button.disabled = ticked === 0;
+            button.querySelector('[data-count]').textContent = ticked ? ' (' + ticked + ')' : '';
+        }
+    };
+    document.addEventListener('change', function(e) {
+        var form = e.target.closest('[data-local-games-bulk]');
+        if (!form) {
+            return;
+        }
+        if (e.target.matches('[data-local-games-selectall]')) {
+            form.querySelectorAll('[data-local-games-select]').forEach(function(box) {
+                box.checked = e.target.checked;
+            });
+        }
+        sync(form);
+    });
+    document.querySelectorAll('[data-local-games-bulk]').forEach(sync);
+});
+JS);
+
+        $button = html_writer::tag('button',
+            get_string('deleteselected', 'local_games') . html_writer::span('', '', ['data-count' => '1']), [
+                'type' => 'submit',
+                'class' => 'btn btn-outline-danger mb-2',
+                'data-local-games-deleteselected' => '1',
+                'disabled' => 'disabled',
+            ]);
+
+        $out = html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
+        $out .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => 'deleteselected']);
+        foreach ($pageurl->params() as $name => $value) {
+            $out .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => $name, 'value' => $value]);
+        }
+        $out .= html_writer::div($button, 'mb-2');
+        $out .= $tablehtml;
+
+        return html_writer::tag('form', $out, [
+            'method' => 'post',
+            'action' => $pageurl->out_omit_querystring(),
+            'data-local-games-bulk' => '1',
+        ]);
     }
 }

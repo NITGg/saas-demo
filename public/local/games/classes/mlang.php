@@ -184,21 +184,29 @@ class mlang {
      * @return array<string, string> language code => human name, site default first
      */
     public static function languages(): array {
+        // Remembered for the request. build() asks once per row, and on install
+        // - when caches are off - every ask re-reads each language pack from
+        // disk: seeding the default content then took many minutes.
+        static $languages = null;
+        if ($languages !== null && !(defined('PHPUNIT_TEST') && PHPUNIT_TEST)) {
+            return $languages;
+        }
+
+        $languages = [];
         if (class_exists('\local_nit_mlang\langs')) {
-            $langs = \local_nit_mlang\langs::get();
-            if ($langs) {
-                // That plugin returns a numerically indexed list - each entry
-                // carrying its own code, name and writing direction - so it has
-                // to be keyed by the code here. Its order, site default first,
-                // is the order an author types in and is kept.
-                $out = [];
-                foreach ($langs as $lang) {
-                    $out[$lang['code']] = $lang['name'];
-                }
-                return $out;
+            // That plugin returns a numerically indexed list - each entry
+            // carrying its own code, name and writing direction - so it has to
+            // be keyed by the code here. Its order, site default first, is the
+            // order an author types in and is kept.
+            foreach (\local_nit_mlang\langs::get() as $lang) {
+                $languages[$lang['code']] = $lang['name'];
             }
         }
 
-        return get_string_manager()->get_list_of_translations();
+        if (!$languages) {
+            $languages = get_string_manager()->get_list_of_translations();
+        }
+
+        return $languages;
     }
 }
