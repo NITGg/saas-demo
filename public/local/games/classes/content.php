@@ -234,6 +234,10 @@ class content {
                 break;
         }
 
+        // The numbers the round is played with; the game file reads them
+        // through api.setting(). An object even when empty, so JS lookups work.
+        $payload['settings'] = (object) registry::settings_for($gameid);
+
         return $payload;
     }
 

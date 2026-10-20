@@ -236,6 +236,18 @@
             sumrules: config.sumrules || [],
             numberrules: config.numberrules || [],
 
+            /**
+             * One of the numbers this round is played with (registry::settings_for),
+             * the same value the mobile app receives from get_content.
+             *
+             * @param {string} name setting key
+             * @param {number} fallback what the game file used before settings existed
+             * @return {number}
+             */
+            setting: function (name, fallback) {
+                var value = (config.settings || {})[name];
+                return typeof value === 'number' && isFinite(value) ? value : fallback;
+            },
 
             /**
              * A number as the child reads it: Arabic-Indic digits in Arabic.

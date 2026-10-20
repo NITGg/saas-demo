@@ -2,7 +2,7 @@
 
 Everything the app needs to show the **Games Corner** (the hub at `/local/games/index.php`), play its
 games natively, save points and badges, and play a **Game activity** placed inside a course.
-Last updated **2026-10-19**.
+Last updated **2026-10-20**. How each game plays (rules, scoring, settings): [`games-rules-spec.md`](games-rules-spec.md).
 
 > Server side: plugins `local_games` (the corner) and `mod_games` (the course activity). The full
 > platform reference is [`../MOBILE_API.md`](../MOBILE_API.md); this file only adds the games.
@@ -129,6 +129,7 @@ No parameters. Everything the web hub shows, in the requested language.
           "id": "math-race",
           "emoji": "🔢",
           "logourl": "",
+          "shape": "sumrules",
           "name": "Math Race",
           "description": "Add, subtract and multiply - pick the right answer and keep the race going.",
           "level": 1,
@@ -159,6 +160,7 @@ No parameters. Everything the web hub shows, in the requested language.
 | `categories[]` | Sections in **display order**; games inside are in display order too. Do not re-sort. Section keys: `numbers`, `letters`, `quiz`, `memory`, `motion`. |
 | `note` | Optional line under a section heading. `""` = render nothing. |
 | `games[].logourl` | Image uploaded by the admin. If not empty, show it **instead of** `emoji`. Optional field — treat missing as `""`. |
+| `games[].shape` | Which `get_content` list the game reads (see §5). Use it to pick the native player. |
 | `games[].level` | Difficulty 1–3 (web shows that many ⭐). |
 | `games[].live` | `false` = planned, not playable: show the card disabled with `soonlabel`. |
 | `games[].plays` | `0` = never played → hide the best-score line. |
@@ -181,6 +183,7 @@ Games switched **off** by the admin in Game control are simply not in the list.
   "emoji": "🔢",
   "logourl": "",
   "category": "numbers",
+  "shape": "sumrules",
   "level": 1,
   "name": "Math Race",
   "description": "Add, subtract and multiply - pick the right answer and keep the race going.",
@@ -230,6 +233,9 @@ Unknown or switched-off slug → `errorunknowngame`.
 {
   "lang": "en",
   "arabicdigits": false,
+  "speechlang": "en",
+  "rulesversion": 1,
+  "settings": [{"key": "questions", "value": 20}],
   "revision": 1792394479,
   "shape": "questions",
   "strings": [
@@ -245,6 +251,9 @@ Unknown or switched-off slug → `errorunknowngame`.
 }
 ```
 
+- **`settings`** = the numbers the round is played with (items per round, seconds, lives, speeds…). The web game uses the same values. Keys per game: [`games-rules-spec.md`](games-rules-spec.md). Values are numbers (some decimals).
+- **`rulesversion`** changes when any game rule or setting changes. If it is higher than what your build implements, fall back to the web view for that game.
+- **`speechlang`** = locale for TTS and speech recognition (`ar-EG` in Arabic, else the UI language).
 - **`shape` tells you which list is filled.** All lists are always present; the unused ones are `[]`.
 - `strings` = every text the game screens use (buttons, feedback, end card). Placeholders: `{$a}`, `{$b}`.
   **Cache `strings` by `revision` + language. Do not cache the content lists** — the admin can edit

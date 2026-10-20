@@ -39,6 +39,13 @@ class registry {
     const STATUS_SOON = 'soon';
 
     /**
+     * Bump whenever a game's rules change - a setting below, a scoring
+     * formula, how content becomes a round. Native clients compare it with the
+     * version they were built against (see docs/apis/games-rules-spec.md).
+     */
+    const RULES_VERSION = 1;
+
+    /**
      * The sections of the hub page, in display order.
      *
      * @return array<string, string> category key => emoji
@@ -533,6 +540,50 @@ class registry {
         ];
 
         return $map[$id] ?? 'questions';
+    }
+
+    /**
+     * The numbers one game's round is played with.
+     *
+     * One source for both players: the web shell hands these to the game file
+     * (api.setting) and local_games_get_content hands them to the mobile app,
+     * so the two cannot drift. Each game file keeps the same value as its
+     * fallback. Times are seconds unless the key ends in "ms"; speeds are as
+     * the spec for that game describes them.
+     *
+     * @param string $id game slug
+     * @return array<string, int|float> setting key => value; empty for an unknown slug
+     */
+    public static function settings_for(string $id): array {
+        $settings = [
+            'math-race'       => ['target' => 12, 'maxattempts' => 26, 'timestart' => 13, 'timefloor' => 7],
+            'math-catcher'    => ['lives' => 3, 'target' => 25, 'ruleevery' => 6, 'fallstart' => 95,
+                'fallmax' => 200, 'spawnstartms' => 1150, 'spawnminms' => 620, 'basketspeed' => 460],
+            'math-shop'       => ['trips' => 5],
+            'letter-order'    => ['words' => 15],
+            'word-builder'    => ['sets' => 3, 'size' => 7, 'minwords' => 4, 'maxtargets' => 6],
+            'match-connect'   => ['pairs' => 4, 'boards' => 4, 'dragthreshold' => 8],
+            'crossword'       => ['size' => 11, 'target' => 5, 'pad' => 16],
+            'word-search'     => ['size' => 9, 'words' => 6],
+            'speak-words'     => ['words' => 10],
+            'quiz'            => ['questions' => 20],
+            'true-false'      => ['statements' => 18],
+            'xo-quiz'         => ['matches' => 3],
+            'target-answer'   => ['questions' => 12, 'crossslow' => 15, 'crossfast' => 10, 'readingpause' => 2.2],
+            'balloon-pop'     => ['target' => 25, 'ruleevery' => 8, 'riseslow' => 8, 'risefast' => 4.5,
+                'spawnstartms' => 900, 'spawnminms' => 480, 'columns' => 5],
+            'wheel'           => ['spins' => 10, 'friction' => 0.972, 'minflick' => 240, 'maxflick' => 1800],
+            'space-quiz'      => ['stage1steps' => 5, 'stage2steps' => 7, 'stage3steps' => 9],
+            'who-am-i'        => ['riddles' => 8, 'worth1' => 10, 'worth2' => 6, 'worth3' => 3],
+            'memory-cards'    => ['pairs' => 6, 'flipbudget' => 20],
+            'puzzle'          => ['board1' => 2, 'board2' => 3, 'board3' => 4],
+            'find-difference' => ['cols' => 4, 'rows' => 4, 'differences' => 5, 'boards' => 3],
+            'color-challenge' => ['choices' => 4],
+            'runner'          => ['hearts' => 3, 'target' => 10, 'lanes' => 3, 'travelslow' => 4.2,
+                'travelfast' => 2.6, 'wavestartms' => 4600, 'waveminms' => 3000],
+        ];
+
+        return $settings[$id] ?? [];
     }
 
     /**

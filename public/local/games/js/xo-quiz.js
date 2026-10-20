@@ -42,6 +42,9 @@
     ];
 
     window.LocalGames.register('xo-quiz', function (api) {
+        // The round's numbers come from the server (registry::settings_for);
+        // the values above are only the fallback.
+        MATCHES = api.setting('matches', MATCHES);
 
         var board = [];
         var match = 0;

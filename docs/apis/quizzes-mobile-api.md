@@ -3,7 +3,7 @@
 Everything the app needs to **list quizzes, take a quiz natively (all 17 Moodle question types), save
 answers, finish, and show the review**. Moodle itself grades every answer, so marks, the gradebook and
 the website's review always match what the app shows.
-Last updated **2026-10-19**.
+Last updated **2026-10-20**.
 
 > Server side: plugin `local_academy` (`/local/academy/api.php`). The full platform reference is
 > [`../MOBILE_API.md`](../MOBILE_API.md) (§3.6 is the short version of this file).
@@ -139,6 +139,7 @@ Every question has these common fields, plus the fields of its type (§4):
 | Field | Meaning |
 |---|---|
 | `slot` | position in the quiz (1, 2, 3 …) — draw in this order |
+| `page` | the quiz page this question is on, **0-based**, exactly as the website lays out the attempt (the teacher's page breaks) |
 | `questionid` | send it back in `save_quiz_answer` |
 | `type` | one of the 17 types in §4 |
 | `text` | the question text as plain text (calculated numbers already filled in) |
@@ -146,6 +147,17 @@ Every question has these common fields, plus the fields of its type (§4):
 | `defaultmark`, `max_mark` | marks this question is worth in the quiz |
 | `supported` | `true` = draw natively; `false` = open the quiz in the webview |
 | `response` | the answer saved so far, in the same format you send (§4), or `null` |
+
+**Using `page`:** questions with the same `page` belong together. A reading passage is usually a
+`description` item on the same page as the questions about it, so when you show one question per
+screen, keep the `description` items of that question's `page` visible above it:
+
+```
+page 0:  slot 1 description "Read the passage …"   ← show above slots 2 and 3
+         slot 2 multichoice
+         slot 3 shortanswer
+page 1:  slot 4 truefalse                            ← no passage
+```
 
 ### 3.5 `save_quiz_answer` (POST) — save one answer
 
@@ -458,7 +470,7 @@ grades it, `get_quiz_attempt` / `get_my_quiz_attempts` return the final score.
 {"attemptid":559,"quizid":4,"quiz_name":"…","attempt_number":1,"state":"finished",
  "timestart":1760865600,"timefinish":1760866200,"score":14.0,"max_score":16.0,"percent":87.5,"needs_grading":false,
  "questions":[
-   {"slot":1,"questionid":531,"type":"multichoice","text":"…","single":true,"options":[…],
+   {"slot":1,"page":0,"questionid":531,"type":"multichoice","text":"…","single":true,"options":[…],
     "max_mark":1.0,"supported":true,
     "response":533,"response_summary":"Three","state":"gradedwrong",
     "mark":0.0,"correct":false,"right_answer":"One","correct_response":531}]}
@@ -510,6 +522,7 @@ can only load images of questions in their own courses or attempts.
 ### 7.3 Checklist
 
 - [ ] Draw from `get_attempt_questions`, in `slot` order; options/items in the order received.
+- [ ] Keep a page's `description` (reading passage) visible above every question with the same `page`.
 - [ ] `supported:false` (or an unknown `type`) → open the quiz in the webview.
 - [ ] Before `start_quiz_attempt`, continue an `inprogress` attempt from `get_my_quiz_attempts`.
 - [ ] `save_quiz_answer` on every change; `answer` is a JSON string; `null` clears.

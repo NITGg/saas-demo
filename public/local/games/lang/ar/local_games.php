@@ -425,6 +425,7 @@ $string['js_balloon_rule_odd'] = 'فرقّع الأرقام الفردية';
 $string['js_balloon_rule_greater'] = 'فرقّع اللي أكبر من {$a}';
 $string['js_balloon_rule_less'] = 'فرقّع اللي أصغر من {$a}';
 $string['js_balloon_rule_divisible'] = 'فرقّع اللي يقبل القسمة على {$a}';
+$string['js_balloon_rule_equals'] = 'فرقّع اللي يساوي {$a}';
 
 // Question Wheel.
 $string['js_wheel_ready'] = 'لِف العجلة!';

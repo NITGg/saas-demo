@@ -205,7 +205,7 @@ class quiz_manager {
         $questions = [];
         foreach ($attemptobj->get_slots() as $slot) {
             $qa = $attemptobj->get_question_attempt($slot);
-            $data = self::attempt_question($native, $qa, (int) $slot);
+            $data = self::attempt_question($native, $qa, (int) $slot, (int) $attemptobj->get_question_page($slot));
             if ($data['supported']) {
                 $data['response'] = $native->from_response($qa, $qa->get_last_qt_data());
             }
@@ -334,7 +334,7 @@ class quiz_manager {
             $maxmark = (float) $qa->get_max_mark();
             $maxscore += $maxmark;
 
-            $data = self::attempt_question($native, $qa, (int) $slot);
+            $data = self::attempt_question($native, $qa, (int) $slot, (int) $attemptobj->get_question_page($slot));
             $data['max_mark'] = round($maxmark, 2);
             $data['response'] = $data['supported'] ? $native->from_response($qa, $qa->get_last_qt_data()) : null;
             $data['response_summary'] = $qa->get_response_summary();
@@ -474,13 +474,16 @@ class quiz_manager {
     /**
      * Shared fields of one question inside an attempt (get_attempt_questions / get_attempt).
      */
-    private static function attempt_question(quiz_native $native, \question_attempt $qa, int $slot): array {
+    private static function attempt_question(quiz_native $native, \question_attempt $qa, int $slot, int $page): array {
         $question = $qa->get_question();
         $content = self::content_fields($question->questiontext, (int) $question->contextid, 'questiontext',
             (int) $question->id, (int) $question->id);
         $supported = quiz_native::is_supported($question);
         $data = [
             'slot'        => $slot,
+            // 0-based quiz page, as the website lays the attempt out: a reading passage
+            // (description) and the questions about it share one page.
+            'page'        => $page,
             'questionid'  => (int) $question->id,
             'type'        => $question->qtype->name(),
             'text'        => $content['text'],

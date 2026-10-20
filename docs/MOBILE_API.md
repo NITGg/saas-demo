@@ -806,7 +806,8 @@ the table below, and `qtype:random` (the attempt resolves it to a real question)
 | `get_my_quiz_attempts` | GET | `quizid` | `[{"attemptid":9,"attempt_number":1,"state":"finished","score":2.0,"max_score":3.0,"percent":66.7,"timestart":…,"timefinish":…}]` |
 
 **Every question** (`get_attempt_questions.questions[]`) has:
-`{"slot":1,"questionid":12,"type":"…","text":"…","images":["<url>"],"defaultmark":1.0,"max_mark":1.0,"supported":true,"response":…}`
+`{"slot":1,"page":0,"questionid":12,"type":"…","text":"…","images":["<url>"],"defaultmark":1.0,"max_mark":1.0,"supported":true,"response":…}`
+`page` = the quiz page (0-based, the teacher's page breaks): keep a page's `description` (reading passage) visible above each question on the same page.
 plus the fields of its type. `text` is plain text (for gap types it still contains the `[[n]]` markers —
 draw from `segments` instead). All image URLs carry the token and load directly.
 

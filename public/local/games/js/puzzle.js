@@ -37,6 +37,11 @@
     var BOARDS = [2, 3, 4];
 
     window.LocalGames.register('puzzle', function (api) {
+        // The round's numbers come from the server (registry::settings_for);
+        // the values above are only the fallback.
+        BOARDS[0] = api.setting('board1', BOARDS[0]);
+        BOARDS[1] = api.setting('board2', BOARDS[1]);
+        BOARDS[2] = api.setting('board3', BOARDS[2]);
 
         var board = 0;
         var side = 2;

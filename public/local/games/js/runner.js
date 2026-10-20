@@ -58,6 +58,15 @@
     var WAVE_MIN = 3000;
 
     window.LocalGames.register('runner', function (api) {
+        // The round's numbers come from the server (registry::settings_for);
+        // the values above are only the fallback.
+        HEARTS = api.setting('hearts', HEARTS);
+        TARGET = api.setting('target', TARGET);
+        LANES = api.setting('lanes', LANES);
+        TRAVEL_SLOW = api.setting('travelslow', TRAVEL_SLOW);
+        TRAVEL_FAST = api.setting('travelfast', TRAVEL_FAST);
+        WAVE_START = api.setting('wavestartms', WAVE_START);
+        WAVE_MIN = api.setting('waveminms', WAVE_MIN);
 
         var questions = [];
         var current = null;

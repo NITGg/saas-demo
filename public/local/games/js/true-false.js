@@ -33,6 +33,9 @@
     var STATEMENTS = 18;
 
     window.LocalGames.register('true-false', function (api) {
+        // The round's numbers come from the server (registry::settings_for);
+        // the values above are only the fallback.
+        STATEMENTS = api.setting('statements', STATEMENTS);
 
         var queue = [];
         var asked = 0;

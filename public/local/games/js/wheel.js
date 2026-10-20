@@ -59,6 +59,12 @@
     ];
 
     window.LocalGames.register('wheel', function (api) {
+        // The round's numbers come from the server (registry::settings_for);
+        // the values above are only the fallback.
+        SPINS = api.setting('spins', SPINS);
+        FRICTION = api.setting('friction', FRICTION);
+        MIN_FLICK = api.setting('minflick', MIN_FLICK);
+        MAX_FLICK = api.setting('maxflick', MAX_FLICK);
 
         var spins = 0;
         var angle = 0;

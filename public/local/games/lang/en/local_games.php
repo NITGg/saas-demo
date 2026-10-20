@@ -421,6 +421,7 @@ $string['js_balloon_rule_odd'] = 'Pop the odd numbers';
 $string['js_balloon_rule_greater'] = 'Pop the ones bigger than {$a}';
 $string['js_balloon_rule_less'] = 'Pop the ones smaller than {$a}';
 $string['js_balloon_rule_divisible'] = 'Pop the ones that divide by {$a}';
+$string['js_balloon_rule_equals'] = 'Pop the ones equal to {$a}';
 
 // Question Wheel.
 $string['js_wheel_ready'] = 'Spin the wheel!';

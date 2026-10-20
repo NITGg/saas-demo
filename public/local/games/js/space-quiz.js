@@ -38,6 +38,11 @@
     ];
 
     window.LocalGames.register('space-quiz', function (api) {
+        // The round's numbers come from the server (registry::settings_for);
+        // the values above are only the fallback.
+        STAGES[0].steps = api.setting('stage1steps', STAGES[0].steps);
+        STAGES[1].steps = api.setting('stage2steps', STAGES[1].steps);
+        STAGES[2].steps = api.setting('stage3steps', STAGES[2].steps);
 
         var stage = 0;
         var step = 0;

@@ -41,6 +41,11 @@
     var DRAG_THRESHOLD = 8;
 
     window.LocalGames.register('match-connect', function (api) {
+        // The round's numbers come from the server (registry::settings_for);
+        // the values above are only the fallback.
+        PAIRS = api.setting('pairs', PAIRS);
+        BOARDS = api.setting('boards', BOARDS);
+        DRAG_THRESHOLD = api.setting('dragthreshold', DRAG_THRESHOLD);
 
         var board = 0;
         var pairs = [];

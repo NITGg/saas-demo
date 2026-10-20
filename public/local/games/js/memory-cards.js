@@ -38,6 +38,10 @@
     var FLIP_BUDGET = 20;
 
     window.LocalGames.register('memory-cards', function (api) {
+        // The round's numbers come from the server (registry::settings_for);
+        // the values above are only the fallback.
+        PAIRS = api.setting('pairs', PAIRS);
+        FLIP_BUDGET = api.setting('flipbudget', FLIP_BUDGET);
 
         var cards = [];
         var open = [];

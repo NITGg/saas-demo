@@ -46,6 +46,10 @@
     ];
 
     window.LocalGames.register('word-search', function (api) {
+        // The round's numbers come from the server (registry::settings_for);
+        // the values above are only the fallback.
+        SIZE = api.setting('size', SIZE);
+        WORDS = api.setting('words', WORDS);
 
         var grid = [];
         var hidden = [];

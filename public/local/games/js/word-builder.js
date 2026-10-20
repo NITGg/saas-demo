@@ -43,6 +43,12 @@
     var MAX_TARGETS = 6;
 
     window.LocalGames.register('word-builder', function (api) {
+        // The round's numbers come from the server (registry::settings_for);
+        // the values above are only the fallback.
+        SETS = api.setting('sets', SETS);
+        SIZE = api.setting('size', SIZE);
+        MIN_WORDS = api.setting('minwords', MIN_WORDS);
+        MAX_TARGETS = api.setting('maxtargets', MAX_TARGETS);
 
         var setIndex = 0;
         var pool = [];

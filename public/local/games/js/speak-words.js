@@ -41,6 +41,9 @@
     var WORDS = 10;
 
     window.LocalGames.register('speak-words', function (api) {
+        // The round's numbers come from the server (registry::settings_for);
+        // the values above are only the fallback.
+        WORDS = api.setting('words', WORDS);
 
         var queue = [];
         var current = null;

@@ -33,6 +33,9 @@
     var TRIPS = 5;
 
     window.LocalGames.register('math-shop', function (api) {
+        // The round's numbers come from the server (registry::settings_for);
+        // the values above are only the fallback.
+        TRIPS = api.setting('trips', TRIPS);
 
         var trip = 0;
         var basket = [];

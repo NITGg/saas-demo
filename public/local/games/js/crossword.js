@@ -43,6 +43,11 @@
     var PAD = 16;
 
     window.LocalGames.register('crossword', function (api) {
+        // The round's numbers come from the server (registry::settings_for);
+        // the values above are only the fallback.
+        SIZE = api.setting('size', SIZE);
+        TARGET = api.setting('target', TARGET);
+        PAD = api.setting('pad', PAD);
 
         var grid = [];
         var entries = [];

@@ -49,6 +49,12 @@
     var READING_PAUSE = 2.2;
 
     window.LocalGames.register('target-answer', function (api) {
+        // The round's numbers come from the server (registry::settings_for);
+        // the values above are only the fallback.
+        QUESTIONS = api.setting('questions', QUESTIONS);
+        CROSS_SLOW = api.setting('crossslow', CROSS_SLOW);
+        CROSS_FAST = api.setting('crossfast', CROSS_FAST);
+        READING_PAUSE = api.setting('readingpause', READING_PAUSE);
 
         var queue = [];
         var asked = 0;

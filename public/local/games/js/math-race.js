@@ -43,6 +43,12 @@
     var TIME_FLOOR = 7;
 
     window.LocalGames.register('math-race', function (api) {
+        // The round's numbers come from the server (registry::settings_for);
+        // the values above are only the fallback.
+        TARGET = api.setting('target', TARGET);
+        MAX_ATTEMPTS = api.setting('maxattempts', MAX_ATTEMPTS);
+        TIME_START = api.setting('timestart', TIME_START);
+        TIME_FLOOR = api.setting('timefloor', TIME_FLOOR);
 
         var queue = [];
         var solved = 0;

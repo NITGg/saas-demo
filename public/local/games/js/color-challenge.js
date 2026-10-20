@@ -36,6 +36,9 @@
     var CHOICES = 4;
 
     window.LocalGames.register('color-challenge', function (api) {
+        // The round's numbers come from the server (registry::settings_for);
+        // the values above are only the fallback.
+        CHOICES = api.setting('choices', CHOICES);
 
         var queue = [];
         var asked = 0;

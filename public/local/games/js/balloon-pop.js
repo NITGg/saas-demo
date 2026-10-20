@@ -53,6 +53,15 @@
     var COLOURS = ['#e04b4b', '#4b7be0', '#3fa877', '#e0c84b', '#9b5fd0', '#e07ab0'];
 
     window.LocalGames.register('balloon-pop', function (api) {
+        // The round's numbers come from the server (registry::settings_for);
+        // the values above are only the fallback.
+        TARGET = api.setting('target', TARGET);
+        RULE_EVERY = api.setting('ruleevery', RULE_EVERY);
+        RISE_SLOW = api.setting('riseslow', RISE_SLOW);
+        RISE_FAST = api.setting('risefast', RISE_FAST);
+        SPAWN_START = api.setting('spawnstartms', SPAWN_START);
+        SPAWN_MIN = api.setting('spawnminms', SPAWN_MIN);
+        COLUMNS = api.setting('columns', COLUMNS);
 
         var balloons = [];
         var rule = null;

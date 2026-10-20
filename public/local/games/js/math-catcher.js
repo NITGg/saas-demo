@@ -53,6 +53,16 @@
     var BASKET_SPEED = 460;
 
     window.LocalGames.register('math-catcher', function (api) {
+        // The round's numbers come from the server (registry::settings_for);
+        // the values above are only the fallback.
+        LIVES = api.setting('lives', LIVES);
+        TARGET = api.setting('target', TARGET);
+        RULE_EVERY = api.setting('ruleevery', RULE_EVERY);
+        FALL_START = api.setting('fallstart', FALL_START);
+        FALL_MAX = api.setting('fallmax', FALL_MAX);
+        SPAWN_START = api.setting('spawnstartms', SPAWN_START);
+        SPAWN_MIN = api.setting('spawnminms', SPAWN_MIN);
+        BASKET_SPEED = api.setting('basketspeed', BASKET_SPEED);
 
         var canvas = null;
         var ctx = null;

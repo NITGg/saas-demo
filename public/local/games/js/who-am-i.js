@@ -40,6 +40,12 @@
     var WORTH = [10, 6, 3];
 
     window.LocalGames.register('who-am-i', function (api) {
+        // The round's numbers come from the server (registry::settings_for);
+        // the values above are only the fallback.
+        RIDDLES = api.setting('riddles', RIDDLES);
+        WORTH[0] = api.setting('worth1', WORTH[0]);
+        WORTH[1] = api.setting('worth2', WORTH[1]);
+        WORTH[2] = api.setting('worth3', WORTH[2]);
 
         var queue = [];
         var current = null;

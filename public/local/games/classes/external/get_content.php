@@ -76,6 +76,9 @@ class get_content extends external_api {
         $out = [
             'lang'         => current_language(),
             'arabicdigits' => content::arabic_digits(),
+            // The locale the web game speaks and listens in (shell.js): Egyptian
+            // Arabic for an Arabic UI, otherwise the UI language.
+            'speechlang'   => content::arabic_digits() ? 'ar-EG' : str_replace('_', '-', current_language()),
             // Moodle's string revision. It moves whenever caches are purged -
             // which is when the shared strings may have changed - so an app can
             // keep the strings it already holds until this number does not match.
@@ -92,7 +95,17 @@ class get_content extends external_api {
             $out['strings'][] = ['key' => $key, 'value' => $value];
         }
 
-        return $out + content::payload($gameid);
+        // Settings travel as key/value rows: a web-service structure cannot
+        // carry an object whose keys differ from game to game.
+        $payload = content::payload($gameid);
+        $out['rulesversion'] = registry::RULES_VERSION;
+        $out['settings'] = [];
+        foreach ((array) $payload['settings'] as $key => $value) {
+            $out['settings'][] = ['key' => $key, 'value' => $value];
+        }
+        unset($payload['settings']);
+
+        return $out + $payload;
     }
 
     /**
@@ -104,7 +117,17 @@ class get_content extends external_api {
         return new external_single_structure([
             'lang'         => new external_value(PARAM_RAW, 'Language the banks came back in'),
             'arabicdigits' => new external_value(PARAM_BOOL, 'Show numbers in Arabic-Indic digits'),
+            'speechlang'   => new external_value(PARAM_RAW, 'Locale for text-to-speech and speech recognition, e.g. ar-EG or en'),
             'revision'     => new external_value(PARAM_INT, 'Changes when the language pack may have; cache against it'),
+            'rulesversion' => new external_value(PARAM_INT,
+                'Changes whenever a game rule or setting changes; compare with the version the app was built for'),
+            'settings'     => new external_multiple_structure(
+                new external_single_structure([
+                    'key'   => new external_value(PARAM_ALPHANUMEXT, 'Setting name, e.g. target, lives, timestart'),
+                    'value' => new external_value(PARAM_FLOAT, 'Its value; whole numbers for counts, decimals for some timings'),
+                ]),
+                'The numbers this game round is played with - the same ones the web game reads'
+            ),
             'shape'        => new external_value(PARAM_ALPHA,
                 'Which shape this game rows take: questions, words, colours, sumrules, numberrules and so on'),
             'strings'      => new external_multiple_structure(

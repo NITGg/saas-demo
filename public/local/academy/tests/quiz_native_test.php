@@ -243,6 +243,24 @@ final class quiz_native_test extends \advanced_testcase {
         $this->assertStringNotContainsString('"correct"', json_encode($q));
     }
 
+    public function test_each_question_carries_its_quiz_page(): void {
+        // A reading passage and its question on page 1, another question on page 2.
+        [$quiz, $student] = $this->make_quiz([
+            'info' => ['description', 'info', 1],
+            'sa'   => ['shortanswer', 'frogtoad', 1],
+            'mc'   => ['multichoice', 'one_of_four', 2],
+        ]);
+        $attempt = $this->start($quiz, $student);
+
+        $questions = quiz_manager::get_attempt_questions($attempt, (int) $student->id)['questions'];
+        $this->assertSame(['description' => 0, 'shortanswer' => 0, 'multichoice' => 1],
+            array_column($questions, 'page', 'type'));
+
+        quiz_manager::finish_attempt($attempt, (int) $student->id);
+        $review = quiz_manager::get_attempt($attempt, (int) $student->id)['questions'];
+        $this->assertSame([0, 0, 1], array_column($review, 'page'));
+    }
+
     public function test_another_student_cannot_touch_the_attempt_and_a_finished_one_is_closed(): void {
         [$quiz, $student, $course] = $this->make_quiz(['sa' => self::ALL_TYPES['sa']]);
         $attempt = $this->start($quiz, $student);
@@ -320,12 +338,14 @@ final class quiz_native_test extends \advanced_testcase {
         // The drag-and-drop fixtures upload their images through a user's draft area.
         $this->setAdminUser();
 
-        foreach ($specs as [$qtype, $which]) {
+        foreach ($specs as $spec) {
+            // An optional third value is the 1-based quiz page (default: the last page).
+            [$qtype, $which] = $spec;
             $question = $qgen->create_question($qtype, $which, ['category' => $cat->id]);
             if (in_array($qtype, ['calculated', 'calculatedmulti'], true)) {
                 $this->seed_datasets((int) $question->id);
             }
-            quiz_add_quiz_question($question->id, $quiz);
+            quiz_add_quiz_question($question->id, $quiz, $spec[2] ?? 0);
         }
         if ($randommatch) {
             // Random matching draws two short-answer questions from its category.

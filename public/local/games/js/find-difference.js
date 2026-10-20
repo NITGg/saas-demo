@@ -44,6 +44,12 @@
     var BOARDS = 3;
 
     window.LocalGames.register('find-difference', function (api) {
+        // The round's numbers come from the server (registry::settings_for);
+        // the values above are only the fallback.
+        COLS = api.setting('cols', COLS);
+        ROWS = api.setting('rows', ROWS);
+        DIFFERENCES = api.setting('differences', DIFFERENCES);
+        BOARDS = api.setting('boards', BOARDS);
 
         var board = 0;
         var left = [];
