@@ -205,3 +205,16 @@ Live lesson settings (web admin): instant on/off, waiting time (120 s), lesson l
 ring time per wave (30 s), teacher no-show (3 min), extra Flex, peak hours + peak extra, quick question length / price,
 trial on/off + price, AI summary on/off, guardians' WhatsApp alert. The app should never hard-code these: everything it
 needs comes in `instant_subjects`, `instant_status` and the offers.
+
+---
+
+## 8. Coming next (v2 — designed, not built yet)
+
+Do not build against these yet; they are listed so the app screens can be planned (design: `instant-lessons-design.md`, "v2").
+- `instant_tutors(year, subject)` — the tutor list: online first, rating, reliability, price per mode, "usually online",
+  favourite flag, profile URL.
+- `instant_request` gains `teacherid` (ask one tutor) and `autostart` (skip the confirmation).
+- New status `accepted` with `teacher` {name, rating, price, profileurl} and `confirmsecondsleft`;
+  new calls `instant_confirm` / `instant_reject` (student).
+- `instant_favourite` (toggle), `instant_oncall` (tutor push opt-in).
+- After the lesson: the existing rating call + "book again" (normal `request_lesson` with that teacher).
