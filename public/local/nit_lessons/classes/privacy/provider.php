@@ -58,6 +58,7 @@ class provider implements
             'studentid'   => 'privacy:metadata:nit_instant_request:studentid',
             'subject'     => 'privacy:metadata:nit_instant_request:subject',
             'note'        => 'privacy:metadata:nit_instant_request:note',
+            'aisummary'   => 'privacy:metadata:nit_instant_request:aisummary',
             'timecreated' => 'privacy:metadata:nit_instant_request:timecreated',
         ], 'privacy:metadata:nit_instant_request');
         $collection->add_database_table('nit_instant_offer', [
@@ -175,6 +176,7 @@ class provider implements
         $DB->delete_records('nit_lesson_proposal', ['proposedby' => $userid]);
         $DB->set_field('nit_lesson', 'note', null, ['studentid' => $userid]);
         $DB->set_field('nit_instant_request', 'note', null, ['studentid' => $userid]);
+        $DB->set_field('nit_instant_request', 'aisummary', null, ['studentid' => $userid]);
         $DB->delete_records('nit_teacher_presence', ['teacherid' => $userid]);
         $DB->delete_records('nit_instant_watch', ['studentid' => $userid]);
         $fs = get_file_storage();
@@ -197,6 +199,7 @@ class provider implements
         [$insql, $params] = $DB->get_in_or_equal($userlist->get_userids(), SQL_PARAMS_NAMED);
         $DB->delete_records_select('nit_lesson_proposal', "proposedby $insql", $params);
         $DB->set_field_select('nit_instant_request', 'note', null, "studentid $insql", $params);
+        $DB->set_field_select('nit_instant_request', 'aisummary', null, "studentid $insql", $params);
         $DB->delete_records_select('nit_teacher_presence', "teacherid $insql", $params);
         $DB->delete_records_select('nit_instant_watch', "studentid $insql", $params);
     }

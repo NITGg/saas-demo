@@ -143,5 +143,26 @@ function xmldb_local_nit_lessons_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026102200, 'local', 'nit_lessons');
     }
 
+    if ($oldversion < 2026102300) {
+        // Instant lessons phase 4: quick questions, trial lesson, AI summary.
+        $fields = [
+            'nit_lesson' => [new xmldb_field('trial', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'teacher_joined')],
+            'nit_instant_request' => [
+                new xmldb_field('mode', XMLDB_TYPE_CHAR, '10', null, XMLDB_NOTNULL, null, 'normal', 'timematched'),
+                new xmldb_field('trial', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'mode'),
+                new xmldb_field('aisummary', XMLDB_TYPE_TEXT, null, null, null, null, null, 'trial'),
+            ],
+        ];
+        foreach ($fields as $tablename => $list) {
+            $table = new xmldb_table($tablename);
+            foreach ($list as $field) {
+                if (!$dbman->field_exists($table, $field)) {
+                    $dbman->add_field($table, $field);
+                }
+            }
+        }
+        upgrade_plugin_savepoint(true, 2026102300, 'local', 'nit_lessons');
+    }
+
     return true;
 }

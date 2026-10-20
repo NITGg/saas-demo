@@ -49,6 +49,13 @@ class settings_service extends service {
         'instant_ring_seconds'     => 30,      // How long one wave rings before the next teachers are asked.
         'instant_noshow_minutes'   => 3,       // A teacher who accepted but did not open the room is replaced.
         'instant_extra_flex'       => 0,       // Extra Flex an instant lesson costs on top of the teacher's price.
+        'instant_peak_extra_flex'  => 0,       // Extra Flex during peak hours (setting instant_peak_hours).
+        'instant_quick_minutes'    => 15,      // "Quick question" length; 0 turns quick questions off.
+        'instant_quick_flex'       => 1,       // Flat price of a quick question.
+        'instant_trial_enabled'    => 0,       // A student's first lesson is a trial (100% to the academy).
+        'instant_trial_flex'       => 1,       // Price of the trial lesson.
+        'instant_ai_summary'       => 1,       // AI one-line summary of the student's note for the teacher.
+        'instant_parent_alert'     => 1,       // WhatsApp the guardians when an instant lesson starts.
         'lessons_courseid'         => 0,
     ];
 

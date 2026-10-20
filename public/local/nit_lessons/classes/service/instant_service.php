@@ -72,14 +72,68 @@ class instant_service {
         return $this->settings->get('instant_enabled') > 0;
     }
 
+    /** @var string A full instant lesson at the teacher's price. */
+    const MODE_NORMAL = 'normal';
+
+    /** @var string A short "quick question" lesson at a flat price. */
+    const MODE_QUICK = 'quick';
+
     /**
-     * What an instant lesson with this teacher costs: their price plus instant_extra_flex.
+     * What an instant lesson costs in Flex:
+     *  - trial (the student's first lesson, when enabled): instant_trial_flex, nothing else;
+     *  - quick question: instant_quick_flex + the peak-hour extra;
+     *  - normal: the teacher's price + instant_extra_flex + the peak-hour extra.
      *
      * @param int $teacherid
+     * @param string $mode normal | quick
+     * @param bool $trial
+     * @param int|null $now
      * @return int Flex
      */
-    public function price(int $teacherid): int {
-        return $this->teachers->lesson_flex($teacherid) + max(0, $this->settings->get('instant_extra_flex'));
+    public function price(int $teacherid, string $mode = self::MODE_NORMAL, bool $trial = false, ?int $now = null): int {
+        if ($trial) {
+            return max(1, $this->settings->get('instant_trial_flex'));
+        }
+        $peak = $this->is_peak($now ?? time()) ? max(0, $this->settings->get('instant_peak_extra_flex')) : 0;
+        if ($mode === self::MODE_QUICK) {
+            return max(1, $this->settings->get('instant_quick_flex')) + $peak;
+        }
+        return $this->teachers->lesson_flex($teacherid) + max(0, $this->settings->get('instant_extra_flex')) + $peak;
+    }
+
+    /**
+     * Is it peak time? Setting instant_peak_hours, server time, e.g. "18-22" or "8-10,18-22"
+     * (from the first hour up to, not including, the second; "22-2" wraps past midnight).
+     *
+     * @param int $now
+     * @return bool
+     */
+    public function is_peak(int $now): bool {
+        $spec = trim((string) get_config('local_nit_lessons', 'instant_peak_hours'));
+        $hour = (int) (new \DateTimeImmutable('@' . $now))->setTimezone(\core_date::get_server_timezone_object())->format('G');
+        foreach (preg_split('/\s*,\s*/', $spec, -1, PREG_SPLIT_NO_EMPTY) as $range) {
+            if (!preg_match('/^(\d{1,2})\s*-\s*(\d{1,2})$/', $range, $m)) {
+                continue;
+            }
+            [$from, $to] = [(int) $m[1] % 24, (int) $m[2] % 24];
+            if ($from < $to ? ($hour >= $from && $hour < $to) : ($hour >= $from || $hour < $to)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Would this student's next instant lesson be the trial? Only while trials are on and the
+     * student has never had a lesson of any kind.
+     *
+     * @param int $studentid
+     * @return bool
+     */
+    public function trial_eligible(int $studentid): bool {
+        global $DB;
+        return $this->settings->get('instant_trial_enabled') > 0
+            && !$DB->record_exists('nit_lesson', ['studentid' => $studentid]);
     }
 
     // ── Teacher presence ─────────────────────────────────────────────────────
@@ -223,7 +277,7 @@ class instant_service {
      * @return array request status
      */
     public function request(int $studentid, string $subject, string $note = '', ?int $now = null,
-            ?array $photo = null): array {
+            ?array $photo = null, string $mode = self::MODE_NORMAL): array {
         global $DB;
         $now = $now ?? time();
         $subject = trim($subject);
@@ -236,6 +290,10 @@ class instant_service {
         if ($subject === '') {
             throw new lesson_exception('err_subjectrequired');
         }
+        if ($mode !== self::MODE_NORMAL
+                && !($mode === self::MODE_QUICK && $this->settings->get('instant_quick_minutes') > 0)) {
+            throw new lesson_exception('err_badaction');
+        }
         $this->expire_due($now);
         if ($DB->record_exists('nit_instant_request', ['studentid' => $studentid, 'status' => self::SEARCHING])) {
             throw new lesson_exception('err_instantopen');
@@ -247,8 +305,10 @@ class instant_service {
         $request = (object) [
             'studentid' => $studentid,
             'subject' => $subject,
-            'duration' => $this->settings->get('instant_minutes'),
+            'duration' => $this->settings->get($mode === self::MODE_QUICK ? 'instant_quick_minutes' : 'instant_minutes'),
             'note' => trim($note) !== '' ? trim($note) : null,
+            'mode' => $mode,
+            'trial' => (int) $this->trial_eligible($studentid),
             'status' => self::SEARCHING,
             'expiresat' => $now + $this->settings->get('instant_wait_seconds'),
             'timecreated' => $now,
@@ -262,6 +322,7 @@ class instant_service {
             $this->save_photo((int) $request->id, $studentid, $photo);
         }
         $DB->delete_records('nit_instant_watch', ['studentid' => $studentid]);
+        $this->queue_summary($request);
         $this->send_wave($request, $now);
         realtime::flush();
         return $this->status($studentid, (int) $request->id, $now);
@@ -410,7 +471,8 @@ class instant_service {
         $asked = empty($r->id) ? [] : $DB->get_fieldset_select('nit_instant_offer', 'teacherid',
             'requestid = :r AND status <> :taken', ['r' => $r->id, 'taken' => self::TAKEN]);
         $ids = array_filter($this->available_teachers((string) $r->subject, (int) $r->studentid, $now),
-            fn($t) => !in_array($t, array_map('intval', $asked), true) && $this->price($t) <= $flex);
+            fn($t) => !in_array($t, array_map('intval', $asked), true)
+                && $this->price($t, (string) ($r->mode ?? self::MODE_NORMAL), !empty($r->trial), $now) <= $flex);
         return $this->rank(array_values($ids), (int) $r->studentid);
     }
 
@@ -536,6 +598,9 @@ class instant_service {
             'secondsleft' => $r->status === self::SEARCHING ? max(0, (int) $r->expiresat - $now) : 0,
             'teachers' => $DB->count_records('nit_instant_offer', ['requestid' => $r->id, 'status' => self::RINGING]),
             'lessonid' => (int) $r->lessonid,
+            'mode' => (string) $r->mode,
+            'trial' => (bool) $r->trial,
+            'duration' => (int) $r->duration,
         ];
     }
 
@@ -586,7 +651,7 @@ class instant_service {
         global $DB;
         $rows = $DB->get_records_sql(
             "SELECT o.id AS offerid, o.timecreated AS rangat, r.id, r.subject, r.note, r.duration, r.expiresat,
-                    r.studentid
+                    r.studentid, r.mode, r.trial, r.aisummary
                FROM {nit_instant_offer} o
                JOIN {nit_instant_request} r ON r.id = o.requestid
               WHERE o.teacherid = :t AND o.status = :ringing AND r.status = :searching AND r.expiresat > :now
@@ -604,8 +669,11 @@ class instant_service {
                 'duration' => (int) $r->duration,
                 'studentname' => $student ? format_string($student->firstname) : '',
                 'secondsleft' => max(0, (int) $r->expiresat - $now),
-                'flex' => $this->price($teacherid),
+                'flex' => $this->price($teacherid, (string) $r->mode, (bool) $r->trial, $now),
                 'photourl' => $this->photo_url((int) $r->id),
+                'mode' => (string) $r->mode,
+                'trial' => (bool) $r->trial, // A trial pays the teacher nothing (100% to the academy).
+                'aisummary' => (string) $r->aisummary,
             ];
         }
         return $out;
@@ -639,14 +707,124 @@ class instant_service {
             $transaction = $DB->start_delegated_transaction();
             try {
                 $lesson = (new lesson_service())->start_instant((int) $r->studentid, $teacherid, (string) $r->subject,
-                    (int) $r->duration, (string) $r->note, $this->settings->get('instant_extra_flex'));
+                    (int) $r->duration, (string) $r->note, $this->price($teacherid, (string) $r->mode, (bool) $r->trial,
+                    $now), (bool) $r->trial);
                 $this->mark_matched($r, $offer, $teacherid, (int) $lesson['id'], $now);
                 $transaction->allow_commit();
             } catch (\Throwable $e) {
                 $transaction->rollback($e);
             }
+            $this->queue_parent_alert((int) $lesson['id']);
             return $lesson;
         });
+    }
+
+    // ── Reliability, AI summary, parent alert ────────────────────────────────
+
+    /**
+     * How reliably a teacher answers instant requests (last 90 days), for the public profile.
+     * Shown only with at least 5 prompts behind it.
+     *
+     * @param int $teacherid
+     * @return array {show, prompts, acceptance (%), noshows, avgresponse (s)}
+     */
+    public function reliability(int $teacherid): array {
+        global $DB;
+        $since = time() - 90 * DAYSECS;
+        $rows = $DB->get_records_select('nit_instant_offer', 'teacherid = :t AND timecreated >= :since AND status <> :taken',
+            ['t' => $teacherid, 'since' => $since, 'taken' => self::TAKEN], '', 'id, status, timecreated, timeanswered');
+        $prompts = count($rows);
+        $accepted = count(array_filter($rows, fn($o) => in_array($o->status, [self::ACCEPTED, self::NOSHOW], true)));
+        $noshows = count(array_filter($rows, fn($o) => $o->status === self::NOSHOW));
+        $times = array_map(fn($o) => (int) $o->timeanswered - (int) $o->timecreated,
+            array_filter($rows, fn($o) => (int) $o->timeanswered > 0));
+        return [
+            'show' => $prompts >= 5,
+            'prompts' => $prompts,
+            'acceptance' => $prompts ? (int) round(($accepted - $noshows) * 100 / $prompts) : 0,
+            'noshows' => $noshows,
+            'avgresponse' => $times ? (int) round(array_sum($times) / count($times)) : 0,
+        ];
+    }
+
+    /**
+     * Ask the AI for a one-line summary of the student's note for the teacher's prompt, in the
+     * background (local_nit_assistant, when its key is set and instant_ai_summary is on).
+     *
+     * @param \stdClass $r request
+     * @return void
+     */
+    private function queue_summary(\stdClass $r): void {
+        if ($this->settings->get('instant_ai_summary') <= 0 || trim((string) $r->note) === ''
+                || !class_exists('\local_nit_assistant\config') || !\local_nit_assistant\config::usable()) {
+            return;
+        }
+        $task = new \local_nit_lessons\task\summarise_instant_request();
+        $task->set_custom_data(['requestid' => (int) $r->id]);
+        \core\task\manager::queue_adhoc_task($task);
+    }
+
+    /**
+     * Store the AI summary of a request and refresh the prompts that are ringing.
+     *
+     * @param int $requestid
+     * @param string $summary
+     * @return void
+     */
+    public function set_summary(int $requestid, string $summary): void {
+        global $DB;
+        $summary = \core_text::substr(trim(clean_param($summary, PARAM_TEXT)), 0, 500);
+        if ($summary === '') {
+            return;
+        }
+        $DB->set_field('nit_instant_request', 'aisummary', $summary, ['id' => $requestid]);
+        realtime::signal($DB->get_fieldset_select('nit_instant_offer', 'teacherid', 'requestid = :r AND status = :s',
+            ['r' => $requestid, 's' => self::RINGING]), 'offer', $requestid);
+        realtime::flush();
+    }
+
+    /**
+     * Tell the student's guardians on WhatsApp that an instant lesson started (background task;
+     * needs instant_parent_alert, an approved template name, and the academy WhatsApp number).
+     *
+     * @param int $lessonid
+     * @return void
+     */
+    private function queue_parent_alert(int $lessonid): void {
+        if ($this->settings->get('instant_parent_alert') <= 0
+                || trim((string) get_config('local_nit_lessons', 'instant_parent_template')) === '') {
+            return;
+        }
+        $task = new \local_nit_lessons\task\instant_parent_alert();
+        $task->set_custom_data(['lessonid' => $lessonid]);
+        \core\task\manager::queue_adhoc_task($task);
+    }
+
+    /**
+     * The guardian phones a student registered (local_parent profile fields), in international form.
+     *
+     * @param int $studentid
+     * @return string[]
+     */
+    public static function guardian_phones(int $studentid): array {
+        global $DB;
+        if (!class_exists('\local_parent\dashboard')) {
+            return [];
+        }
+        $fields = \local_parent\dashboard::guardian_fields();
+        if (!$fields) {
+            return [];
+        }
+        [$in, $params] = $DB->get_in_or_equal($fields, SQL_PARAMS_NAMED);
+        $raw = $DB->get_fieldset_sql("SELECT d.data FROM {user_info_data} d JOIN {user_info_field} f ON f.id = d.fieldid
+                                       WHERE d.userid = :u AND f.shortname $in", ['u' => $studentid] + $params);
+        $out = [];
+        foreach ($raw as $phone) {
+            if (\local_parent\dashboard::valid_phone((string) $phone)) {
+                $out[] = \local_parent\dashboard::normalize_phone((string) $phone);
+            }
+        }
+        return array_values(array_unique(array_filter($out)));
     }
 
     /**
@@ -845,6 +1023,46 @@ class instant_service {
         } catch (\Throwable $e) {
             debugging('local_nit_lessons: instant notice not sent: ' . $e->getMessage(), DEBUG_DEVELOPER);
         }
+    }
+
+    // ── Admin export ─────────────────────────────────────────────────────────
+
+    /**
+     * Every request since a time with what happened to it, for the CSV export.
+     *
+     * @param int $since
+     * @return array[] one row per request
+     */
+    public function export_rows(int $since): array {
+        global $DB;
+        $out = [];
+        foreach ($DB->get_records_select('nit_instant_request', 'timecreated >= :since', ['since' => $since],
+                'timecreated') as $r) {
+            $counts = [];
+            foreach ($DB->get_records('nit_instant_offer', ['requestid' => $r->id], '', 'id, status') as $o) {
+                $counts[$o->status] = ($counts[$o->status] ?? 0) + 1;
+            }
+            $student = \core_user::get_user((int) $r->studentid);
+            $teacher = (int) $r->teacherid ? \core_user::get_user((int) $r->teacherid) : null;
+            $out[] = [
+                'id' => (int) $r->id,
+                'created' => userdate((int) $r->timecreated, '%Y-%m-%d %H:%M:%S'),
+                'student' => $student ? fullname($student) : '',
+                'subject' => format_string($r->subject),
+                'mode' => (string) $r->mode,
+                'trial' => (int) $r->trial,
+                'status' => (string) $r->status,
+                'waves' => (int) $r->wave,
+                'asked' => array_sum($counts),
+                'declined' => $counts[self::DECLINED] ?? 0,
+                'missed' => $counts[self::MISSED] ?? 0,
+                'noshows' => $counts[self::NOSHOW] ?? 0,
+                'teacher' => $teacher ? fullname($teacher) : '',
+                'secondstomatch' => (int) $r->timematched ? (int) $r->timematched - (int) $r->timecreated : '',
+                'lessonid' => (int) $r->lessonid ?: '',
+            ];
+        }
+        return $out;
     }
 
     // ── Admin live view ──────────────────────────────────────────────────────

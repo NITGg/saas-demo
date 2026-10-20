@@ -181,8 +181,14 @@
                     esc(S.online.replace('{$a}', s.teachers)) + ')</option>';
             }).join('');
             root.innerHTML = card('<h3 class="h5">' + esc(S.title) + '</h3><p class="text-muted">' + esc(S.intro) + '</p>' +
+                (st.trial ? '<p class="alert alert-info py-2 mb-2">' + esc(S.trialnotice.replace('{$a}', st.trialflex)) + '</p>' : '') +
+                (st.peak ? '<p class="small text-warning mb-2">' + esc(S.peaknotice) + '</p>' : '') +
                 '<div class="d-flex flex-wrap gap-2 align-items-end">' +
                 '<select class="form-select" style="max-width:320px" data-subject>' + options + '</select>' +
+                (st.quick && !st.trial ? '<select class="form-select" style="max-width:260px" data-mode>' +
+                    '<option value="normal">' + esc(S.modenormal.replace('{$a}', st.minutes)) + '</option>' +
+                    '<option value="quick">' + esc(S.modequick.replace('{$a}', st.quickminutes) + ' · ' +
+                        S.flex.replace('{$a}', st.quickflex)) + '</option></select>' : '') +
                 '<input class="form-control" style="max-width:360px" data-note placeholder="' + esc(S.noteph) + '">' +
                 '<label class="btn btn-outline-secondary mb-0">' + esc(S.photo) +
                 '<input type="file" accept="image/*" capture="environment" hidden data-photo></label>' +
@@ -198,6 +204,8 @@
                 var form = new FormData();
                 form.append('subject', select.value);
                 form.append('note', root.querySelector('[data-note]').value);
+                var mode = root.querySelector('[data-mode]');
+                form.append('mode', mode ? mode.value : 'normal');
                 if (photo.files.length) {
                     form.append('photo', photo.files[0]);
                 }
@@ -297,6 +305,10 @@
 
     function prompt(o) {
         if (shown[o.requestid]) {
+            var box = document.querySelector('[data-instant-request="' + o.requestid + '"] [data-summary]');
+            if (box && o.aisummary && !box.textContent) {
+                box.textContent = o.aisummary;
+            }
             return;
         }
         shown[o.requestid] = true;
@@ -304,11 +316,16 @@
         if (document.hidden && window.Notification && Notification.permission === 'granted') {
             new Notification(S.prompttitle, {body: o.subject + ' · ' + o.studentname});
         }
-        var box = el('<div class="nit-instant-prompt card shadow p-3" role="alertdialog" style="position:fixed;' +
+        var box = el('<div class="nit-instant-prompt card shadow p-3" role="alertdialog" data-instant-request="' +
+            o.requestid + '" style="position:fixed;' +
             'inset-inline-end:16px;bottom:16px;z-index:10050;max-width:360px;width:calc(100% - 32px)">' +
             '<h3 class="h5 mb-1">' + esc(S.prompttitle) + '</h3>' +
             '<p class="mb-1"><strong><bdi>' + esc(o.subject) + '</bdi></strong> · <bdi>' + esc(o.studentname) +
             '</bdi> · <bdi>' + esc(S.minutes.replace('{$a}', o.duration)) + '</bdi></p>' +
+            (o.trial ? '<p class="mb-1"><span class="badge bg-info text-dark">' + esc(S.trialbadge) + '</span></p>' : '') +
+            (o.mode === 'quick' ? '<p class="mb-1"><span class="badge bg-warning text-dark">' + esc(S.quickbadge) +
+                '</span></p>' : '') +
+            '<p class="mb-1"><bdi data-summary>' + esc(o.aisummary || '') + '</bdi></p>' +
             (o.note ? '<p class="mb-1 text-muted">' + esc(o.note) + '</p>' : '') +
             (o.photourl ? '<a href="' + esc(o.photourl) + '" target="_blank" rel="noopener"><img src="' + esc(o.photourl) +
                 '" alt="" style="max-width:100%;max-height:160px;border-radius:6px" class="mb-2"></a>' : '') +
