@@ -203,10 +203,34 @@ function flashcard_get_deck_status(&$flashcard, $userid = 0) {
     }
     if ($flashcard->decks >= 4 && $dk4 > 0) {
         $status->decks[3]->lastaccess = flashcard_get_lastaccessed($flashcard, 4, $userid);
-        $status->decks[3]->reactivate = (time() > ($status->decks[3]->lastaccess + $flashcard->deck4_delay));
+        $status->decks[3]->reactivate = (time() > ($status->decks[3]->lastaccess + $flashcard->deck4_delay * HOURSECS));
     }
 
     return $status;
+}
+
+/**
+ * How long until a deck is due for review again.
+ *
+ * A deck is due once its least recently answered card is older than the deck's review
+ * delay (the same rule as flashcard_get_deck_status()'s "reactivate").
+ *
+ * @param stdClass $flashcard
+ * @param int $deck 1..4
+ * @param int $userid
+ * @return int|null seconds to wait (0 = due now), or null when the deck has no card
+ */
+function flashcard_deck_wait($flashcard, int $deck, int $userid): ?int {
+    global $DB;
+
+    $count = $DB->count_records('flashcard_card', ['flashcardid' => $flashcard->id, 'userid' => $userid, 'deck' => $deck]);
+    if (!$count) {
+        return null;
+    }
+    $delaykey = "deck{$deck}_delay";
+    $delay = (int) ($flashcard->$delaykey ?? 0) * HOURSECS;
+    $due = (int) flashcard_get_lastaccessed($flashcard, $deck, $userid) + $delay;
+    return max(0, $due - time());
 }
 
 /**
@@ -215,7 +239,7 @@ function flashcard_get_deck_status(&$flashcard, $userid = 0) {
  * @uses $DB
  */
 function flashcard_get_card_status(&$flashcard) {
-    global $DB;
+    global $CFG, $DB;
 
     // Get decks by card.
     if ($CFG->dbtype == 'sqlsrv') {
@@ -276,6 +300,12 @@ function flashcard_get_card_status(&$flashcard) {
 
     $cards = array();
     foreach (array_values($recs) as $rec) {
+        // PHP 8 no longer creates the object on first property write ("Attempt to modify
+        // property on null"), which broke the "by cards" summary.
+        if (!isset($cards[$rec->question])) {
+            $cards[$rec->question] = new stdClass();
+            $cards[$rec->question]->deck = [];
+        }
         if ($rec->deck == 1) {
             $cards[$rec->question]->deck[0] = $rec->amount;
         }

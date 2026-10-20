@@ -1,0 +1,72 @@
+{{!
+    This file is part of The Flashcard Module
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_flashcard/round_done
+
+    The end of a Leitner round (mod_flashcard\local\round): the words the student knew
+    (moved up a deck), the words still missed after a second try (they stay and come back
+    at the deck's next review), and the way out.
+
+    Context variables required for this template:
+    * deck, knowncount, missedcount, score (the one-line result)
+    * known, missed - [{question, answer}]
+    * knownnote - where the known words went
+    * nextreview - when this deck opens again ('' once the deck is empty)
+    * decksurl, freeplayurl ('' when free play is off)
+
+    Example context (json):
+    {
+        "deck": 1, "knowncount": 1, "missedcount": 1, "score": "1 known, 1 to review",
+        "known": [{"question": "Book", "answer": "Livre"}],
+        "missed": [{"question": "Journey", "answer": "Voyage"}],
+        "knownnote": "Moved to deck 2", "nextreview": "This deck opens again in 1 day",
+        "decksurl": "#", "freeplayurl": "#"
+    }
+}}
+<div class="nit-fc nit-fc-done">
+    <div class="nit-fc-done__head">
+        <span class="nit-fc-finished__icon" aria-hidden="true">&#10003;</span>
+        <div class="nit-fc-done__title" role="heading" aria-level="3">{{#str}}rounddone, mod_flashcard{{/str}}</div>
+        <p class="nit-fc-done__score">{{score}}</p>
+    </div>
+
+    <div class="nit-fc-done__lists">
+        <section class="nit-fc-done__list is-known">
+            <div class="nit-fc-done__label" role="heading" aria-level="4">{{#str}}roundknown, mod_flashcard{{/str}} ({{knowncount}})</div>
+            <p class="nit-fc-done__note">{{knownnote}}</p>
+            <ul>
+                {{#known}}<li><b>{{question}}</b> <span>{{answer}}</span></li>{{/known}}
+                {{^known}}<li class="is-none">&mdash;</li>{{/known}}
+            </ul>
+        </section>
+        <section class="nit-fc-done__list is-missed">
+            <div class="nit-fc-done__label" role="heading" aria-level="4">{{#str}}roundmissed, mod_flashcard{{/str}} ({{missedcount}})</div>
+            <p class="nit-fc-done__note">{{#str}}roundmissednote, mod_flashcard{{/str}}</p>
+            <ul>
+                {{#missed}}<li><b>{{question}}</b> <span>{{answer}}</span></li>{{/missed}}
+                {{^missed}}<li class="is-none">&mdash;</li>{{/missed}}
+            </ul>
+        </section>
+    </div>
+
+    {{#nextreview}}<p class="nit-fc-done__next"><span aria-hidden="true">&#9201;</span> {{nextreview}}</p>{{/nextreview}}
+
+    <div class="nit-fc-actions">
+        {{#freeplayurl}}<a class="btn btn-outline-primary nit-fc-answer" href="{{freeplayurl}}">{{#str}}freegame, mod_flashcard{{/str}}</a>{{/freeplayurl}}
+        <a class="btn btn-primary nit-fc-answer" href="{{decksurl}}">{{#str}}backtodeckslink, mod_flashcard{{/str}}</a>
+    </div>
+</div>

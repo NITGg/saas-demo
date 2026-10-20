@@ -1,0 +1,140 @@
+{{!
+    This file is part of The Flashcard Module
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_flashcard/report
+
+    The teacher's follow-up (view=summary), built by mod_flashcard_renderer::report() from
+    mod_flashcard\local\report. Two tabs:
+    * students - one card per student: progress, deck counts, review status and the words
+      they keep missing (deck 1 words they have answered);
+    * words - every word, hardest first, with how many students are at each stage.
+
+    Context variables required for this template:
+    * studentsurl, wordsurl, isstudents, iswords
+    * summary, hasstudents, students - [{picture, fullname, started, percent, mastered, total,
+      masteredtext, decks [{deck, count, ishard}], hard [{question, answer, tries}], hardcount, unseen,
+      lastseen, isdue, isoverdue, isuptodate, reseturl}]
+    * haswords, hasmiddle, words - [{question, answer, hard, learning, mastered, unseen, tries,
+      hardpercent, learningpercent, masteredpercent, ishard}]
+
+    Example context (json):
+    {
+        "studentsurl": "#", "wordsurl": "#", "isstudents": true,
+        "summary": "1 student", "hasstudents": true,
+        "students": [{"fullname": "Student 1", "started": true, "percent": 40, "mastered": 2, "total": 5,
+            "decks": [{"deck": 1, "count": 2, "ishard": true}, {"deck": 2, "count": 3}],
+            "hard": [{"question": "journey", "answer": "trip", "tries": 3}], "hardcount": 1,
+            "isdue": true, "reseturl": "#"}]
+    }
+}}
+<div class="nit-fc nit-fc-report">
+    <nav class="nit-fc-report__tabs" aria-label="{{#str}}teachersummary, mod_flashcard{{/str}}">
+        <a class="nit-fc-report__tab{{#isstudents}} is-active{{/isstudents}}" href="{{studentsurl}}"{{#isstudents}} aria-current="page"{{/isstudents}}>{{#str}}reportstudents, mod_flashcard{{/str}}</a>
+        <a class="nit-fc-report__tab{{#iswords}} is-active{{/iswords}}" href="{{wordsurl}}"{{#iswords}} aria-current="page"{{/iswords}}>{{#str}}reportwords, mod_flashcard{{/str}}</a>
+    </nav>
+
+    {{#isstudents}}
+    <p class="nit-fc-hint">{{summary}}</p>
+    {{^hasstudents}}<p class="nit-fc-hint">{{#str}}nousers, mod_flashcard{{/str}}</p>{{/hasstudents}}
+
+    <div class="nit-fc-students">
+        {{#students}}
+        <section class="nit-fc-student{{^started}} is-idle{{/started}}">
+            <header class="nit-fc-student__head">
+                {{{picture}}}
+                <div class="nit-fc-student__who">
+                    <div class="nit-fc-student__name" role="heading" aria-level="3">{{fullname}}</div>
+                    {{#lastseen}}<span class="nit-fc-student__seen">{{#str}}reportlastseen, mod_flashcard, {{lastseen}}{{/str}}</span>{{/lastseen}}
+                </div>
+                {{#isoverdue}}<span class="nit-fc-badge is-late">{{#str}}reportoverdue, mod_flashcard{{/str}}</span>{{/isoverdue}}
+                {{#isdue}}<span class="nit-fc-badge is-due">{{#str}}reportdue, mod_flashcard{{/str}}</span>{{/isdue}}
+                {{#isuptodate}}<span class="nit-fc-badge is-ok">{{#str}}reportuptodate, mod_flashcard{{/str}}</span>{{/isuptodate}}
+                {{^started}}<span class="nit-fc-badge">{{#str}}notinitialized, mod_flashcard{{/str}}</span>{{/started}}
+            </header>
+
+            {{#started}}
+            <div class="nit-fc-progress" role="img" aria-label="{{percent}}%">
+                <span class="nit-fc-progress__bar" style="width: {{percent}}%"></span>
+            </div>
+            <p class="nit-fc-student__meta">{{masteredtext}}</p>
+
+            <ul class="nit-fc-student__decks">
+                {{#decks}}<li class="nit-fc-chip{{#ishard}} is-hard{{/ishard}}">{{#str}}deck, mod_flashcard{{/str}} {{deck}}: <b>{{count}}</b></li>{{/decks}}
+            </ul>
+
+            <div class="nit-fc-student__hard">
+                <div class="nit-fc-student__label">{{#str}}reporthardwords, mod_flashcard{{/str}} ({{hardcount}})</div>
+                {{#hardcount}}
+                <ul class="nit-fc-wordlist">
+                    {{#hard}}<li><b>{{question}}</b> <span>{{answer}}</span> <small>{{#str}}reporttries, mod_flashcard, {{tries}}{{/str}}</small></li>{{/hard}}
+                </ul>
+                {{/hardcount}}
+                {{^hardcount}}<p class="nit-fc-student__none">{{#str}}reportnohard, mod_flashcard{{/str}}</p>{{/hardcount}}
+                {{#unseen}}<p class="nit-fc-student__none">{{#str}}reportunseen, mod_flashcard, {{unseen}}{{/str}}</p>{{/unseen}}
+            </div>
+
+            <form method="post" action="{{reseturl}}" class="nit-fc-student__reset"
+                  data-confirm="{{#str}}reportresetconfirm, mod_flashcard{{/str}}" onsubmit="return confirm(this.dataset.confirm);">
+                <button type="submit" class="btn btn-link">{{#str}}reportreset, mod_flashcard{{/str}}</button>
+            </form>
+            {{/started}}
+        </section>
+        {{/students}}
+    </div>
+    {{/isstudents}}
+
+    {{#iswords}}
+    <p class="nit-fc-hint">{{#str}}reportwordshint, mod_flashcard{{/str}}</p>
+    {{^haswords}}<p class="nit-fc-hint">{{#str}}nocards, mod_flashcard{{/str}}</p>{{/haswords}}
+    {{#haswords}}
+    <div class="nit-fc-words table-responsive">
+        <table class="table nit-fc-words__table">
+            <thead>
+                <tr>
+                    <th scope="col">{{#str}}sidequestion, mod_flashcard{{/str}}</th>
+                    <th scope="col">{{#str}}sideanswer, mod_flashcard{{/str}}</th>
+                    <th scope="col">{{#str}}reportstages, mod_flashcard{{/str}}</th>
+                    <th scope="col" class="nit-fc-num">{{#str}}reporthardcol, mod_flashcard{{/str}}</th>
+                    {{#hasmiddle}}<th scope="col" class="nit-fc-num">{{#str}}reportlearningcol, mod_flashcard{{/str}}</th>{{/hasmiddle}}
+                    <th scope="col" class="nit-fc-num">{{#str}}reportmasteredcol, mod_flashcard{{/str}}</th>
+                    <th scope="col" class="nit-fc-num">{{#str}}reportunseencol, mod_flashcard{{/str}}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#words}}
+                <tr{{#ishard}} class="is-hard"{{/ishard}}>
+                    <th scope="row">{{question}}</th>
+                    <td>{{answer}}</td>
+                    <td>
+                        <div class="nit-fc-stack" aria-hidden="true">
+                            <span class="is-hard" style="width: {{hardpercent}}%"></span>
+                            <span class="is-learning" style="width: {{learningpercent}}%"></span>
+                            <span class="is-mastered" style="width: {{masteredpercent}}%"></span>
+                        </div>
+                    </td>
+                    <td class="nit-fc-num"><b>{{hard}}</b></td>
+                    {{#hasmiddle}}<td class="nit-fc-num">{{learning}}</td>{{/hasmiddle}}
+                    <td class="nit-fc-num">{{mastered}}</td>
+                    <td class="nit-fc-num">{{unseen}}</td>
+                </tr>
+                {{/words}}
+            </tbody>
+        </table>
+    </div>
+    {{/haswords}}
+    {{/iswords}}
+</div>

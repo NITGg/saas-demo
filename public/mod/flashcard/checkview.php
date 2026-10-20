@@ -32,21 +32,19 @@ echo $out;
 
 // Get available decks for user and calculate deck state.
 
-if (!$decks = flashcard_get_deck_status($flashcard)) {
-    // If deck status have bever been initialized initialized them.
-    if (flashcard_initialize($flashcard, $USER->id)) {
-        $decks = flashcard_get_deck_status($flashcard);
+// Initialising also runs on later visits: it adds the cards a teacher created since, so they
+// reach students who already started. The upstream page drew nothing on a first visit (it
+// initialised the decks, then skipped the table).
+$decks = flashcard_initialize($flashcard, $USER->id) ? flashcard_get_deck_status($flashcard) : null;
+
+if (!$decks) {
+    if (has_capability('mod/flashcard:manage', $context)) {
+        $url = new moodle_url('/mod/flashcard/view.php', array('id' => $cm->id, 'view' => 'edit'));
     } else {
-        if (has_capability('mod/flashcard:manage', $context)) {
-            $url = new moodle_url('/mod/flashcard/view.php', array('id' => $cm->id, 'view' => 'edit'));
-        } else {
-            $url = new moodle_url('/course/view.php', array('id' => $course->id));
-        }
-        echo $OUTPUT->notification(get_string('nocards', 'flashcard'));
-        echo $OUTPUT->continue_button($url);
+        $url = new moodle_url('/course/view.php', array('id' => $course->id));
     }
+    echo $OUTPUT->notification(get_string('nocards', 'flashcard'));
+    echo $OUTPUT->continue_button($url);
 } else {
-    echo '<center>';
     echo $renderer->check_decks($flashcard, $cm, $decks);
-    echo '</center>';
 }

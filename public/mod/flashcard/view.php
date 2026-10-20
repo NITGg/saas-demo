@@ -219,7 +219,7 @@ if ($view == 'edit') {
     $taburl = new moodle_url('/mod/flashcard/view.php', $params);
     $row1[] = new tabobject('bycards', $taburl, $tabname);
 
-    $tabrows[] = $row1;
+    // The report draws its own students / words tabs (templates/report.mustache).
 }
 
 $out .= print_tabs($tabrows, $currenttab, null, $activated, true);

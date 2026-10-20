@@ -193,7 +193,12 @@ class mlang {
         }
 
         $languages = [];
-        if (class_exists('\local_nit_mlang\langs')) {
+        // Not while the site is being installed, nor before local_nit_mlang
+        // itself is: its cache does not exist yet, and asking for it from our
+        // install step (which runs first - "games" sorts before "nit_mlang")
+        // took a lock that stalled the whole install.
+        if (class_exists('\local_nit_mlang\langs') && !during_initial_install()
+                && get_config('local_nit_mlang', 'version')) {
             // That plugin returns a numerically indexed list - each entry
             // carrying its own code, name and writing direction - so it has to
             // be keyed by the code here. Its order, site default first, is the

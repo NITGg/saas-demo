@@ -23,7 +23,8 @@
     (scss/components/_flashcard.scss).
 
     Context variables required for this template:
-    * decks - [{number, title, count, strdeck, isempty, isdue, isreviewed, stack, playurl, playlabel}]
+    * decks - [{number, title, count, strdeck, isempty, isdue, isreviewed, waitlabel, stack, playurl, playlabel}]
+      A reviewed deck has a waitlabel and, for students, no playurl: it opens at its review time.
 
     Example context (json):
     {
@@ -55,6 +56,9 @@
                 {{#isreviewed}}{{#str}}deckreviewed, mod_flashcard{{/str}}{{/isreviewed}}
                 {{#isempty}}{{#str}}deckempty, mod_flashcard{{/str}}{{/isempty}}
             </p>
+            {{#waitlabel}}
+            <p class="nit-fc-deck__wait"><span aria-hidden="true">&#9201;</span> {{waitlabel}}</p>
+            {{/waitlabel}}
 
             {{#playurl}}
             <a class="btn {{#isdue}}btn-primary{{/isdue}}{{^isdue}}btn-outline-primary{{/isdue}} nit-fc-deck__go" href="{{playurl}}">{{playlabel}}</a>

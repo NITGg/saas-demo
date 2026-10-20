@@ -437,3 +437,349 @@
     font-size: 2rem;
     font-weight: 800;
 }
+
+.nit-fc-deck__wait {
+    margin: 0;
+    color: var(--nit-brand-textsecondary);
+    font-size: 0.85rem;
+}
+
+// --- End of a Leitner round (templates/round_done.mustache) --------------------
+
+.nit-fc-done__head {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    margin-block-end: 1.5rem;
+    text-align: center;
+}
+
+.nit-fc-done__title {
+    color: var(--nit-brand-textprimary);
+    font-size: 1.5rem;
+    font-weight: 800;
+}
+
+.nit-fc-done__score {
+    margin: 0;
+    color: var(--nit-brand-textsecondary);
+}
+
+.nit-fc-done__lists {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+}
+
+.nit-fc-done__list {
+    padding: 1.1rem 1.25rem;
+    border: 1px solid var(--nit-brand-borderprimary);
+    border-block-start: 5px solid var(--nit-brand-success, var(--nit-brand-primary));
+    border-radius: var(--nit-fc-radius);
+    background: var(--nit-brand-surface);
+    box-shadow: var(--nit-fc-shadow);
+
+    &.is-missed {
+        border-block-start-color: var(--nit-brand-warning, var(--nit-brand-primary));
+    }
+
+    ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    li {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        padding-block: 0.45rem;
+        border-block-end: 1px solid var(--nit-brand-borderprimary);
+
+        &:last-child {
+            border-block-end: 0;
+        }
+
+        span {
+            color: var(--nit-brand-textsecondary);
+        }
+
+        &.is-none {
+            color: var(--nit-brand-textsecondary);
+        }
+    }
+}
+
+.nit-fc-done__label {
+    color: var(--nit-brand-textprimary);
+    font-weight: 700;
+}
+
+.nit-fc-done__note {
+    margin-block: 0.25rem 0.5rem;
+    color: var(--nit-brand-textsecondary);
+    font-size: 0.85rem;
+}
+
+.nit-fc-done__next {
+    margin-block: 1.25rem 0;
+    color: var(--nit-brand-textsecondary);
+    text-align: center;
+}
+
+// --- Teacher follow-up (templates/report.mustache) ----------------------------
+
+.nit-fc-report__tabs {
+    display: inline-flex;
+    gap: 0.25rem;
+    margin-block-end: 1rem;
+    padding: 0.25rem;
+    border: 1px solid var(--nit-brand-borderprimary);
+    border-radius: 999px;
+    background: var(--nit-brand-surface);
+}
+
+.nit-fc-report__tab {
+    padding: 0.45rem 1.1rem;
+    border-radius: 999px;
+    color: var(--nit-brand-textsecondary);
+    font-weight: 600;
+    text-decoration: none;
+
+    &:hover,
+    &:focus {
+        color: var(--nit-brand-primary);
+        text-decoration: none;
+    }
+
+    &.is-active {
+        background: var(--nit-brand-primary);
+        color: var(--nit-brand-on-primary);
+    }
+}
+
+.nit-fc-report .nit-fc-hint {
+    text-align: start;
+}
+
+.nit-fc-students {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+    align-items: start;
+}
+
+.nit-fc-student {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1.1rem 1.25rem;
+    border: 1px solid var(--nit-brand-borderprimary);
+    border-radius: var(--nit-fc-radius);
+    background: var(--nit-brand-surface);
+    box-shadow: var(--nit-fc-shadow);
+
+    &.is-idle {
+        box-shadow: none;
+        opacity: 0.85;
+    }
+}
+
+.nit-fc-student__head {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+
+    .userpicture {
+        width: 40px;
+        height: 40px;
+        margin: 0;
+        border-radius: 50%;
+    }
+}
+
+.nit-fc-student__who {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.nit-fc-student__name {
+    color: var(--nit-brand-textprimary);
+    font-weight: 700;
+}
+
+.nit-fc-student__seen,
+.nit-fc-student__meta,
+.nit-fc-student__none {
+    margin: 0;
+    color: var(--nit-brand-textsecondary);
+    font-size: 0.85rem;
+}
+
+.nit-fc-badge {
+    padding: 0.2rem 0.7rem;
+    border: 1px solid var(--nit-brand-borderprimary);
+    border-radius: 999px;
+    color: var(--nit-brand-textsecondary);
+    font-size: 0.78rem;
+    font-weight: 700;
+    white-space: nowrap;
+
+    &.is-due {
+        border-color: var(--nit-brand-primary);
+        color: var(--nit-brand-primary);
+    }
+
+    &.is-late {
+        border-color: var(--nit-brand-error, var(--nit-brand-primary));
+        color: var(--nit-brand-error, var(--nit-brand-primary));
+    }
+
+    &.is-ok {
+        border-color: var(--nit-brand-success, var(--nit-brand-primary));
+        color: var(--nit-brand-success, var(--nit-brand-primary));
+    }
+}
+
+.nit-fc-progress {
+    height: 8px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--nit-brand-background);
+    box-shadow: inset 0 0 0 1px var(--nit-brand-borderprimary);
+}
+
+.nit-fc-progress__bar {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--nit-brand-success, var(--nit-brand-primary));
+}
+
+.nit-fc-student__decks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    .nit-fc-chip {
+        padding: 0.2rem 0.7rem;
+        font-size: 0.8rem;
+
+        &.is-hard b {
+            color: var(--nit-brand-error, var(--nit-brand-textprimary));
+        }
+    }
+}
+
+.nit-fc-student__label {
+    margin-block-end: 0.35rem;
+    color: var(--nit-brand-textprimary);
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.nit-fc-wordlist {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    li {
+        display: flex;
+        align-items: baseline;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        padding-block: 0.35rem;
+        border-block-end: 1px dashed var(--nit-brand-borderprimary);
+
+        &:last-child {
+            border-block-end: 0;
+        }
+
+        span {
+            color: var(--nit-brand-textsecondary);
+        }
+
+        small {
+            margin-inline-start: auto;
+            color: var(--nit-brand-textsecondary);
+        }
+    }
+}
+
+.nit-fc-student__reset {
+    margin: 0;
+    margin-block-start: auto;
+
+    .btn-link {
+        padding: 0;
+        color: var(--nit-brand-textsecondary);
+        font-size: 0.85rem;
+    }
+}
+
+.nit-fc-words {
+    border: 1px solid var(--nit-brand-borderprimary);
+    border-radius: var(--nit-fc-radius);
+    background: var(--nit-brand-surface);
+}
+
+.nit-fc-words__table {
+    margin: 0;
+    color: var(--nit-brand-textprimary);
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--nit-brand-textprimary);
+
+    th,
+    td {
+        vertical-align: middle;
+        border-color: var(--nit-brand-borderprimary);
+    }
+
+    thead th {
+        color: var(--nit-brand-textsecondary);
+        font-size: 0.85rem;
+        white-space: nowrap;
+    }
+
+    tr.is-hard th {
+        color: var(--nit-brand-error, var(--nit-brand-textprimary));
+    }
+
+    .nit-fc-num {
+        text-align: center;
+    }
+}
+
+// One bar per word: hard / learning / mastered, as shares of the students who have seen it.
+.nit-fc-stack {
+    display: flex;
+    min-width: 120px;
+    height: 10px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--nit-brand-borderprimary);
+
+    span {
+        display: block;
+        height: 100%;
+    }
+
+    .is-hard {
+        background: var(--nit-brand-error, var(--nit-brand-primary));
+    }
+
+    .is-learning {
+        background: var(--nit-brand-warning, var(--nit-brand-accent));
+    }
+
+    .is-mastered {
+        background: var(--nit-brand-success, var(--nit-brand-primary));
+    }
+}

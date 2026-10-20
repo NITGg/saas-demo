@@ -17,6 +17,10 @@
 /**
  * This view allows playing with a deck
  *
+ * One visit plays one round of the deck (mod_flashcard\local\round): every card of the
+ * deck once, a missed card once more at the end, then a summary screen. A student can
+ * only start a round on a deck that is due; the deck table shows when the others are.
+ *
  * @package mod_flashcard
  * @category mod
  * @author Gustav Delius
@@ -25,22 +29,20 @@
  */
 defined('MOODLE_INTERNAL') || die();
 
+use mod_flashcard\local\round;
+
 $PAGE->requires->js('/mod/flashcard/players/flowplayer/flowplayer.js');
 
-// Invoke controller.
-
-// We need it in controller.
 $deck = required_param('deck', PARAM_INT);
+$deckstable = new moodle_url('/mod/flashcard/view.php', ['id' => $cm->id, 'view' => 'checkdecks']);
 
 $subquestions = $DB->get_records('flashcard_deckdata', array('flashcardid' => $flashcard->id));
+$round = new round((int) $flashcard->id, $deck);
 
+// Invoke controller.
 if ($action != '') {
     include($CFG->dirroot.'/mod/flashcard/playview.controller.php');
 }
-
-// Unmark state for this deck.
-$params = array('userid' => $USER->id, 'flashcardid' => $flashcard->id, 'deck' => $deck);
-$DB->delete_records('flashcard_userdeck_state', $params);
 
 if (empty($subquestions)) {
     echo $out;
@@ -51,59 +53,43 @@ if (empty($subquestions)) {
     return;
 }
 
-if (!isset($SESSION->flashcard_consumed)) {
-    $consumed = [];
-} else {
-    $consumed = explode(',', $SESSION->flashcard_consumed);
-}
-$subquestions = array();
-if (!empty($consumed)) {
-    list($usql, $inparams) = $DB->get_in_or_equal($consumed, SQL_PARAMS_QM, 'param0000', false); // Negative IN.
-    $select = "
-        flashcardid = ? AND
-        userid = ? AND
-        deck = ? AND
-        id $usql
-    ";
-} else {
-    $select = "
-        flashcardid = ? AND
-        userid = ? AND
-        deck = ?
-    ";
+if (!$round->exists()) {
+    // A new round: only on a due deck, unless a teacher is previewing.
+    $wait = flashcard_deck_wait($flashcard, $deck, $USER->id);
+    if ($wait === null) {
+        redirect($deckstable);
+    }
+    if ($wait > 0 && !has_capability('mod/flashcard:manage', $context)) {
+        redirect($deckstable, get_string('decklocked', 'flashcard', format_time($wait)), null,
+            \core\output\notification::NOTIFY_INFO);
+    }
+    $cardids = $DB->get_fieldset_select('flashcard_card', 'id', 'flashcardid = ? AND userid = ? AND deck = ?',
+        [$flashcard->id, $USER->id, $deck]);
+    $round->start($cardids);
+
+    // Unmark state for this deck.
+    $params = array('userid' => $USER->id, 'flashcardid' => $flashcard->id, 'deck' => $deck);
+    $DB->delete_records('flashcard_userdeck_state', $params);
 }
 
-$params = array($flashcard->id, $USER->id, $deck);
-if (!empty($inparams)) {
-    foreach ($inparams as $p) {
-        if (empty($p)) {
-            // Fixes PostGreSQL behaviour. https://github.com/vfremaux/moodle-mod_flashcard/issues/14#issuecomment-527197394
-            $p = 0;
-        }
-        $params[] = $p;
-    }
-}
-
-if ($cards = $DB->get_records_select('flashcard_card', $select, $params)) {
-    foreach ($cards as $card) {
-        $obj = new stdClass();
-        $obj->entryid = $card->entryid;
-        $obj->cardid = $card->id;
-        $subquestions[] = $obj;
-    }
-} else {
-    echo $out;
-    echo $OUTPUT->box(get_string('nomorecards', 'flashcard'), 'notify');
-    echo $OUTPUT->continue_button($thisurl."?view=checkdecks&amp;id={$cm->id}");
-    echo $OUTPUT->footer($course);
-    die;
+$cardid = $round->current();
+$card = $cardid === null ? null : $DB->get_record('flashcard_card', ['id' => $cardid]);
+if ($cardid !== null && !$card) {
+    // The teacher deleted the card mid-round.
+    $round->clear();
+    redirect($deckstable);
 }
 
 // Print deferred header.
-
 echo $out;
 
-// Randomize and get a question (obviously it is not a consumed question).
+if ($card === null) {
+    echo $renderer->round_done($flashcard, $cm, $deck, $round->results());
+    return;
+}
 
+$subquestion = (object) ['entryid' => $card->entryid, 'cardid' => $card->id];
+$cards = [$card->id => $card];
+$current = [$subquestion];
 
-echo $renderer->playview($flashcard, $cm, $cards, $subquestions);
+echo $renderer->playview($flashcard, $cm, $cards, $current, $round->remaining());

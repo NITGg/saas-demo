@@ -26,10 +26,8 @@
  */
 defined('MOODLE_INTERNAL') || die();
 
-echo $out; // Deffered header.
-
-// Small controller here...
-if ($action == 'reset') {
+// Small controller here: reset one student's decks (a POST from the report, with sesskey).
+if ($action == 'reset' && confirm_sesskey()) {
     $userid = required_param('userid', PARAM_INT);
     $DB->delete_records('flashcard_card', array('flashcardid' => $flashcard->id, 'userid' => $userid));
 
@@ -40,48 +38,13 @@ if ($action == 'reset') {
     }
 }
 
-require_once($CFG->dirroot.'/enrol/locallib.php');
+echo $out; // Deffered header.
 
-$coursecontext = context_course::instance($COURSE->id);
-$course = $DB->get_record('course', array('id' => $COURSE->id), '*', MUST_EXIST);
-
-$groupmode = groups_get_activity_groupmode($cm, $COURSE);
-if ($groupmode != NOGROUPS) {
-    $groupid = groups_get_activity_group($cm, true);
-    groups_print_activity_menu($cm, $url.'&view=summary&page=byusers');
-} else {
-    $groupid = 0;
-}
-$courseusers = get_enrolled_users($coursecontext, '', $groupid);
-
-$struser = get_string('username');
-$strdeckstates = get_string('deckstates', 'flashcard');
-$strcounts = get_string('counters', 'flashcard');
-
-$table = new html_table();
-$table->head = array("<b>$struser</b>", "<b>$strdeckstates</b>", "<b>$strcounts</b>");
-$table->size = array('30%', '50%', '20%');
-$table->width = '100%';
-
-if (!empty($courseusers)) {
-    foreach ($courseusers as $auser) {
-        $status = flashcard_get_deck_status($flashcard, $auser->id);
-        $userbox = $OUTPUT->user_picture($auser);
-        $userbox .= fullname($auser);
-        if ($status) {
-            $flashcard->cm = &$cm;
-            $deckbox = $renderer->print_deck_status($flashcard, $auser->id, $status, true);
-            $countbox = $renderer->print_deckcounts($flashcard, $auser->id);
-        } else {
-            $deckbox = get_string('notinitialized', 'flashcard');
-            $countbox = '';
-        }
-        $table->data[] = array($userbox, $deckbox, $countbox);
-    }
-    echo html_writer::table($table);
-} else {
-    echo '<center>';
-    echo $OUTPUT->box(get_string('nousers', 'flashcard'));
-    echo '</center>';
+$groupid = 0;
+if (groups_get_activity_groupmode($cm, $COURSE) != NOGROUPS) {
+    $groupid = (int) groups_get_activity_group($cm, true);
+    groups_print_activity_menu($cm, new moodle_url('/mod/flashcard/view.php',
+        ['id' => $cm->id, 'view' => 'summary', 'page' => 'byusers']));
 }
 
+echo $renderer->report($flashcard, $cm, 'byusers', $groupid);

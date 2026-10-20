@@ -55,7 +55,10 @@ final class content_test extends \advanced_testcase {
      */
     private function quiz_row(string $question, ?string $lang = null): array {
         $text = function (string $value) use ($lang): string {
-            return $lang === null ? $value : mlang::build([$lang => $value]);
+            // The tag is written out rather than built with mlang::build(), which
+            // returns plain text when only one language pack is installed - as
+            // in a fresh test site.
+            return $lang === null ? $value : '{mlang ' . $lang . '}' . $value . '{mlang}';
         };
         return [
             'question' => $text($question),
@@ -165,7 +168,7 @@ final class content_test extends \advanced_testcase {
         content::save_row(0, $game, $this->quiz_row('Q1'));
         content::save_row(0, $game, $this->quiz_row('Q2'));
 
-        $newcm = duplicate_module($course, get_fast_modinfo($course)->get_cm($cm->cmid));
+        $newcm = (new \core_courseformat\local\cmactions($course))->duplicate($cm->cmid);
         $copy = $DB->get_record('games', ['id' => $newcm->instance]);
 
         $this->assertSame(['Q1', 'Q2'], array_map(static function ($row) {

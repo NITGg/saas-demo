@@ -28,22 +28,11 @@ defined('MOODLE_INTERNAL') || die();
 // Deffered header.
 echo $out;
 
-$cards = flashcard_get_card_status($flashcard);
-
-$strcard = get_string('card', 'flashcard');
-$strviewed = get_string('viewed', 'flashcard');
-$strdecks = get_string('decks', 'flashcard');
-
-$table = new html_table();
-
-$table->head = array("<b>$strcard</b>", "<b>$strdecks</b>", "<b>$strviewed</b>");
-$table->size = array('30%', '35%', '35%');
-$table->width = "100%";
-
-foreach ($cards as $cardquestion => $acard) {
-    $cardcounters = $renderer->print_cardcounts($flashcard, $acard);
-    $table->data[] = array(format_string($cardquestion), $cardcounters, $acard->accesscount);
+$groupid = 0;
+if (groups_get_activity_groupmode($cm, $COURSE) != NOGROUPS) {
+    $groupid = (int) groups_get_activity_group($cm, true);
+    groups_print_activity_menu($cm, new moodle_url('/mod/flashcard/view.php',
+        ['id' => $cm->id, 'view' => 'summary', 'page' => 'bycards']));
 }
 
-echo html_writer::table($table);
-
+echo $renderer->report($flashcard, $cm, 'bycards', $groupid);

@@ -17,6 +17,9 @@
 /**
  * a controller for the play view
  *
+ * Runs before playview.php prints anything. $round (mod_flashcard\local\round) is the
+ * round of $deck for $USER; see that class for how a round works.
+ *
  * @package mod_flashcard
  * @category mod
  * @author Valery Fremaux
@@ -37,7 +40,8 @@ if ($action == 'initialize') {
     if ($initials = $DB->get_records_select('flashcard_card', $select, array($flashcard->id, $USER->id, $deck))) {
         $_SESSION['flashcard_initials'] = implode("','", array_keys($initials));
     }
-    unset($_SESSION['flashcard_consumed']);
+    // A new round starts in playview.php, once it has checked the deck is due.
+    $round->clear();
 }
 
 /* ********************************** reset a deck *************************************** */
@@ -46,31 +50,34 @@ if ($action == 'reset') {
     $initials = explode("','", $_SESSION['flashcard_initials']);
     list($usql, $params) = $DB->get_in_or_equal(array_keys($initials));
     $DB->set_field_select('flashcard_card', 'deck', $deck, "id $usql ", $params);
-    unset($_SESSION['flashcard_consumed']);
+    $round->clear();
+}
+
+/*
+ * An answer counts only for the card the round is showing, and only for the student's own
+ * card of this flashcard: a reloaded or re-posted form, or a forged cardid, changes nothing.
+ */
+$answeredcard = null;
+if ($action == 'igotit' || $action == 'ifailed') {
+    $cardid = required_param('cardid', PARAM_INT);
+    if (confirm_sesskey() && $round->current() === $cardid) {
+        $answeredcard = $DB->get_record('flashcard_card',
+            ['id' => $cardid, 'flashcardid' => $flashcard->id, 'userid' => $USER->id]);
+    }
 }
 
 /* ********************************* a card was declared right ************************ */
 
-if ($action == 'igotit') {
-    $card = new StdClass();
-    $card->id = required_param('cardid', PARAM_INT);
-    $card = $DB->get_record('flashcard_card', array('id' => $card->id));
+if ($action == 'igotit' && $answeredcard) {
+    $card = $answeredcard;
     $olddeck = $card->deck;
     if ($card->deck < $flashcard->decks) {
         $card->deck = $deck + 1;
-    } else {
-        // If in last deck, consume it !!
-        if (array_key_exists('flashcard_consumed', $_SESSION)) {
-            $_SESSION['flashcard_consumed'] .= ','.$card->id;
-        } else {
-            $_SESSION['flashcard_consumed'] = $card->id;
-        }
     }
     $card->lastaccessed = time();
     $card->accesscount++;
-    if (!$DB->update_record('flashcard_card', $card)) {
-        print_error('dbcouldnotupdate', 'flashcard', '', get_string('cardinfo', 'flashcard'));
-    }
+    $DB->update_record('flashcard_card', $card);
+    $round->known((int) $card->id);
 
     /*
      * If pre-last deck, we need check the completion condition for "all good",
@@ -111,21 +118,12 @@ if ($action == 'igotit') {
 
 /* **************************** a card was declared wrong **************************** */
 
-if ($action == 'ifailed') {
-    $card = new StdClass();
-    $card->id = required_param('cardid', PARAM_INT);
-    $card = $DB->get_record('flashcard_card', array('id' => $card->id));
+if ($action == 'ifailed' && $answeredcard) {
+    $card = $answeredcard;
     $card->lastaccessed = time();
     $card->accesscount++;
-
-    if (!$DB->update_record('flashcard_card', $card)) {
-        print_error('dbcouldnotupdate', 'flashcard', '', get_string('cardinfo', 'flashcard'));
-    }
-    if (array_key_exists('flashcard_consumed', $_SESSION)) {
-        $_SESSION['flashcard_consumed'] .= ','.$card->id;
-    } else {
-        $_SESSION['flashcard_consumed'] = $card->id;
-    }
+    $DB->update_record('flashcard_card', $card);
+    $round->missed((int) $card->id);
 
     // Note allgood cannot win with a failed card as card do not move.
     $completion = new completion_info($course);

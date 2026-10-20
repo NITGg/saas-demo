@@ -76,6 +76,9 @@ final class external_test extends \advanced_testcase {
         $content = external_api::clean_returnvalue(get_content::execute_returns(), get_content::execute('speak-words'));
         $this->assertSame('en', $content['speechlang']);
 
+        if (!get_string_manager()->translation_exists('ar', false)) {
+            $this->markTestIncomplete('The Arabic language pack is not installed on this test site.');
+        }
         force_current_language('ar');
         $content = external_api::clean_returnvalue(get_content::execute_returns(), get_content::execute('speak-words'));
         $this->assertSame('ar-EG', $content['speechlang']);

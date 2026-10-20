@@ -411,7 +411,7 @@ class mod_flashcard_renderer extends plugin_renderer_base {
         return $this->output->render_from_template('mod_flashcard/cardcounts', $template);
     }
 
-    public function playview(&$flashcard, &$cm, &$cards, &$subquestions) {
+    public function playview(&$flashcard, &$cm, &$cards, &$subquestions, ?int $remaining = null) {
         global $DB;
 
         $thisurl = new moodle_url('/mod/flashcard/view.php');
@@ -494,7 +494,7 @@ class mod_flashcard_renderer extends plugin_renderer_base {
             'extracss' => $flashcard->extracss,
             'instructions' => get_string('instructions', 'flashcard'),
             'deck' => $deck,
-            'remaining' => count($subquestions),
+            'remaining' => $remaining ?? count($subquestions),
             'fronthtml' => $fronthtml,
             'backhtml' => $backhtml,
             'frontclass' => ($flashcard->questionsmediatype == FLASHCARD_MEDIA_VIDEO) ? 'flashcard-question-video' : '',
@@ -508,6 +508,61 @@ class mod_flashcard_renderer extends plugin_renderer_base {
         ];
 
         return $this->output->render_from_template('mod_flashcard/play', $template);
+    }
+
+    /**
+     * The end of a Leitner round: what the student knew (moved up a deck), what they
+     * missed (stays, back at the deck's next review), and when that is.
+     *
+     * @param stdClass $flashcard
+     * @param stdClass $cm
+     * @param int $deck
+     * @param array $results ['known' => int[], 'missed' => int[]] from round::results()
+     * @return string
+     */
+    public function round_done($flashcard, $cm, int $deck, array $results): string {
+        global $DB, $USER;
+
+        $words = function(array $cardids) use ($DB): array {
+            if (!$cardids) {
+                return [];
+            }
+            [$insql, $params] = $DB->get_in_or_equal($cardids);
+            $rows = $DB->get_records_sql("SELECT c.id, d.questiontext, d.answertext
+                                            FROM {flashcard_card} c
+                                            JOIN {flashcard_deckdata} d ON d.id = c.entryid
+                                           WHERE c.id $insql", $params);
+            $out = [];
+            foreach ($cardids as $id) {
+                if (isset($rows[$id])) {
+                    $out[] = [
+                        'question' => format_string(strip_tags($rows[$id]->questiontext)),
+                        'answer' => format_string(strip_tags($rows[$id]->answertext)),
+                    ];
+                }
+            }
+            return $out;
+        };
+
+        $known = $words($results['known']);
+        $missed = $words($results['missed']);
+        $wait = flashcard_deck_wait($flashcard, $deck, $USER->id);
+        $next = $deck < $flashcard->decks ? $deck + 1 : $deck;
+
+        $template = (object) [
+            'deck' => $deck,
+            'known' => $known,
+            'knowncount' => count($known),
+            'missed' => $missed,
+            'missedcount' => count($missed),
+            'score' => get_string('roundscore', 'flashcard', ['known' => count($known), 'missed' => count($missed)]),
+            'knownnote' => get_string($deck < $flashcard->decks ? 'roundknownmoved' : 'roundknownkept', 'flashcard', $next),
+            'nextreview' => ($wait !== null) ? get_string('roundnextreview', 'flashcard', format_time(max($wait, MINSECS))) : '',
+            'decksurl' => (new moodle_url('/mod/flashcard/view.php', ['id' => $cm->id, 'view' => 'checkdecks']))->out(false),
+            'freeplayurl' => ($flashcard->models & FLASHCARD_MODEL_FREEUSE)
+                ? (new moodle_url('/mod/flashcard/view.php', ['id' => $cm->id, 'view' => 'freeplay']))->out(false) : '',
+        ];
+        return $this->output->render_from_template('mod_flashcard/round_done', $template);
     }
 
     public function finishtable() {
@@ -528,6 +583,9 @@ class mod_flashcard_renderer extends plugin_renderer_base {
     }
 
     public function check_decks(&$flashcard, &$cm, &$decks) {
+        global $USER;
+
+        $canpreview = has_capability('mod/flashcard:manage', context_module::instance($cm->id));
 
         // Deck titles by position: the first deck is always the hard one and the last the
         // easy one; a 3- or 4-deck set adds the middle and trivial ones in between.
@@ -564,14 +622,112 @@ class mod_flashcard_renderer extends plugin_renderer_base {
             $decktpl->isdue = ($count > 0 && $reactivate);
             $decktpl->isreviewed = ($count > 0 && !$reactivate);
             $decktpl->stack = array_fill(0, min($count, 3), true);
-            if ($count > 0) {
+
+            // A reviewed deck is closed to students until its review time comes round
+            // (playview.php refuses it too); a teacher may still open it to preview.
+            if ($decktpl->isreviewed) {
+                $wait = flashcard_deck_wait($flashcard, $i + 1, $USER->id);
+                $decktpl->waitlabel = get_string('deckavailablein', 'flashcard', format_time(max((int) $wait, MINSECS)));
+            }
+            $canopen = $decktpl->isdue || ($decktpl->isreviewed && $canpreview);
+            if ($canopen) {
                 $params = ['view' => 'play', 'id' => $cm->id, 'deck' => $i + 1, 'what' => 'initialize'];
                 $decktpl->playurl = (new moodle_url('/mod/flashcard/view.php', $params))->out(false);
-                $decktpl->playlabel = get_string($reactivate ? 'playwithme' : 'reinforce', 'flashcard');
+                $decktpl->playlabel = get_string($decktpl->isdue ? 'playwithme' : 'deckpreview', 'flashcard');
             }
             $template->decks[] = $decktpl;
         }
 
         return $this->output->render_from_template('mod_flashcard/decks', $template);
+    }
+
+    /**
+     * The teacher's follow-up (view=summary): the students tab or the words tab.
+     *
+     * @param stdClass $flashcard
+     * @param stdClass $cm
+     * @param string $page 'bycards' for the words, anything else for the students
+     * @param int $groupid
+     * @return string
+     */
+    public function report($flashcard, $cm, string $page, int $groupid = 0): string {
+        $report = new \mod_flashcard\local\report($flashcard, $cm);
+        $base = ['id' => $cm->id, 'view' => 'summary'];
+        $decks = (int) $flashcard->decks;
+        $text = function($html): string {
+            return format_string(strip_tags((string) $html));
+        };
+
+        $template = (object) [
+            'studentsurl' => (new moodle_url('/mod/flashcard/view.php', $base + ['page' => 'byusers']))->out(false),
+            'wordsurl' => (new moodle_url('/mod/flashcard/view.php', $base + ['page' => 'bycards']))->out(false),
+            'isstudents' => $page !== 'bycards',
+            'iswords' => $page === 'bycards',
+        ];
+
+        if ($page === 'bycards') {
+            $rows = $report->words($groupid);
+            $template->words = [];
+            foreach ($rows as $row) {
+                $seen = $row->hard + $row->learning + $row->mastered;
+                $template->words[] = [
+                    'question' => $text($row->question),
+                    'answer' => $text($row->answer),
+                    'hard' => $row->hard,
+                    'learning' => $row->learning,
+                    'mastered' => $row->mastered,
+                    'unseen' => $row->unseen,
+                    'tries' => $row->tries,
+                    'hardpercent' => $seen ? (int) round(100 * $row->hard / $seen) : 0,
+                    'learningpercent' => $seen ? (int) round(100 * $row->learning / $seen) : 0,
+                    'masteredpercent' => $seen ? (int) round(100 * $row->mastered / $seen) : 0,
+                    'ishard' => $row->hard > 0,
+                ];
+            }
+            $template->haswords = !empty($template->words);
+            $template->hasmiddle = $decks > 2;
+        } else {
+            $rows = $report->students($groupid);
+            $template->students = [];
+            $counts = ['due' => 0, 'notstarted' => 0, 'total' => count($rows)];
+            foreach ($rows as $row) {
+                $deckchips = [];
+                foreach ($row->decks as $deck => $count) {
+                    $deckchips[] = ['deck' => $deck, 'count' => $count, 'ishard' => $deck == 1];
+                }
+                $hard = [];
+                foreach ($row->hard as $word) {
+                    $hard[] = ['question' => $text($word->question), 'answer' => $text($word->answer), 'tries' => $word->tries];
+                }
+                if (!$row->started) {
+                    $counts['notstarted']++;
+                } else if ($row->isdue) {
+                    $counts['due']++;
+                }
+                $resetparams = $base + ['page' => 'byusers', 'what' => 'reset', 'userid' => $row->user->id, 'sesskey' => sesskey()];
+                $template->students[] = [
+                    'picture' => $this->output->user_picture($row->user, ['size' => 40, 'link' => false]),
+                    'fullname' => fullname($row->user),
+                    'started' => $row->started,
+                    'percent' => $row->percent,
+                    'mastered' => $row->mastered,
+                    'total' => $row->total,
+                    'masteredtext' => get_string('reportmastered', 'flashcard', (object) ['mastered' => $row->mastered, 'total' => $row->total]),
+                    'decks' => $deckchips,
+                    'hard' => $hard,
+                    'hardcount' => count($hard),
+                    'unseen' => $row->unseen,
+                    'lastseen' => $row->lastseen ? userdate($row->lastseen, get_string('strftimedatetimeshort', 'langconfig')) : '',
+                    'isdue' => $row->started && $row->isdue && !$row->isoverdue,
+                    'isoverdue' => $row->isoverdue,
+                    'isuptodate' => $row->started && !$row->isdue,
+                    'reseturl' => (new moodle_url('/mod/flashcard/view.php', $resetparams))->out(false),
+                ];
+            }
+            $template->hasstudents = !empty($template->students);
+            $template->summary = get_string('reportsummary', 'flashcard', (object) $counts);
+        }
+
+        return $this->output->render_from_template('mod_flashcard/report', $template);
     }
 }
