@@ -236,6 +236,8 @@ Cambly (pick an online tutor, call starts), Preply (profile cards, instant booki
 (broadcast on-demand matching), Snapask (photo of the question, tutors claim it).
 
 ## F. Status
-Designed, **not built**. Built so far: §8 above (phases 1–3b + phase 4: quick, trial, peak, AI summary, parent
+**Built** in `8284f1f65` (2026-10-20): everything in A–D including the max-price filter and the Complete-window fix.
+Not built from this section: nothing; open items are in §8 "Not finished yet" (relay deployment, mobile screens,
+Behat). Previously: Built so far: §8 above (phases 1–3b + phase 4: quick, trial, peak, AI summary, parent
 alert, reliability, export). Pending ops: notify-ws relay on the server (see §8). Pending code: everything in this v2
 section; the mobile guide gets the new calls when they are built.
