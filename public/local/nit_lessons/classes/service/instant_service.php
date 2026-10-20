@@ -18,6 +18,7 @@ namespace local_nit_lessons\service;
 
 use local_nit_lessons\entity\lesson;
 use local_nit_lessons\exception\lesson_exception;
+use local_nit_lessons\local\realtime;
 
 /**
  * Instant lessons ("Get a tutor now"): teachers go online, a student asks for a subject, every
@@ -262,6 +263,7 @@ class instant_service {
         }
         $DB->delete_records('nit_instant_watch', ['studentid' => $studentid]);
         $this->send_wave($request, $now);
+        realtime::flush();
         return $this->status($studentid, (int) $request->id, $now);
     }
 
@@ -479,6 +481,8 @@ class instant_service {
             $this->notify_offer($teacherid, (string) $r->subject);
         }
         if ($wave) {
+            realtime::signal($wave, 'offer', (int) $r->id);
+            realtime::signal([(int) $r->studentid], 'status', (int) $r->id);
             $r->wave = (int) ($r->wave ?? 0) + 1;
             $r->wavestarted = $now;
             $DB->update_record('nit_instant_request', (object) ['id' => $r->id, 'wave' => $r->wave,
@@ -497,9 +501,10 @@ class instant_service {
      */
     private function advance(\stdClass $r, int $now): void {
         global $DB;
-        $DB->set_field_select('nit_instant_offer', 'status', self::MISSED,
-            'requestid = :r AND status = :s AND timecreated <= :cut', ['r' => $r->id, 's' => self::RINGING,
-                'cut' => $now - $this->settings->get('instant_ring_seconds')]);
+        $where = 'requestid = :r AND status = :s AND timecreated <= :cut';
+        $params = ['r' => $r->id, 's' => self::RINGING, 'cut' => $now - $this->settings->get('instant_ring_seconds')];
+        realtime::signal($DB->get_fieldset_select('nit_instant_offer', 'teacherid', $where, $params), 'closed', (int) $r->id);
+        $DB->set_field_select('nit_instant_offer', 'status', self::MISSED, $where, $params);
         if ($DB->record_exists('nit_instant_offer', ['requestid' => $r->id, 'status' => self::RINGING])) {
             return;
         }
@@ -660,6 +665,7 @@ class instant_service {
             'lessonid' => $lessonid, 'teacherid' => $teacherid, 'timematched' => $now, 'timemodified' => $now]);
         $DB->update_record('nit_instant_offer', (object) ['id' => $offer->id, 'status' => self::ACCEPTED,
             'timeanswered' => $now]);
+        $this->signal_closed($r);
         $DB->set_field_select('nit_instant_offer', 'status', self::TAKEN, 'requestid = :r AND status = :s',
             ['r' => $r->id, 's' => self::RINGING]);
     }
@@ -796,6 +802,7 @@ class instant_service {
                 }
                 $this->notify_student((int) $l->studentid, $reopened ? 'instant_noshow_retry' : 'instant_noshow_refund',
                     (string) $l->subject);
+                realtime::signal([(int) $l->studentid], 'status', $r ? (int) $r->id : 0);
             };
             if ($r) {
                 $this->locked((int) $r->id, $run);
@@ -803,6 +810,7 @@ class instant_service {
                 $run();
             }
         }
+        realtime::flush();
         return $n;
     }
 
@@ -921,8 +929,22 @@ class instant_service {
     private function close(\stdClass $r, string $status, string $offerstatus, int $now): void {
         global $DB;
         $DB->update_record('nit_instant_request', (object) ['id' => $r->id, 'status' => $status, 'timemodified' => $now]);
+        $this->signal_closed($r);
         $DB->set_field_select('nit_instant_offer', 'status', $offerstatus, 'requestid = :r AND status = :s',
             ['r' => $r->id, 's' => self::RINGING]);
+    }
+
+    /**
+     * Realtime: the teachers still ringing for a request see their prompt close; the student refreshes.
+     *
+     * @param \stdClass $r
+     * @return void
+     */
+    private function signal_closed(\stdClass $r): void {
+        global $DB;
+        realtime::signal($DB->get_fieldset_select('nit_instant_offer', 'teacherid', 'requestid = :r AND status = :s',
+            ['r' => $r->id, 's' => self::RINGING]), 'closed', (int) $r->id);
+        realtime::signal([(int) $r->studentid], 'status', (int) $r->id);
     }
 
     /**
@@ -939,9 +961,14 @@ class instant_service {
             throw new lesson_exception('err_instantbusy');
         }
         try {
-            return $fn();
+            $result = $fn();
+        } catch (\Throwable $e) {
+            realtime::discard();
+            throw $e;
         } finally {
             $lock->release();
         }
+        realtime::flush();
+        return $result;
     }
 }

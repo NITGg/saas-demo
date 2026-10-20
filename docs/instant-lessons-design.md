@@ -146,3 +146,35 @@ API permissions (a student cannot accept, a teacher cannot see other teachers' o
 7. **AI triage** — summarise the student's note/photo for the teacher before accepting (we already have `local_nit_ai`).
 8. **Parent alert** — notify a linked parent when an instant lesson starts (handoff "parent notifications").
 9. **Fallback to scheduled** — one tap converts an unmatched request into the earliest scheduled booking with the same subject.
+
+## 8. Implementation status (2026-10-20)
+
+### Done
+| Phase | Commit | What |
+|---|---|---|
+| 1 | `5c2afc8d2` | Teacher "Available now" + heartbeat, request by subject, prompts (pop-up + push), first-accept-wins under a lock, instant lesson started at once, decline / cancel / timeout charge nothing, expiry task, web + mobile API |
+| 2 | `e71c740ed` | Ranked waves (previous tutor → rating → acceptance → idle), ring time per wave, teacher no-show → refund + reopen once, admin "Instant lessons live" page |
+| 3 | `e2fd7bc84` | Photo of the problem (private, 30-day cleanup), "Notify me when a tutor is online", "Book a lesson instead", extra Flex for instant lessons |
+| 3b | this commit | Realtime over the academy notify-ws relay (Socket.IO): instant offer / closed / status signals after commit; polling slows to a safety net while connected |
+
+### Switching realtime on (production)
+The relay is the same `academy-notify-ws` container used by the academy site. In `config.php`:
+```php
+$CFG->academy_notify_publicurl   = 'https://academy2026.nitg-eg.com';
+$CFG->academy_notify_path        = '/notify-ws/socket.io';
+$CFG->academy_notify_internalurl = 'http://notify-ws:3100';   // reachable from the Moodle container
+$CFG->academy_notify_secret      = '<same as the relay NOTIFY_SECRET / INTERNAL_KEY>';
+```
+and proxy `/notify-ws/` to the relay with WebSocket upgrade (see academy repo `docs/realtime-notifications.md`).
+Until then the feature works on polling alone.
+
+### Not finished yet
+1. **Relay deployment for jitsi_life** — config + reverse proxy above; not verified live.
+2. **Mobile app screens** — the API (`api.php?function=instant_*`) exists, but the app has no "Get a tutor now" / accept screen yet; teachers on the app only get the push.
+3. **AI triage** — summarising the student's note/photo for the teacher (local_nit_ai) not built.
+4. **Instant trial lesson** — first instant lesson as the paid trial (100% to the academy) not built.
+5. **Quick-question mode** (10–15 min, cheaper) and **peak-hour pricing / teacher bonus** — only a flat extra Flex exists.
+6. **Teacher reliability badge** on the public profile (acceptance rate is computed, not shown publicly).
+7. **Parent alert** when an instant lesson starts.
+8. **Audit/report export** of requests and offers (live view only shows 24 h on screen).
+9. **Behat / browser tests** for the pop-up and searching screens (PHPUnit covers the service only).
