@@ -96,6 +96,8 @@ final class notifier {
             $message->notification = 1;
             $message->contexturl = $url->out(false);
             $message->contexturlname = get_string($isteacher ? 'mylessons' : 'studenthub', 'local_nit_lessons');
+            // For the app (FCM data): open this lesson.
+            $message->customdata = ['type' => 'lesson', 'event' => $event, 'lessonid' => (int) ($lesson['id'] ?? 0)];
             message_send($message);
         } catch (\Throwable $e) {
             debugging('local_nit_lessons: notification failed: ' . $e->getMessage(), DEBUG_DEVELOPER);

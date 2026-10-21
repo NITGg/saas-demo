@@ -30,6 +30,8 @@ $messageproviders = [
         'defaults' => [
             'popup' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
             'email' => MESSAGE_PERMITTED,
+            'airnotifier' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
+            'fcm' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
         ],
     ],
     // Live lesson requests, answers, start, cancellations and reschedules.
@@ -37,6 +39,8 @@ $messageproviders = [
         'defaults' => [
             'popup' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
             'email' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
+            'airnotifier' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
+            'fcm' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
         ],
     ],
 ];

@@ -1164,6 +1164,7 @@ class instant_service {
             $message->notification = 1;
             $message->contexturl = (new \moodle_url('/local/nit_lessons/student.php', ['tab' => 'teaching']))->out(false);
             $message->contexturlname = get_string('mylessons', 'local_nit_lessons');
+            $message->customdata = ['type' => 'instant', 'what' => 'offer']; // App: open the requests screen.
             message_send($message);
         } catch (\Throwable $e) {
             debugging('local_nit_lessons: instant prompt not sent: ' . $e->getMessage(), DEBUG_DEVELOPER);
@@ -1319,6 +1320,7 @@ class instant_service {
             $message->notification = 1;
             $message->contexturl = (new \moodle_url('/local/nit_lessons/student.php', ['tab' => 'book']))->out(false);
             $message->contexturlname = get_string('studenthub', 'local_nit_lessons');
+            $message->customdata = ['type' => 'instant', 'what' => 'status', 'key' => $key]; // App: open instant lessons.
             message_send($message);
         } catch (\Throwable $e) {
             debugging('local_nit_lessons: instant notice not sent: ' . $e->getMessage(), DEBUG_DEVELOPER);
