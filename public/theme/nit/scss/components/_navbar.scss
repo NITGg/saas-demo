@@ -508,6 +508,20 @@ $nit-navpanel-divider: var(--nit-navbarpanelborder, #dedede); // light row divid
             color: $nit-navpanel-item;
         }
 
+        // Hovered / focused row gets the primary fill (corebridge), so its
+        // subject, timestamp and "View full notification" link must follow the
+        // fill — the light-panel ink above was left dark on blue and unreadable.
+        .content-item-container:hover {
+            color: var(--nit-brand-onprimary);
+
+            .content-item-body,
+            .notification-message,
+            .content-item-footer .timestamp,
+            .view-more {
+                color: var(--nit-brand-onprimary) !important;
+            }
+        }
+
         // Real notification rows: divider + light text, gold-ish on hover.
         .all-notifications .list-group-item {
             background-color: transparent;
