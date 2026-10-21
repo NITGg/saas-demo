@@ -74,8 +74,9 @@ final class push_defaults_test extends \advanced_testcase {
         $this->assertStringStartsWith('popup,email', (string) get_config('message', self::LESSON));
         $this->assertContains('fcm', explode(',', (string) get_config('message', self::OFFER)));
         $this->assertSame('0', (string) get_config('message', 'fcm_provider_local_nit_lessons_lessonupdate_locked'));
-        $this->assertContains('fcm', explode(',', (string) get_user_preferences(self::LESSON, '', $custom)));
-        $this->assertSame('none', get_user_preferences(self::LESSON, '', $off));
+        $pref = fn($user) => $DB->get_field('user_preferences', 'value', ['userid' => $user->id, 'name' => self::LESSON]);
+        $this->assertContains('fcm', explode(',', (string) $pref($custom)));
+        $this->assertSame('none', $pref($off));
 
         // Again: nothing doubles.
         push_defaults::enable();
