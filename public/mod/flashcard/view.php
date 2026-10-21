@@ -84,14 +84,38 @@ $context = context_module::instance($cm->id);
 
 $strflashcards = get_string('modulenameplural', 'flashcard');
 $strflashcard  = get_string('modulename', 'flashcard');
-$PAGE->set_title("$course->shortname: $flashcard->name");
-$PAGE->set_heading("$course->fullname");
+// Names go through format_string() so {mlang} / multilang tags render in the title and breadcrumb.
+$flashcardname = format_string($flashcard->name, true, ['context' => $context]);
+$PAGE->set_title(format_string($course->shortname, true, ['context' => $context]) . ': ' . $flashcardname);
+$PAGE->set_heading(format_string($course->fullname, true, ['context' => $context]));
 $PAGE->navbar->add($strflashcards, new moodle_url('/mod/flashcard/index.php', array('id' => $course->id)));
-$PAGE->navbar->add($flashcard->name);
+$PAGE->navbar->add($flashcardname);
 $PAGE->set_focuscontrol('');
 $PAGE->set_cacheable(true);
 
 $renderer = $PAGE->get_renderer('mod_flashcard');
+
+// Teacher action from the report: start one student over. Handled here, BEFORE the header
+// is built, so redirect() can answer with a plain 303. Done later (it used to live in
+// usersummaryview.php), redirect() saw the header started and printed an interim
+// "redirecting" page instead: the page flashed unstyled and its half-loaded scripts left
+// the next "start over" click dead until a hard refresh.
+if ($view == 'summary' && $action == 'reset') {
+    require_capability('mod/flashcard:manage', $context);
+    require_sesskey();
+    $userid = required_param('userid', PARAM_INT);
+    $DB->delete_records('flashcard_card', array('flashcardid' => $flashcard->id, 'userid' => $userid));
+
+    $completion = new completion_info($course);
+    if (($flashcard->completionallgood || $flashcard->completionallviewed) && $completion->is_enabled($cm)) {
+        // Unmark completion state.
+        $completion->update_state($cm, COMPLETION_INCOMPLETE, $userid);
+    }
+
+    // Back to a plain GET, so reloading the report cannot post the reset again.
+    redirect(new moodle_url('/mod/flashcard/view.php', ['id' => $cm->id, 'view' => 'summary', 'page' => 'byusers']),
+        get_string('reportresetdone', 'flashcard'), null, \core\output\notification::NOTIFY_SUCCESS);
+}
 
 $out = $OUTPUT->header();
 

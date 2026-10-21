@@ -88,12 +88,13 @@ if ($course->format == 'weeks') {
 
 foreach ($flashcards as $flashcard) {
     $instanceurl = new moodle_url('/mod/flashcard/view.php', array('id' => $flashcard->coursemodule));
+    $name = format_string($flashcard->name, true, ['context' => $context]);
     if (!$flashcard->visible) {
         // Show dimmed if the mod is hidden.
-        $link = '<a class="dimmed" href="'.$instanceuel.'">'.$flashcard->name.'</a>';
+        $link = '<a class="dimmed" href="'.$instanceurl.'">'.$name.'</a>';
     } else {
         // Show normal if the mod is visible.
-        $link = '<a href="'.$instanceurl.'">'.$flashcard->name.'</a>';
+        $link = '<a href="'.$instanceurl.'">'.$name.'</a>';
     }
 
     if ($course->format == 'weeks' or $course->format == 'topics') {

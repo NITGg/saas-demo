@@ -26,22 +26,6 @@
  */
 defined('MOODLE_INTERNAL') || die();
 
-// Small controller here: reset one student's decks (a POST from the report, with sesskey).
-if ($action == 'reset' && confirm_sesskey()) {
-    $userid = required_param('userid', PARAM_INT);
-    $DB->delete_records('flashcard_card', array('flashcardid' => $flashcard->id, 'userid' => $userid));
-
-    $completion = new completion_info($course);
-    if (($flashcard->completionallgood || $flashcard->completionallviewed) && $completion->is_enabled($cm)) {
-        // Unmark completion state.
-        $completion->update_state($cm, COMPLETION_INCOMPLETE, $userid);
-    }
-
-    // Back to a plain GET, so reloading the report cannot post the reset again.
-    redirect(new moodle_url('/mod/flashcard/view.php', ['id' => $cm->id, 'view' => 'summary', 'page' => 'byusers']),
-        get_string('reportresetdone', 'flashcard'), null, \core\output\notification::NOTIFY_SUCCESS);
-}
-
 echo $out; // Deffered header.
 
 $groupid = 0;

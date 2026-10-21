@@ -269,6 +269,8 @@ echo $OUTPUT->header();
   .nit-cat-search button:hover{ filter:brightness(.92); }
   .nit-cat-searchnote{ margin-top:10px; font-size:14px; color:var(--t-muted); }
   .nit-cat-searchnote a{ color:var(--t-accent); font-weight:600; margin-inline-start:6px; }
+  /* Courses | Teachers tabs: breathing room under the search box. */
+  .nit-cat .nittu-tabs{ margin-top:16px; }
 </style>
 <div dir="auto" class="nit-cat<?= $brandgroupclass !== '' ? ' ' . $brandgroupclass : '' ?>" style="<?= $stylevars ?>">
   <div class="nit-cat-wrap">

@@ -80,6 +80,28 @@ class teacher_service extends service {
     }
 
     /**
+     * Is this user one of the site's admins or managers (site admin, or a manager-archetype role
+     * anywhere)? Students never see staff as teachers, whatever teacher role they also hold — the
+     * same rule as the catalogue's Teachers tab (local_nit_tutors\local\search::staff_ids()).
+     *
+     * @param int $userid
+     * @return bool
+     */
+    public static function is_staff(int $userid): bool {
+        global $DB;
+        if (is_siteadmin($userid)) {
+            return true;
+        }
+        $roleids = array_keys(get_archetype_roles('manager'));
+        if (!$roleids) {
+            return false;
+        }
+        [$rsql, $params] = $DB->get_in_or_equal($roleids, SQL_PARAMS_NAMED, 'mgr');
+        return $DB->record_exists_select('role_assignments', "userid = :uid AND roleid $rsql",
+            ['uid' => $userid] + $params);
+    }
+
+    /**
      * The site's subject list (Live lesson settings → Subjects, one per line,
      * {mlang} allowed), as stored values.
      *
@@ -276,7 +298,7 @@ class teacher_service extends service {
            ORDER BY u.firstname, u.lastname", $params);
         $out = [];
         foreach ($rows as $u) {
-            if (!$this->is_teacher((int) $u->id) || !self::approved((int) $u->id)) {
+            if (!$this->is_teacher((int) $u->id) || !self::approved((int) $u->id) || self::is_staff((int) $u->id)) {
                 continue;
             }
             $out[] = [
@@ -302,7 +324,8 @@ class teacher_service extends service {
         return $DB->record_exists('nit_teacher_profile', ['userid' => $teacherid, 'available' => 1])
             && $DB->record_exists('nit_teacher_subject', ['teacherid' => $teacherid])
             && $this->is_teacher($teacherid)
-            && self::approved($teacherid);
+            && self::approved($teacherid)
+            && !self::is_staff($teacherid);
     }
 
     /**
