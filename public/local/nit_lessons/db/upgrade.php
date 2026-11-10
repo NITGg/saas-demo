@@ -195,5 +195,11 @@ function xmldb_local_nit_lessons_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026102400, 'local', 'nit_lessons');
     }
 
+    if ($oldversion < 2026102600) {
+        // Lesson and instant-lesson notifications reach the phone (FCM push), not only the bell.
+        \local_nit_lessons\local\push_defaults::enable();
+        upgrade_plugin_savepoint(true, 2026102600, 'local', 'nit_lessons');
+    }
+
     return true;
 }

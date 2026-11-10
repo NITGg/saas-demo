@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_nit_lessons';
-$plugin->version   = 2026102500;        // Instant lessons: restyled boxes, student confirm box on every page.
+$plugin->version   = 2026102600;        // Lesson notifications as phone push (FCM).
 $plugin->requires  = 2024100700;
 $plugin->supported = [405, 502];
 $plugin->maturity  = MATURITY_ALPHA;
