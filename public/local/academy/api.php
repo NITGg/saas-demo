@@ -45,6 +45,11 @@ api::run(function (string $function) use ($USER, $userid, $token, $DB) {
             $cmid = required_param('cmid', PARAM_INT);
             return \local_academy\quiz_manager::get_quiz($cmid, $userid, $isadmin, $isadmin);
 
+        // Access rules of a quiz for this user, plain text + the Safe Exam Browser requirement.
+        // Call before start_quiz_attempt (docs/SEB_QUIZ_ACCESS_MOBILE.md).
+        case 'get_quiz_access':
+            return \local_academy\quiz_manager::get_quiz_access(required_param('quizid', PARAM_INT), $userid, $isadmin);
+
         // Start a new attempt (acts as the token's user).
         case 'start_quiz_attempt':
             api::require_post();

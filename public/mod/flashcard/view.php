@@ -91,7 +91,9 @@ $PAGE->set_heading(format_string($course->fullname, true, ['context' => $context
 $PAGE->navbar->add($strflashcards, new moodle_url('/mod/flashcard/index.php', array('id' => $course->id)));
 $PAGE->navbar->add($flashcardname);
 $PAGE->set_focuscontrol('');
-$PAGE->set_cacheable(true);
+// Not cacheable (the upstream plugin set it): a page restored from the browser cache carries
+// an expired sesskey, and every AJAX call on it - the report's "start over" dialog among
+// them - then fails silently until a hard refresh.
 
 $renderer = $PAGE->get_renderer('mod_flashcard');
 

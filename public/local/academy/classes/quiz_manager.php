@@ -154,7 +154,57 @@ class quiz_manager {
     }
 
     /**
+     * What the quiz's access rules say about this user right now, in plain text.
+     *
+     * Same information as core mod_quiz_get_quiz_access_information, which fails for a
+     * Safe Exam Browser quiz: quizaccess_seb puts HTML buttons into its messages and the
+     * core function declares them PARAM_TEXT. Here every message is plain text (buttons
+     * removed) and the SEB requirement comes as data in `seb`, with the links the buttons
+     * pointed to, so the app can hand the student over to Safe Exam Browser.
+     */
+    public static function get_quiz_access(int $quizid, int $userid, bool $is_admin = false): array {
+        global $DB, $CFG;
+        require_once($CFG->dirroot . '/mod/quiz/locallib.php');
+
+        $quiz = $DB->get_record('quiz', ['id' => $quizid], '*', MUST_EXIST);
+        if (!$is_admin) {
+            self::require_enrolled($userid, (int) $quiz->course);
+        }
+
+        $quizobj = quiz_settings::create($quizid, $userid);
+        $accessmanager = $quizobj->get_access_manager(time());
+        $finished = quiz_get_user_attempts($quizid, $userid, 'finished', true);
+        $lastfinished = end($finished) ?: false;
+
+        $seb = self::seb_info($quizobj);
+        $preventaccess = self::plain_messages($accessmanager->prevent_access());
+        if ($seb['required'] && !$preventaccess) {
+            // With a config-key mode the SEB rule's reason is buttons only; give the app a sentence.
+            $preventaccess[] = get_string('err_sebrequired', 'local_academy');
+        }
+        $preventnew = self::plain_messages($accessmanager->prevent_new_attempt(count($finished), $lastfinished));
+        $canattempt = has_capability('mod/quiz:attempt', $quizobj->get_context());
+
+        return [
+            'quizid'                   => (int) $quiz->id,
+            'cmid'                     => (int) $quizobj->get_cmid(),
+            'courseid'                 => (int) $quiz->course,
+            'canattempt'               => $canattempt,
+            'canstart'                 => $canattempt && !$preventaccess && !$preventnew,
+            'accessrules'              => self::plain_messages($accessmanager->describe_rules()),
+            'activerulenames'          => array_values($accessmanager->get_active_rule_names()),
+            'preventaccessreasons'     => $preventaccess,
+            'preventnewattemptreasons' => $preventnew,
+            'seb'                      => $seb,
+        ];
+    }
+
+    /**
      * Start a new quiz attempt for a user.
+     *
+     * Runs the quiz access rules like the website does: a Safe Exam Browser quiz fails with
+     * `sebrequired`, any other rule that blocks a new attempt (open/close time, IP, delay
+     * between attempts…) with `quizaccessprevented`.
      */
     public static function start_attempt(int $quizid, int $userid): array {
         global $DB, $CFG;
@@ -175,6 +225,17 @@ class quiz_manager {
 
         // Moodle 4.x/5.x: the \quiz class became \mod_quiz\quiz_settings.
         $quizobj       = quiz_settings::create($quizid, $userid);
+        self::require_no_seb($quizobj);
+        $finished      = quiz_get_user_attempts($quizid, $userid, 'finished', true);
+        $accessmanager = $quizobj->get_access_manager(time());
+        $reasons = self::plain_messages(array_merge(
+            $accessmanager->prevent_access(),
+            $accessmanager->prevent_new_attempt(count($finished), end($finished) ?: false)
+        ));
+        if ($reasons) {
+            throw new \moodle_exception('err_quizaccessprevented', 'local_academy', '', implode(' ', $reasons));
+        }
+
         $attempts      = quiz_get_user_attempts($quizid, $userid, 'all', true);
         $lastattempt   = end($attempts) ?: null;
         $attemptnumber = count($attempts) + 1;
@@ -200,6 +261,9 @@ class quiz_manager {
      */
     public static function get_attempt_questions(int $attemptid, int $userid, bool $is_admin = false): array {
         $attemptobj = self::load_attempt($attemptid, $userid, $is_admin);
+        if (!$is_admin && !$attemptobj->is_finished()) {
+            self::require_no_seb($attemptobj->get_quizobj());
+        }
         $native = self::native();
 
         $questions = [];
@@ -256,6 +320,7 @@ class quiz_manager {
         self::require_quiz_lib();
 
         $attemptrow = self::require_open_attempt($attemptid, $userid);
+        self::require_no_seb(quiz_settings::create((int) $attemptrow->quiz, $userid));
         $quba = \question_engine::load_questions_usage_by_activity($attemptrow->uniqueid);
         $slot = self::slot_for_question($quba, $questionid, $slot);
         $qa = $quba->get_question_attempt($slot);
@@ -289,6 +354,7 @@ class quiz_manager {
         self::require_quiz_lib();
 
         $attemptrow = self::require_open_attempt($attemptid, $userid);
+        self::require_no_seb(quiz_settings::create((int) $attemptrow->quiz, $userid));
         self::apply_legacy_answers($attemptrow);
 
         $now = time();
@@ -802,6 +868,97 @@ class quiz_manager {
             $params['component'] = $component;
         }
         return (new \moodle_url('/local/academy/qfile.php', $params))->out(false);
+    }
+
+    /**
+     * Refuse to run a Safe Exam Browser quiz through this API (the app is not SEB).
+     * Users with quizaccess/seb:bypassseb (teachers, managers) pass, as on the website.
+     */
+    private static function require_no_seb(quiz_settings $quizobj): void {
+        if (self::seb_info($quizobj)['required']) {
+            throw new \moodle_exception('err_sebrequired', 'local_academy');
+        }
+    }
+
+    /**
+     * The Safe Exam Browser requirement of a quiz for the current user, as data.
+     *
+     * required    — this user must use SEB (SEB is on and they cannot bypass it)
+     * mode        — none | manual | template | upload | client (quiz setting
+     *               "Require the use of Safe Exam Browser")
+     * launchurl   — sebs:// link that opens SEB with the quiz configuration; configurl — the
+     *               same configuration as an https download. Both null in "client" mode (the
+     *               student uses their own SEB configuration) or when the site hides them
+     *               (Site administration → Plugins → Quiz → Safe Exam Browser → Show links).
+     * downloadurl — where to get SEB (site setting), or null
+     * quizurl     — the quiz page on the website, to open inside SEB or share
+     */
+    private static function seb_info(quiz_settings $quizobj): array {
+        $cmid = (int) $quizobj->get_cmid();
+        $info = [
+            'required'    => false,
+            'canbypass'   => false,
+            'mode'        => 'none',
+            'launchurl'   => null,
+            'configurl'   => null,
+            'downloadurl' => null,
+            'quizurl'     => (new \moodle_url('/mod/quiz/view.php', ['id' => $cmid]))->out(false),
+        ];
+        if (!class_exists(\quizaccess_seb\seb_access_manager::class)) {
+            return $info;
+        }
+        $seb = new \quizaccess_seb\seb_access_manager($quizobj);
+        if (!$seb->seb_required()) {
+            return $info;
+        }
+
+        $modes = [
+            \quizaccess_seb\settings_provider::USE_SEB_CONFIG_MANUALLY => 'manual',
+            \quizaccess_seb\settings_provider::USE_SEB_TEMPLATE        => 'template',
+            \quizaccess_seb\settings_provider::USE_SEB_UPLOAD_CONFIG   => 'upload',
+            \quizaccess_seb\settings_provider::USE_SEB_CLIENT_CONFIG   => 'client',
+        ];
+        $info['canbypass'] = $seb->can_bypass_seb();
+        $info['required'] = !$info['canbypass'];
+        $info['mode'] = $modes[$seb->get_seb_use_type()] ?? 'manual';
+
+        if ($seb->should_validate_config_key()) {
+            $links = explode(',', (string) get_config('quizaccess_seb', 'showseblinks'));
+            if (in_array('seb', $links, true)) {
+                $info['launchurl'] = \quizaccess_seb\link_generator::get_link((string) $cmid, true, is_https());
+            }
+            if (in_array('http', $links, true)) {
+                $info['configurl'] = \quizaccess_seb\link_generator::get_link((string) $cmid, false, is_https());
+            }
+        }
+        $download = trim((string) get_config('quizaccess_seb', 'downloadlink'));
+        $info['downloadurl'] = $download !== '' ? $download : null;
+        return $info;
+    }
+
+    /**
+     * Access-rule messages as plain text for the app.
+     *
+     * Rules write them for the quiz page: quizaccess_seb appends buttons (Download / Launch
+     * Safe Exam Browser, Download configuration, Exit Safe Exam Browser). The buttons are
+     * dropped (their links are in seb_info()), the rest is converted to text; empty and
+     * repeated messages are removed.
+     *
+     * @param string[]|string|false $messages
+     * @return string[]
+     */
+    private static function plain_messages($messages): array {
+        $out = [];
+        foreach ((array) $messages as $message) {
+            $html = (string) $message;
+            $html = preg_replace('~<div\b[^>]*\bsinglebutton\b[^>]*>.*?</div>~is', '', $html);
+            $html = preg_replace('~<a\b[^>]*\bbtn\b[^>]*>.*?</a>~is', '', $html);
+            $text = trim(preg_replace('/[ \t]*\n\s*/', "\n", html_to_text($html, 0, false)));
+            if ($text !== '' && !in_array($text, $out, true)) {
+                $out[] = $text;
+            }
+        }
+        return $out;
     }
 
     /**

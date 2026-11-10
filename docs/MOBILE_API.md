@@ -797,6 +797,7 @@ the table below, and `qtype:random` (the attempt resolves it to a real question)
 |---|---|---|---|
 | `get_quizzes` | GET | `courseid` (opt) | `[{"quizid":4,"cmid":57,"courseid":22,"name":"…","intro":"…","timelimit":0,"attempts_allowed":0}]` (my courses; admins: all) |
 | `get_quiz` | GET | `cmid` | quiz overview + `questions[]` with `supported` per question. Multiple-choice / true-false also list `options`. **Draw from `get_attempt_questions`**, not from here: only the attempt knows the calculated numbers, shuffles and random picks. |
+| `get_quiz_access` | GET | `quizid` | `{quizid, cmid, courseid, canattempt, canstart, accessrules[], activerulenames[], preventaccessreasons[], preventnewattemptreasons[], seb{required, canbypass, mode, launchurl, configurl, downloadurl, quizurl}}`: plain text. Call before `start_quiz_attempt`; `seb.required` → Safe Exam Browser flow. See [`SEB_QUIZ_ACCESS_MOBILE.md`](SEB_QUIZ_ACCESS_MOBILE.md) |
 | `start_quiz_attempt` | POST | `quizid` | `{"attemptid":9,"quizid":4,"attempt_number":1,"timestart":…,"timelimit":0,"state":"inprogress"}` |
 | `get_attempt_questions` | GET | `attemptid` | `{attemptid, quizid, quiz_name, attempt_number, state, timestart, timelimit, questions[]}` — question shapes below, each with `response` (the answer saved so far, or `null`) for resuming |
 | `save_quiz_answer` | POST | `attemptid`, `questionid`, `answer` (JSON, format per type below; `null` clears), `slot` (opt — only if the quiz uses the same question twice) | `{"attemptid":9,"questionid":12,"slot":1,"saved":true,"state":"inprogress"}` |
@@ -848,6 +849,8 @@ Multiple-choice / true-false keep the earlier `correct_answers[{id,text,images,c
 - Image URLs are served by `/local/academy/qfile.php?token=…` and load directly.
 - Errors: `notenrolled`, `invalidquizanswer`, Moodle quiz codes such as `attemptalreadyclosed`,
   `notyourattempt`, `attemptsexhausted`, `invalidquestionid` (show `error`).
+  `sebrequired` (Safe Exam Browser quiz: open the SEB screen, not an error) from the attempt calls;
+  `quizaccessprevented` (closed, not open yet, IP, delay…) from `start_quiz_attempt`.
 
 ### 3.7 Certificates
 
@@ -2846,7 +2849,7 @@ unless an action is listed):
 | Profile | `requiredfield`, `invalidphone`, `invalidnationalid`, `invalidoption`, `divisionmismatch`, `invalidlanguage` |
 | Password | `invalidemail`, `toomanyrequests`, `otpinvalid`, `otpexpired`, `otplocked`, `resetexpired`, `weakpassword`, `wrongpassword`, `authnochange` |
 | Courses / lessons | `coursenotfound`, `notenrolled`, `lessonlocked` (→ resume lesson), `lessonforsale` (→ buy flow), `coursenotfree`, `enrolfailed`, `paymentrequired` (→ buy / subscribe), `categorynotfound` |
-| Quizzes | `notenrolled`, `attemptsexhausted`, `attemptalreadyclosed`, `notyourattempt`, `invalidquestionid` |
+| Quizzes | `notenrolled`, `attemptsexhausted`, `attemptalreadyclosed`, `notyourattempt`, `invalidquestionid`, `sebrequired`, `quizaccessprevented` |
 | Teachers | `teachernotfound` |
 | Video | `vimeoapi`, `vdocipherapi`, `notvideo`, `invalidslices` |
 | Reviews | `cannotrate`, `invalidrating`, `reviewtoolong`, `reviewnotfound`, `toomanycourses` |
@@ -2864,7 +2867,7 @@ P = shared pre-login token is enough; ✱ = new in this version)
 
 | Plugin | Functions |
 |---|---|
-| `academy` | P: `get_home_selected`✱, `get_home_teachers`✱, `get_home_lessons`✱, `get_teacher_page`✱, `get_course_page`✱, `get_registration_form`✱, `register_student`✱, `request_password_otp`, `verify_password_otp`, `reset_password`, `get_profile_fields`✱, `get_academic_structure`✱, `browse_teachers`, `get_teacher`, `get_teacher_courses` · S: `change_password`, `get_my_profile`, `get_full_profile`✱, `update_my_profile`✱, `get_course_lessons`✱, `log_lesson_view`✱, `get_my_certificates`✱, `is_course_free`, `enrol_free_course`, `get_quizzes`, `get_quiz`, `start_quiz_attempt`, `save_quiz_answer`, `finish_quiz_attempt`, `submit_quiz_attempt`, `get_quiz_attempt`, `get_my_quiz_attempts` · M: `get_all_teachers`, `get_license_status` |
+| `academy` | P: `get_home_selected`✱, `get_home_teachers`✱, `get_home_lessons`✱, `get_teacher_page`✱, `get_course_page`✱, `get_registration_form`✱, `register_student`✱, `request_password_otp`, `verify_password_otp`, `reset_password`, `get_profile_fields`✱, `get_academic_structure`✱, `browse_teachers`, `get_teacher`, `get_teacher_courses` · S: `change_password`, `get_my_profile`, `get_full_profile`✱, `update_my_profile`✱, `get_course_lessons`✱, `log_lesson_view`✱, `get_my_certificates`✱, `is_course_free`, `enrol_free_course`, `get_quizzes`, `get_quiz`, `get_quiz_access`, `start_quiz_attempt`, `save_quiz_answer`, `finish_quiz_attempt`, `submit_quiz_attempt`, `get_quiz_attempt`, `get_my_quiz_attempts` · M: `get_all_teachers`, `get_license_status` |
 | `nit_category` ✱ | P/S: `get_categories`, `get_courses` |
 | `nit_finance` ✱ | S: `get_wallet`, `get_wallet_history`, `get_my_purchases`, `create_topup_checkout`, `get_topup_status`, `redeem_code`, `get_course_lesson_prices`, `get_lesson_access`, `get_lesson_preview`, `buy_lesson` · T: `get_teacher_wallet`, `get_teacher_wallet_history`, `get_my_earnings`, `request_withdrawal`, `get_my_withdrawals` · M: `get_finance_summary`, `list_withdrawals`, `process_withdrawal`, `list_wallets`, `get_wallet_ledger`, `adjust_wallet`, `list_codes`, `generate_codes`, `disable_code`, `set_lesson_price` |
 | `nit_flex` ✱ | S: `get_packages`, `get_package_quote`, `buy_package_wallet`, `create_package_checkout`, `get_package_checkout_status`, `get_my_flex`, `get_my_packages`, `get_package_payments`, `get_flex_history` · M: `admin_list_packages`, `admin_save_package`, `admin_set_package_status`, `admin_delete_package`, `admin_assign_package`, `admin_list_purchases`, `admin_unassign_package` |
