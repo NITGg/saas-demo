@@ -40,6 +40,7 @@ $string['err_coursenotfound']   = 'Course not found.';
 $string['err_notenrolled']      = 'You are not enrolled in this course.';
 $string['err_sebrequired']      = 'This quiz can only be taken in Safe Exam Browser.';
 $string['err_quizaccessprevented'] = 'You cannot start this quiz now: {$a}';
+$string['appexamattempt']       = 'This attempt was taken in the Android app exam mode, not in Safe Exam Browser.';
 $string['err_lessonlocked']     = 'Complete the previous lessons first.';
 $string['err_lessonforsale']    = 'This lesson must be bought first.';
 $string['err_coursenotfree']    = 'This course is not free.';

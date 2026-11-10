@@ -48,6 +48,11 @@ $callbacks = [
         'callback' => [\local_academy\local\file_lessons::class, 'after_config'],
     ],
     [
+        // mod/quiz/review.php: "taken in the app's exam mode" on Android exam-mode attempts.
+        'hook' => \core\hook\output\before_http_headers::class,
+        'callback' => [\local_academy\local\app_exam_review::class, 'before_http_headers'],
+    ],
+    [
         // A student's own phone stays valid and unique on every page that saves the account.
         'hook' => \core_user\hook\before_user_updated::class,
         'callback' => [\local_academy\local\student_rules::class, 'before_user_updated'],

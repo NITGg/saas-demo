@@ -142,6 +142,8 @@ $data = [
 
     // Media / DRM.
     'prevent_screen_recording' => ms_bool('prevent_screen_recording', true),
+    // Android: Safe Exam Browser quizzes in the app's own exam mode (local_academy start_quiz_attempt app_exam=1).
+    'seb_android_app_exam'     => ms_bool('seb_android_app_exam', true),
     'watermark'                => $watermarkenabled,
     'watermark_text'           => $watermarktext,
     'watermark_color'          => $watermarkcolor,     // 6 hex, NO '#'

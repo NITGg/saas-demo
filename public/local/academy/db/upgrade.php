@@ -109,5 +109,22 @@ function xmldb_local_academy_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026101200, 'local', 'academy');
     }
 
+    if ($oldversion < 2026111000) {
+        // Quiz attempts started in the Android app's exam mode (Safe Exam Browser quizzes).
+        $table = new xmldb_table('academy_quiz_appexam');
+        if (!$dbman->table_exists($table)) {
+            $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+            $table->add_field('attemptid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('quizid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+            $table->add_index('attemptid_idx', XMLDB_INDEX_UNIQUE, ['attemptid']);
+            $table->add_index('quizid_idx', XMLDB_INDEX_NOTUNIQUE, ['quizid']);
+            $dbman->create_table($table);
+        }
+        upgrade_plugin_savepoint(true, 2026111000, 'local', 'academy');
+    }
+
     return true;
 }

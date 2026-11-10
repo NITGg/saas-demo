@@ -171,6 +171,115 @@ final class quiz_access_test extends \advanced_testcase {
         }
     }
 
+    public function test_android_exam_mode_takes_a_seb_quiz_end_to_end(): void {
+        global $DB;
+        [$quiz, $student] = $this->make_quiz(settings_provider::USE_SEB_CLIENT_CONFIG);
+        $this->setUser($student);
+        $uid = (int) $student->id;
+
+        $seb = quiz_manager::get_quiz_access((int) $quiz->id, $uid)['seb'];
+        $this->assertTrue($seb['appexam'], 'exam mode is on by default');
+        $this->assertTrue($seb['appexamcanstart']);
+
+        $started = quiz_manager::start_attempt((int) $quiz->id, $uid, true);
+        $this->assertTrue($started['appexam']);
+        $attemptid = $started['attemptid'];
+        $this->assertTrue($DB->record_exists('academy_quiz_appexam', ['attemptid' => $attemptid]));
+
+        $questions = quiz_manager::get_attempt_questions($attemptid, $uid)['questions'];
+        quiz_manager::save_answer($attemptid, $uid, (int) $questions[0]['questionid'], true);
+        $this->assertSame('finished', quiz_manager::finish_attempt($attemptid, $uid)['state']);
+
+        $mine = quiz_manager::get_my_attempts((int) $quiz->id, $uid);
+        $this->assertTrue($mine[0]['appexam']);
+    }
+
+    public function test_without_app_exam_a_seb_quiz_is_still_refused(): void {
+        [$quiz, $student] = $this->make_quiz(settings_provider::USE_SEB_CLIENT_CONFIG);
+        $this->setUser($student);
+        $this->expect_seb_refusal(fn() => quiz_manager::start_attempt((int) $quiz->id, (int) $student->id, false));
+    }
+
+    public function test_site_switch_off_refuses_app_exam(): void {
+        [$quiz, $student] = $this->make_quiz(settings_provider::USE_SEB_CLIENT_CONFIG);
+        $this->setUser($student);
+        set_config('seb_android_app_exam', 0, 'local_multitopics');
+
+        $seb = quiz_manager::get_quiz_access((int) $quiz->id, (int) $student->id)['seb'];
+        $this->assertFalse($seb['appexam']);
+        $this->assertFalse($seb['appexamcanstart']);
+        $this->expect_seb_refusal(fn() => quiz_manager::start_attempt((int) $quiz->id, (int) $student->id, true));
+    }
+
+    public function test_exam_mode_attempt_stops_when_the_switch_is_turned_off(): void {
+        [$quiz, $student] = $this->make_quiz(settings_provider::USE_SEB_CLIENT_CONFIG);
+        $this->setUser($student);
+        $attemptid = quiz_manager::start_attempt((int) $quiz->id, (int) $student->id, true)['attemptid'];
+
+        set_config('seb_android_app_exam', 0, 'local_multitopics');
+        $this->expect_seb_refusal(fn() => quiz_manager::finish_attempt($attemptid, (int) $student->id));
+    }
+
+    public function test_app_exam_still_applies_the_other_rules(): void {
+        [$quiz, $student] = $this->make_quiz(settings_provider::USE_SEB_CLIENT_CONFIG,
+            ['timeclose' => time() - HOURSECS]);
+        $this->setUser($student);
+
+        $seb = quiz_manager::get_quiz_access((int) $quiz->id, (int) $student->id)['seb'];
+        $this->assertTrue($seb['appexam']);
+        $this->assertFalse($seb['appexamcanstart'], 'the quiz is closed');
+
+        try {
+            quiz_manager::start_attempt((int) $quiz->id, (int) $student->id, true);
+            $this->fail('A closed quiz must not start in exam mode');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('err_quizaccessprevented', $e->errorcode);
+        }
+    }
+
+    public function test_app_exam_on_a_normal_quiz_is_a_normal_attempt(): void {
+        global $DB;
+        [$quiz, $student] = $this->make_quiz(settings_provider::USE_SEB_NO);
+        $this->setUser($student);
+
+        $this->assertFalse(quiz_manager::get_quiz_access((int) $quiz->id, (int) $student->id)['seb']['appexam']);
+        $started = quiz_manager::start_attempt((int) $quiz->id, (int) $student->id, true);
+        $this->assertFalse($started['appexam']);
+        $this->assertSame(0, $DB->count_records('academy_quiz_appexam'));
+    }
+
+    public function test_teacher_attempt_is_not_marked_and_stays_the_teachers(): void {
+        [$quiz, $student, $course] = $this->make_quiz(settings_provider::USE_SEB_CLIENT_CONFIG);
+        // A teacher (bypasses SEB) starts a normal attempt; it is not an exam-mode one.
+        $teacher = $this->getDataGenerator()->create_and_enrol($course, 'editingteacher');
+        $this->setUser($teacher);
+        $attemptid = quiz_manager::start_attempt((int) $quiz->id, (int) $teacher->id, true)['attemptid'];
+        $this->assertFalse(quiz_manager::is_app_exam_attempt($attemptid));
+
+        // The same attempt id given by the student is not theirs either way.
+        $this->setUser($student);
+        $this->expectException(\moodle_exception::class);
+        quiz_manager::finish_attempt($attemptid, (int) $student->id);
+    }
+
+    public function test_review_page_marks_an_exam_mode_attempt(): void {
+        global $PAGE;
+        [$quiz, $student] = $this->make_quiz(settings_provider::USE_SEB_CLIENT_CONFIG);
+        $this->setUser($student);
+        $examattempt = quiz_manager::start_attempt((int) $quiz->id, (int) $student->id, true)['attemptid'];
+
+        $PAGE->set_pagetype('mod-quiz-review');
+        $_GET['attempt'] = $examattempt;
+        local\app_exam_review::before_http_headers(new \core\hook\output\before_http_headers($PAGE->get_renderer('core')));
+        $messages = array_map(fn($n) => $n->get_message(), \core\notification::fetch());
+        $this->assertContains(get_string('appexamattempt', 'local_academy'), $messages);
+
+        $_GET['attempt'] = $examattempt + 1000;
+        local\app_exam_review::before_http_headers(new \core\hook\output\before_http_headers($PAGE->get_renderer('core')));
+        $this->assertSame([], \core\notification::fetch());
+        unset($_GET['attempt']);
+    }
+
     public function test_user_not_enrolled_is_refused(): void {
         [$quiz] = $this->make_quiz(settings_provider::USE_SEB_CLIENT_CONFIG);
         $stranger = $this->getDataGenerator()->create_user();
@@ -203,6 +312,15 @@ final class quiz_access_test extends \advanced_testcase {
         $question = $qgen->create_question('truefalse', 'true', ['category' => $cat->id]);
         quiz_add_quiz_question($question->id, $quiz);
         return [$quiz, $student, $course];
+    }
+
+    private function expect_seb_refusal(callable $call): void {
+        try {
+            $call();
+            $this->fail('Expected sebrequired');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('err_sebrequired', $e->errorcode);
+        }
     }
 
     /** Every message the app shows must be text, never HTML. */

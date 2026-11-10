@@ -53,7 +53,9 @@ api::run(function (string $function) use ($USER, $userid, $token, $DB) {
         // Start a new attempt (acts as the token's user).
         case 'start_quiz_attempt':
             api::require_post();
-            return \local_academy\quiz_manager::start_attempt(required_param('quizid', PARAM_INT), $userid);
+            // app_exam=1: the Android app's exam mode for a Safe Exam Browser quiz (skips only the SEB rule).
+            return \local_academy\quiz_manager::start_attempt(required_param('quizid', PARAM_INT), $userid,
+                optional_param('app_exam', 0, PARAM_BOOL));
 
         // The attempt's questions, rendered natively per type, with the answers saved so far.
         case 'get_attempt_questions':

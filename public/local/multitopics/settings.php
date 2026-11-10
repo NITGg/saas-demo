@@ -29,6 +29,9 @@ if ($hassiteconfig) {
     $settings->add(new admin_setting_configcheckbox('local_multitopics/prevent_screen_recording',
         get_string('prevent_screen_recording', 'local_multitopics'),
         get_string('prevent_screen_recording_desc', 'local_multitopics'), 1));
+    $settings->add(new admin_setting_configcheckbox('local_multitopics/seb_android_app_exam',
+        get_string('seb_android_app_exam', 'local_multitopics'),
+        get_string('seb_android_app_exam_desc', 'local_multitopics'), 1));
     $settings->add(new admin_setting_configcheckbox('local_multitopics/watermark',
         get_string('watermark', 'local_multitopics'),
         get_string('watermark_desc', 'local_multitopics'), 0));

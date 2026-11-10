@@ -185,6 +185,16 @@ class quiz_manager {
         $preventnew = self::plain_messages($accessmanager->prevent_new_attempt(count($finished), $lastfinished));
         $canattempt = has_capability('mod/quiz:attempt', $quizobj->get_context());
 
+        // Android exam mode: what start_quiz_attempt app_exam=1 would say (every rule but SEB).
+        $seb['appexam'] = $seb['required'] && self::app_exam_allowed();
+        $seb['appexamcanstart'] = false;
+        if ($seb['appexam']) {
+            $withoutseb = local\quiz_access_without_seb::for_quiz($quizobj, time());
+            $seb['appexamcanstart'] = $canattempt
+                && !self::plain_messages($withoutseb->prevent_access())
+                && !$preventnew;
+        }
+
         return [
             'quizid'                   => (int) $quiz->id,
             'cmid'                     => (int) $quizobj->get_cmid(),
@@ -205,8 +215,13 @@ class quiz_manager {
      * Runs the quiz access rules like the website does: a Safe Exam Browser quiz fails with
      * `sebrequired`, any other rule that blocks a new attempt (open/close time, IP, delay
      * between attempts…) with `quizaccessprevented`.
+     *
+     * $appexam: the Android app starts the attempt in its own locked exam mode (there is no
+     * SEB for Android). If the site allows it (local_multitopics seb_android_app_exam, on by
+     * default), only the SEB rule is skipped and the attempt is remembered as an exam-mode
+     * attempt, so the other attempt calls let it through too.
      */
-    public static function start_attempt(int $quizid, int $userid): array {
+    public static function start_attempt(int $quizid, int $userid, bool $appexam = false): array {
         global $DB, $CFG;
         require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 
@@ -225,9 +240,15 @@ class quiz_manager {
 
         // Moodle 4.x/5.x: the \quiz class became \mod_quiz\quiz_settings.
         $quizobj       = quiz_settings::create($quizid, $userid);
-        self::require_no_seb($quizobj);
+        // Exam mode only matters (and is only recorded) when this user would need SEB.
+        $appexam       = $appexam && self::app_exam_allowed() && self::seb_info($quizobj)['required'];
+        if (!$appexam) {
+            self::require_no_seb($quizobj);
+        }
         $finished      = quiz_get_user_attempts($quizid, $userid, 'finished', true);
-        $accessmanager = $quizobj->get_access_manager(time());
+        $accessmanager = $appexam
+            ? local\quiz_access_without_seb::for_quiz($quizobj, time())
+            : $quizobj->get_access_manager(time());
         $reasons = self::plain_messages(array_merge(
             $accessmanager->prevent_access(),
             $accessmanager->prevent_new_attempt(count($finished), end($finished) ?: false)
@@ -239,7 +260,13 @@ class quiz_manager {
         $attempts      = quiz_get_user_attempts($quizid, $userid, 'all', true);
         $lastattempt   = end($attempts) ?: null;
         $attemptnumber = count($attempts) + 1;
+        $transaction   = $DB->start_delegated_transaction();
         $attempt       = quiz_prepare_and_start_new_attempt($quizobj, $attemptnumber, $lastattempt);
+        if ($appexam) {
+            $DB->insert_record('academy_quiz_appexam', (object) ['attemptid' => $attempt->id,
+                'quizid' => $quizid, 'userid' => $userid, 'timecreated' => time()]);
+        }
+        $transaction->allow_commit();
 
         return [
             'attemptid'        => (int)$attempt->id,
@@ -248,6 +275,7 @@ class quiz_manager {
             'timestart'        => (int)$attempt->timestart,
             'timelimit'        => (int)$quiz->timelimit,
             'state'            => $attempt->state,
+            'appexam'          => $appexam,
         ];
     }
 
@@ -262,7 +290,7 @@ class quiz_manager {
     public static function get_attempt_questions(int $attemptid, int $userid, bool $is_admin = false): array {
         $attemptobj = self::load_attempt($attemptid, $userid, $is_admin);
         if (!$is_admin && !$attemptobj->is_finished()) {
-            self::require_no_seb($attemptobj->get_quizobj());
+            self::require_no_seb($attemptobj->get_quizobj(), $attemptid);
         }
         $native = self::native();
 
@@ -320,7 +348,7 @@ class quiz_manager {
         self::require_quiz_lib();
 
         $attemptrow = self::require_open_attempt($attemptid, $userid);
-        self::require_no_seb(quiz_settings::create((int) $attemptrow->quiz, $userid));
+        self::require_no_seb(quiz_settings::create((int) $attemptrow->quiz, $userid), $attemptid);
         $quba = \question_engine::load_questions_usage_by_activity($attemptrow->uniqueid);
         $slot = self::slot_for_question($quba, $questionid, $slot);
         $qa = $quba->get_question_attempt($slot);
@@ -354,7 +382,7 @@ class quiz_manager {
         self::require_quiz_lib();
 
         $attemptrow = self::require_open_attempt($attemptid, $userid);
-        self::require_no_seb(quiz_settings::create((int) $attemptrow->quiz, $userid));
+        self::require_no_seb(quiz_settings::create((int) $attemptrow->quiz, $userid), $attemptid);
         self::apply_legacy_answers($attemptrow);
 
         $now = time();
@@ -456,10 +484,14 @@ class quiz_manager {
         $slots    = $DB->get_records('quiz_slots', ['quizid' => $quizid], '', 'id, maxmark');
         $maxscore = array_sum(array_column(array_map('get_object_vars', $slots), 'maxmark'));
 
+        $appexam = $attempts
+            ? $DB->get_records_list('academy_quiz_appexam', 'attemptid', array_keys($attempts), '', 'attemptid')
+            : [];
         $out = [];
         foreach ($attempts as $a) {
             $out[] = [
                 'attemptid'      => (int)$a->id,
+                'appexam'        => isset($appexam[$a->id]),
                 'attempt_number' => (int)$a->attempt,
                 'state'          => $a->state,
                 'score'          => isset($a->sumgrades) ? round((float)$a->sumgrades, 2) : null,
@@ -872,12 +904,34 @@ class quiz_manager {
 
     /**
      * Refuse to run a Safe Exam Browser quiz through this API (the app is not SEB).
-     * Users with quizaccess/seb:bypassseb (teachers, managers) pass, as on the website.
+     * Users with quizaccess/seb:bypassseb (teachers, managers) pass, as on the website, and
+     * so does an attempt started in the Android exam mode while the site still allows it.
      */
-    private static function require_no_seb(quiz_settings $quizobj): void {
-        if (self::seb_info($quizobj)['required']) {
-            throw new \moodle_exception('err_sebrequired', 'local_academy');
+    private static function require_no_seb(quiz_settings $quizobj, int $attemptid = 0): void {
+        if (!self::seb_info($quizobj)['required']) {
+            return;
         }
+        if ($attemptid && self::app_exam_allowed() && self::is_app_exam_attempt($attemptid)) {
+            return;
+        }
+        throw new \moodle_exception('err_sebrequired', 'local_academy');
+    }
+
+    /**
+     * Whether the site lets the Android app take SEB quizzes in its exam mode.
+     * Admin switch local_multitopics/seb_android_app_exam (getsettings.php): unset = on.
+     */
+    public static function app_exam_allowed(): bool {
+        $value = get_config('local_multitopics', 'seb_android_app_exam');
+        return $value === false || $value === null || $value === '' || (bool) (int) $value;
+    }
+
+    /**
+     * Whether an attempt was started with start_quiz_attempt app_exam=1.
+     */
+    public static function is_app_exam_attempt(int $attemptid): bool {
+        global $DB;
+        return $DB->record_exists('academy_quiz_appexam', ['attemptid' => $attemptid]);
     }
 
     /**

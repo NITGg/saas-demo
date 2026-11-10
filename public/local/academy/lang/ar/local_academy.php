@@ -90,6 +90,7 @@ $string['err_coursenotfound']   = 'الكورس غير موجود.';
 $string['err_notenrolled']      = 'أنت غير مشترك في هذا الكورس.';
 $string['err_sebrequired']      = 'لا يمكن أداء هذا الاختبار إلا من خلال متصفح الامتحان الآمن (Safe Exam Browser).';
 $string['err_quizaccessprevented'] = 'لا يمكنك بدء هذا الاختبار الآن: {$a}';
+$string['appexamattempt']       = 'تم أداء هذه المحاولة في وضع الامتحان بتطبيق أندرويد، وليس في متصفح الامتحان الآمن (Safe Exam Browser).';
 $string['err_lessonlocked']     = 'أكمل الدروس السابقة أولًا.';
 $string['err_lessonforsale']    = 'يجب شراء هذا الدرس أولًا.';
 $string['err_coursenotfree']    = 'هذا الكورس ليس مجانيًا.';

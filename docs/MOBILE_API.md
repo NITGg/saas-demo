@@ -798,13 +798,13 @@ the table below, and `qtype:random` (the attempt resolves it to a real question)
 | `get_quizzes` | GET | `courseid` (opt) | `[{"quizid":4,"cmid":57,"courseid":22,"name":"…","intro":"…","timelimit":0,"attempts_allowed":0}]` (my courses; admins: all) |
 | `get_quiz` | GET | `cmid` | quiz overview + `questions[]` with `supported` per question. Multiple-choice / true-false also list `options`. **Draw from `get_attempt_questions`**, not from here: only the attempt knows the calculated numbers, shuffles and random picks. |
 | `get_quiz_access` | GET | `quizid` | `{quizid, cmid, courseid, canattempt, canstart, accessrules[], activerulenames[], preventaccessreasons[], preventnewattemptreasons[], seb{required, canbypass, mode, launchurl, configurl, downloadurl, quizurl}}`: plain text. Call before `start_quiz_attempt`; `seb.required` → Safe Exam Browser flow. See [`SEB_QUIZ_ACCESS_MOBILE.md`](SEB_QUIZ_ACCESS_MOBILE.md) |
-| `start_quiz_attempt` | POST | `quizid` | `{"attemptid":9,"quizid":4,"attempt_number":1,"timestart":…,"timelimit":0,"state":"inprogress"}` |
+| `start_quiz_attempt` | POST | `quizid`, `app_exam` (opt, Android exam mode for a Safe Exam Browser quiz — see [`SEB_QUIZ_ACCESS_MOBILE.md`](SEB_QUIZ_ACCESS_MOBILE.md) §6) | `{"attemptid":9,"quizid":4,"attempt_number":1,"timestart":…,"timelimit":0,"state":"inprogress"}` |
 | `get_attempt_questions` | GET | `attemptid` | `{attemptid, quizid, quiz_name, attempt_number, state, timestart, timelimit, questions[]}` — question shapes below, each with `response` (the answer saved so far, or `null`) for resuming |
 | `save_quiz_answer` | POST | `attemptid`, `questionid`, `answer` (JSON, format per type below; `null` clears), `slot` (opt — only if the quiz uses the same question twice) | `{"attemptid":9,"questionid":12,"slot":1,"saved":true,"state":"inprogress"}` |
 | `finish_quiz_attempt` | POST | `attemptid` | result (below) — Moodle grades every saved answer and closes the attempt |
 | `submit_quiz_attempt` | POST | `attemptid`, `answers` JSON `[{"questionid":12,"answer":…},…]` | result — one-shot save + finish |
 | `get_quiz_attempt` | GET | `attemptid` | review (below) |
-| `get_my_quiz_attempts` | GET | `quizid` | `[{"attemptid":9,"attempt_number":1,"state":"finished","score":2.0,"max_score":3.0,"percent":66.7,"timestart":…,"timefinish":…}]` |
+| `get_my_quiz_attempts` | GET | `quizid` | `[{"attemptid":9,"appexam":false,"attempt_number":1,"state":"finished","score":2.0,"max_score":3.0,"percent":66.7,"timestart":…,"timefinish":…}]` |
 
 **Every question** (`get_attempt_questions.questions[]`) has:
 `{"slot":1,"page":0,"questionid":12,"type":"…","text":"…","images":["<url>"],"defaultmark":1.0,"max_mark":1.0,"supported":true,"response":…}`

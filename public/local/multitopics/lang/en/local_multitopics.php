@@ -16,6 +16,8 @@ $string['google_client_id_desc'] = 'MUST be identical for every academy — the 
 
 $string['prevent_screen_recording'] = 'Prevent screen recording';
 $string['prevent_screen_recording_desc'] = 'Ask the app to block screenshots / screen recording.';
+$string['seb_android_app_exam'] = 'Safe Exam Browser quizzes in the Android app exam mode';
+$string['seb_android_app_exam_desc'] = 'There is no Safe Exam Browser for Android. When on, the Android app may take a Safe Exam Browser quiz in its own locked exam mode. The server cannot check that the app really is in exam mode, so this protection is weaker than Safe Exam Browser. Turn off to require Safe Exam Browser for every attempt.';
 $string['watermark']         = 'Watermark (fallback)';
 $string['watermark_desc']    = 'Fallback only — the app prefers the VdoCipher plugin\'s watermark setting when installed.';
 $string['watermark_text']    = 'Watermark text (fallback)';
