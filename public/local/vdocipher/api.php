@@ -44,9 +44,15 @@ $token    = optional_param('token', '', PARAM_ALPHANUM);
 if (empty($token)) {
     vdocipher_respond(['status' => 'fail', 'error' => get_string('err_authrequired', 'local_academy')]);
 }
-$USER = \local_academy\token_auth::validate($token);
+$USER = \local_academy\token_auth::validate($token, true);
 if (!$USER) {
     vdocipher_respond(['status' => 'fail', 'error' => get_string('err_invalidtoken', 'local_academy')]);
+}
+// The public guest-browsing token (getsettings.php) may play a free-preview video
+// and nothing else.
+if ($function !== 'get_playback' && \local_academy\token_auth::is_public($token)) {
+    vdocipher_respond(['status' => 'fail', 'errorcode' => 'authrequired',
+        'error' => get_string('err_authrequired', 'local_academy')]);
 }
 \core\session\manager::set_user($USER);
 

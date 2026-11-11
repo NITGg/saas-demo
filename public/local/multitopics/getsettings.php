@@ -38,9 +38,13 @@
  * --------
  * - `google_client_id` MUST be the same value for every academy — the OAuth client
  *   is bound to the app's bundle id, not the site.
- * - `admin_token` is the shared pre-login (registration) service token; it is
- *   returned anonymously by design. Rotate the EAAC value that lives in git
- *   history once this endpoint is live.
+ * - `admin_token` is returned anonymously, so it is published ONLY when it is
+ *   the dedicated guest-browsing token built by cli/app_guest_token.php (a
+ *   permanent token on the restricted `nit_app_guest` service, non-admin owner).
+ *   Any other value - a site admin's or any real member's token - is withheld
+ *   (null), because whoever fetches this feed would otherwise act as that
+ *   account. See ms_public_token(). Rotate the EAAC value that lives in git
+ *   history.
  * - Response is marked no-store: tokens must not be cached by proxies. The app
  *   caches client-side on its own.
  *
@@ -84,6 +88,29 @@ function ms_other(string $component, string $name, $default = null) {
 function ms_null(string $name): ?string {
     $v = get_config('local_multitopics', $name);
     return ($v === false || $v === null || $v === '') ? null : (string) $v;
+}
+/**
+ * The configured admin_token, but only when it is the public guest-browsing
+ * token; NULL otherwise (unset, unknown, wrong service, or owned by an admin).
+ * @return string|null
+ */
+function ms_public_token(): ?string {
+    global $DB;
+    $token = trim((string) ms_null('admin_token'));
+    if (!preg_match('/^[a-f0-9]{32}$/i', $token)) {
+        return null;
+    }
+    $owner = $DB->get_field_sql(
+        "SELECT t.userid
+           FROM {external_tokens} t
+           JOIN {external_services} s ON s.id = t.externalserviceid
+          WHERE t.token = :token
+            AND t.tokentype = :permanent
+            AND s.shortname = :service
+            AND s.enabled = 1
+            AND s.restrictedusers = 1",
+        ['token' => $token, 'permanent' => EXTERNAL_TOKEN_PERMANENT, 'service' => 'nit_app_guest']);
+    return ($owner && !is_siteadmin($owner)) ? $token : null;
 }
 
 // ── Watermark ← local_vdocipher (the plugin that owns it) ─────────────────────
@@ -135,7 +162,7 @@ if (class_exists('\local_license\license') && method_exists('\local_license\lice
 $data = [
     // Tokens — per academy. Set by provisioning / tenant settings page.
     'user_token'  => ms_null('user_token'),
-    'admin_token' => ms_null('admin_token'),
+    'admin_token' => ms_public_token(),
 
     // OAuth — MUST be identical for every academy (bound to the app bundle id).
     'google_client_id' => ms_null('google_client_id'),

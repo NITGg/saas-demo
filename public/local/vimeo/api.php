@@ -71,9 +71,14 @@ $token    = optional_param('token', '', PARAM_ALPHANUM);
 if (empty($token)) {
     vimeo_fail('authrequired', get_string('err_authrequired', 'local_academy'), 401);
 }
-$USER = \local_academy\token_auth::validate($token);
+$USER = \local_academy\token_auth::validate($token, true);
 if (!$USER) {
     vimeo_fail('invalidtoken', get_string('err_invalidtoken', 'local_academy'), 401);
+}
+// The public guest-browsing token (getsettings.php) may play a free-preview video
+// and nothing else. Not 401: the token is fine, it is just not a member's.
+if ($function !== 'get_playback' && \local_academy\token_auth::is_public($token)) {
+    vimeo_fail('authrequired', get_string('err_authrequired', 'local_academy'));
 }
 \core\session\manager::set_user($USER);
 

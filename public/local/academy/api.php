@@ -45,9 +45,18 @@ if (empty($token)) {
 }
 // Full web-service token validation (expiry, IP restriction, service enabled,
 // account state) — not just a raw token→user lookup.
-$USER = \local_academy\token_auth::validate($token);
+$USER = \local_academy\token_auth::validate($token, true);
 if (!$USER) {
     academy_respond(['status' => 'fail', 'error' => get_string('err_invalidtoken', 'local_academy')]);
+}
+// The public guest-browsing token is handed to anyone by getsettings.php, so it
+// may only reach the pre-login calls and the public directory - never anything
+// that acts as, or reads/writes for, the account behind it.
+$publicfunctions = ['request_password_otp', 'verify_password_otp', 'reset_password',
+    'is_course_free', 'browse_teachers', 'get_teacher', 'get_teacher_courses'];
+if (!in_array($function, $publicfunctions, true) && \local_academy\token_auth::is_public($token)) {
+    academy_respond(['status' => 'fail', 'errorcode' => 'authrequired',
+        'error' => get_string('err_authrequired', 'local_academy')]);
 }
 \core\session\manager::set_user($USER);
 $userid = (int) $USER->id;
